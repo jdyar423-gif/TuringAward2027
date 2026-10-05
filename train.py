@@ -119,6 +119,9 @@ def main():
     ap.add_argument("--batch", type=int, default=32)
     ap.add_argument("--seq", type=int, default=256)
     ap.add_argument("--sampler", default="epoch")
+    ap.add_argument("--opt", default="muon", help="optimizer for hidden matrices: muon | adamw")
+    ap.add_argument("--lr_adamw", type=float, default=2e-3)
+    ap.add_argument("--wd_adamw", type=float, default=0.1)
     ap.add_argument("--lr_muon", type=float, default=0.03)
     ap.add_argument("--muon_momentum", type=float, default=0.95)
     ap.add_argument("--momentum_warmup", type=float, default=0.1, help="fraction of steps to warm 0.85->m")
@@ -142,6 +145,8 @@ def main():
     ap.add_argument("--no_test", action="store_true")
     ap.add_argument("--holdout", type=float, default=0.0,
                     help="fraction of train articles (at the end) excluded from NN training (for gate fitting)")
+    ap.add_argument("--ngram_epochs", type=float, default=0.0,
+                    help="stop updating the n-gram tables after this many epochs (0 = never stop)")
     ap.add_argument("--countmix", type=int, default=0, help="train NN jointly through the count-expert mixture")
     ap.add_argument("--cm_K", type=int, default=6)
     ap.add_argument("--cm_Kd", type=int, default=4)
@@ -173,9 +178,13 @@ def main():
     lrs = dict(emb=a.lr_emb, head=a.lr_head, scalar=a.lr_scalar)
     adam = torch.optim.Adam([dict(params=v, lr=lrs[k], base_lr=lrs[k]) for k, v in dense.items()],
                             betas=(a.beta1, a.beta2), eps=1e-10)
-    mu = Muon(muon_p, lr=a.lr_muon, momentum=a.muon_momentum, ns_steps=a.ns_steps, wd=a.wd,
-              polar=bool(a.polar), normuon=bool(a.normuon))
-    mu.param_groups[0]["base_lr"] = a.lr_muon
+    if a.opt == "muon":
+        mu = Muon(muon_p, lr=a.lr_muon, momentum=a.muon_momentum, ns_steps=a.ns_steps, wd=a.wd,
+                  polar=bool(a.polar), normuon=bool(a.normuon))
+        mu.param_groups[0]["base_lr"] = a.lr_muon
+    else:
+        mu = torch.optim.AdamW(muon_p, lr=a.lr_adamw, betas=(0.9, 0.95), weight_decay=a.wd_adamw, eps=1e-8)
+        mu.param_groups[0]["base_lr"] = a.lr_adamw
     opts = [mu, adam]
     if sparse_p:
         sp = SparseRowAdam(sparse_p, lr=a.lr_ngram, beta2=a.beta2)
@@ -187,7 +196,9 @@ def main():
     n_all = sum(p.numel() for p in model.parameters())
     mm = measure_matmul_flops(model, B, T)
     ew = elementwise_flops_per_token(cfg, T) * B * T
-    op = sum(muon_flops(p.shape, a.ns_steps) for p in muon_p) + ADAM_FLOPS_PER_PARAM * n_dense \
+    op_hidden = sum(muon_flops(p.shape, a.ns_steps) for p in muon_p) if a.opt == "muon" \
+        else ADAM_FLOPS_PER_PARAM * sum(p.numel() for p in muon_p)
+    op = op_hidden + ADAM_FLOPS_PER_PARAM * n_dense \
         + sparse_table_flops(cfg, B * T)
     step_flops = mm + ew + op
     ema_cost = 3 * n_all
@@ -250,8 +261,11 @@ def main():
         for opt in opts:
             for g in opt.param_groups:
                 g["lr"] = g["base_lr"] * m
+        if a.ngram_epochs and sparse_p and step * B * T >= a.ngram_epochs * n_train:
+            sp.param_groups[0]["lr"] = 0.0
         mw = max(1, int(a.momentum_warmup * steps))
-        mu.param_groups[0]["momentum"] = a.muon_momentum - (a.muon_momentum - 0.85) * max(0.0, 1 - step / mw)
+        if a.opt == "muon":
+            mu.param_groups[0]["momentum"] = a.muon_momentum - (a.muon_momentum - 0.85) * max(0.0, 1 - step / mw)
         pos = sampler.next()[:, None] + ar
         x, y = train[pos], train[pos + 1]
         g = ng["train"][pos] if ng["train"] is not None else None

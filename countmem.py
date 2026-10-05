@@ -183,6 +183,8 @@ class CountMemory:
                 D[k], Dy[k] = causal_rank(dck), causal_rank(dpk)
                 DN[k] = causal_distinct(dck, dpk)
                 DG[k] = causal_gap(dck)
+        C, Cy, Np = np.maximum(C, 0), np.maximum(Cy, 0), np.maximum(Np, 0)
+        Cy = np.minimum(Cy, C)
         # position inside the document
         dpos = causal_rank(d.astype(np.uint64))
         return dict(C=C, Cy=Cy, Np=Np, D=D, Dy=Dy, DN=DN, DG=DG, dpos=dpos)

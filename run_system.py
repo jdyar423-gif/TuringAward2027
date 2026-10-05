@@ -101,7 +101,11 @@ def main():
     ht = toks["train"][hs - 1:]                 # one token of left context (not scored)
     hng = ng["train"][hs - 1:] if ng["train"] is not None else None
     hd = docs["train"][hs - 1:]
-    st_cm = cm.stats(ht.numpy(), hd, is_train=True)  # leave-one-document-out
+    # count statistics with K tokens of true left context so hashes match the train tables;
+    # the extra leading targets (previous article) are dropped again
+    ctx0 = hs - a.K
+    st_cm = cm.stats(toks["train"][ctx0:].numpy(), docs["train"][ctx0:], is_train=True)  # LODO
+    st_cm = {k: (v[..., a.K - 1:] if v.ndim == 2 else v[a.K - 1:]) for k, v in st_cm.items()}
     st_nn = token_stats(base, ht, hng, T, a.ho_stride)
     n_ho = ht.numel() - 1
     flops["holdout_forward"] = fwd_tok * n_ho * (T / a.ho_stride)
