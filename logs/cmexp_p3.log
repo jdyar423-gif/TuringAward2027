@@ -1,0 +1,9 @@
+p3_ng_gates nn static 1.5402164
+6:4:0:64:400 mix static 1.3158
+6:4:1:64:400 mix static 1.3094
+8:6:1:64:400 mix static 1.3083
+8:6:1:128:800 mix static 1.315
+nn dyn 1.4418497
+6:4:0:64:400 mix dyn 1.2937
+6:4:1:64:400 mix dyn 1.2888
+8:6:1:64:400 mix dyn 1.2878

@@ -1,0 +1,7 @@
+static 4.020811
+sgd 0.03 128 all nll 3.9305 (static 4.0208) flops/tok 3.853e+07 167s
+sgd 0.1 128 all nll 3.8531 (static 4.0208) flops/tok 3.853e+07 167s
+sgd 0.3 128 all nll 3.7813 (static 4.0208) flops/tok 3.853e+07 167s
+rms 0.0001 128 all nll 3.9086 (static 4.0208) flops/tok 3.874e+07 183s
+rms 0.0003 128 all nll 3.8593 (static 4.0208) flops/tok 3.874e+07 187s
+rms 0.001 128 all nll 3.8891 (static 4.0208) flops/tok 3.874e+07 186s

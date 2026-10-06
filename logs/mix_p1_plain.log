@@ -1,0 +1,1 @@
+p1_plain {'nn': 1.6755, 'mix': 1.3347, 'count': 1.3051} (2-fold CV over valid articles; count uses floor 1/V)

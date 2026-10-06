@@ -1,0 +1,1 @@
+p7_cm {'nn': 3.6447, 'mix': 1.3684, 'count': 1.3068} (2-fold CV over valid articles; count uses floor 1/V)

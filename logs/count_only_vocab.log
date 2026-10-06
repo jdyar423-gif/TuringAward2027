@@ -1,0 +1,2 @@
+V=8192 count-only BPB: train(LODO, approx bytes) 1.4308  valid 1.3764  valid-fit-on-valid 1.3719
+V=4096 count-only BPB: train(LODO, approx bytes) 1.4303  valid 1.3779  valid-fit-on-valid 1.3736

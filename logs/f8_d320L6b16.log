@@ -1,0 +1,26 @@
+{
+ "name": "f8_d320L6b16",
+ "dataset": "wikitext-2-v1",
+ "params_muon": 7372800,
+ "params_dense_other": 2621879,
+ "params_sparse_tables": 167768960,
+ "params_total": 177763639,
+ "flops_per_step": {
+  "matmul_attn": 237574520832,
+  "elementwise": 3098542080,
+  "optimizer": 34926328249,
+  "total": 275599391161
+ },
+ "analytic_fwd_matmul_per_token": 19333864,
+ "measured_train_matmul_per_token": 58001592.0,
+ "steps": 391,
+ "tokens": 1601536,
+ "epochs": 0.5453752942202075
+}
+holdout: training on first 2814475 tokens, holding out 122102
+step 0/391 loss 8.3178 ema 8.3178 lr 0.100 flops 2.756e+11 (0.2%) 5s 55.7 GFLOP/s
+step 100/391 loss 4.6160 ema 4.7764 lr 1.000 flops 2.784e+13 (21.7%) 493s 56.4 GFLOP/s
+step 200/391 loss 4.1762 ema 4.2519 lr 0.831 flops 5.540e+13 (43.3%) 983s 56.3 GFLOP/s
+step 300/391 loss 3.8914 ema 3.9310 lr 0.449 flops 8.296e+13 (64.8%) 1474s 56.3 GFLOP/s
+step 390/391 loss 3.6282 ema 3.7198 lr 0.104 flops 1.078e+14 (84.2%) 1913s 56.3 GFLOP/s
+valid: bpb 1.4380 token_loss 3.8129

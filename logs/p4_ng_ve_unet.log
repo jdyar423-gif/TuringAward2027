@@ -1,0 +1,31 @@
+{
+ "name": "p4_ng_ve_unet",
+ "dataset": "wikitext-2-v1",
+ "params_muon": 3145728,
+ "params_dense_other": 4194330,
+ "params_sparse_tables": 134215168,
+ "params_total": 141555226,
+ "flops_per_step": {
+  "matmul_attn": 115964116992,
+  "elementwise": 1925185536,
+  "optimizer": 18998198662,
+  "total": 136887501190
+ },
+ "analytic_fwd_matmul_per_token": 9437184,
+ "measured_train_matmul_per_token": 28311552.0,
+ "steps": 233,
+ "tokens": 954368,
+ "epochs": 0.3249934617731671
+}
+step 0/233 loss 8.3178 ema 8.3178 lr 0.100 flops 1.369e+11 (0.4%) 4s 34.6 GFLOP/s
+step 25/233 loss 5.4854 ema 6.9255 lr 1.000 flops 3.559e+12 (11.1%) 73s 48.7 GFLOP/s
+step 50/233 loss 5.1590 ema 5.7192 lr 1.000 flops 6.981e+12 (21.8%) 142s 49.3 GFLOP/s
+step 75/233 loss 4.9482 ema 5.1339 lr 1.000 flops 1.040e+13 (32.5%) 210s 49.6 GFLOP/s
+step 100/233 loss 4.6534 ema 4.8104 lr 0.955 flops 1.383e+13 (43.2%) 278s 49.7 GFLOP/s
+step 125/233 loss 4.5268 ema 4.6072 lr 0.794 flops 1.725e+13 (53.9%) 348s 49.5 GFLOP/s
+step 150/233 loss 4.3951 ema 4.4416 lr 0.634 flops 2.067e+13 (64.6%) 413s 50.1 GFLOP/s
+step 175/233 loss 4.2642 ema 4.3052 lr 0.473 flops 2.409e+13 (75.3%) 481s 50.1 GFLOP/s
+step 200/233 loss 4.2268 ema 4.2123 lr 0.312 flops 2.751e+13 (86.0%) 546s 50.4 GFLOP/s
+step 225/233 loss 4.2280 ema 4.1233 lr 0.151 flops 3.094e+13 (96.7%) 612s 50.6 GFLOP/s
+step 232/233 loss 3.9562 ema 4.1033 lr 0.106 flops 3.189e+13 (99.7%) 631s 50.6 GFLOP/s
+valid: bpb 1.5461 token_loss 4.0993

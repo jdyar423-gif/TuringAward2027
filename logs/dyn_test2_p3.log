@@ -1,0 +1,5 @@
+sgd:1.0:128:all nll 3.8210 flops/tok 3.853e+07 173s
+sgd:0.3:256:all nll 3.8513 flops/tok 1.927e+07 86s
+sgd:1.0:128:top1 nll 3.8293 flops/tok 1.955e+07 99s
+sgd:1.0:128:head nll 3.9540 flops/tok 9.045e+06 65s
+sgd:3.0:128:top1 nll 4.0009 flops/tok 1.955e+07 91s

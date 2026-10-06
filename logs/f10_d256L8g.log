@@ -1,0 +1,27 @@
+{
+ "name": "f10_d256L8g",
+ "dataset": "wikitext-2-v1",
+ "params_muon": 6291456,
+ "params_dense_other": 2097629,
+ "params_sparse_tables": 134215168,
+ "params_total": 142604253,
+ "flops_per_step": {
+  "matmul_attn": 206168162304,
+  "elementwise": 3233808384,
+  "optimizer": 23895579635,
+  "total": 233297550323
+ },
+ "analytic_fwd_matmul_per_token": 16778008,
+ "measured_train_matmul_per_token": 50334024.0,
+ "steps": 462,
+ "tokens": 1892352,
+ "epochs": 0.6444076366489409
+}
+holdout: training on first 2814475 tokens, holding out 122102
+step 0/462 loss 8.3178 ema 8.3178 lr 0.100 flops 2.333e+11 (0.2%) 5s 48.0 GFLOP/s
+step 100/462 loss 4.5816 ema 4.7576 lr 1.000 flops 2.356e+13 (18.4%) 472s 49.9 GFLOP/s
+step 200/462 loss 4.2151 ema 4.2689 lr 0.948 flops 4.689e+13 (36.6%) 934s 50.2 GFLOP/s
+step 300/462 loss 3.9354 ema 3.9732 lr 0.624 flops 7.022e+13 (54.9%) 1399s 50.2 GFLOP/s
+step 400/462 loss 3.7592 ema 3.7348 lr 0.301 flops 9.355e+13 (73.1%) 1851s 50.5 GFLOP/s
+step 461/462 loss 3.7473 ema 3.6581 lr 0.103 flops 1.078e+14 (84.2%) 2127s 50.7 GFLOP/s
+valid: bpb 1.4216 token_loss 3.7693

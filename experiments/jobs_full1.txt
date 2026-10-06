@@ -1,6 +1,0 @@
-f1_d256L4b16|--budget 1.28e14 --reserve 2e13 --holdout 0.03 --no_test --vocab 4096 --ngram_orders 2,3 --smear 1 --attn_gate sparse --xsa 1 --log_every 100 --d 256 --n_layer 4 --batch 16
-f2_d256L4b32|--budget 1.28e14 --reserve 2e13 --holdout 0.03 --no_test --vocab 4096 --ngram_orders 2,3 --smear 1 --attn_gate sparse --xsa 1 --log_every 100 --d 256 --n_layer 4 --batch 32
-f3_d320L4b16|--budget 1.28e14 --reserve 2e13 --holdout 0.03 --no_test --vocab 4096 --ngram_orders 2,3 --smear 1 --attn_gate sparse --xsa 1 --log_every 100 --d 320 --n_layer 4 --n_head 5 --batch 16
-f4_d256L6b16|--budget 1.28e14 --reserve 2e13 --holdout 0.03 --no_test --vocab 4096 --ngram_orders 2,3 --smear 1 --attn_gate sparse --xsa 1 --log_every 100 --d 256 --n_layer 6 --batch 16
-f5_d192L4b16|--budget 1.28e14 --reserve 2e13 --holdout 0.03 --no_test --vocab 4096 --ngram_orders 2,3 --smear 1 --attn_gate sparse --xsa 1 --log_every 100 --d 192 --n_layer 4 --n_head 3 --batch 16
-f6_d256L4b16ns3|--budget 1.28e14 --reserve 2e13 --holdout 0.03 --no_test --vocab 4096 --ngram_orders 2,3 --smear 1 --attn_gate sparse --xsa 1 --log_every 100 --d 256 --n_layer 4 --batch 16 --ns_steps 3

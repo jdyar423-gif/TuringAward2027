@@ -1,0 +1,4 @@
+64:64:0:all nll 4.0209 flops/tok 7.702e+07 319s
+64:256:0.3:all nll 3.8402 flops/tok 1.927e+07 159s
+64:256:0.6:all nll 3.8267 flops/tok 1.927e+07 161s
+64:128:0.3:all nll 3.7814 flops/tok 3.853e+07 201s

@@ -1,0 +1,44 @@
+{
+ "run": "f15_lremb3_ng4",
+ "args": {
+  "run": "f15_lremb3_ng4",
+  "budget": 128000000000000.0,
+  "K": 8,
+  "Kd": 6,
+  "stride": 64,
+  "ho_stride": 256,
+  "dyn": 1,
+  "dyn_S": 128,
+  "dyn_U": 128,
+  "dyn_lr": 0.5,
+  "dyn_which": "all",
+  "gate_steps": 150,
+  "gate_hidden": 64,
+  "splits": "valid",
+  "threads": 1,
+  "tag": "_val_lr0.5"
+ },
+ "dataset": "wikitext-2-v1",
+ "holdout": {
+  "tokens": 122102,
+  "articles": 19,
+  "nn_nats": 4.11076545715332,
+  "mix_nats": 3.415924800576567
+ },
+ "valid": {
+  "nn_static": 1.3875946553500418,
+  "mix_static": 1.2482377223408903,
+  "dyn_flops": 15672029539329.0,
+  "nn_dyn": 1.3264797231753502,
+  "mix_dyn": 1.243419975629116,
+  "mix_flops": 2608618560
+ },
+ "flops": {
+  "train": 107858409624702.0,
+  "holdout_forward": 1628120766608.0,
+  "gate_fit": 481106300400,
+  "count_memory_int_ops_bound": 88332194023.63504
+ },
+ "total_flops": 110055968885733.64,
+ "within_budget": true
+}

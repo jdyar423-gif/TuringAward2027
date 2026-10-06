@@ -1,0 +1,6 @@
+static nn 1.3919309
+U256lr.6 nn 1.3493255
+U128lr.3 nn 1.3326803
+static mix matched-fit 1.2480  static-fit 1.2480
+U256lr.6 mix matched-fit 1.2435  static-fit 1.2465
+U128lr.3 mix matched-fit 1.2352  static-fit 1.2377

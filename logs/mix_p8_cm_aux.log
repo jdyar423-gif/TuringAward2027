@@ -1,0 +1,1 @@
+p8_cm_aux {'nn': 1.5681, 'mix': 1.3167, 'count': 1.3053} (2-fold CV over valid articles; count uses floor 1/V)
