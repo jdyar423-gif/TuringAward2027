@@ -254,19 +254,22 @@ def posting_utility(imp: np.ndarray, pid: np.ndarray, title: np.ndarray, n_docs:
 
 
 def select_postings(key: np.ndarray, pid: np.ndarray, util: np.ndarray, n_buckets: int,
-                    max_list: int, max_total: int) -> np.ndarray:
+                    max_list: int, max_total: int, negated: bool = False) -> np.ndarray:
     """bool [M]: postings kept - at most ``max_list`` per bucket and ``max_total`` in all,
-    largest utility first (ties: lower passage id, then lower bucket)."""
+    largest utility first (ties: lower passage id, then lower bucket). ``negated``: ``util``
+    already holds the negated utilities (saves a copy of an [M] array)."""
     m = key.shape[0]
-    order = np.lexsort((pid, -util, key))  # bucket asc, utility desc, pid asc
+    neg = util if negated else -util
+    order = np.lexsort((pid, neg, key))  # bucket asc, utility desc, pid asc
     ks = key[order]
     starts = np.searchsorted(ks, np.arange(n_buckets), side="left")
-    rank = np.arange(m) - starts[ks]
+    rank = starts[ks]
     del ks
+    np.subtract(np.arange(m), rank, out=rank)
     cand = order[rank < max_list]
     del order, rank
     if cand.shape[0] > max_total:
-        o2 = np.lexsort((key[cand], pid[cand], -util[cand]))
+        o2 = np.lexsort((key[cand], pid[cand], neg[cand]))
         cand = cand[o2[:max_total]]
     keep = np.zeros(m, dtype=bool)
     keep[cand] = True
@@ -347,10 +350,15 @@ class TruncatedIndex:
         imp, df, avgdl = bm25_impacts(p, n_buckets, cfg.k1, cfg.b)
         max_imp = float(imp.max()) if imp.size else 1.0
         scale = max_imp / ((1 << IMPACT_BITS) - 1) if max_imp > 0 else 1.0
-        q = np.clip(np.rint(imp / scale), 1, (1 << IMPACT_BITS) - 1).astype(np.int16)
+        q = imp / scale                    # in place below: one float64 temporary at a time
+        np.rint(q, out=q)
+        np.clip(q, 1, (1 << IMPACT_BITS) - 1, out=q)
+        q = q.astype(np.int16)
         title = p.title if p.title.size == imp.size else np.zeros(imp.size, dtype=bool)
         util = posting_utility(imp, p.pid, title, n, None if prior is None else np.asarray(prior), cfg)
-        keep = select_postings(p.key, p.pid, util, n_buckets, cfg.max_list, cfg.max_postings())
+        np.negative(util, out=util)        # select_postings sorts by -utility
+        keep = select_postings(p.key, p.pid, util, n_buckets, cfg.max_list, cfg.max_postings(),
+                               negated=True)
         del util
         k_s, q_s, pid_s, imp_s = p.key[keep], q[keep].astype(np.int64), p.pid[keep].astype(np.int64), imp[keep]
         if not keep_full:

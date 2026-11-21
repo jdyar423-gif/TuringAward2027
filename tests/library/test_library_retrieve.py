@@ -148,7 +148,8 @@ def test_read_set_log_is_exact():
 def test_accounting_equals_saved_arrays(tmp_path):
     lib = build(tmp_path)
     acc = lib.accounting()
-    assert acc["total_numbers"] == acc["library_numbers"] + acc["index_numbers"]
+    assert acc["total_numbers"] == (acc["library_numbers"] + acc["index_numbers"]
+                                    + acc["title_table_numbers"] + acc["qa_numbers"] + acc["gate_numbers"])
     total = 0
     for fn in os.listdir(tmp_path):
         if fn.endswith(".npy"):

@@ -26,7 +26,7 @@ from bes.library.terms import strip_disambiguator, terms
 from bes.tokenizer.tok import load
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
-LIB_DIR = ROOT / "data_cache" / "library" / "lib_60M"
+LIB_DIR = ROOT / "data_cache" / "library" / "lib_v2"
 SHARD_DIR = ROOT / "data_cache" / "tok" / "smoltalk_constraints"
 FIXTURES = pathlib.Path(__file__).resolve().parent / "fixtures"
 

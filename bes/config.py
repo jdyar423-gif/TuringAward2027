@@ -290,9 +290,9 @@ class LibraryCfg:
     """
 
     budget_numbers: int = 60_000_000   # text blocks + passage directory + title list
-    index_numbers: int = 4_000_000     # stored truncated BM25 index (all of its tables)
+    index_numbers: int = 23_500_000    # stored truncated BM25 index (all of its tables); v2 sweep
     index_bits: int = 18               # 2**18 hashed term buckets
-    index_max_list: int = 1024         # postings kept per bucket at most (bounds the read set)
+    index_max_list: int = 4096         # postings kept per bucket at most (bounds the read set)
     max_passage_words: int = 110
     max_passage_tokens: int = 160      # title line + body, measured with count_tokens
     block_raw_bytes: int = 65536       # decompressed bytes per independent xz block
@@ -306,7 +306,15 @@ class LibraryCfg:
     gate_min_margin_title: float = 0.05  # margin needed when the title matches
     gate_min_title_match: float = 0.5  # share of title terms present in the query
     gate_min_coverage: float = 0.0     # s1 / best reachable score (0 = unused)
-    library_dir: str = "data_cache/library/lib_60M"
+    library_dir: str = "data_cache/library/lib_v2"
+    # -- v2: qa layer, title look-up, calibrated gate, budget (docs/E1_COVERAGE.md)
+    total_numbers_cap: int = 64_000_000   # everything the library stores (text, index, qa, gate)
+    max_read_numbers: int = 300_000       # stored numbers one retrieve() may read at most
+    qa_bits: int = 17                     # term buckets of the qa index
+    qa_read_postings: int = 16_384        # qa postings read per query at most
+    qa_min_sym: float = 0.5               # qa candidates below this symmetric overlap are ignored
+    qa_permissive_only: bool = False      # True: only qa sources with a clear licence (NQ-open)
+    gate_precision: float = 0.5           # calibrated gate: dev precision floor of the threshold
 
 
 # -------------------------------------------------------------- preference optimisation
@@ -396,7 +404,7 @@ class MixCfg:
     distractor_random: float = 0.5   # share of distractors drawn uniformly (else a ranked neighbour)
     distractor_topk: int = 4         # ranks searched for a ranked distractor
     read_task_tokens: float = 66.0   # mean tokens per reading-task draw, declined draws count 0
-                                     # (measured on lib_60M: 51% of draws usable, 131 tokens each)
+                                     # (measured on the first library build: 51% of draws usable, 131 tokens each)
     qa_task_tokens: float = 44.0     # mean tokens per question-answer task (measured on NQ-open
                                      # train pairs with a BM25 stand-in for the qa index)
 

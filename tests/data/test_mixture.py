@@ -298,7 +298,7 @@ def test_library_and_disk_availability(tmp_path):
 @pytest.mark.skipif(not (ROOT / "data_cache" / "tok").exists(), reason="no token shards in data_cache")
 def test_plan_with_what_is_on_disk():
     avail = M.tokens_on_disk(ROOT / "data_cache")
-    lib_dir = ROOT / "data_cache" / "library" / "lib_60M"
+    lib_dir = ROOT / "data_cache" / "library" / "lib_v2"
     if (lib_dir / "library.json").exists():
         from bes.library.retrieve import Library
 

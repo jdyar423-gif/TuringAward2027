@@ -302,6 +302,107 @@ def pack(bodies: Sequence[str], title_ids: Sequence[int], titles: Sequence[str],
     )
 
 
+# ------------------------------------------------------------------------- entry store
+
+
+@dataclass
+class EntryBlocks:
+    """Byte entries in independent xz blocks, without a title list (used by the qa layer).
+
+    Stored arrays (counted like ``Packed``): ``blob`` uint8 [C], ``block_off`` uint32 [B + 1],
+    ``block_raw`` uint32 [B], ``block_crc`` uint32 [B], ``block_first`` uint32 [B + 1] (first
+    entry of every block, last = E), ``entry_off`` uint16 [E] (offset inside the block).
+    Entries never straddle a block: reading one entry decompresses exactly one block.
+    """
+
+    cfg: PackCfg
+    blob: np.ndarray
+    block_off: np.ndarray
+    block_raw: np.ndarray
+    block_crc: np.ndarray
+    block_first: np.ndarray
+    entry_off: np.ndarray
+
+    ARRAYS = ("blob", "block_off", "block_raw", "block_crc", "block_first", "entry_off")
+
+    @property
+    def n_entries(self) -> int:
+        return int(self.entry_off.shape[0])
+
+    @property
+    def n_blocks(self) -> int:
+        return int(self.block_raw.shape[0])
+
+    def accounting(self, prefix: str = "") -> dict[str, int]:
+        return {f"{prefix}{k}": numbers_of(getattr(self, k).nbytes) for k in self.ARRAYS}
+
+    def numbers(self) -> int:
+        return sum(self.accounting().values())
+
+    def read_block(self, b: int) -> bytes:
+        lo, hi = int(self.block_off[b]), int(self.block_off[b + 1])
+        return decompress_block(self.blob[lo:hi].tobytes(), int(self.block_raw[b]),
+                                int(self.block_crc[b]), self.cfg)
+
+    def block_numbers(self, b: int) -> int:
+        """Stored numbers read to fetch block ``b`` (compressed bytes + its table row)."""
+        comp = int(self.block_off[b + 1]) - int(self.block_off[b])
+        return numbers_of(comp) + 2 * 4
+
+    def locate(self, e: int) -> tuple[int, int, int, list[int]]:
+        """(block, start, end, probes of ``block_first``) of entry ``e``."""
+        if not 0 <= e < self.n_entries:
+            raise IndexError(e)
+        b, probes = bsearch_right(self.block_first, e)
+        b -= 1
+        start = int(self.entry_off[e])
+        end = int(self.entry_off[e + 1]) if e + 1 < int(self.block_first[b + 1]) else int(self.block_raw[b])
+        return b, start, end, probes
+
+    def entry(self, e: int) -> bytes:
+        b, s, t, _ = self.locate(e)
+        return self.read_block(b)[s:t]
+
+    def save(self, out_dir: str, prefix: str) -> None:
+        os.makedirs(out_dir, exist_ok=True)
+        for k in self.ARRAYS:
+            _atomic_save_npy(os.path.join(out_dir, f"{prefix}{k}.npy"), np.asarray(getattr(self, k)))
+
+    @classmethod
+    def load(cls, out_dir: str, prefix: str, cfg: PackCfg, mmap: bool = True) -> "EntryBlocks":
+        arrs = {k: np.load(os.path.join(out_dir, f"{prefix}{k}.npy"), mmap_mode="r" if mmap else None)
+                for k in cls.ARRAYS}
+        return cls(cfg=cfg, **arrs)
+
+
+def pack_entries(entries: Sequence[bytes], cfg: PackCfg = PackCfg()) -> EntryBlocks:
+    """Pack byte entries in order into blocks of at most ``cfg.block_raw_bytes`` bytes."""
+    raws: list[bytes] = []
+    first: list[int] = [0]
+    offs = np.zeros(len(entries), dtype=np.uint16)
+    cur = bytearray()
+    for i, bb in enumerate(entries):
+        if len(bb) > cfg.block_raw_bytes:
+            raise ValueError(f"entry {i} longer than a block")
+        if len(cur) + len(bb) > cfg.block_raw_bytes:
+            raws.append(bytes(cur))
+            first.append(i)
+            cur = bytearray()
+        if len(cur) > 0xFFFF:
+            raise ValueError("block offset does not fit in uint16")
+        offs[i] = len(cur)
+        cur += bb
+    if entries:
+        raws.append(bytes(cur))
+    else:
+        first = []
+    first.append(len(entries))
+    arr = _blocks_to_arrays(raws, cfg)
+    return EntryBlocks(cfg=cfg, blob=arr["blob"], block_off=arr["off"], block_raw=arr["raw"],
+                       block_crc=arr["crc"], block_first=np.asarray(first, dtype=np.uint32),
+                       entry_off=offs)
+
+
 # ------------------------------------------------------------------------------ io utils
 
 

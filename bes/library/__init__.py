@@ -1,15 +1,22 @@
-"""Written library: cleaned Simple English Wikipedia passages in independent xz blocks plus a
-stored, truncated BM25 index; at most one gated passage per user message.
+"""Written library: cleaned Simple English Wikipedia passages in independent xz blocks, a
+stored truncated BM25 index, an exact-title look-up, a question-answer layer of
+human-written (question, answer) pairs matched question to question, and a calibrated
+gate that returns at most one entry per user message.
 
     from bes.library.retrieve import Library, ReadLog
-    lib = Library.load("data_cache/library/lib_60M")
-    passage = lib.retrieve("Who was Alan Turing?", log=ReadLog())   # Passage or None
-    passage.text                                                     # title + "\n" + body
+    lib = Library.load("data_cache/library/lib_v2")      # memory-mapped, cheap, picklable
+    p = lib.retrieve("Who was Alan Turing?", log=ReadLog())   # Passage or None
+    p.kind, p.text          # "wiki": title + "\\n" + body; "qa": "Q: <question>\\nA: <answer>"
+    lib.kind_range("qa")    # contiguous passage ids of one kind
 
-Modules: ``clean`` (cleaning, sentence and passage splitting), ``sources`` (verified sources,
-cleaned candidate pool), ``select`` (cost-benefit greedy under a budget of stored numbers),
-``pack`` (blocks, directory, title list, CRC), ``terms`` (term extraction and hashing),
-``index`` (stored truncated index, exact reference), ``retrieve`` (gate, exclusion, read-set
-log), ``build`` (the pipeline used by ``scripts/build_library.py``). Measurements: gate E1 in
-``docs/E1_COVERAGE.md``.
+Modules: ``clean`` (cleaning, hole repairs, sentence and passage splitting with BPE token
+counts), ``sources`` (verified sources and licences, cleaned candidate pool), ``select``
+(cost-benefit greedy under a budget of stored numbers), ``pack`` (blocks, directory, title
+list, CRC; entry blocks), ``terms`` (term extraction and hashing), ``index`` (stored
+truncated index, exact reference), ``qa`` (question-answer layer: cleaning, evaluation-split
+exclusion, storage, symmetric matching), ``gate`` (logistic gate, threshold), ``retrieve``
+(``Library``: kinds, title look-up, candidates, gate, exclusion, read-set log), ``devsets``
+(dev / evaluation questions and labels), ``build`` (the pipeline used by
+``scripts/build_library.py``). Nothing here needs the built files to import. Measurements:
+gate E1 in ``docs/E1_COVERAGE.md``.
 """

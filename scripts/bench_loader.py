@@ -9,7 +9,7 @@ assembly, exact-layer features). ``--workers N`` also runs the process pool and 
 wall-clock rate and the coordinator's copy and wait time. Prints one JSON document.
 
     python scripts/bench_loader.py --build
-    python scripts/bench_loader.py --steps 6 --library data_cache/library/lib_60M --workers 2
+    python scripts/bench_loader.py --steps 6 --library data_cache/library/lib_v2 --workers 2
 """
 from __future__ import annotations
 

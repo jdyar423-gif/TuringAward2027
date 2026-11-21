@@ -1,22 +1,24 @@
-"""Gate E1: coverage of the written library on open-domain questions.
+"""Gate E1 (library v2): coverage and precision of the written library on factual questions.
 
-    python scripts/measure_coverage.py --stage tune             # BM25 weights, dev questions only
-    python scripts/measure_coverage.py --stage pool             # exact BM25 over every passage
-    python scripts/measure_coverage.py --stage lib --budgets 20 # one library budget (repeat)
-    python scripts/measure_coverage.py --stage report           # JSON files -> docs/E1_COVERAGE.md
+    python scripts/measure_coverage.py --stage pool                 # pool statistics, exact BM25 ceiling
+    python scripts/measure_coverage.py --stage sweep --library D    # wiki index size sweep (dev recall)
+    python scripts/measure_coverage.py --stage lib --library D      # all E1 tables for a built library
+    python scripts/measure_coverage.py --stage report               # JSON files -> docs/E1_COVERAGE.md
 
-Each stage stays below ten minutes on 2 threads and below 3 GB; results go to
-``data_cache/library/e1_*.json``.
+Every stage stays below 3 GB and uses one thread; results go to ``data_cache/library/e1v2_*.json``.
 
-Question sets (Hugging Face, revisions pinned below): NQ-open validation (all 3,610),
-TriviaQA rc.nocontext validation (seeded sample), PopQA test (seeded sample, with the
-subject popularity ``s_pop``), and for the "everyday prompt" gate check, Dolly-15k
-instructions by category. Dev data for every choice made here (BM25 weights, gate
-thresholds): an NQ-open *train* sample and a TriviaQA validation sample disjoint from the
-evaluation sample.
+Dev data (every choice: index size, gate) - ``bes.library.devsets``: seeded samples of the
+stored NQ-open train and TriviaQA train questions asked with their own qa entry excluded
+(leave-one-out), and head-entity probes ("What is X?") for the dev half of the important
+titles. Evaluation data (measured once, after the choices): NQ-open validation (all),
+TriviaQA rc.nocontext validation (seeded sample of the unique questions), PopQA test (seeded
+sample), probes for the evaluation half of the titles, Dolly-15k instructions by category and
+the dev half of the project's proxy prompts (``bes.eval.proxy.prompts``).
 
-A question counts as answered at k when one of its normalised answer strings occurs, as a
-whole-token sequence, in one of the top-k passages (title line + body).
+A wiki passage counts as a hit when a normalised answer string occurs as a whole-token
+sequence in its text (title line + body); a qa entry when an answer string occurs in its
+stored answer (``qa EM``: the stored answer equals an answer after SQuAD normalisation); a
+probe when the passage belongs to the probed article.
 """
 from __future__ import annotations
 
@@ -34,28 +36,25 @@ import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from bes.library.build import build_for_budget, prepare_pool, prepare_signals  # noqa: E402
-from bes.library.clean import render_passage  # noqa: E402
-from bes.library.index import (ExactBM25, IndexCfg, Postings, TruncatedIndex, bucket_map,  # noqa: E402
-                               lead_flags, rekey_postings, term_postings)
+from bes.config import LibraryCfg  # noqa: E402
+from bes.library import devsets as D  # noqa: E402
+from bes.library.build import (candidate_rows, decisions, dev_queries, load_qa_pairs,  # noqa: E402
+                               prepare_pool, prepare_signals)
+from bes.library.clean import bpe_count_tokens, render_passage  # noqa: E402
+from bes.library.gate import pr_curve  # noqa: E402
+from bes.library.index import ExactBM25, IndexCfg, TruncatedIndex, bucket_map, rekey_postings, term_postings  # noqa: E402
 from bes.library.pack import PackCfg  # noqa: E402
-from bes.library.retrieve import GateCfg, Library, ReadLog  # noqa: E402
+from bes.library.retrieve import Library, ReadLog, query_type  # noqa: E402
 from bes.library.select import importance, passage_prior  # noqa: E402
-from bes.library.terms import terms, tokens  # noqa: E402
+from bes.library.sources import QA_SOURCES, Pool, download_qa, iter_qa  # noqa: E402
+from bes.library.terms import terms  # noqa: E402
 
-REVISIONS = {
-    "nq_open": ("google-research-datasets/nq_open", "5dd9790a83002ad084ddeb7c420dc716852c6f28"),
-    "trivia_qa": ("mandarjoshi/trivia_qa", "0f7faf33a3908546c6fd5b73a660e0f8ff173c2f"),
-    "popqa": ("akariasai/PopQA", "098765c79ea10a2cb19c828324e33281b8336ec0"),
-    "dolly": ("databricks/databricks-dolly-15k", "bdd27f4d94b9c1f951818a7da7fd7aeea5dbff1a"),
-}
-FILES = {
-    "nq_val": ("nq_open", "nq_open/validation-00000-of-00001.parquet"),
-    "nq_train": ("nq_open", "nq_open/train-00000-of-00001.parquet"),
-    "tqa_val": ("trivia_qa", "rc.nocontext/validation-00000-of-00001.parquet"),
-    "popqa": ("popqa", "test.tsv"),
-    "dolly": ("dolly", "databricks-dolly-15k.jsonl"),
-}
+L = LibraryCfg()
+EVAL_SETS = ("nq", "tqa", "popqa", "eval_probe")
+ALL_TYPES = ("question", "lookup", "task", "math", "other")
+DEV_SETS = ("dev_nq", "dev_tqa", "dev_probe")
+NAMES = {"nq": "NQ-open val", "tqa": "TriviaQA val", "popqa": "PopQA", "eval_probe": "head-entity probes (eval)",
+         "dev_nq": "dev NQ train (LOO)", "dev_tqa": "dev TriviaQA train (LOO)", "dev_probe": "head-entity probes (dev)"}
 
 
 def t_now(t0: float) -> str:
@@ -65,769 +64,701 @@ def t_now(t0: float) -> str:
 # --------------------------------------------------------------------------- data
 
 
-def fetch(cache_dir: str, key: str) -> str:
+def fetch_dolly(cache_dir: str) -> str:
     from huggingface_hub import hf_hub_download
 
-    d, fn = FILES[key]
-    out = os.path.join(cache_dir, "raw", d)
-    path = os.path.join(out, fn)
-    if os.path.exists(path):
-        return path
-    repo, rev = REVISIONS[d]
-    os.makedirs(out, exist_ok=True)
-    return hf_hub_download(repo, fn, repo_type="dataset", revision=rev, local_dir=out)
+    out = os.path.join(cache_dir, "raw", "dolly")
+    p = os.path.join(out, "databricks-dolly-15k.jsonl")
+    if os.path.exists(p):
+        return p
+    return hf_hub_download("databricks/databricks-dolly-15k", "databricks-dolly-15k.jsonl", repo_type="dataset",
+                           revision="bdd27f4d94b9c1f951818a7da7fd7aeea5dbff1a", local_dir=out)
 
 
-def norm(s: str) -> str:
-    return " ".join(tokens(s))
-
-
-def _answers(xs) -> list[str]:
-    out = []
-    for a in xs:
-        n = norm(a)
-        if n and n not in out:
-            out.append(n)
-    return out
-
-
-def load_sets(cache_dir: str, n_tqa: int, n_pop: int, n_dev: int, seed: int) -> dict[str, list[dict]]:
-    import pyarrow.parquet as pq
-
+def load_eval(cache_dir: str, n_tqa: int, n_pop: int, n_dolly: int, seed: int) -> dict[str, list[dict]]:
+    """Evaluation questions (never stored in the library; see ``bes.library.build.eval_questions``)."""
     rng = random.Random(seed)
     sets: dict[str, list[dict]] = {}
-    t = pq.read_table(fetch(cache_dir, "nq_val")).to_pylist()
-    sets["nq"] = [{"q": r["question"], "ans": _answers(r["answer"])} for r in t]
-    t = pq.read_table(fetch(cache_dir, "nq_train")).to_pylist()
-    idx = rng.sample(range(len(t)), n_dev)
-    sets["dev_nq"] = [{"q": t[i]["question"], "ans": _answers(t[i]["answer"])} for i in idx]
-    t = pq.read_table(fetch(cache_dir, "tqa_val"), columns=["question", "answer"]).to_pylist()
-    idx = rng.sample(range(len(t)), n_tqa + n_dev)
-    rows = [{"q": t[i]["question"], "ans": _answers(t[i]["answer"]["aliases"]
-                                                     + t[i]["answer"]["normalized_aliases"]
-                                                     + [t[i]["answer"]["value"]])} for i in idx]
-    sets["tqa"], sets["dev_tqa"] = rows[:n_tqa], rows[n_tqa:]
+    s = QA_SOURCES["nq_open_validation"]
+    sets["nq"] = [{"q": q, "ans": D.answers(a), "set": "nq"} for _, q, a in iter_qa(s, download_qa(s, cache_dir))]
+    s = QA_SOURCES["trivia_qa_validation"]
+    uniq: dict[str, list[str]] = {}
+    for _, q, a in iter_qa(s, download_qa(s, cache_dir)):
+        uniq.setdefault(q, a)                 # rc has one row per evidence document
+    qs = sorted(uniq)
+    sets["tqa"] = [{"q": q, "ans": D.answers(uniq[q]), "set": "tqa"} for q in rng.sample(qs, min(n_tqa, len(qs)))]
+    s = QA_SOURCES["popqa_test"]
     csv.field_size_limit(1 << 30)
-    with open(fetch(cache_dir, "popqa")) as f:
+    with open(download_qa(s, cache_dir), newline="", encoding="utf-8") as f:
         prow = list(csv.DictReader(f, delimiter="\t"))
-    idx = rng.sample(range(len(prow)), n_pop)
-    sets["popqa"] = [{"q": prow[i]["question"], "ans": _answers(json.loads(prow[i]["possible_answers"])),
-                      "pop": int(prow[i]["s_pop"]), "prop": prow[i]["prop"]} for i in idx]
-    with open(fetch(cache_dir, "dolly")) as f:
+    sets["popqa"] = [{"q": prow[i]["question"], "ans": D.answers(json.loads(prow[i]["possible_answers"])),
+                      "pop": int(prow[i]["s_pop"]), "prop": prow[i]["prop"], "set": "popqa"}
+                     for i in rng.sample(range(len(prow)), min(n_pop, len(prow)))]
+    for k in ("nq", "tqa", "popqa"):
+        sets[k] = [x for x in sets[k] if x["ans"]]
+    with open(fetch_dolly(cache_dir)) as f:
         dolly = [json.loads(line) for line in f]
     by_cat: dict[str, list[dict]] = {}
     for r in dolly:
         by_cat.setdefault(r["category"], []).append(r)
-    sets["dolly"] = []
-    for c in sorted(by_cat):
-        for r in rng.sample(by_cat[c], min(150, len(by_cat[c]))):
-            sets["dolly"].append({"q": r["instruction"], "ans": [], "cat": c})
-    for k, v in sets.items():
-        if k != "dolly":
-            sets[k] = [x for x in v if x["ans"]]
+    sets["dolly"] = [{"q": r["instruction"], "ans": [], "cat": c, "set": "dolly"}
+                     for c in sorted(by_cat) for r in rng.sample(by_cat[c], min(n_dolly, len(by_cat[c])))]
+    from bes.eval.proxy import prompts as P
+
+    sets["proxy"] = [{"q": p.turns[0], "ans": [], "cat": p.category, "set": "proxy"}
+                     for p in P.select(P.load(), "dev")]
     return sets
 
 
-QA_SETS = ("nq", "tqa", "popqa")
-DEV_SETS = ("dev_nq", "dev_tqa")
+def load_lib_and_dev(a, t0, lib_path: str):
+    lib = Library.load(lib_path)
+    imp = np.load(os.path.join(lib_path, "provenance", "title_importance.npy"))
+    pairs, stats, keys, raw = load_qa_pairs(a.cache_dir)
+    from bes.library.build import drop_long_renders
+
+    pairs, _ = drop_long_renders(pairs, L.max_passage_tokens, bpe_count_tokens)
+    b = lib.meta.get("build", {})
+    dq = dev_queries(lib, pairs, raw, a.n_dev, a.n_probes, b.get("seed", a.seed), imp)
+    dev = {s: [x for x in dq if x["set"] == s] for s in DEV_SETS}
+    print(t_now(t0), "dev:", {k: len(v) for k, v in dev.items()}, flush=True)
+    return lib, imp, pairs, dev
 
 
-# --------------------------------------------------------------------------- scoring
+# --------------------------------------------------------------------------- stage pool
 
 
-class Texts:
-    """Normalised passage text by pid (title line + body), cached for small ranks."""
-
-    def __init__(self, passages: list[tuple[str, str]]):
-        self.passages = passages
-        self.cache: dict[int, str] = {}
-
-    def get(self, pid: int) -> str:
-        s = self.cache.get(pid)
-        if s is None:
-            t, b = self.passages[pid]
-            s = " " + norm(render_passage(t, b)) + " "
-            if len(self.cache) < 400_000:
-                self.cache[pid] = s
-        return s
-
-
-def hit_rank(pids, ans: list[str], texts: Texts) -> int:
-    """1-based rank of the first passage containing an answer, 0 if none."""
-    pads = [" " + a + " " for a in ans]
-    for r, p in enumerate(pids):
-        t = texts.get(int(p))
-        if any(a in t for a in pads):
-            return r + 1
-    return 0
+def pool_stats(pool: Pool) -> dict:
+    ntok = np.array([bpe_count_tokens(render_passage(pool.titles[int(pool.p_article[i])], pool.body(i)))
+                     for i in range(pool.n_passages)], dtype=np.int64)
+    words = pool.p_words.astype(np.int64)
+    by = pool.body_bytes()
+    per_art = np.bincount(pool.p_article, minlength=pool.n_articles)
+    return {"articles": pool.n_articles, "passages": pool.n_passages, "body_bytes": int(by.sum()),
+            "tokens_mean": float(ntok.mean()), "tokens_p50": float(np.median(ntok)),
+            "tokens_p90": float(np.percentile(ntok, 90)), "tokens_max": int(ntok.max()),
+            "at_cap_150": float((ntok >= 150).mean()), "over_cap": int((ntok > L.max_passage_tokens).sum()),
+            "words_mean": float(words.mean()), "words_max": int(words.max()),
+            "bytes_mean": float(by.mean()), "passages_per_article": float(per_art.mean()),
+            "single_passage_articles": float((per_art == 1).mean()), "drops": pool.drops,
+            "hole_sentences": int(pool.meta.get("hole_sentences", 0)),
+            "hole_repairs": int(pool.meta.get("hole_repairs", 0)),
+            "broken_sentences": int(pool.meta.get("broken_sentences", 0))}
 
 
-def recall(ranks: list[int], k: int) -> float:
-    return float(np.mean([1.0 if 0 < r <= k else 0.0 for r in ranks])) if ranks else 0.0
+HOLE_PROBES = {   # independent detectors used for the before/after count (broader than the filter)
+    "approx_measure": r"\b(?:about|approximately|around|nearly|almost|roughly)\s+(?:long|high|tall|wide|deep|across|in length|in diameter|in area|above sea level)\b",
+    "is_measure_end": r"\b(?:is|was|are|were)\s+(?:long|tall|wide|deep|high)\s*[.;]",
+    "measure_of_hole": r"\b(?:area|elevation|height|length|altitude|depth|distance|width|diameter) of\s*(?:[.,;)]|and\b|with\b|making\b)",
+    "from_to_between_and": r"\bfrom\s+to\b|\bbetween\s+and\b",
+    "approx_direction": r"\b(?:about|approximately|around|roughly)\s+(?:north|south|east|west|northeast|northwest|southeast|southwest)\b",
+}
 
 
-def summarize(ranks: list[int], ks=(1, 3, 20, 100)) -> dict:
-    return {f"r@{k}": recall(ranks, k) for k in ks} | {"n": len(ranks)}
+def hole_counts(pool: Pool, idx) -> dict:
+    import re
 
-
-# --------------------------------------------------------------------------- tuning
-
-
-def split_postings(docs: list[tuple[str, str]]):
-    """True-term postings with title and body counts kept apart (for weight tuning)."""
-    from array import array
-
-    vocab: dict[str, int] = {}
-    keys, pids, tt, tb = array("q"), array("i"), array("f"), array("f")
-    for pid, (title, body) in enumerate(docs):
-        c: dict[int, list[float]] = {}
-        for t in terms(title):
-            k = vocab.setdefault(t, len(vocab))
-            c.setdefault(k, [0.0, 0.0])[0] += 1.0
-        for t in terms(body):
-            k = vocab.setdefault(t, len(vocab))
-            c.setdefault(k, [0.0, 0.0])[1] += 1.0
-        keys.extend(c.keys())
-        pids.extend([pid] * len(c))
-        for a, b in c.values():
-            tt.append(a)
-            tb.append(b)
-    return (np.frombuffer(keys, np.int64).copy(), np.frombuffer(pids, np.int32).copy(),
-            np.frombuffer(tt, np.float32).copy(), np.frombuffer(tb, np.float32).copy(), list(vocab))
-
-
-def weighted(sp, n_docs: int, leads: np.ndarray, tw: float, ltw: float) -> Postings:
-    key, pid, tt, tb, _ = sp
-    w = np.where(leads[pid], 1.0 + ltw, 1.0 + tw).astype(np.float32)
-    tf = tb + w * tt
-    dl = np.bincount(pid, weights=tf, minlength=n_docs).astype(np.float32)
-    return Postings(key=key, pid=pid, tf=tf, dl=dl)
-
-
-def stage_tune(a, t0) -> dict:
-    pool = prepare_pool(a.cache_dir, log=lambda m: print(t_now(t0), m, flush=True))
-    sig = prepare_signals(pool, a.cache_dir, PackCfg(), log=lambda m: print(t_now(t0), m, flush=True))
-    sets = load_sets(a.cache_dir, a.n_tqa, a.n_popqa, a.n_dev, a.seed)
-    order = sig.order[~sig.dup[sig.order]]
-    docs = [(pool.titles[int(pool.p_article[i])], pool.body(int(i))) for i in order]
-    leads = np.asarray(lead_flags(docs))
-    texts = Texts(docs)
-    cache = os.path.join(a.cache_dir, "pool", "split_postings.npz")
-    if os.path.exists(cache):
-        z = np.load(cache, allow_pickle=False)
-        sp = (z["key"], z["pid"], z["tt"], z["tb"], [str(x) for x in z["vocab"]])
-    else:
-        sp = split_postings(docs)
-        np.savez(cache, key=sp[0], pid=sp[1], tt=sp[2], tb=sp[3], vocab=np.asarray(sp[4]))
-    print(t_now(t0), "tune: split postings", sp[0].shape[0], flush=True)
-    grid = []
-    for k1, b in [(0.9, 0.4), (1.2, 0.75), (0.6, 0.3), (0.9, 0.2), (0.9, 0.6), (1.5, 0.4)]:
-        for tw in (0.0, 1.0, 2.0):
-            for ltw in (tw, tw + 2.0, tw + 5.0):
-                grid.append((k1, b, tw, ltw))
-    part = [int(x) for x in a.tune_part.split("/")]
-    grid = grid[part[0]::part[1]]
-    out = []
-    for k1, b, tw, ltw in grid:
-        ex = ExactBM25(weighted(sp, len(docs), leads, tw, ltw), sp[4], k1, b)
-        res = {}
-        for s in DEV_SETS:
-            ranks = [hit_rank(ex.topk(x["q"], 3)[0], x["ans"], texts) for x in sets[s]]
-            res[s] = {"r@1": recall(ranks, 1), "r@3": recall(ranks, 3)}
-        score = float(np.mean([res[s]["r@1"] for s in DEV_SETS]))
-        out.append({"k1": k1, "b": b, "title_weight": tw, "lead_title_weight": ltw,
-                    "dev": res, "mean_r1": score})
-        print(t_now(t0), f"tune k1={k1} b={b} tw={tw} ltw={ltw}: "
-              + " ".join(f"{s} {res[s]['r@1']:.3f}/{res[s]['r@3']:.3f}" for s in DEV_SETS), flush=True)
-        del ex
-        gc.collect()
-    return {"tune": out}
-
-
-# --------------------------------------------------------------------------- gate
-
-
-def gate_grid():
-    for ms in (0.0, 4.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0, 25.0):
-        for mm in (0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 2.0):
-            for mmt in (0.0, 0.02, 0.05, 0.1, 0.2):
-                for mtm in (0.5, 0.75, 1.0):
-                    for mc in (0.0, 0.5, 0.7, 0.85):
-                        yield GateCfg(min_score=ms, min_margin=mm, min_margin_title=mmt,
-                                      min_title_match=mtm, min_coverage=mc)
-
-
-def gate_eval(feats: list[dict], hit1: np.ndarray, g: GateCfg) -> dict:
-    s1 = np.array([f["s1"] for f in feats])
-    m = np.array([f["margin"] for f in feats])
-    tm = np.array([f["title_match"] for f in feats])
-    cv = np.array([f.get("coverage", 1.0) for f in feats])
-    ok_t = np.array([f["qtype"] in g.allowed_types for f in feats])
-    p = ok_t & (s1 >= g.min_score) & (cv >= g.min_coverage) & (
-        (m >= g.min_margin) | ((tm >= g.min_title_match) & (m >= g.min_margin_title)))
-    cov = float(p.mean()) if p.size else 0.0
-    prec = float(hit1[p].mean()) if p.any() else 0.0
-    return {"coverage": cov, "precision": prec, "answered": float((p & hit1).mean()) if p.size else 0.0}
-
-
-def choose_gate(dev_feats: list[dict], dev_hit: np.ndarray, target: float) -> tuple[GateCfg, list[dict]]:
-    rows = []
-    for g in gate_grid():
-        r = gate_eval(dev_feats, dev_hit, g)
-        rows.append((g, r))
-    ok = [x for x in rows if x[1]["precision"] >= target]
-    best = max(ok, key=lambda x: (x[1]["answered"], -x[0].min_score)) if ok else max(rows, key=lambda x: x[1]["precision"])
-    # Pareto frontier on dev (coverage vs precision)
-    pts = sorted(rows, key=lambda x: (-x[1]["coverage"], -x[1]["precision"]))
-    front, best_p = [], -1.0
-    for g, r in pts:
-        if r["precision"] > best_p + 1e-9:
-            front.append((g, r))
-            best_p = r["precision"]
-    return best[0], [{"gate": dataclasses.asdict(g), **r} for g, r in front]
-
-
-# --------------------------------------------------------------------------- main stage
-
-
-def eval_library(name: str, lib: Library, passages: list[tuple[str, str]], prior: np.ndarray,
-                 sets: dict, budgets: list[int], icfg: IndexCfg, t0: float, extra=()) -> dict:
-    out: dict = {"accounting": lib.accounting()}
-    texts = Texts(passages)
-    p, tl = term_postings(passages, icfg.title_weight, icfg.lead_title_weight)
-    ex = ExactBM25(p, tl, icfg.k1, icfg.b)
-    res = {}
-    for s in QA_SETS + DEV_SETS:
-        res[s] = [hit_rank(ex.topk(x["q"], 3)[0], x["ans"], texts) for x in sets[s]]
-    out["exact_lib"] = {s: summarize(r, (1, 3)) for s, r in res.items()}
-    out["exact_lib_ranks_popqa"] = res["popqa"]
-    del ex
-    gc.collect()
-    print(t_now(t0), name, "exact over library done", flush=True)
-    variants = [dataclasses.replace(icfg, budget_numbers=b) for b in budgets] + list(extra)
-    out["index"] = []
-    for bits in sorted({v.n_bits for v in variants}):
-        hp = rekey_postings(p, bucket_map(tl, bits))
-        full = TruncatedIndex.from_postings(hp, dataclasses.replace(icfg, n_bits=bits, budget_numbers=0),
-                                            prior, keep_full=True)
-        rf = {s: [hit_rank(full.score(x["q"], full=True)[0][:3], x["ans"], texts) for x in sets[s]]
-              for s in QA_SETS + DEV_SETS}
-        out["index"].append({"n_bits": bits, "budget": None, "numbers": None, "postings": int(hp.key.shape[0]),
-                             "max_list": None, **{s: summarize(r, (1, 3)) for s, r in rf.items()}})
-        del full
-        for v in variants:
-            if v.n_bits != bits:
-                continue
-            idx = TruncatedIndex.from_postings(hp, v, prior)
-            rk = {s: [hit_rank(idx.score(x["q"])[0][:3], x["ans"], texts) for x in sets[s]]
-                  for s in QA_SETS + DEV_SETS}
-            acc = idx.accounting()
-            row = {"n_bits": bits, "budget": v.budget_numbers, "numbers": acc["index_numbers"],
-                   "postings": acc["index_postings"], "max_list": v.max_list,
-                   **{s: summarize(r, (1, 3)) for s, r in rk.items()}}
-            if v == icfg:
-                row["popqa_ranks"] = rk["popqa"]
-                row["default"] = True
-            out["index"].append(row)
-            print(t_now(t0), name, f"bits={bits} budget={v.budget_numbers} max_list={v.max_list}:",
-                  " ".join(f"{s} {row[s]['r@1']:.3f}/{row[s]['r@3']:.3f}" for s in QA_SETS), flush=True)
-            del idx
-        del hp
-        gc.collect()
-    del p
-    gc.collect()
-    # gate features from the stored library itself (default index)
-    feats, hits = {}, {}
-    for s in QA_SETS + DEV_SETS + ("dolly",):
-        fs, hs = [], []
-        for x in sets[s]:
-            pids, sc, smax = lib.search_max(x["q"])
-            f = lib.gate_features(x["q"], pids, sc, smax=smax)
-            fs.append({k: f[k] for k in ("s1", "s2", "margin", "title_match", "coverage", "qtype")})
-            hs.append(bool(x["ans"]) and hit_rank(pids[:1], x["ans"], texts) == 1)
-        feats[s], hits[s] = fs, hs
-    out["gate_feats"] = feats
-    out["gate_hits"] = hits
-    print(t_now(t0), name, "gate features done", flush=True)
+    rx = {k: re.compile(v) for k, v in HOLE_PROBES.items()}
+    out = {k: 0 for k in rx}
+    for i in idx:
+        b = pool.body(int(i))
+        for k, r in rx.items():
+            out[k] += len(r.findall(b))
     return out
 
 
-def string_scan(passages: list[tuple[str, str]], qs: list[dict], n: int, seed: int) -> dict:
-    """Share of questions whose answers occur nowhere in the library text (sample)."""
-    rng = random.Random(seed)
-    sample = rng.sample(qs, min(n, len(qs)))
-    big = " " + " | ".join(norm(render_passage(t, b)) for t, b in passages) + " "
-    absent = 0
-    for x in sample:
-        if not any((" " + a + " ") in big for a in x["ans"]):
-            absent += 1
-    del big
-    return {"n": len(sample), "absent": absent, "absent_share": absent / max(1, len(sample))}
-
-
-def _setup(a, t0):
+def stage_pool(a, t0) -> dict:
     log = lambda m: print(t_now(t0), m, flush=True)  # noqa: E731
+    R: dict = {}
     pool = prepare_pool(a.cache_dir, log=log)
     sig = prepare_signals(pool, a.cache_dir, PackCfg(), log=log)
-    sets = load_sets(a.cache_dir, a.n_tqa, a.n_popqa, a.n_dev, a.seed)
-    log("sets: " + ", ".join(f"{k} {len(v)}" for k, v in sets.items()))
-    return log, pool, sig, sets
-
-
-def stage_pool(a, t0) -> dict:
-    """Exact BM25 over every pool passage, and the answer-string scan."""
-    log, pool, sig, sets = _setup(a, t0)
-    icfg = IndexCfg()
-    R: dict = {"index_cfg": dataclasses.asdict(icfg), "n": {k: len(v) for k, v in sets.items()},
-               "pool": {"articles": pool.n_articles, "passages": pool.n_passages,
-                        "body_bytes": len(pool.body_blob), "drops": pool.drops,
-                        "duplicates": int(sig.dup.sum())}}
-    z = np.load(os.path.join(a.cache_dir, "pool", "signals.npz"))
-    R["pool"]["packed_numbers"] = int(z["pool_numbers"])
+    R["pool_bpe"] = pool_stats(pool)
+    z = np.load(os.path.join(a.cache_dir, "pool_bpe", "signals.npz"))
+    R["pool_bpe"]["packed_numbers"] = int(z["pool_numbers"])
+    R["pool_bpe"]["duplicates"] = int(sig.dup.sum())
+    log(f"pool stats {R['pool_bpe']}")
+    old_dir = os.path.join(a.cache_dir, "pool")
+    rng = random.Random(a.seed)
+    if os.path.exists(os.path.join(old_dir, "pool.json")):
+        old = Pool.load(old_dir)
+        R["pool_proxy"] = pool_stats(old)
+        zo = os.path.join(old_dir, "signals.npz")
+        if os.path.exists(zo):
+            R["pool_proxy"]["packed_numbers"] = int(np.load(zo)["pool_numbers"])
+        # holes: same sample of article titles in both pools
+        titles = sorted(set(old.titles) & set(pool.titles))
+        pick = set(rng.sample(titles, min(20000, len(titles))))
+        R["holes"] = {"articles": len(pick),
+                      "before": hole_counts(old, [i for i in range(old.n_passages) if old.titles[int(old.p_article[i])] in pick]),
+                      "after": hole_counts(pool, [i for i in range(pool.n_passages) if pool.titles[int(pool.p_article[i])] in pick])}
+        log(f"holes {R['holes']}")
+        del old
+        gc.collect()
+    sets = load_eval(a.cache_dir, a.n_tqa, a.n_popqa, a.n_dolly, a.seed)
     docs = [(pool.titles[int(pool.p_article[i])], pool.body(int(i))) for i in sig.order]
-    texts = Texts(docs)
+    icfg = IndexCfg()
     ex = ExactBM25.build(docs, icfg.k1, icfg.b, icfg.title_weight, icfg.lead_title_weight)
     log("exact pool index built")
-    pool_ranks = {}
-    for s in QA_SETS + DEV_SETS:
-        pool_ranks[s] = [hit_rank(ex.topk(x["q"], 100)[0], x["ans"], texts) for x in sets[s]]
-    R["exact_pool"] = {s: summarize(r) for s, r in pool_ranks.items()}
-    R["exact_pool_ranks_popqa"] = pool_ranks["popqa"]
-    del ex, texts
-    gc.collect()
-    log("exact pool done: " + " ".join(f"{s} {R['exact_pool'][s]['r@1']:.3f}" for s in QA_SETS))
-    R["string_scan_nq"] = string_scan(docs, sets["nq"], a.scan_sample, a.seed)
-    R["string_scan_tqa"] = string_scan(docs, sets["tqa"], a.scan_sample, a.seed)
-    log(f"string scan: {R['string_scan_nq']} {R['string_scan_tqa']}")
+    texts = {}
+
+    def text(pid):
+        t = texts.get(pid)
+        if t is None:
+            t = render_passage(*docs[pid])
+            if len(texts) < 300_000:
+                texts[pid] = t
+        return t
+
+    R["exact_pool"] = {}
+    for s in ("nq", "tqa", "popqa"):
+        ranks = []
+        for x in sets[s]:
+            pids, _ = ex.topk(x["q"], 100)
+            r = 0
+            for k, p in enumerate(pids):
+                if D.contains(text(int(p)), x["ans"]):
+                    r = k + 1
+                    break
+            ranks.append(r)
+        R["exact_pool"][s] = {f"r@{k}": float(np.mean([0 < r <= k for r in ranks])) for k in (1, 3, 20, 100)}
+        if s == "popqa":
+            R["exact_pool_ranks_popqa"] = ranks
+        log(f"exact {s} {R['exact_pool'][s]}")
     return R
 
 
-def stage_readset(a, t0) -> dict:
-    """Read set and gate decisions of the saved library on every question set."""
-    sets = load_sets(a.cache_dir, a.n_tqa, a.n_popqa, a.n_dev, a.seed)
-    lib = Library.load(a.library)
-    out = {"library": a.library, "gate": dataclasses.asdict(lib.cfg.gate),
-           "accounting": lib.accounting(), "sets": {}}
-    for s in QA_SETS + ("dolly",):
-        tots, passed, idx_reads, blocks = [], [], [], []
+# --------------------------------------------------------------------------- stage sweep
+
+
+def wiki_hit(lib: Library, x: dict) -> tuple[bool, bool]:
+    """(hit of the wiki candidate the gate would see, hit within the BM25 top 3)."""
+    cands = lib._wiki_candidates(x["q"], [], [], None, 1)
+    if not cands:
+        return False, False
+    c = cands[0]
+    if "tid" in x:
+        h1 = lib.title_id_of(c.pid) == x["tid"]
+    else:
+        h1 = D.contains(lib.passage(c.pid).text, x["ans"])
+    pids, _ = lib.search(x["q"])
+    h3 = False
+    for p in pids[:3]:
+        if ("tid" in x and lib.title_id_of(int(p)) == x["tid"]) or (
+                "tid" not in x and D.contains(lib.passage(int(p)).text, x["ans"])):
+            h3 = True
+            break
+    return h1, h3
+
+
+def stage_sweep(a, t0) -> dict:
+    log = lambda m: print(t_now(t0), m, flush=True)  # noqa: E731
+    base, imp, pairs, dev = load_lib_and_dev(a, t0, a.library)
+    del pairs
+    pool = prepare_pool(a.cache_dir, log=log)
+    sig = prepare_signals(pool, a.cache_dir, PackCfg(), log=log)
+    pool_idx = np.load(os.path.join(a.library, "provenance", "pool_idx.npy"))
+    prior = passage_prior(pool, importance(pool, sig.mentions))[pool_idx]
+    passages = [(pool.titles[int(pool.p_article[i])], pool.body(int(i))) for i in pool_idx]
+    del pool, sig
+    gc.collect()
+    icfg0 = base.index.cfg
+    p, tl = term_postings(passages, icfg0.title_weight, icfg0.lead_title_weight)
+    hp = rekey_postings(p, bucket_map(tl, icfg0.n_bits))
+    del p, tl, passages
+    gc.collect()
+    log(f"sweep: {hp.key.shape[0]} hashed postings")
+    fixed = base.accounting()["total_numbers"] - base.accounting()["index_numbers"]
+    out = {"fixed_numbers": fixed, "rows": []}
+    budgets = [int(float(x) * 1e6) for x in a.sweep_budgets.split(",")]
+    lists = [int(x) for x in a.sweep_lists.split(",")]
+    qsets = dict(dev)      # dev only: the evaluation sets are measured once, on the final library
+    for bud in budgets:
+        for ml in lists:
+            v = dataclasses.replace(icfg0, budget_numbers=bud, max_list=ml)
+            idx = TruncatedIndex.from_postings(hp, v, prior)
+            lib = Library(base.packed, idx, base.cfg, base.count_tokens, base.meta, qa=None, titles=base.titles)
+            acc = idx.accounting()
+            row = {"budget": bud, "max_list": ml, "index_numbers": acc["index_numbers"],
+                   "postings": acc["index_postings"], "total_numbers": fixed + acc["index_numbers"]}
+            for s, xs in qsets.items():
+                hs = [wiki_hit(lib, x) for x in xs]
+                row[s] = {"r@1": float(np.mean([h[0] for h in hs])), "bm25_r@3": float(np.mean([h[1] for h in hs]))}
+            reads = []
+            for x in qsets["dev_nq"][:1000] + qsets["dev_tqa"][:1000]:
+                rl = ReadLog()
+                lib.search_max(x["q"], log=rl)
+                reads.append(rl.index)
+            row["index_read_max"] = int(np.max(reads))
+            row["index_read_mean"] = float(np.mean(reads))
+            row["dev_mean_r1"] = float(np.mean([row[s]["r@1"] for s in DEV_SETS]))
+            out["rows"].append(row)
+            log(f"sweep {bud} {ml}: total {row['total_numbers']} dev {row['dev_mean_r1']:.4f} "
+                + " ".join(f"{s} {row[s]['r@1']:.3f}" for s in qsets))
+            del idx, lib
+            gc.collect()
+    ok = [r for r in out["rows"] if r["total_numbers"] <= a.total_cap]
+    best = max(ok, key=lambda r: (round(r["dev_mean_r1"], 6), -r["total_numbers"]))
+    out["chosen"] = {"budget": best["budget"], "max_list": best["max_list"]}
+    log(f"sweep: chosen {out['chosen']}")
+    return out
+
+
+# --------------------------------------------------------------------------- stage lib
+
+
+def near_dup_flags(questions: list[str], stored: list[str], thr: float) -> tuple[np.ndarray, np.ndarray]:
+    """(max Jaccard of the content-term sets against every stored question, flag >= thr):
+    brute force over true terms (no hashing), vectorised through an inverted list."""
+    vocab: dict[str, int] = {}
+    sets = []
+    for q in stored:
+        sets.append(sorted({vocab.setdefault(t, len(vocab)) for t in terms(q)}))
+    lens = np.array([len(s) for s in sets], dtype=np.int64)
+    flat_t = np.fromiter((t for s in sets for t in s), dtype=np.int64, count=int(lens.sum()))
+    flat_e = np.repeat(np.arange(len(sets), dtype=np.int64), lens)
+    o = np.argsort(flat_t, kind="stable")
+    ft, fe = flat_t[o], flat_e[o]
+    starts = np.searchsorted(ft, np.arange(len(vocab) + 1))
+    best = np.zeros(len(questions))
+    for i, q in enumerate(questions):
+        qs = {vocab[t] for t in terms(q) if t in vocab}
+        nq = len(set(terms(q)))
+        if not qs or nq == 0:
+            continue
+        cand = np.concatenate([fe[starts[t]:starts[t + 1]] for t in qs])
+        u, inter = np.unique(cand, return_counts=True)
+        jac = inter / (nq + lens[u] - inter)
+        best[i] = float(jac.max())
+    return best, best >= thr
+
+
+def summarize_rows(rows, lib, kinds_list=(("wiki",), ("qa",), ("wiki", "qa"))) -> dict:
+    gate = lib.gate
+    out = {}
+    for kinds in kinds_list:
+        name = "+".join(kinds)
+        p, y, kd = decisions(rows, gate, kinds=kinds)
+        fired = p >= gate.threshold
+        # R@1 without the gate and without the query-type filter: label of the best candidate
+        _, y_all, _ = decisions(rows, gate, allowed=ALL_TYPES, kinds=kinds)
+        top = np.array([np.isfinite(v) for v in p])
+        r1 = float(np.mean(y_all)) if len(y_all) else 0.0
+        em = None
+        if kinds == ("qa",):
+            em = float(np.mean([bool(r["qa"] and r["qa"].get("em")) for r in rows]))
+        out[name] = {"n": len(rows), "r@1": r1, "em": em, "candidate": float(top.mean()) if len(top) else 0.0,
+                     "coverage": float(fired.mean()) if len(rows) else 0.0,
+                     "precision": float(y[fired].mean()) if fired.any() else 0.0,
+                     "answered": float((fired & y).mean()) if len(rows) else 0.0,
+                     "kind_share": {k: float(np.mean([kd[i] == k for i in np.flatnonzero(fired)])) if fired.any() else 0.0
+                                    for k in ("wiki", "qa")}}
+        if kinds == ("wiki", "qa"):
+            qa_fired = [i for i in np.flatnonzero(fired) if kd[i] == "qa"]
+            out[name]["qa_em_when_fired"] = float(np.mean([bool(rows[i]["qa"].get("em")) for i in qa_fired])) if qa_fired else 0.0
+        pts = pr_curve(p, y)
+        grid = sorted({0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, float(gate.threshold)})
+        curve = []
+        for t in grid:
+            sel = p >= t
+            curve.append({"t": t, "coverage": float(sel.mean()) if len(rows) else 0.0,
+                          "precision": float(y[sel].mean()) if sel.any() else 0.0})
+        out[name]["curve"] = curve
+        out[name]["n_points"] = len(pts)
+    return out
+
+
+def stage_lib(a, t0) -> dict:
+    log = lambda m: print(t_now(t0), m, flush=True)  # noqa: E731
+    lib, imp, pairs, dev = load_lib_and_dev(a, t0, a.library)
+    sets = load_eval(a.cache_dir, a.n_tqa, a.n_popqa, a.n_dolly, a.seed)
+    sets["eval_probe"] = D.probes(lib.packed.all_titles(), imp, a.n_probes, "eval", a.seed)
+    R: dict = {"library": a.library, "accounting": lib.accounting(), "gate_threshold": lib.gate.threshold,
+               "read_bound": lib.read_bound(),
+               "gate_coef": {k: [float(x) for x in v] for k, v in lib.gate.coef.items()},
+               "n": {k: len(v) for k, v in {**sets, **dev}.items()}, "meta_build": lib.meta.get("build", {})}
+    stored = [p.question for p in pairs]
+    rows_all = {}
+    for s in DEV_SETS + EVAL_SETS + ("dolly", "proxy"):
+        xs = dev[s] if s in dev else sets[s]
+        rows = candidate_rows(lib, xs)
+        for r, x in zip(rows, xs):
+            if r["qa"] is not None and x["ans"]:
+                r["qa"]["em"] = D.qa_em(lib.passage(r["qa"]["pid"]).body, x["ans"])
+        rows_all[s] = rows
+        log(f"rows {s}: {len(rows)}")
+    R["sets"] = {s: summarize_rows(rows_all[s], lib) for s in DEV_SETS + EVAL_SETS}
+    R["qtypes"] = {s: float(np.mean([r["qtype"] in ("question", "lookup") for r in rows_all[s]]))
+                   for s in DEV_SETS + EVAL_SETS}
+    # train/test question overlap (near-duplicate stored question, Jaccard of content terms)
+    R["overlap"] = {}
+    for s in ("nq", "tqa", "popqa"):
+        mx, flag = near_dup_flags([x["q"] for x in sets[s]], stored, a.near_dup)
+        R["overlap"][s] = {"share": float(flag.mean()), "threshold": a.near_dup}
+        for val, name in ((True, "with"), (False, "without")):
+            sub = [r for r, f in zip(rows_all[s], flag) if bool(f) == val]
+            R["overlap"][s][name] = summarize_rows(sub, lib) if sub else {}
+        log(f"overlap {s}: {flag.mean():.3f}")
+    # PopQA by popularity
+    pops = np.array([x["pop"] for x in sets["popqa"]])
+    edges = [0, 100, 1000, 10_000, 100_000, 10**12]
+    names = ["<100", "100-1k", "1k-10k", "10k-100k", ">=100k"]
+    R["popqa_bins"] = []
+    for lo, hi, nm in zip(edges[:-1], edges[1:], names):
+        sub = [r for r, pp in zip(rows_all["popqa"], pops) if lo <= pp < hi]
+        R["popqa_bins"].append({"bin": nm, "n": len(sub), **({"s": summarize_rows(sub, lib)} if sub else {})})
+    # firing on non-factual prompts
+    R["firing"] = {}
+    for s in ("dolly", "proxy"):
+        cats = sorted({x["cat"] for x in sets[s]})
+        R["firing"][s] = {}
+        for c in cats:
+            sub = [r for r, x in zip(rows_all[s], sets[s]) if x["cat"] == c]
+            p, _, kd = decisions(sub, lib.gate)
+            fired = p >= lib.gate.threshold
+            types: dict[str, int] = {}
+            for r in sub:
+                types[r["qtype"]] = types.get(r["qtype"], 0) + 1
+            pn, _, _ = decisions(sub, lib.gate, allowed=("question", "lookup", "task", "math", "other"))
+            R["firing"][s][c] = {"n": len(sub), "fires": float(fired.mean()), "types": types,
+                                 "fires_no_type_filter": float((pn >= lib.gate.threshold).mean()),
+                                 "qa_share": float(np.mean([kd[i] == "qa" for i in np.flatnonzero(fired)])) if fired.any() else 0.0,
+                                 "examples": [x["q"][:160] for r, x, f in zip(sub, [y for y in sets[s] if y["cat"] == c], fired) if f][:5]}
+        log(f"firing {s}: " + ", ".join(f"{c} {v['fires']:.3f}" for c, v in R["firing"][s].items()))
+    # read set and throughput of retrieve() on the saved library
+    R["readset"] = {}
+    for s in ("nq", "tqa", "popqa", "eval_probe", "dolly", "proxy"):
+        tots, passed, parts = [], [], []
+        tstart = time.time()
         for x in sets[s]:
             rl = ReadLog()
             r = lib.retrieve(x["q"], log=rl)
             tots.append(rl.total)
-            idx_reads.append(rl.index)
             passed.append(r is not None)
-            blocks.append(len(rl.blocks))
-        tp = [t for t, p in zip(tots, passed) if p]
-        out["sets"][s] = {"n": len(tots), "passed": int(sum(passed)),
-                          "mean_all": float(np.mean(tots)), "max_all": int(np.max(tots)),
-                          "mean_index": float(np.mean(idx_reads)), "max_index": int(np.max(idx_reads)),
-                          "mean_passed": float(np.mean(tp)) if tp else 0.0,
-                          "p99_passed": float(np.percentile(tp, 99)) if tp else 0.0,
-                          "max_passed": int(np.max(tp)) if tp else 0, "max_text_blocks": int(np.max(blocks))}
-        print(t_now(t0), s, out["sets"][s], flush=True)
-    return out
-
-
-def stage_lib(a, t0, budget: int) -> dict:
-    """All measurements for the library of one budget."""
-    log, pool, sig, sets = _setup(a, t0)
-    icfg = IndexCfg()
-    name = f"{budget // 1_000_000}M"
-    lib, sel = build_for_budget(pool, sig, budget, icfg, PackCfg(), log=log)
-    sel_path = os.path.join(a.cache_dir, f"e1_sel_{name}.npy")
-    np.save(sel_path, sel.pool_idx)
-    for other in ([] if a.force else sorted(os.listdir(a.cache_dir))):
-        if other.startswith("e1_sel_") and other != os.path.basename(sel_path):
-            prev = np.load(os.path.join(a.cache_dir, other))
-            oname = other[len("e1_sel_"):-len(".npy")]
-            if np.array_equal(prev, sel.pool_idx) and os.path.exists(
-                    os.path.join(a.cache_dir, f"e1_lib_{oname}.json")):
-                log(f"{name}: same selection as {oname}, reusing its measurements")
-                return {"same_as": oname, "accounting": lib.accounting()}
+            parts.append(rl.as_dict())
+        dt = time.time() - tstart
+        tp = [t for t, p_ in zip(tots, passed) if p_]
+        R["readset"][s] = {"n": len(tots), "passed": int(sum(passed)), "mean_all": float(np.mean(tots)),
+                           "max_all": int(np.max(tots)), "p99_all": float(np.percentile(tots, 99)),
+                           "mean_passed": float(np.mean(tp)) if tp else 0.0, "max_passed": int(np.max(tp)) if tp else 0,
+                           "max_index": int(max(d["index_df"] + d["index_offsets"] + d["index_postings"] for d in parts)),
+                           "max_qa_index": int(max(d["qa_index"] for d in parts)),
+                           "max_blocks": int(max(d["n_text_blocks"] + d["n_qa_blocks"] for d in parts)),
+                           "queries_per_s_with_log": len(tots) / dt}
+        log(f"readset {s}: {R['readset'][s]}")
+    # throughput without logging (fresh library: cold block cache)
+    lib2 = Library.load(a.library)
+    qs = [x["q"] for x in sets["nq"][:1500]]
+    tstart = time.time()
+    for q in qs:
+        lib2.retrieve(q)
+    R["throughput"] = {"retrieve_per_s": len(qs) / (time.time() - tstart)}
     rng = random.Random(a.seed)
-    for pid in rng.sample(range(lib.n_passages), 200):  # stored text == rendered passage
-        assert lib.passage(pid).text == render_passage(*sel.passages[pid]), pid
-    extra = ([dataclasses.replace(icfg, n_bits=17), dataclasses.replace(icfg, n_bits=19),
-              dataclasses.replace(icfg, max_list=0xFFFF)] if a.extra_bits else [])
-    imp = importance(pool, sig.mentions)
-    prior = passage_prior(pool, imp)[sel.pool_idx]
-    res = eval_library(name, lib, sel.passages, prior, sets, a.index_budgets, icfg, t0, extra)
-    res["selection"] = {"passages": int(sel.mask.sum()), "history": sel.history,
-                        "articles": lib.packed.n_titles,
-                        "lead_passages": int((pool.p_pos[sel.pool_idx] == 0).sum())}
-    tots, passed = [], 0
-    for x in sets["nq"]:
-        rl = ReadLog()
-        r = lib.retrieve(x["q"], log=rl)
-        tots.append(rl.total)
-        passed += r is not None
-    res["readset_nq"] = {"mean": float(np.mean(tots)), "p50": float(np.percentile(tots, 50)),
-                         "p99": float(np.percentile(tots, 99)), "max": int(np.max(tots)),
-                         "passed": passed}
-    return res
+    pids = [rng.randrange(lib2.n_passages) for _ in range(3000)]
+    lib3 = Library.load(a.library)
+    tstart = time.time()
+    for p_ in pids:
+        lib3.passage(p_)
+    R["throughput"]["passage_random_per_s"] = len(pids) / (time.time() - tstart)
+    tstart = time.time()
+    for p_ in range(0, 20000):
+        lib3.passage(p_)
+    R["throughput"]["passage_sequential_per_s"] = 20000 / (time.time() - tstart)
+    tstart = time.time()
+    qa0 = lib3.kind_range("qa").start
+    for p_ in range(qa0, qa0 + 20000):
+        lib3.passage(p_)
+    R["throughput"]["qa_passage_sequential_per_s"] = 20000 / (time.time() - tstart)
+    log(f"throughput {R['throughput']}")
+    return R
 
 
 # --------------------------------------------------------------------------- report
 
 
-def pop_bins(ranks: list[int], pops: list[int]) -> list[dict]:
-    edges = [0, 100, 1_000, 10_000, 100_000, 10**12]
-    names = ["<100", "100-1k", "1k-10k", "10k-100k", ">=100k"]
-    out = []
-    for lo, hi, nm in zip(edges[:-1], edges[1:], names):
-        rr = [r for r, p in zip(ranks, pops) if lo <= p < hi]
-        out.append({"bin": nm, "n": len(rr), "r@1": recall(rr, 1), "r@3": recall(rr, 3)})
-    return out
+def pct(x) -> str:
+    return "-" if x is None else f"{100 * x:.1f}"
 
 
-def pct(x: float) -> str:
-    return f"{100 * x:.1f}"
-
-
-def stage_report(a, R: dict, sets: dict) -> str:
-    L: list[str] = []
-    w = L.append
-    names = {"nq": "NQ-open val", "tqa": "TriviaQA val", "popqa": "PopQA"}
-    w("# E1 — library coverage (written library, Simple English Wikipedia)\n")
-    w("Generated by `scripts/measure_coverage.py` (stages `tune`, `pool`, `lib`, `readset`, `report`). All numbers below "
-      "are measured; nothing is extrapolated. Recall@k = share of questions for which one of the "
-      "normalised answer strings occurs as a whole-token sequence in one of the top-k passages "
-      "(title line + body). This is a proxy: a passage can contain the answer string by chance, "
-      "and can answer a question without containing the exact string.\n")
+def stage_report(a) -> str:
+    J = lambda nm: os.path.join(a.cache_dir, f"e1v2_{nm}.json")  # noqa: E731
+    P = json.load(open(J("pool")))
+    S = json.load(open(J("sweep"))) if os.path.exists(J("sweep")) else None
+    R = json.load(open(J("lib")))
+    B = json.load(open(J("build"))) if os.path.exists(J("build")) else {}
+    N = json.load(open(J("notes"))) if os.path.exists(J("notes")) else []
+    w = []
+    add = w.append
+    acc = R["accounting"]
+    add("# E1 — library coverage (written library v2)\n")
+    add("Generated by `scripts/measure_coverage.py` (stages `pool`, `sweep`, `lib`, `report`) from the saved library "
+        f"`{R['library']}`. Every number is measured; nothing is extrapolated. Hits: a wiki passage is a hit when a "
+        "normalised answer string occurs as a whole-token sequence in its text (title line + body); a qa entry when "
+        "an answer string occurs in its stored answer (qa EM: stored answer equals an answer after SQuAD "
+        "normalisation); a head-entity probe when the passage belongs to the probed article. These are proxies: a "
+        "passage can contain the answer string by chance, and can answer a question without containing it.\n")
     n = R["n"]
-    w(f"Question samples: NQ-open validation {n['nq']} (all with answers), TriviaQA rc.nocontext "
-      f"validation {n['tqa']} (seeded sample), PopQA {n['popqa']} (seeded sample), Dolly-15k "
-      f"{n['dolly']} instructions (150 per category). Dev sets used for every choice (BM25 weights, "
-      f"gate thresholds): NQ-open train sample {n['dev_nq']}, TriviaQA validation sample "
-      f"{n['dev_tqa']} disjoint from the evaluation sample.\n")
-    # summary: measured text/index combinations within the total envelope
-    combos = []
-    for name, b in R["budgets"].items():
-        if "same_as" in b:
-            continue
-        lib_n = b["accounting"]["library_numbers"]
-        for r in b["index"]:
-            if not r["numbers"]:
+    add(f"Evaluation questions: NQ-open validation {n['nq']} (all with answers), TriviaQA rc.nocontext validation "
+        f"{n['tqa']} (seeded sample of the 9,961 unique questions), PopQA {n['popqa']} (seeded sample), "
+        f"head-entity probes {n['eval_probe']} (evaluation half of the titles), Dolly-15k {n['dolly']} instructions "
+        f"and the {n['proxy']} dev-half proxy prompts (first turns). Dev data (every choice: index size, gate): "
+        f"{n['dev_nq']} stored NQ-open train and {n['dev_tqa']} stored TriviaQA train questions asked with their "
+        f"own qa entry excluded (leave-one-out), and {n['dev_probe']} probes for the dev half of the titles.\n")
+    add("**Fair measurements.** NQ-open and TriviaQA have a known overlap between their train and test questions "
+        "(paraphrases of the same question), and the qa layer stores the train questions, so their qa numbers "
+        "are reported separately for test questions with and without a near-duplicate stored question. PopQA "
+        "(templated questions about long-tail entities, no train split stored) and the proxy prompts are the fair "
+        "out-of-distribution measurements.\n")
+    # ---- summary
+    sb = R["sets"]
+    add("## Summary\n")
+    add(f"- Everything the library stores: **{acc['total_numbers']:,} numbers** (cap {L.total_numbers_cap:,}): "
+        f"wiki text blocks + directory + titles {acc['library_numbers']:,}, BM25 index {acc['index_numbers']:,}, "
+        f"title look-up {acc['title_table_numbers']:,}, qa layer {acc['qa_numbers']:,}, gate {acc['gate_numbers']:,}.")
+    th = R["gate_threshold"]
+    add(f"- Calibrated gate: returns the candidate with the larger probability when p >= {th:.3f}, the smallest "
+        f"threshold at which every dev set separately reaches precision >= {L.gate_precision}.")
+    bo = {s: sb[s]["wiki+qa"] for s in EVAL_SETS}
+    ovn = R["overlap"]
+    add(f"- Evaluation, both kinds: NQ-open val {pct(bo['nq']['coverage'])}% of questions answered at "
+        f"{pct(bo['nq']['precision'])}% precision, TriviaQA val {pct(bo['tqa']['coverage'])}% at "
+        f"{pct(bo['tqa']['precision'])}%, PopQA {pct(bo['popqa']['coverage'])}% at {pct(bo['popqa']['precision'])}%, "
+        f"head-entity probes {pct(bo['eval_probe']['coverage'])}% at {pct(bo['eval_probe']['precision'])}%.")
+    add(f"- Fair numbers: NQ-open questions without a near-duplicate stored question "
+        f"({pct(1 - ovn['nq']['share'])}% of them) {pct(ovn['nq']['without']['wiki+qa']['coverage'])}% at "
+        f"{pct(ovn['nq']['without']['wiki+qa']['precision'])}% (with one: {pct(ovn['nq']['with']['wiki+qa']['coverage'])}% at "
+        f"{pct(ovn['nq']['with']['wiki+qa']['precision'])}%); PopQA, out of distribution, stays below the 0.5 dev "
+        f"precision floor ({pct(bo['popqa']['precision'])}%): the floor fitted on NQ/TriviaQA-style questions does "
+        f"not transfer to long-tail entities.")
+    fp = R["firing"]["proxy"]
+    add("- Firing on the dev-half proxy prompts: " + ", ".join(f"{c} {pct(v['fires'])}%" for c, v in fp.items())
+        + f"; Dolly creative_writing {pct(R['firing']['dolly']['creative_writing']['fires'])}%, brainstorming "
+        f"{pct(R['firing']['dolly']['brainstorming']['fires'])}%.")
+    rs = R["readset"]
+    add(f"- Largest read of one retrieve(): {max(r['max_all'] for r in rs.values()):,} numbers (bound "
+        f"{R['read_bound']['total']:,}, limit {L.max_read_numbers:,}); {R['throughput']['retrieve_per_s']:.0f} "
+        f"retrieve() calls per second on one core.")
+    add("")
+    add("| set | wiki only: R@1 / coverage / precision | qa only: R@1 / EM / coverage / precision | both: R@1 / coverage / precision / answered |")
+    add("|---|---|---|---|")
+    for s in DEV_SETS + EVAL_SETS:
+        x = sb[s]
+        wk, qa, bo = x["wiki"], x["qa"], x["wiki+qa"]
+        add(f"| {NAMES[s]} | {pct(wk['r@1'])} / {pct(wk['coverage'])} / {pct(wk['precision'])} | "
+            f"{pct(qa['r@1'])} / {pct(qa['em'])} / {pct(qa['coverage'])} / {pct(qa['precision'])} | "
+            f"{pct(bo['r@1'])} / {pct(bo['coverage'])} / {pct(bo['precision'])} / {pct(bo['answered'])} |")
+    add("\nR@1 = hit of the single candidate without the gate and without the query-type filter (qa: 0 when no "
+        "stored question reaches the minimum overlap); coverage = share of questions for which an entry is returned; precision = share of returned "
+        "entries that are hits; answered = coverage x precision. Probes have no answer string, so their qa "
+        "columns are empty and a qa entry returned for a probe counts as a miss in the \"both\" column.\n")
+    # ---- gate coefficients
+    from bes.library.gate import QA_FEATURES, WIKI_FEATURES
+
+    add("## Gate model\n")
+    add(f"Two logistic regressions fitted on the dev rows (each dev set weighted equally, L2 1e-3), float32, "
+        f"{acc['gate_numbers']} stored numbers with the threshold. The threshold is the smallest at which every "
+        f"dev set separately reaches precision >= {L.gate_precision}.\n")
+    for kd, names in (("wiki", WIKI_FEATURES), ("qa", QA_FEATURES)):
+        c = R["gate_coef"][kd]
+        add(f"- {kd}: " + ", ".join(f"{n} {v:+.3f}" for n, v in zip(list(names) + ["intercept"], c)))
+    qt = R.get("qtypes", {})
+    if qt:
+        add("\nShare of questions the query-type filter lets through (question or look-up): "
+            + ", ".join(f"{NAMES.get(k, k)} {pct(v)}%" for k, v in qt.items()) + ".")
+    add("")
+    # ---- overlap
+    add("## Train/test question overlap (NQ-open, TriviaQA) and PopQA\n")
+    ov = R["overlap"]
+    add(f"A test question has a near-duplicate stored question when the Jaccard similarity of their content-term "
+        f"sets (stopwords removed, plural-stemmed, no hashing) reaches {ov['nq']['threshold']} for some stored "
+        f"question (brute force over all {acc.get('qa_entries', 0):,} stored questions).\n")
+    add("| set | subset | n share | wiki R@1 / cov / prec | qa R@1 / EM / cov / prec | both R@1 / cov / prec |")
+    add("|---|---|---|---|---|---|")
+    for s in ("nq", "tqa", "popqa"):
+        for name in ("with", "without"):
+            x = ov[s].get(name) or {}
+            if not x:
+                add(f"| {NAMES[s]} | {name} near-duplicate | 0 | - | - | - |")
                 continue
-            tot = lib_n + r["numbers"]
-            if tot <= a.total_cap:
-                combos.append((float(np.mean([r[s]["r@1"] for s in QA_SETS])), name, lib_n, r, tot))
-    combos.sort(key=lambda x: (-x[0], x[4]))
-    seen_c, uniq = set(), []
-    for c in combos:  # identical (library, index) pairs reached from several budgets
-        key = (c[2], c[3]["numbers"], c[3]["n_bits"], c[3]["max_list"])
-        if key not in seen_c:
-            seen_c.add(key)
-            uniq.append(c)
-    combos = uniq
-    dflt = {nm: next(r for r in b["index"] if r.get("default")) for nm, b in R["budgets"].items()}
-    w("## Summary\n")
-    big_name = [k for k, b in R["budgets"].items() if "same_as" not in b][-1]
-    w(f"- All of Simple English Wikipedia (cleaned) packs into {R['pool']['packed_numbers'] / 1e6:.1f}M stored "
-      f"numbers: the 40M and 60M budgets hold the whole pool, only the 20M budget forces a selection.")
-    e = R["exact_pool"]
-    w(f"- Exact BM25 over every passage (the ceiling of this library): R@1 / R@3 = "
-      + ", ".join(f"{names[s]} {pct(e[s]['r@1'])} / {pct(e[s]['r@3'])}" for s in QA_SETS) + ".")
-    w(f"- With the plan's 4M-number index the stored retriever reaches "
-      + ", ".join(f"{names[s]} {pct(dflt[big_name][s]['r@1'])} / {pct(dflt[big_name][s]['r@3'])}" for s in QA_SETS)
-      + f" on the whole pool, and practically the same on the 20M library: at this index size the index, "
-      f"not the text budget, limits recall.")
-    w(f"- Best measured combinations within {a.total_cap / 1e6:.0f}M numbers (library + index), by mean R@1 "
-      f"over the three sets:\n")
-    w("| library | library numbers | index numbers | total | NQ R@1 / R@3 | TriviaQA R@1 / R@3 | PopQA R@1 / R@3 |")
-    w("|---|---|---|---|---|---|---|")
-    for m, name, lib_n, r, tot in combos[:5]:
-        w(f"| {name} | {lib_n:,} | {r['numbers']:,} | {tot:,} | " + " | ".join(
-            f"{pct(r[s]['r@1'])} / {pct(r[s]['r@3'])}" for s in QA_SETS) + " |")
-    w("")
-    p = R["pool"]
-    w("## Candidate pool and cleaning\n")
-    w(f"- Source: `wikimedia/wikipedia` 20231101.simple (241,787 articles, 267.5M characters).")
-    w(f"- Kept {p['articles']:,} articles, {p['passages']:,} passages, {p['body_bytes']:,} bytes of "
-      f"passage text; dropped: " + ", ".join(f"{k} {v:,}" for k, v in sorted(p["drops"].items())) + ".")
-    pm_path = os.path.join(a.cache_dir, "pool", "pool.json")
-    if os.path.exists(pm_path):
-        with open(pm_path) as f:
-            pm = json.load(f)["meta"]
-        if "tail_cut_lines" in pm:
-            w(f"- Rule effects over the whole dump: tail sections cut in {pm['articles_with_tail_cut']:,} "
-              f"articles ({pm['tail_cut_lines']:,} lines); a final category group found and removed in "
-              f"{pm['articles_with_categories']:,} articles; {pm['dropped_lines']:,} table-row/image lines and "
-              f"{pm['dropped_items']:,} list items of fewer than 3 words dropped; {pm['broken_sentences']:,} "
-              f"sentences ending in a dangling word (removed template) dropped; {pm['lists_dropped']:,} list "
-              f"words removed from list-heavy pages (date, year and month pages).")
-    w(f"- Exact duplicate passage bodies: {p['duplicates']:,} (never selected).")
-    w(f"- The whole pool packs into **{p['packed_numbers']:,} stored numbers** (text blocks + directory "
-      f"+ titles), so every budget of 35M numbers or more holds all of Simple English Wikipedia.\n")
-    if "tune" in R:
-        w("## BM25 weights (dev only)\n")
-        w("| k1 | b | title w | lead title w | dev NQ R@1 | dev NQ R@3 | dev TQA R@1 | dev TQA R@3 |")
-        w("|---|---|---|---|---|---|---|---|")
-        for r in R["tune"][:8]:
-            d = r["dev"]
-            w(f"| {r['k1']} | {r['b']} | {r['title_weight']} | {r['lead_title_weight']} | "
-              f"{pct(d['dev_nq']['r@1'])} | {pct(d['dev_nq']['r@3'])} | {pct(d['dev_tqa']['r@1'])} | "
-              f"{pct(d['dev_tqa']['r@3'])} |")
-        w(f"\n(top 8 of {len(R['tune'])} settings by mean dev R@1; the first row is the default "
-          f"`IndexCfg`.)\n")
-    w("## Recall by budget (stored truncated index vs exact BM25)\n")
-    ic = dataclasses.asdict(IndexCfg())
-    R_ic = ic
-    w(f"Stored index: 2^{ic['n_bits']} buckets, {ic['budget_numbers']:,} stored numbers (variable-length "
-      f"posting lists of 8-bit impacts, at most {ic['max_list']} per bucket, + counts, coarse offsets "
-      f"and df tables). \"Exact (all passages)\" = BM25 over true terms on every pool passage, no "
-      f"hashing, no truncation; \"exact (library)\" = the same restricted to the selected passages.\n")
-    w("| budget | library numbers | index numbers | set | exact all R@1 / R@3 | exact library R@1 / R@3 | stored index R@1 / R@3 |")
-    w("|---|---|---|---|---|---|---|")
-    for name, b in R["budgets"].items():
-        acc = b["accounting"]
-        row = next(r for r in b["index"] if r.get("default"))
-        for s in QA_SETS:
-            e = R["exact_pool"][s]
-            el = b["exact_lib"][s]
-            w(f"| {name} | {acc['library_numbers']:,} | {acc['index_numbers']:,} | {names[s]} | "
-              f"{pct(e['r@1'])} / {pct(e['r@3'])} | {pct(el['r@1'])} / {pct(el['r@3'])} | "
-              f"{pct(row[s]['r@1'])} / {pct(row[s]['r@3'])} |")
-    w("")
-    for name, b in R["budgets"].items():
-        if "same_as" in b:
-            w(f"- {name}: the greedy selection is identical to {b['same_as']} (the whole pool fits); "
-              f"its measurements are the same.")
-    w("")
-    w("## Index size (recall against stored numbers)\n")
-    w("Same library, same queries; only the stored index changes. \"untruncated\" keeps every "
-      "hashed posting (not storable within these budgets) and isolates the cost of hashing and "
-      "8-bit quantisation; the other rows keep the highest-utility postings within the budget.\n")
-    for name, b in R["budgets"].items():
-        if "same_as" in b:
+            sh = ov[s]["share"] if name == "with" else 1 - ov[s]["share"]
+            wk, qa, bo = x["wiki"], x["qa"], x["wiki+qa"]
+            add(f"| {NAMES[s]} | {name} near-duplicate | {wk['n']} ({pct(sh)}%) | {pct(wk['r@1'])} / {pct(wk['coverage'])} / "
+                f"{pct(wk['precision'])} | {pct(qa['r@1'])} / {pct(qa['em'])} / {pct(qa['coverage'])} / {pct(qa['precision'])} | "
+                f"{pct(bo['r@1'])} / {pct(bo['coverage'])} / {pct(bo['precision'])} |")
+    add("")
+    # ---- curves
+    add("## Precision / coverage curves (calibrated probability threshold)\n")
+    add("Each cell is coverage / precision of `p >= t` (one entry at most per question; \"both\" returns the "
+        "kind with the larger probability). The chosen threshold is marked.\n")
+    for kind in ("wiki", "qa", "wiki+qa"):
+        add(f"Kind: **{kind}**\n")
+        grid = [c["t"] for c in sb["dev_nq"][kind]["curve"]]
+        add("| set | " + " | ".join(("**" if abs(t - th) < 1e-12 else "") + f"t={t:.3f}" + ("**" if abs(t - th) < 1e-12 else "")
+                                     for t in grid) + " |")
+        add("|---|" + "---|" * len(grid))
+        for s in DEV_SETS + EVAL_SETS:
+            cs = sb[s][kind]["curve"]
+            add(f"| {NAMES[s]} | " + " | ".join(f"{pct(c['coverage'])} / {pct(c['precision'])}" for c in cs) + " |")
+        add("")
+    # ---- popqa bins
+    add("## PopQA by subject popularity (monthly page views, `s_pop`)\n")
+    add("| popularity | n | wiki R@1 | both coverage / precision |")
+    add("|---|---|---|---|")
+    for b in R["popqa_bins"]:
+        if "s" not in b:
             continue
-        w(f"Library {name}:\n")
-        w("| buckets | max list | index numbers | postings kept | NQ R@1 / R@3 | TriviaQA R@1 / R@3 | PopQA R@1 / R@3 | dev NQ R@1 | dev TQA R@1 |")
-        w("|---|---|---|---|---|---|---|---|---|")
-        for r in b["index"]:
-            num = f"{r['numbers']:,}" if r["numbers"] else "untruncated"
-            ml = r["max_list"] if r["max_list"] else "-"
-            w(f"| 2^{r['n_bits']} | {ml} | {num} | {r['postings']:,} | " + " | ".join(
-                f"{pct(r[s]['r@1'])} / {pct(r[s]['r@3'])}" for s in QA_SETS)
-              + f" | {pct(r['dev_nq']['r@1'])} | {pct(r['dev_tqa']['r@1'])} |")
-        w("")
-    # PopQA by popularity
-    pops = [x["pop"] for x in sets["popqa"]]
-    w("## PopQA by subject popularity (monthly page views, `s_pop`)\n")
-    last = [b for b in R["budgets"].values() if "same_as" not in b][-1]
-    row = next(r for r in last["index"] if r.get("default"))
-    tables = [("exact (all passages)", pop_bins(R["exact_pool_ranks_popqa"], pops)),
-              ("stored index, largest library", pop_bins(row["popqa_ranks"], pops))]
-    first = [b for b in R["budgets"].values() if "same_as" not in b][0]
-    row0 = next(r for r in first["index"] if r.get("default"))
-    tables.append(("stored index, smallest library", pop_bins(row0["popqa_ranks"], pops)))
-    w("| popularity | n | " + " | ".join(f"{t} R@1 / R@3" for t, _ in tables) + " |")
-    w("|---|---|" + "---|" * len(tables))
-    for i in range(len(tables[0][1])):
-        w(f"| {tables[0][1][i]['bin']} | {tables[0][1][i]['n']} | " + " | ".join(
-            f"{pct(t[i]['r@1'])} / {pct(t[i]['r@3'])}" for _, t in tables) + " |")
-    w("")
-    # gate
-    w("## Gate: precision against coverage\n")
-    gb = R["gate"]
-    g = gb["chosen"]
-    w(f"Gate thresholds were chosen on the dev sets (NQ train + TriviaQA dev), maximising the share "
-      f"of questions answered by the single passage subject to dev precision >= {gb['target']:.2f}: "
-      f"`min_score={g['min_score']}`, `min_margin={g['min_margin']}`, "
-      f"`min_margin_title={g['min_margin_title']}`, `min_title_match={g['min_title_match']}`, "
-      f"allowed query types {tuple(g['allowed_types'])}. Precision = share of passed questions whose "
-      f"passage contains an answer; coverage = share of questions for which a passage is returned.\n")
-    w("| library | set | coverage | precision | answered (coverage x precision) | top-1 recall without gate |")
-    w("|---|---|---|---|---|---|")
-    for name, rows in gb["eval"].items():
-        for s in QA_SETS:
-            r = rows[s]
-            w(f"| {name} | {names[s]} | {pct(r['coverage'])} | {pct(r['precision'])} | "
-              f"{pct(r['answered'])} | {pct(r['r1'])} |")
-    w("")
-    w("Coverage/precision frontier (dev-optimal gates, evaluated on the evaluation sets, largest "
-      "library):\n")
-    w("| min_score | min_margin | min_margin_title | min_title_match | min_coverage | dev cov / prec | NQ cov / prec | TriviaQA cov / prec | PopQA cov / prec |")
-    w("|---|---|---|---|---|---|---|---|---|")
-    for r in gb["frontier"]:
-        gg = r["gate"]
-        w(f"| {gg['min_score']} | {gg['min_margin']} | {gg['min_margin_title']} | {gg['min_title_match']} | "
-          f"{gg['min_coverage']} | "
-          f"{pct(r['coverage'])} / {pct(r['precision'])} | " + " | ".join(
-              f"{pct(r['eval'][s]['coverage'])} / {pct(r['eval'][s]['precision'])}" for s in QA_SETS) + " |")
-    w("")
-    w("Gate on everyday prompts (Dolly-15k instructions, largest library): share of prompts for "
-      "which a passage is returned, with the query-type filter and without it.\n")
-    w("| category | n | query type (question / lookup / task / math / other) | fires | fires without type filter |")
-    w("|---|---|---|---|---|")
-    for c, r in gb["dolly"].items():
-        qt = r["types"]
-        w(f"| {c} | {r['n']} | {qt.get('question', 0)} / {qt.get('lookup', 0)} / {qt.get('task', 0)} / "
-          f"{qt.get('math', 0)} / {qt.get('other', 0)} | {pct(r['fires'])} | {pct(r['fires_no_type'])} |")
-    w("")
-    # read set
-    w("## Read set per query (stored numbers)\n")
-    if "readset" in R:
-        rs = R["readset"]
-        w(f"Measured on the saved library `{rs['library']}` with its default gate. A query reads one df "
-          "entry per distinct query bucket, the counts and coarse offset needed to locate at most "
-          f"{R_ic['max_query_terms']} posting lists, the lists themselves (2 numbers per posting, at "
-          f"most {R_ic['max_list']} postings each), a few directory entries, one title block when a "
-          "candidate exists, and exactly one text block when the gate passes.\n")
-        w("| set | questions | passage returned | mean, all queries | max, all queries | mean index part | max index part | mean when returned | p99 when returned | max when returned |")
-        w("|---|---|---|---|---|---|---|---|---|---|")
-        nm = {**names, "dolly": "Dolly prompts"}
-        for s, r in rs["sets"].items():
-            w(f"| {nm[s]} | {r['n']} | {r['passed']} | {r['mean_all']:,.0f} | {r['max_all']:,} | "
-              f"{r['mean_index']:,.0f} | {r['max_index']:,} | {r['mean_passed']:,.0f} | {r['p99_passed']:,.0f} | {r['max_passed']:,} |")
-        w("")
-    # unanswerable
-    w("## What the library cannot answer\n")
-    e = R["exact_pool"]
-    sn, st = R["string_scan_nq"], R["string_scan_tqa"]
-    w(f"- NQ-open (real search-engine questions, the closest of these sets to everyday "
-      f"questions): with exact BM25 over all of Simple English Wikipedia, **{pct(1 - e['nq']['r@3'])}%** "
-      f"have no answer string in the top 3 passages, {pct(1 - e['nq']['r@20'])}% none in the top 20, "
-      f"{pct(1 - e['nq']['r@100'])}% none in the top 100; for **{pct(sn['absent_share'])}%** "
-      f"(sample of {sn['n']}) no answer string occurs anywhere in the library text.")
-    w(f"- TriviaQA: {pct(1 - e['tqa']['r@3'])}% no answer in the top 3, {pct(1 - e['tqa']['r@100'])}% "
-      f"none in the top 100, {pct(st['absent_share'])}% (sample of {st['n']}) answer absent from "
-      f"the whole library.")
-    w(f"- PopQA: {pct(1 - e['popqa']['r@3'])}% no answer in the top 3, {pct(1 - e['popqa']['r@100'])}% none in the top 100.")
-    d = gb["dolly"]
-    nonfact = [c for c in d if c in ("creative_writing", "brainstorming", "classification",
-                                     "summarization", "information_extraction")]
-    if nonfact:
-        w(f"- Everyday prompts that are not factual look-ups (Dolly {', '.join(nonfact)}): the gate "
-          f"returns a passage for " + ", ".join(f"{c} {pct(d[c]['fires'])}%" for c in nonfact) + ".")
-    w("")
-    if "notes" in R:
-        w("## Notes\n")
-        for x in R["notes"]:
-            w(f"- {x}")
-        w("")
-    return "\n".join(L) + "\n"
-
-
-def compute_gate(R: dict, sets: dict, target: float) -> dict:
-    """Choose the gate on dev features of the largest library and evaluate everywhere."""
-    names = [k for k, b in R["budgets"].items() if "same_as" not in b]
-    big = R["budgets"][names[-1]]
-    dev_f = big["gate_feats"]["dev_nq"] + big["gate_feats"]["dev_tqa"]
-    dev_h = np.array(big["gate_hits"]["dev_nq"] + big["gate_hits"]["dev_tqa"])
-    g, front = choose_gate(dev_f, dev_h, target)
-    out = {"target": target, "chosen": dataclasses.asdict(g), "eval": {}, "frontier": []}
-    for name in names:
-        b = R["budgets"][name]
-        out["eval"][name] = {}
-        for s in QA_SETS:
-            h = np.array(b["gate_hits"][s])
-            r = gate_eval(b["gate_feats"][s], h, g)
-            r["r1"] = float(h.mean())
-            out["eval"][name][s] = r
-    # thin the frontier to about 10 points
-    step = max(1, len(front) // 10)
-    for r in front[::step]:
-        gg = GateCfg(**{k: v for k, v in r["gate"].items() if k != "allowed_types"})
-        ev = {s: gate_eval(big["gate_feats"][s], np.array(big["gate_hits"][s]), gg) for s in QA_SETS}
-        out["frontier"].append({**r, "eval": ev})
-    dolly = {}
-    f_all = big["gate_feats"]["dolly"]
-    cats = [x["cat"] for x in sets["dolly"]]
-    no_type = dataclasses.replace(g, allowed_types=("question", "lookup", "task", "math", "other"))
-    for c in sorted(set(cats)):
-        fs = [f for f, cc in zip(f_all, cats) if cc == c]
-        h = np.zeros(len(fs), dtype=bool)
-        types: dict[str, int] = {}
-        for f in fs:
-            types[f["qtype"]] = types.get(f["qtype"], 0) + 1
-        dolly[c] = {"n": len(fs), "fires": gate_eval(fs, h, g)["coverage"],
-                    "fires_no_type": gate_eval(fs, h, no_type)["coverage"], "types": types}
-    out["dolly"] = dolly
-    return out
+        add(f"| {b['bin']} | {b['n']} | {pct(b['s']['wiki']['r@1'])} | {pct(b['s']['wiki+qa']['coverage'])} / "
+            f"{pct(b['s']['wiki+qa']['precision'])} |")
+    add("")
+    # ---- firing
+    add("## Firing on prompts that are not factual look-ups\n")
+    add("Share of prompts for which the library returns an entry (with the query-type filter, and without it).\n")
+    for s, title in (("proxy", "Proxy prompts (dev half)"), ("dolly", "Dolly-15k")):
+        add(f"{title}:\n")
+        add("| category | n | query types | fires | of which qa | fires without type filter |")
+        add("|---|---|---|---|---|---|")
+        for c, v in R["firing"][s].items():
+            ty = ", ".join(f"{k} {n_}" for k, n_ in sorted(v["types"].items()))
+            add(f"| {c} | {v['n']} | {ty} | {pct(v['fires'])} | {pct(v['qa_share'])} | {pct(v['fires_no_type_filter'])} |")
+        add("")
+    # ---- read set
+    add("## Read set per retrieve() (stored numbers)\n")
+    add(f"Hard limit {L.max_read_numbers:,} numbers per retrieval (index lists + df + offsets + title look-up + "
+        "directory + title block + text blocks + qa index + qa blocks).\n")
+    add("| set | n | returned | mean | p99 | max | max index part | max qa index part | max blocks | queries/s (with log) |")
+    add("|---|---|---|---|---|---|---|---|---|---|")
+    for s, r in R["readset"].items():
+        add(f"| {NAMES.get(s, s)} | {r['n']} | {r['passed']} | {r['mean_all']:,.0f} | {r['p99_all']:,.0f} | {r['max_all']:,} | "
+            f"{r['max_index']:,} | {r['max_qa_index']:,} | {r['max_blocks']} | {r['queries_per_s_with_log']:.0f} |")
+    rb = R.get("read_bound")
+    if rb:
+        add("\nWorst case from the configuration and the largest stored blocks (`Library.read_bound`): "
+            + ", ".join(f"{k} {v:,}" for k, v in rb.items() if k != "total") + f"; **total {rb['total']:,}**.")
+    tp = R["throughput"]
+    add(f"\nThroughput on one core (no read log, cold block cache): retrieve() {tp['retrieve_per_s']:.0f} queries/s "
+        f"(NQ-open validation questions); passage() {tp['passage_random_per_s']:.0f} random passages/s, "
+        f"{tp['passage_sequential_per_s']:.0f} sequential wiki passages/s, {tp['qa_passage_sequential_per_s']:.0f} "
+        f"sequential qa entries/s.\n")
+    # ---- budget sweep
+    if S:
+        add("## Index size and list cap (dev recall of the wiki candidate)\n")
+        add(f"Everything else stored: {S['fixed_numbers']:,} numbers. The wiki candidate is the lead passage of the "
+            "exact title match when there is one, else the best BM25 passage. Chosen by mean dev R@1 under the cap.\n")
+        add("| index budget | max list | index numbers | total | dev NQ R@1 / BM25 R@3 | dev TQA R@1 / BM25 R@3 | dev probes R@1 | mean dev R@1 | max index read (dev) |")
+        add("|---|---|---|---|---|---|---|---|---|")
+        for r in S["rows"]:
+            mark = "**" if (r["budget"], r["max_list"]) == (S["chosen"]["budget"], S["chosen"]["max_list"]) else ""
+            add(f"| {mark}{r['budget'] / 1e6:.1f}M{mark} | {r['max_list']} | {r['index_numbers']:,} | {r['total_numbers']:,} | "
+                f"{pct(r['dev_nq']['r@1'])} / {pct(r['dev_nq']['bm25_r@3'])} | {pct(r['dev_tqa']['r@1'])} / "
+                f"{pct(r['dev_tqa']['bm25_r@3'])} | {pct(r['dev_probe']['r@1'])} | {pct(r['dev_mean_r1'])} | {r['index_read_max']:,} |")
+        add("")
+    # ---- pool
+    add("## Candidate pool (BPE token counts) and text repairs\n")
+    pb, pp = P["pool_bpe"], P.get("pool_proxy")
+    add("| pool | articles | passages | mean tokens | median | p90 | max | >= 150 tokens | mean words | mean bytes | passages per article | packed numbers |")
+    add("|---|---|---|---|---|---|---|---|---|---|---|---|")
+    for name, x in (("v1, utf8 bytes / 3.3", pp), ("v2, BPE tokens", pb)):
+        if x:
+            add(f"| {name} | {x['articles']:,} | {x['passages']:,} | {x['tokens_mean']:.1f} | {x['tokens_p50']:.0f} | "
+                f"{x['tokens_p90']:.0f} | {x['tokens_max']} | {pct(x['at_cap_150'])}% | {x['words_mean']:.1f} | "
+                f"{x['bytes_mean']:.0f} | {x['passages_per_article']:.2f} | {x.get('packed_numbers', 0):,} |")
+    add("\n(token columns measured with the BPE tokenizer in both pools.)\n")
+    if "holes" in P:
+        h = P["holes"]
+        add(f"Removed-template holes, counted with independent detectors on the passages of the same "
+            f"{h['articles']:,} sampled articles before (v1 pool) and after (v2 pool) the repair rules:\n")
+        add("| detector | before | after |")
+        add("|---|---|---|")
+        for k in h["before"]:
+            add(f"| `{k}` | {h['before'][k]:,} | {h['after'][k]:,} |")
+        add(f"\nOver the whole dump the v2 rules dropped {pb['hole_sentences']:,} sentences/items with a hole and "
+            f"repaired {pb['hole_repairs']:,} stranded approximators.\n")
+    e = P["exact_pool"]
+    add("Exact BM25 over every v2 pool passage (true terms, no hashing, no truncation; the ceiling of passage "
+        "retrieval): " + ", ".join(f"{NAMES[s]} R@1 / R@3 / R@100 = {pct(e[s]['r@1'])} / {pct(e[s]['r@3'])} / "
+                                    f"{pct(e[s]['r@100'])}" for s in ("nq", "tqa", "popqa")) + ".\n")
+    # ---- qa layer
+    if B.get("qa_clean"):
+        qc = B["qa_clean"]
+        add("## Question-answer layer: cleaning\n")
+        add("| source | rows | kept | time-sensitive | evaluation overlap | duplicates (exact / normalised) | ambiguous | other drops |")
+        add("|---|---|---|---|---|---|---|---|")
+        for src, st in sorted(qc["stats"].items()):
+            ts = sum(v for k, v in st.items() if k.startswith("time:"))
+            other = sum(st.get(k, 0) for k in ("empty_question", "no_terms", "empty_answer", "long_answer", "long_question"))
+            add(f"| {src} | {st['in']:,} | {st.get('kept', 0):,} | {ts:,} | {st.get('eval_overlap', 0):,} | "
+                f"{st.get('duplicate_exact', 0):,} / {st.get('duplicate_norm', 0):,} | {st.get('ambiguous', 0):,} | {other:,} |")
+        rules: dict[str, int] = {}
+        for st in qc["stats"].values():
+            for k, v in st.items():
+                if k.startswith("time:"):
+                    rules[k[5:]] = rules.get(k[5:], 0) + v
+        add("\nTime-sensitive rules (all sources): " + ", ".join(f"{k} {v:,}" for k, v in sorted(rules.items(), key=lambda kv: -kv[1]))
+            + f". Rendered entries over {L.max_passage_tokens} tokens dropped: {qc['long_render']}. Stored: "
+            f"{qc['kept']:,} entries.\n")
+        if "orders" in B:
+            add("Entry order and compression (raw LZMA2 preset 6, 64 kB blocks):\n")
+            add("| order | stored text numbers | compression |")
+            add("|---|---|---|")
+            for o, v in B["orders"].items():
+                add(f"| {o} | {v['qa_text_numbers']:,} | {v['ratio']:.3f}x |")
+            add("")
+    if B.get("build_runs"):
+        add("## Build\n")
+        for r in B["build_runs"]:
+            add(f"- {r}")
+        add("")
+    add("## Sources and licences\n")
+    add("| source | Hugging Face dataset (config / split) | revision | licence (dataset card) | use |")
+    add("|---|---|---|---|---|")
+    add("| Simple English Wikipedia | wikimedia/wikipedia (20231101.simple / train) | b04c8d1ceb2f5cd4588862100d08de323dccfbaa | "
+        "cc-by-sa-3.0 and gfdl | library text (`ATTRIBUTION.tsv`: one row per article with page id and url) |")
+    for s in QA_SOURCES.values():
+        use = ("qa layer" + ("" if s.permissive else "; left out by the permissive-only build")) if s.role == "store" \
+            else "evaluation only; its questions are excluded from the store"
+        add(f"| {s.name} | {s.repo} ({s.config} / {s.split}) | {s.revision} | {s.license} | {use} |")
+    add("| Dolly-15k | databricks/databricks-dolly-15k | bdd27f4d94b9c1f951818a7da7fd7aeea5dbff1a | cc-by-sa-3.0 | "
+        "firing measurement only |")
+    add("\nThe built library carries `ATTRIBUTION.tsv` (wiki articles) and `ATTRIBUTION_QA.tsv` (qa sources with "
+        "licences, then one row per stored entry: source and row). The licence of TriviaQA and WebQuestions is not "
+        "stated on their cards; `--permissive-only` (`LibraryCfg.qa_permissive_only`) builds the qa layer from "
+        "NQ-open alone.\n")
+    if N:
+        add("## Notes\n")
+        for x in N:
+            add(f"- {x}")
+        add("")
+    return "\n".join(w) + "\n"
 
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--stage", choices=("tune", "pool", "lib", "readset", "report"), default="report")
+    ap.add_argument("--stage", choices=("pool", "sweep", "lib", "report"), default="report")
     ap.add_argument("--cache-dir", default="data_cache/library")
-    ap.add_argument("--budgets", default="20,40,60", help="millions of stored numbers")
-    ap.add_argument("--index-budgets", default="1,2,4,8,16,32", help="millions of stored numbers")
-    ap.add_argument("--force", action="store_true", help="measure even if the selection equals another budget's")
-    ap.add_argument("--extra-bits", action="store_true",
-                    help="also 2^17 and 2^19 buckets and an uncapped list length at the default budget")
+    ap.add_argument("--library", default=L.library_dir)
     ap.add_argument("--n-tqa", type=int, default=3000)
     ap.add_argument("--n-popqa", type=int, default=3000)
-    ap.add_argument("--n-dev", type=int, default=2000)
-    ap.add_argument("--scan-sample", type=int, default=200)
-    ap.add_argument("--precision-target", type=float, default=0.35,
-                    help="dev precision floor used to choose the default gate")
-    ap.add_argument("--library", default="data_cache/library/lib_60M", help="saved library (readset stage)")
-    ap.add_argument("--total-cap", type=int, default=64_000_000,
-                    help="library + index envelope for the summary (plan: 60M + 4M)")
-    ap.add_argument("--tune-part", default="0/1", help="i/n: run every n-th grid point from i")
+    ap.add_argument("--n-dolly", type=int, default=200)
+    ap.add_argument("--n-dev", type=int, default=3000)
+    ap.add_argument("--n-probes", type=int, default=2000)
+    ap.add_argument("--near-dup", type=float, default=0.6)
+    ap.add_argument("--sweep-budgets", default="8,16,23.5")
+    ap.add_argument("--sweep-lists", default="1024,2048,4096")
+    ap.add_argument("--total-cap", type=int, default=L.total_numbers_cap)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--md", default="docs/E1_COVERAGE.md")
     a = ap.parse_args(argv)
-    a.budgets = [int(float(x) * 1_000_000) for x in a.budgets.split(",")]
-    a.index_budgets = [int(float(x) * 1_000_000) for x in a.index_budgets.split(",")]
     t0 = time.time()
-    J = lambda nm: os.path.join(a.cache_dir, f"e1_{nm}.json")  # noqa: E731
-    if a.stage == "tune":
-        R = stage_tune(a, t0)
-        path = J("tune_" + a.tune_part.replace("/", "of"))
-        with open(path, "w") as f:
-            json.dump(R, f, indent=1)
+    J = lambda nm: os.path.join(a.cache_dir, f"e1v2_{nm}.json")  # noqa: E731
+    if a.stage == "report":
+        md = stage_report(a)
+        with open(a.md, "w") as f:
+            f.write(md)
+        print(t_now(t0), "wrote", a.md, flush=True)
         return 0
-    if a.stage == "pool":
-        with open(J("pool"), "w") as f:
-            json.dump(stage_pool(a, t0), f)
-        return 0
-    if a.stage == "readset":
-        with open(J("readset"), "w") as f:
-            json.dump(stage_readset(a, t0), f)
-        return 0
-    if a.stage == "lib":
-        for bud in a.budgets:
-            res = stage_lib(a, t0, bud)
-            with open(J(f"lib_{bud // 1_000_000}M"), "w") as f:
-                json.dump(res, f)
-        return 0
-    with open(J("pool")) as f:
-        R = json.load(f)
-    R["budgets"] = {}
-    for bud in a.budgets:
-        nm = f"{bud // 1_000_000}M"
-        if os.path.exists(J(f"lib_{nm}")):
-            with open(J(f"lib_{nm}")) as f:
-                R["budgets"][nm] = json.load(f)
-    for nm, b in list(R["budgets"].items()):
-        if "same_as" in b:
-            R["budgets"][nm] = {**R["budgets"][b["same_as"]], "same_as": b["same_as"],
-                                "accounting": b["accounting"]}
-    tunes = []
-    for fn in sorted(os.listdir(a.cache_dir)):
-        if fn.startswith("e1_tune_") and fn.endswith(".json"):
-            with open(os.path.join(a.cache_dir, fn)) as f:
-                tunes.extend(json.load(f)["tune"])
-    if tunes:
-        tunes.sort(key=lambda r: -r["mean_r1"])
-        R["tune"] = tunes
-    sets = load_sets(a.cache_dir, a.n_tqa, a.n_popqa, a.n_dev, a.seed)
-    R["gate"] = compute_gate(R, sets, a.precision_target)
-    if os.path.exists(J("notes")):
-        with open(J("notes")) as f:
-            R["notes"] = json.load(f)
-    if os.path.exists(J("readset")):
-        with open(J("readset")) as f:
-            R["readset"] = json.load(f)
-    md = stage_report(a, R, sets)
-    with open(a.md, "w") as f:
-        f.write(md)
-    with open(J("report"), "w") as f:
-        json.dump({k: v for k, v in R.items() if k != "budgets"} |
-                  {"gate": R["gate"]}, f)
-    print(t_now(t0), "wrote", a.md, flush=True)
+    fn = {"pool": stage_pool, "sweep": stage_sweep, "lib": stage_lib}[a.stage]
+    res = fn(a, t0)
+    with open(J(a.stage), "w") as f:
+        json.dump(res, f)
+    print(t_now(t0), "wrote", J(a.stage), flush=True)
     return 0
 
 

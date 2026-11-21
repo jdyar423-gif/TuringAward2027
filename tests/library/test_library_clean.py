@@ -263,3 +263,102 @@ def test_clean_and_split_on_real_dump_if_present():
             assert default_count_tokens(p.render()) <= 160
             assert "{{" not in p.body and "<ref" not in p.body and "'''" not in p.body
     assert n == 1000 and kept > 900
+
+
+# --------------------------------------------------------------------- v2: holes, BPE counts
+
+from bes.library.clean import bpe_count_tokens, hole_repair, proxy_count_tokens  # noqa: E402
+
+
+@pytest.mark.parametrize("sent", [
+    "It is about long.", "The highway is long.", "The river is about in length and flows north.",
+    "It has an area of, making it the 30th largest region.", "It was held from to 2020.",
+    "The island is between and wide.", "It is tall and has 102 floors.",
+    "The Aude starts at an elevation of in the commune.", "It is high.",
+])
+def test_hole_sentences_are_dropped(sent):
+    assert hole_repair(sent) == (None, 0)
+
+
+@pytest.mark.parametrize("sent, fixed", [
+    ("Rheine is about north of Münster.", "Rheine is north of Münster."),
+    ("It is approximately south-west of Ingolstadt and about east of Ulm.",
+     "It is south-west of Ingolstadt and east of Ulm."),
+])
+def test_stranded_approximators_are_repaired(sent, fixed):
+    assert hole_repair(sent) == (fixed, sent.count("about") + sent.count("approximately"))
+
+
+@pytest.mark.parametrize("sent", [
+    "Unemployment is high.", "The history of Europe is long and has many turns.",
+    "The tower is 300 m tall.", "It is about 5 km long.", "He was a tall man.",
+    "Hoogstede is northwest of Nordhorn.", "The risk of fire is high in summer.",
+])
+def test_ordinary_sentences_are_kept(sent):
+    assert hole_repair(sent) == (sent, 0)
+
+
+def test_holes_are_removed_from_articles():
+    raw = "Foo River\nThe Foo River is a river in Bar. It is about long. It flows from to the sea.\n" \
+          "The town is about north of Baz."
+    off = clean_article("Foo River", raw, CleanCfg(repair_holes=False))
+    on = clean_article("Foo River", raw)
+    assert "about long" in off.text() and "about long" not in on.text()
+    assert "from to" not in on.text() and "is north of Baz" in on.text()
+    assert on.stats["hole_sentences"] == 2 and on.stats["hole_repairs"] == 1
+
+
+def test_bpe_is_the_default_token_counter():
+    from bes.tokenizer import load
+
+    assert default_count_tokens is bpe_count_tokens
+    text = "Alan Turing\nAlan Turing was an English mathematician."
+    assert bpe_count_tokens(text) == len(load().encode(text))
+
+
+@pytest.mark.parametrize("seed", [0, 1, 2])
+def test_line_wise_counting_gives_the_same_passages(seed):
+    rng = random.Random(seed)
+    words = ("the river Paris, (1920) said: \"yes\" it's 3.5 km long; e.g. Dr. Smith - well ünï "
+             "a b c 12345 666").split()
+    paras = []
+    for _ in range(rng.randint(3, 12)):
+        sents = [" ".join(rng.choice(words) for _ in range(rng.randint(2, 40))).capitalize() + rng.choice(".!?")
+                 for _ in range(rng.randint(1, 6))]
+        paras.append(Paragraph(sentences=sents))
+    items = Paragraph(items=["- ".join(rng.choice(words) for _ in range(rng.randint(3, 12)))
+                             for _ in range(rng.randint(1, 5))])
+    art = CleanArticle("Some Title", [Section("", paras[:2]), Section("History", paras[2:] + [items])], [],
+                       None, {})
+    for cap in (40, 90, 160):
+        a = make_passages(art, 110, cap, bpe_count_tokens, line_wise=False)
+        b = make_passages(art, 110, cap, bpe_count_tokens, line_wise=True)
+        assert [(p.body, p.pos, p.section, p.n_words) for p in a] == [(p.body, p.pos, p.section, p.n_words) for p in b]
+        assert all(bpe_count_tokens(p.render()) <= cap for p in b)
+
+
+def test_line_wise_falls_back_when_counts_do_not_add_up():
+    calls = {"n": 0}
+
+    def odd(text: str) -> float:      # not additive over lines: whole text costs one more
+        calls["n"] += 1
+        return proxy_count_tokens(text) + (5.0 if text.count("\n") >= 2 else 0.0)
+
+    art = CleanArticle("T", [Section("", [Paragraph(sentences=["Word " * 20 + "end."]),
+                                          Paragraph(sentences=["More " * 20 + "end."])])], [], None, {})
+    got = make_passages(art, 110, 60, odd, line_wise=True)
+    want = make_passages(art, 110, 60, odd, line_wise=False)
+    assert [p.body for p in got] == [p.body for p in want]
+    assert all(odd(p.render()) <= 60 for p in got)
+
+
+@pytest.mark.parametrize("line_wise", [True, False])
+def test_long_non_latin_heading_never_breaks_the_cap(line_wise):
+    head = "पुराणमितिव्रुत्तमाख्यायिकोदाहरणंधर्मशास्त्रंचेतीतिहासः" * 2      # ~3 BPE tokens per character
+    word = "धर्मशास्त्र" * 40                                               # one "word" longer than a passage
+    art = CleanArticle("Itihasa", [Section("", [Paragraph(sentences=["Itihasa is a kind of text."])]),
+                                   Section(head, [Paragraph(sentences=[word, "Short sentence here."])])],
+                       [], None, {})
+    ps = make_passages(art, 110, 160, bpe_count_tokens, line_wise=line_wise)
+    assert ps and all(bpe_count_tokens(p.render()) <= 160 for p in ps)
+    assert not any(p.body.startswith(head) for p in ps)

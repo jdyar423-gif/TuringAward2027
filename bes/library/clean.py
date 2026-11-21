@@ -28,6 +28,10 @@ The rules below were chosen by measuring the whole dump (counts in ``docs/E1_COV
   ``,`` ``.`` ``;`` ``:`` and inside brackets are removed; runs of spaces collapse;
 * a sentence that ends in a dangling function word (``... is .``, ``... is a .``) is a
   removed template and is dropped;
+* a sentence (or list item) with a hole left by a removed unit/number template
+  (``It is about long.``, ``an area of, making it``, ``from to 2020``, ``between and wide``)
+  is dropped (``hole_repair``); an approximator stranded before a compass direction
+  (``about north of Munich``) is removed instead;
 * list items of fewer than ``min_item_words`` words (navigation lines) are dropped; when
   list words exceed ``list_heavy_ratio`` times the prose words the lists are dropped
   altogether (date, year and month pages);
@@ -36,9 +40,10 @@ The rules below were chosen by measuring the whole dump (counts in ``docs/E1_COV
   pages left with fewer than ``min_article_words`` words or without one complete sentence.
 
 Passages (``make_passages``) never exceed ``max_words`` words and ``max_tokens`` tokens
-(title line included, measured with the given ``count_tokens``), start at a paragraph or
-sentence boundary, keep every source line as its own line (list items as ``- item``) and
-begin with the section heading when they are not part of the lead.
+(title line included, measured with the given ``count_tokens``; by default the model's BPE
+tokenizer, ``bpe_count_tokens``), start at a paragraph or sentence boundary, keep every
+source line as its own line (list items as ``- item``) and begin with the section heading
+when they are not part of the lead.
 """
 from __future__ import annotations
 
@@ -54,12 +59,40 @@ _L = LibraryCfg()
 # ------------------------------------------------------------------------------ helpers
 
 
-def default_count_tokens(text: str) -> float:
-    """Token-count proxy used until the BPE tokenizer exists: UTF-8 bytes / 3.3."""
+def proxy_count_tokens(text: str) -> float:
+    """Token-count proxy used before the BPE tokenizer existed: UTF-8 bytes / 3.3."""
     return len(text.encode("utf-8")) / 3.3
 
 
+_ENCODE: Callable[[str], list[int]] | None = None
+
+
+def bpe_count_tokens(text: str) -> int:
+    """Number of ids of ``bes.tokenizer.load().encode(text)`` (the model's own tokenizer).
+
+    The tokenizer is loaded on the first call in each process (about 0.5 s, cached), so
+    importing this module stays cheap; the function is picklable (module level)."""
+    global _ENCODE
+    if _ENCODE is None:
+        from bes.tokenizer import load
+
+        _ENCODE = load().encode
+    return len(_ENCODE(text))
+
+
+#: Token counter used by default everywhere in the library (passage cap, rendering).
+default_count_tokens = bpe_count_tokens
+
 CountTokens = Callable[[str], float]
+
+
+def count_tokens_name(count_tokens: "CountTokens") -> str:
+    """Stable name of a token counter for metadata (``"bpe"``, ``"utf8_bytes/3.3"``)."""
+    if count_tokens is bpe_count_tokens:
+        return "bpe"
+    if count_tokens is proxy_count_tokens:
+        return "utf8_bytes/3.3"
+    return getattr(count_tokens, "__name__", "custom")
 
 #: Headings whose section and everything after it are dropped (lower case, no colon).
 TAIL_HEADINGS: frozenset[str] = frozenset(
@@ -118,8 +151,44 @@ _DUP_PUNCT_RX = re.compile(r"([,;:])(\s*[,;:])+")
 _ZERO_WIDTH_RX = re.compile("[​‌‍‎‏⁠﻿­]")
 _BROKEN_END_RX = re.compile(
     r"(?:^|\s)(the|an|of|is|was|are|were|than|approximately|about|between|and|or|at|from|by"
-    r"|(?:is|was|are|were) an?)\s*[.]$"
+    r"|(?:is|was|are|were) an?|of only|weighs|weighing|measures|measuring|covering"
+    r"|totaling|totalling|reaching|with an? (?:area|length|height|elevation) of)\s*[.;]$"
 )
+# Holes left by removed unit/number templates ("It is about long.", "an area of, making",
+# "from to 2020", "between and wide"): the sentence is dropped. Measured on the whole dump
+# (``docs/E1_COVERAGE.md``); every pattern needs a measurement word directly after a word
+# that requires a number, so ordinary prose ("unemployment is high") is not matched.
+_MEASURE = (r"(?:long|high|tall|wide|deep|thick|across|away|in (?:length|diameter|area|size|"
+            r"height|width|depth)|above sea level|below sea level)")
+_HOLE_RXS = (
+    re.compile(r"\b(?:about|approximately|around|nearly|almost|roughly|between|anywhere from)\s+"
+               + _MEASURE + r"\b"),
+    re.compile(r"(?:^|(?<=[.;] ))(?:It|it|This|Its \w+|The \w+(?: \w+)?|They|Which|which)\s+"
+               r"(?:is|was|are|were)\s+(?:long|tall|wide|deep|thick|above sea level)\s*(?:[.;]|$)"),
+    re.compile(r"(?:^|(?<=[.;] ))(?:It|it)\s+(?:is|was)\s+(?:high|across)\s*(?:[.;]|$)"),
+    re.compile(r"\b(?:It|it|which|that)\s+(?:is|was)\s+(?:long|tall|wide|deep)\s+and\b"),
+    re.compile(r"\b(?:area|elevation|height|length|altitude|depth|distance|width|diameter|radius|"
+               r"wingspan|weight|mass|size|volume|capacity|span|draft|draught) of\s*"
+               r"(?:[.,;)]|$|(?:and|or|with|which|in|at|making|but|is|was|about)\b)"),
+    re.compile(r"\bfrom\s+to\b|\bbetween\s+and\b|\bfrom\s*[;:]\s*$|\branges? from\s*[.,;]"),
+)
+_HOLE_RX = re.compile("|".join(f"(?:{rx.pattern})" for rx in _HOLE_RXS))
+# Repaired instead of dropped: an approximator left in front of a compass direction whose
+# distance was removed ("about north of Munich" -> "north of Munich").
+_APPROX_DIR_RX = re.compile(
+    r"\b(?:about|approximately|around|roughly|nearly|some)\s+(?=(?:north|south|east|west|"
+    r"northeast|northwest|southeast|southwest|north-east|north-west|south-east|south-west)"
+    r"(?:ern)?\b)")
+
+
+def hole_repair(sentence: str) -> tuple[str | None, int]:
+    """(repaired sentence or None to drop it, number of in-place repairs).
+
+    Drops a sentence with a hole left by a removed unit template (``_HOLE_RXS``) and removes
+    an approximator stranded before a compass direction (``_APPROX_DIR_RX``)."""
+    if _HOLE_RX.search(sentence):
+        return None, 0
+    return _APPROX_DIR_RX.subn("", sentence)
 _LIST_MARK_RX = re.compile(r"^\s*(?:[*#•·]+|[-–—](?=\s)|\d{1,3}[.)](?=\s))\s*")
 _WORD_RX = re.compile(r"\S+")
 _TERMINAL_RX = re.compile(r"[.!?][\"'”’)\]]*$")
@@ -434,6 +503,7 @@ class CleanCfg:
     min_article_words: int = 5     # prose words needed to keep an article
     max_heading_words: int = 10
     max_category_words: int = 12
+    repair_holes: bool = True      # drop/repair sentences with removed-unit holes (hole_repair)
 
 
 def _norm_heading(s: str) -> str:
@@ -515,6 +585,8 @@ def clean_article(title: str, text: str, cfg: CleanCfg = CleanCfg()) -> CleanArt
     n_dropped_items = 0
     n_dropped_lines = 0
     n_broken = 0
+    n_holes = 0
+    n_hole_repairs = 0
 
     def close_list() -> None:
         nonlocal cur_list
@@ -522,9 +594,19 @@ def clean_article(title: str, text: str, cfg: CleanCfg = CleanCfg()) -> CleanArt
             sections[-1].paragraphs.append(Paragraph(items=cur_list))
         cur_list = None
 
+    def repair(sent: str) -> str | None:
+        nonlocal n_holes, n_hole_repairs
+        if not cfg.repair_holes:
+            return sent
+        fixed, nrep = hole_repair(sent)
+        if fixed is None:
+            n_holes += 1
+        n_hole_repairs += nrep
+        return fixed
+
     def add_item(text: str) -> None:
         nonlocal cur_list, n_dropped_items
-        item = clean_inline(text)
+        item = repair(clean_inline(text)) or ""
         if n_words(item) < cfg.min_item_words:
             n_dropped_items += 1
             if cur_list is None:
@@ -577,7 +659,9 @@ def clean_article(title: str, text: str, cfg: CleanCfg = CleanCfg()) -> CleanArt
                 if _BROKEN_END_RX.search(sent):
                     n_broken += 1
                     continue
-                sents.append(sent)
+                fixed = repair(sent)
+                if fixed is not None:
+                    sents.append(fixed)
             if sents:  # every source line becomes its own paragraph
                 sections[-1].paragraphs.append(Paragraph(sentences=sents))
         prev_blank = False
@@ -588,7 +672,8 @@ def clean_article(title: str, text: str, cfg: CleanCfg = CleanCfg()) -> CleanArt
     prose, lst = art.prose_words(), art.list_words()
     stats.update(
         prose_words=prose, list_words=lst, dropped_items=n_dropped_items,
-        dropped_lines=n_dropped_lines, broken_sentences=n_broken,
+        dropped_lines=n_dropped_lines, broken_sentences=n_broken, hole_sentences=n_holes,
+        hole_repairs=n_hole_repairs,
     )
     # -- disambiguation pages
     firsts = [p for s in sections for p in s.paragraphs][:2]
@@ -666,12 +751,17 @@ def _split_long(unit: str, fits: Callable[[str], bool]) -> list[str]:
     return pieces
 
 
+class _NotLineAdditive(Exception):
+    """A passage counted line by line exceeded the cap when counted as a whole."""
+
+
 def make_passages(
     art: CleanArticle,
     max_words: int = _L.max_passage_words,
     max_tokens: float = _L.max_passage_tokens,
     count_tokens: CountTokens = default_count_tokens,
     flush_frac: float = 0.6,
+    line_wise: bool | None = None,
 ) -> list[RawPassage]:
     """Split a cleaned article into passages.
 
@@ -681,8 +771,28 @@ def make_passages(
     passage that starts inside a non-lead section starts with that section's heading line;
     a heading line is only ever emitted together with content of its section. At a section
     boundary the current passage is closed when it is at least ``flush_frac`` full (in words
-    or tokens); otherwise the next section continues in the same passage.
+    or tokens); otherwise the next section continues in the same passage. A heading that
+    takes more than half of ``max_tokens`` on its own is left out.
+
+    ``line_wise`` (default: on for ``bpe_count_tokens``) counts a candidate passage as
+    ``count(title + "\\n") + sum(count(line + "\\n")) + count(last line)`` with every line
+    counted once: in the BPE split pattern a newline followed by a non-space character always
+    ends a pre-token, so the sum equals the count of the whole text (verified on 20,000 pool
+    passages). Every finished passage is still counted as a whole; if that ever exceeds the
+    cap, the article is split again with whole-text counts, so the cap holds in any case.
     """
+    if line_wise is None:
+        line_wise = count_tokens is bpe_count_tokens
+    if line_wise:
+        try:
+            return _make_passages(art, max_words, max_tokens, count_tokens, flush_frac, True)
+        except _NotLineAdditive:
+            pass
+    return _make_passages(art, max_words, max_tokens, count_tokens, flush_frac, False)
+
+
+def _make_passages(art: CleanArticle, max_words: int, max_tokens: float, count_tokens: CountTokens,
+                   flush_frac: float, line_wise: bool) -> list[RawPassage]:
     title = art.title
     out: list[RawPassage] = []
     if count_tokens(render_passage(title, "x")) > max_tokens:
@@ -691,9 +801,26 @@ def make_passages(
     words = 0
     section0 = ""
     line_open = False  # whether the last line is a prose line that accepts more sentences
+    memo_nl: dict[str, float] = {}
+    memo_last: dict[str, float] = {}
+    head_n = count_tokens(title + "\n") if line_wise else 0.0
+
+    def ntok(ls: list[str]) -> float:
+        if not line_wise:
+            return count_tokens(render_passage(title, "\n".join(ls)))
+        n = head_n
+        for ln in ls[:-1]:
+            v = memo_nl.get(ln)
+            if v is None:
+                v = memo_nl[ln] = count_tokens(ln + "\n")
+            n += v
+        v = memo_last.get(ls[-1])
+        if v is None:
+            v = memo_last[ls[-1]] = count_tokens(ls[-1])
+        return n + v
 
     def fits(ls: list[str], w: int) -> bool:
-        return w <= max_words and count_tokens(render_passage(title, "\n".join(ls))) <= max_tokens
+        return w <= max_words and ntok(ls) <= max_tokens
 
     def candidate(pending: str, text: str, uw: int, join: bool) -> tuple[list[str], int]:
         new = list(lines)
@@ -711,19 +838,23 @@ def make_passages(
     def flush() -> None:
         nonlocal lines, words, line_open
         if lines and words > 0:
-            out.append(RawPassage(title, "\n".join(lines), len(out), section0, words))
+            body = "\n".join(lines)
+            if line_wise and count_tokens(render_passage(title, body)) > max_tokens:
+                raise _NotLineAdditive(title)
+            out.append(RawPassage(title, body, len(out), section0, words))
         lines, words, line_open = [], 0, False
 
     def fill() -> float:
         if not lines:
             return 0.0
-        t = count_tokens(render_passage(title, "\n".join(lines))) / max_tokens
-        return max(words / max_words, t)
+        return max(words / max_words, ntok(lines) / max_tokens)
 
     for sec in art.sections:
         if not sec.paragraphs:
             continue
         head = sec.heading
+        if head and count_tokens(render_passage(title, head)) > max_tokens / 2:
+            head = ""   # a heading that fills half a passage (e.g. a long non-Latin heading) is dropped
         if lines and fill() >= flush_frac:
             flush()
         pending = head  # emitted right before the first unit of the section
@@ -749,6 +880,8 @@ def make_passages(
                 prefix = "- " if para.is_list else ""
                 head_lines = [pending] if pending else []
                 hw = n_words(pending)
+                if head_lines and not fits(head_lines + [prefix + unit[:1]], hw + 1):
+                    head_lines, hw = [], 0      # not even one character fits after the heading
 
                 def piece_fits(piece: str) -> bool:
                     return fits(head_lines + [prefix + piece], hw + n_words(prefix + piece))
