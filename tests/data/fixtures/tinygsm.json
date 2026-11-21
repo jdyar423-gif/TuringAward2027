@@ -1,0 +1,19 @@
+{
+ "source": "tinygsm",
+ "repo": "TinyGSM/TinyGSM",
+ "config": "default",
+ "split": "train",
+ "revision": "5049a7840fa546985eaae4c698d5daf6fdf7b47d",
+ "license": "mit",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept.",
+ "records": [
+  {
+   "question": "Mark has 10 crayons. He gives 2 crayons to his younger sister and loses another 4 while he was playing. How many crayons does Mark have left?",
+   "code": "def simple_math_problem() -> int:\n    \"\"\"\n    Mark has 10 crayons.\n    He gives 2 crayons to his younger sister and loses another 4 while he was playing.\n    How many crayons does Mark have left?\n    \"\"\"\n    crayonsTotal = 10\n    crayonsGiven = 2\n    crayonsLost = 4\n    crayonsLeft = crayonsTotal - crayonsGiven - crayonsLost\n    result = crayonsLeft\n\n    return result\n"
+  },
+  {
+   "question": "A group of tourists went on a hike. They hiked for 5 hours and took a 30 minute break. If they hiked in total for 10 miles, what was their average speed in miles/hour?",
+   "code": "def simple_math_problem() -> int:\n    \"\"\"\n    A group of tourists went on a hike.\n    They hiked for 5 hours and took a 30 minute break.\n    If they hiked in total for 10 miles, what was their average speed in miles/hour?\n    \"\"\"\n    total_time = 5.5 #hours\n    total_distance_travelled = 10 #miles\n    average_speed = total_distance_travelled / total_time\n    result = average_speed\n\n    return result\n"
+  }
+ ]
+}

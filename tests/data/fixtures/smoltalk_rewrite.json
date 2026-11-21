@@ -1,0 +1,43 @@
+{
+ "source": "smoltalk_rewrite",
+ "repo": "HuggingFaceTB/smoltalk",
+ "config": "smol-rewrite",
+ "split": "train",
+ "revision": "5feaf2fd3ffca7c237fc38d1861bc30365d48ffa",
+ "license": "apache-2.0 (card text; the YAML header has no licence field)",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept.",
+ "records": [
+  {
+   "messages": [
+    {
+     "role": "system",
+     "content": "You're an AI assistant for text re-writing. Rewrite the input text to make it more professional and formal while retaining its essential content."
+    },
+    {
+     "role": "user",
+     "content": "Hey Alex,\n\nHope you're doing great! I was reading this article about plant oestrogens and their effects on menopause. Thought you might have some insights. Could you send me any data or studies you have on this? It’s kinda urgent as I need to submit a piece by EOW.\n\nThanks a lot,\nSarah"
+    },
+    {
+     "role": "assistant",
+     "content": "Dear Alex,\n\nI hope this message finds you well. I recently came across an article discussing the impact of plant oestrogens on menopause and believe you may have valuable insights on this topic. Could you kindly provide any relevant data or studies you might have? This information is rather urgent, as I need to submit a piece by the end of the week.\n\nThank you very much for your assistance.\n\nBest regards,\nSarah"
+    }
+   ]
+  },
+  {
+   "messages": [
+    {
+     "role": "system",
+     "content": "You're an AI assistant for text re-writing. Rewrite the input text to make it more friendly and approachable while maintaining its main points."
+    },
+    {
+     "role": "user",
+     "content": "John,\n\nI just found out that you've been using the shared classroom for your history club today. I had already reserved it for the math club. This is the third time this month, and it's really starting to affect our students' learning.\n\nEmily"
+    },
+    {
+     "role": "assistant",
+     "content": "Hi John,\n\nI hope you're doing well! I just wanted to touch base with you about the shared classroom. It looks like you used it for the history club today, but I had actually reserved it for the math club. This has happened a few times this month, and it's starting to impact our students' schedules and learning.\n\nCould we maybe chat and figure out a better way to coordinate our bookings? I really appreciate your understanding and support in making sure both clubs have the space they …"
+    }
+   ]
+  }
+ ]
+}

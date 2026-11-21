@@ -1,0 +1,17 @@
+{
+ "source": "climbmix",
+ "repo": "karpathy/climbmix-400b-shuffle",
+ "config": "default",
+ "split": "train",
+ "revision": "915333b4f8b8684f39aeaafea600fea6f43fb703",
+ "license": "card: mit; upstream nvidia/Nemotron-ClimbMix: cc-by-nc-4.0",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept.",
+ "records": [
+  {
+   "text": "Relatively new techniques have been developed to improve wool’s washability by making the fiber more resistant to felting and shrinkage. One process takes place before the yarn is spun. The loose fleece or combed top is chlorinated to remove the tips of the “scales” and then coated with an extremely fine resin. The resin masks the fiber’s scales and keeps them from interlocking, which is the cause of felting and shrinkage.\nTextile Links (http://www.textilelinks.com)"
+  },
+  {
+   "text": "Subaru BRZ: Only 6,000 Units Coming to US\n\nUS car enthusiasts have been waiting for the Subaru BRZ to come to the marker for a long time, but it seems that not even now, when the vehicle is a sure presence, they can't relax, as, according to Car and Driver, the automotive producer only plans to brings 6,000 units of the coupe to America.\n\nThe company didn't comment on the report, which states that the company had previously explained that in order for the BRZ to make financial sense in the US, it had to sell between 5,000 and 7,000 units at a price of $25,000.\n\nEven though Subaru hasn't …"
+  }
+ ]
+}

@@ -1,0 +1,17 @@
+{
+ "source": "fineweb_edu",
+ "repo": "karpathy/fineweb-edu-100b-shuffle",
+ "config": "default",
+ "split": "train",
+ "revision": "4c8f30d6756da75362432a4d5569e1b229263b71",
+ "license": "odc-by",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept.",
+ "records": [
+  {
+   "text": "Origin of percipientClassical Latin percipiens, present participle of percipere: see perceive\nOrigin of percipientLatin percipiēns percipient- present participle of percipere to perceive ; see perceive .\n- per·cip′i·ence per·cip′i·en·cy\n(comparative more percipient, superlative most percipient)\n- Having the ability to perceive, especially to perceive quickly.\n- (psychology, education, dated) Perceiving events only in the moment, without reflection, as a very young child.\n- Over time children advance from the percipient stage to the perceptive stage, in which they begin to reflect on the …"
+  },
+  {
+   "text": "TRAIL TO EAGLE\nSignificance of the Eagle Scout Rank\nThe fact that a young man is an Eagle Scout has always carried with it a special significance, not only in Scouting but also as he enters higher education, business or industry, and community service. The award is a performance-based achievement whose standards have been well-maintained over the years. Not every boy who joins a Boy Scout troop earns the Eagle Scout rank; only about 5% of all Boy Scouts do so. This represents more than 2 million Boy Scouts who have earned the rank since 1912. Nevertheless, the goals of Scouting—citizenship …"
+  }
+ ]
+}

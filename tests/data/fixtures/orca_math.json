@@ -1,0 +1,19 @@
+{
+ "source": "orca_math",
+ "repo": "microsoft/orca-math-word-problems-200k",
+ "config": "default",
+ "split": "train",
+ "revision": "29255d1770cc4eac66e5e7fa378cba542c026350",
+ "license": "mit",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept.",
+ "records": [
+  {
+   "question": "When you multiply a number by 7, it becomes 98. What is that number?",
+   "answer": "To find the number, you need to divide 98 by 7. \n\n98 ÷ 7 = 14\n\nSo the number is 14."
+  },
+  {
+   "question": "The three students, Yoongi, Jungkook and Yuna, have the numbers 7, 6, and 9 respectively. Who has the smallest number?",
+   "answer": "Jungkook has the smallest number, which is 6."
+  }
+ ]
+}

@@ -1,0 +1,111 @@
+{
+ "source": "synth_rag",
+ "repo": "PleIAs/SYNTH",
+ "config": "default",
+ "split": "train",
+ "revision": "0d6813a2966662c39f22f0b9af28a0c1c9f7a437",
+ "license": "cc-by-4.0 (card); seed text CC BY-SA 4.0 / CC0 (column seed_license)",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server parquet file synth_001.parquet (read from the parquet files of the listed revision, choosing one short row per exercise type); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept.",
+ "records": [
+  {
+   "synth_id": "memorization_93_108738",
+   "language": "en",
+   "exercise": "memorization",
+   "query": "When did Tsai win the Golden Lion at Venice for Vive L'Amour?",
+   "query_seed_url": "https://en.wikipedia.org/wiki/Tsai_Ming-liang",
+   "query_seed_text": "Tsai Ming-liang is a Malaysian filmmaker based in Taiwan. Tsai has written and directed 11 feature films, many short films, and television films. He is one of the most celebrated \"Second New Wave\" film directors of Taiwanese cinema. His films have been acclaimed worldwide and have won numerous awards at festivals. In 1994, Tsai won the Golden Lion at the 51st Venice International Film Festival for the film Vive L'Amour.",
+   "constraints": "",
+   "synthetic_answer": "Tsai Ming-liang won the Golden Lion at the 51st Venice International Film Festival for his film \"Vive L'Amour\" in 1994."
+  },
+  {
+   "synth_id": "memorization_specialized_18_56_5872",
+   "language": "en",
+   "exercise": "memorization",
+   "query": "Could you confirm whether Thomas Sowell was indeed an economist?",
+   "query_seed_url": "https://en.wikipedia.org/wiki/History_of_Detroit",
+   "query_seed_text": "According to the economist Thomas Sowell:",
+   "constraints": "",
+   "synthetic_answer": "Yes, Thomas Sowell was indeed an economist. He is a recognized economist who has contributed to the field through his work and publications."
+  },
+  {
+   "synth_id": "synth_dataset_common_10_5902",
+   "language": "en",
+   "exercise": "memorization",
+   "query": "What was NVIDIA's Q2 FY2026 revenue figure?",
+   "query_seed_url": "Pleias self-knowledge",
+   "query_seed_text": "",
+   "constraints": "",
+   "synthetic_answer": "Based on available financial data, NVIDIA reported Q2 FY2026 revenue of $46.7 billion. This represents continued growth from the previous quarter, with the company showing strong performance in its data center business and increased adoption of Blackwell architecture. For context, NVIDIA ended FY2025 with $130.5 billion in total revenue, reflecting a 114% year-over-year increase driven primarily by AI-focused data center sales. The trajectory from Q1 FY2026 revenue of $44.1 billion to Q2's $46.7 billion indicates sustained momentum in the company's core AI infrastructure business."
+  },
+  {
+   "synth_id": "rag_2_18718",
+   "language": "en",
+   "exercise": "rag",
+   "query": "How the pledge of loyalty requirements for New South Wales parliamentarians have evolved from allegiance to the monarchy to direct commitment to Australia and local population.",
+   "query_seed_url": "https://en.wikipedia.org/wiki/New_South_Wales",
+   "query_seed_text": "Constitution\n\nThe form of the Government of New South Wales is prescribed in its Constitution, dating from 1856 and currently the Constitution Act 1902 (NSW). Since 1901 New South Wales has been a state of the Commonwealth of Australia, and the Australian Constitution regulates its relationship with the Commonwealth.\n\nIn 2006, the Constitution Amendment Pledge of Loyalty Act 2006 No 6, was enacted to amend the NSW Constitution Act 1902 to require Members of the New South Wales Parliament and …",
+   "constraints": "<source_1>\nConstitution\n\nThe form of the Government of New South Wales is prescribed in its Constitution, dating from 1856 and currently the Constitution Act 1902 (NSW). Since 1901 New South Wales has been a state of the Commonwealth of Australia, and the …\n</source_1>\n\n<source_2>\nParliament\n\nThe first responsible self-government of New South Wales was formed on 6 June 1856 with Sir Stuart Alexander Donaldson appointed by Governor Sir William Denison as its first Colonial Secretary which in those days accounted also as the …\n</source_2>\n\n<source_3>\nNew South Wales (commonly abbreviated as NSW) is a state on the east coast of Australia. It borders Queensland to the north, Victoria to the south, and South Australia to the west. Its coast borders the Coral and Tasman Seas to the east. The …\n</source_3>\n\n<source_4>\nOaths\n\nThe oath of fidelity was a way for Charles to ensure loyalty from all his subjects. As early as 779 he banned sworn guilds between other men so that everyone took an oath of loyalty only to him. In 789 (in response to the 786 rebellion) he …\n</source_4>\n\n<source_5>\nGovernment and politics\n\nWales is a country that is part of the sovereign state of the United Kingdom. ISO 3166-2:GB formerly defined Wales as a principality, with England and Scotland defined as countries and Northern Ireland as a province. …\n</source_5>\n\n<source_6>\nGovernment\n\nExecutive power is formally exercised by the Executive Council, which consists of the Governor and senior ministers. The current governor is Margaret Beazley. The governor commissions as premier the leader of the parliamentary political …\n</source_6>\n\n<source_7>\nAdoption and formalisation\n\nIn the Balfour Declaration at the 1926 Imperial Conference, the United Kingdom and its dominions agreed they were \"equal in status, in no way subordinate one to another in any aspect of their domestic or external affairs, …\n</source_7>\n\n<source_8>\nHistorical governance\n\nThe first five governors had near autocratic power in the colony of New South Wales, subject only to the laws of England and the supervision of the Colonial Office in London. Sydney was the seat of government for the colony …\n</source_8>\n\n<source_9>\nPolitics\n\nAustralia is a federal parliamentary constitutional monarchy with Charles III at its apex as the King of Australia, a role that is distinct from his position as monarch of the other Commonwealth realms. The King is represented in Australia …\n</source_9>\n\n<source_10>\nThe politics of Australia operates under the written Australian Constitution, which sets out Australia as a constitutional monarchy, governed via a parliamentary democracy in the Westminster tradition. Australia is also a federation, where power is …\n</source_10>",
+   "synthetic_answer": "In New South Wales, the requirement for parliamentarians to pledge loyalty to the monarch evolved into a direct commitment to the state and its people. The Constitution Amendment Pledge of Loyalty Act 2006 changed the state constitution to require members of the New South Wales Parliament and their ministers to take a pledge of loyalty to Australia and the people of New South Wales, instead of swearing allegiance to the monarch<ref name=\"source_1\">In 2006, the Constitution Amendment Pledge of Loyalty Act 2006 No 6, was …</ref>. This act was officially agreed to by the monarch, Queen Elizabeth II, on 3 April 2006<ref name=\"source_1\">The Pledge of Loyalty Act was officially assented to by the Queen on 3 April …</ref>. However, the option to swear allegiance to the Queen was later restored as an alternative in June 2012<ref name=\"source_1\">The option to swear allegiance to the Queen was restored as an alternative …</ref>."
+  },
+  {
+   "synth_id": "synth_specialized_mcq_3_126018",
+   "language": "en",
+   "exercise": "mcq",
+   "query": "In Bayesian updating, when a new likelihood function is combined with an existing prior distribution to calculate a new posterior distribution, the logical relationship between the old and new beliefs is best described as the new posterior being...\n\nA. a direct replacement for the old prior.\nB. a weighted combination of the prior and the new evidence.\nC. proportional to the product of the prior and the likelihood.\nD. the average of the prior and the likelihood.",
+   "query_seed_url": "https://en.wikipedia.org/wiki/Ensemble_learning",
+   "query_seed_text": "This formula can be restated using Bayes' theorem, which says that the posterior is proportional to the likelihood times the prior:",
+   "constraints": "domain:computing, exercise:applied logic, answer_shape:standard, exercise_pattern:sentence_following",
+   "synthetic_answer": "C. proportional to the product of the prior and the likelihood."
+  },
+  {
+   "synth_id": "synth_math_82_6455",
+   "language": "en",
+   "exercise": "math exercise",
+   "query": "In a medical research lab, scientists are studying the muscular system. They are testing a new treatment on two experimental subjects. At the start of the study, their baseline muscle strength is 4 kg. After 8 months, the scientists calculate the change in their muscle strength using a specific formula. If the formula for change is `-((a² - c²)^0.5 * b) / c`, where `a` and `c` are the baseline strengths and `b` is the time in months, what is the absolute value of the change in muscle strength for each subject?",
+   "query_seed_url": null,
+   "query_seed_text": "Muscular system\n\nClinical significance\n\nMultiple diseases can affect the muscular system.",
+   "constraints": "result:0",
+   "synthetic_answer": "**Answer: 0 kg**\n\nThis problem involves evaluating a complex-looking formula in physics or engineering contexts, where the key insight is recognizing when mathematical expressions simplify to zero.\n\n## The Mathematical Approach\n\nThe formula `-((a² - c²)^0.5 * b) / c` represents some physical measurement change over time, but with equal baseline values, this becomes straightforward algebra.\n\nSince both subjects start with the same baseline strength (4 kg), we have:\n- a = 4 kg\n- c = 4 kg  \n- b = 8 months\n\n## The Critical Step\n\nThe calculation hinges on recognizing that:\n`4² - 4² = 16 - 16 = …"
+  },
+  {
+   "synth_id": "synth_dataset_writing_9_74410",
+   "language": "en",
+   "exercise": "constrained writing",
+   "query": "I'm working on a social media post about the Ottoman Empire's economic problems following the Crimean War for my history blog but I'm participating in a writing challenge where I can't use the letter 'a' and I also need to avoid using any commas in my text. Could you help me write something about how the Ottoman Empire struggled with debt and financial problems after the war? I want to mention things like their foreign loans and the costs of helping refugees but I need to follow those two specific writing rules for this challenge.",
+   "query_seed_url": "https://en.wikipedia.org/wiki/Easement",
+   "query_seed_text": "Changing balance of power in Europe\n\nAlthough on the winning side in the Crimean War, the Ottoman Empire continued to decline in power and prestige. The financial strain on the treasury forced the Ottoman government to take a series of foreign loans at such steep interest rates that, despite all the fiscal reforms that followed, pushed it into unpayable debts and economic difficulties. This was further aggravated by the need to accommodate more than 600,000 Muslim Circassians, expelled by the …",
+   "constraints": "oulipo:avoid_letter[a], punctuation:no_comma",
+   "synthetic_answer": "The Crimean conflict left the Ottoman Empire broke. Its debts grew huge. Foreign powers offered new credit but with tough terms. The empire's economy felt the stress. Its coffers were empty. It could not collect overdue dues from its own folk. So the government printed more money. Prices rose. Foreign creditors grew restless. They pushed for their money. The empire's future seemed very grim."
+  },
+  {
+   "synth_id": "synth_dataset_editing_1_15054",
+   "language": "en",
+   "exercise": "editing",
+   "query": "I've got this passage about phase transitions in social systems that would benefit from having the key theoretical concepts and temporal references properly highlighted for clarity, and I suspect there might be some OCR artifacts or transmission errors in the technical terminology and dates that need cleaning up. The emphasis should draw attention to the core theoretical framework, the specific hypothesis being described, and the temporal context, while any obvious distortions in the technical language or the 1990s-2000s timeframe should be normalized to scholarly precision.\n\n\"Phase transitions in social systems\n\nPhase transitions have been hypothesised to occur in social systems viewed as dynamical systems. A hypothesis proposed in the 1990s and 2000s in the context of peace and armed conflict is that when a conflict that is non-violent shifts to a phase of armed conflict, this is a phase transition from latent to manifest phases within the dynamical system.\"",
+   "query_seed_url": "https://en.wikipedia.org/wiki/Bauxite",
+   "query_seed_text": "Phase transitions in social systems\n\nPhase transitions have been hypothesised to occur in social systems viewed as dynamical systems. A hypothesis proposed in the 1990s and 2000s in the context of peace and armed conflict is that when a conflict that is non-violent shifts to a phase of armed conflict, this is a phase transition from latent to manifest phases within the dynamical system.",
+   "constraints": "information:highlighting, quality:corruption, linguistic:paraphrasing",
+   "synthetic_answer": "**Phase transitions** in social systems\n\n**Phase transitions** have been hypothesised to occur in social systems viewed as **dynamical systems**. A hypothesis proposed in the **1990s and 2000s** in the context of **peace and armed conflict** is that when a conflict that is non-violent shifts to a phase of armed conflict, this represents a **phase transition from latent to manifest phases** within the dynamical system."
+  },
+  {
+   "synth_id": "mcq_math_3_122577",
+   "language": "en",
+   "exercise": "math mcq",
+   "query": "In a large park, a group of friends is playing a tag game. At the beginning of the game, 7 players are \"it\". The total number of players in the group is 50. If the game is played for a total of 51 rounds, what is the average number of players who are *not* \"it\" per round, rounded to the nearest whole number?\n\nA. 0\nB. 1\nC. 2\nD. 43",
+   "query_seed_url": "https://en.wikipedia.org/wiki/Tag_(game)",
+   "query_seed_text": "Basic rules\n\nPlayers (two or more) decide who is going to be \"it\", often using a counting-out game such as eeny, meeny, miny, moe or rock paper scissors. The player selected to be \"it\" then chases the others, attempting to \"tag\" one of them (by touching them with a hand) as the others try to avoid being tagged. A tag makes the tagged player \"it\". In some variations, the previous \"it\" is no longer \"it\" and the game can continue indefinitely, while in others, both players remain \"it\" and the game …",
+   "constraints": "result:1",
+   "synthetic_answer": "B. 1"
+  },
+  {
+   "synth_id": "memorization_german_4_49691",
+   "language": "de",
+   "exercise": "memorization",
+   "query": "Warum hat der Herschel Graph keinen Weg, der alle Ecken genau einmal besucht?",
+   "query_seed_url": "https://en.wikipedia.org/wiki/Herschel_graph",
+   "query_seed_text": "In graph theory, a branch of mathematics, the Herschel graph is a bipartite undirected graph with 11 vertices and 18 edges. It is a polyhedral graph, and is the smallest polyhedral graph that does not have a Hamiltonian cycle, a cycle passing through all its vertices. It is named after British astronomer Alexander Stewart Herschel, because of Herschel's studies of Hamiltonian cycles in polyhedral graphs.",
+   "constraints": "",
+   "synthetic_answer": "Der Herschel-Graph hat keinen Hamiltonkreis, weil er ein Polyedergraph mit bestimmten strukturellen Eigenschaften ist. Der Graph ist bipartit und hat 11 Ecken (Knoten) und 18 Kanten. Diese Kombination aus Ecken- und Kantenzahl führt zu einer besonderen topologischen Struktur, die das Vorhandensein eines Kreislaufs verhindert, der alle Ecken genau einmal besucht.\n\nAls Polyedergraph hat der Herschel-Graph eine planare Darstellung, was bedeutet, dass er auf einer Fläche ohne Kreuzungen gezeichnet werden kann. Diese Planarität in Kombination mit der bipartiten Struktur und der spezifischen Anzahl …"
+  }
+ ]
+}

@@ -1,0 +1,35 @@
+{
+ "source": "squad_v2",
+ "repo": "rajpurkar/squad_v2",
+ "config": "squad_v2",
+ "split": "train",
+ "revision": "3ffb306f725f7d2ce8394bc1873b24868140c412",
+ "license": "cc-by-sa-4.0",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept. The unanswerable row came from the /rows endpoint at offset 2000.",
+ "records": [
+  {
+   "id": "56d440df2ccc5a1400d830d5",
+   "title": "Beyoncé",
+   "context": "Beyoncé Giselle Knowles was born in Houston, Texas, to Celestine Ann \"Tina\" Knowles (née Beyincé), a hairdresser and salon owner, and Mathew Knowles, a Xerox sales manager. Beyoncé's name is a tribute to her mother's maiden name. Beyoncé's younger sister Solange is also a singer and a former member of Destiny's Child. Mathew is African-American, while Tina is of Louisiana Creole descent (with African, Native American, French, Cajun, and distant Irish and Spanish ancestry). Through her mother, Beyoncé is a descendant of Acadian leader Joseph Broussard. She was raised in a Methodist household.",
+   "question": "Beyoncé was raised in what religion?",
+   "answers": {
+    "text": [
+     "Methodist"
+    ],
+    "answer_start": [
+     578
+    ]
+   }
+  },
+  {
+   "id": "5a8d7bf7df8bba001a0f9ab1",
+   "title": "The_Legend_of_Zelda:_Twilight_Princess",
+   "context": "The Legend of Zelda: Twilight Princess (Japanese: ゼルダの伝説 トワイライトプリンセス, Hepburn: Zeruda no Densetsu: Towairaito Purinsesu?) is an action-adventure game developed and published by Nintendo for the GameCube and Wii home video game consoles. It is the thirteenth installment in the The Legend of Zelda series. Originally planned for release on the GameCube in November 2005, Twilight Princess was delayed by Nintendo to allow its developers to refine the game, add more content, and port it to the Wii. The Wii version was released alongside the console in North America in November 2006, and in Japan, Europe, and Australia the following month. The GameCube version was released worldwide in December …",
+   "question": "What category of game is Legend of Zelda: Australia Twilight?",
+   "answers": {
+    "text": [],
+    "answer_start": []
+   }
+  }
+ ]
+}

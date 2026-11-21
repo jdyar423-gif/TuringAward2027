@@ -1,0 +1,67 @@
+{
+ "source": "ultrachat",
+ "repo": "HuggingFaceH4/ultrachat_200k",
+ "config": "default",
+ "split": "train_sft",
+ "revision": "8049631c405ae6576f93f445c6b8166f76f5505a",
+ "license": "mit",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept.",
+ "records": [
+  {
+   "messages": [
+    {
+     "role": "user",
+     "content": "De León, previewing the speech he will give today, said he will highlight his Senate Bill 535, which directs a quarter of the proceeds from the Greenhouse Gas Reduction Fund to projects that benefit disadvantaged communities.\nOn Thursday, de León nodded approvingly as a string of leading scientists and religious leaders gathered for hours of weedy policy discussions on the impacts of climate change, including gloomy predictions on mortality attributable to air pollution.\nSEIU HEADS TO THE BAR: …"
+    },
+    {
+     "role": "assistant",
+     "content": "The reason for SEIU employees planning a picket line at the State Bar of California building in Los Angeles is to protest the latest contract offer."
+    },
+    {
+     "role": "user",
+     "content": "Can you provide more details about Senate Bill 535 and how it will benefit disadvantaged communities?"
+    },
+    {
+     "role": "assistant",
+     "content": "Sure, Senate Bill 535 is a California law that directs at least 25% of the money generated through the state's Greenhouse Gas Reduction Fund towards projects that benefit disadvantaged communities. The bill is designed to ensure that the benefits of California's climate policies, which include cap-and-trade, are felt most heavily by communities that have been disproportionately impacted by pollution and environmental degradation.\n\nThe funds generated through the bill are invested in projects …"
+    }
+   ]
+  },
+  {
+   "messages": [
+    {
+     "role": "user",
+     "content": "Can you summarize the key objective of the EAA TC-RBA working group mentioned in the given text material? Answer according to: A major task of the working group will be to try to find consensus on one single concept for airborne sound insulation and one single concept for impact sound to be used in the future. Today there are a large variety of different concepts being used in Europe. This EAA TC-RBA working group might play an important role by recommending specific concepts.\nThe working group …"
+    },
+    {
+     "role": "assistant",
+     "content": "The EAA TC-RBA working group aims to find a consensus on a single concept for airborne sound insulation and impact sound in Europe, as there are currently many different concepts being used. They may recommend specific concepts and can work electronically, arrange meetings, and consider organizing structured sessions in future conferences."
+    },
+    {
+     "role": "user",
+     "content": "Can you suggest any upcoming conferences where the EAA TC-RBA working group might organize structured sessions on this topic?"
+    },
+    {
+     "role": "assistant",
+     "content": "I don't have access to the latest information about upcoming conferences. However, one option is to visit the website of the european acoustics association (eaa) and look for upcoming conferences or events related to acoustics. Alternatively, you can contact the eaa directly and ask about any upcoming events where the eaa tc-rba working group might organize structured sessions on this topic."
+    },
+    {
+     "role": "user",
+     "content": "Can you please provide me with the website link or the contact details of the European Acoustics Association (EAA)?"
+    },
+    {
+     "role": "assistant",
+     "content": "Sure, the website of the European Acoustics Association (EAA) is www.euracoustics.org. You can find more information about their events and working groups on their website. If you wish to contact the EAA, you can find their contact details below:\n\nEuropean Acoustics Association\nChaussee de Waterloo 712\n1180 Brussels,\nBelgium\n\nEmail: info@euracoustics.org"
+    },
+    {
+     "role": "user",
+     "content": "Thanks for providing me with the website link and contact details of the EAA. Can you please suggest any similar associations or organizations that are working on the same topic?"
+    },
+    {
+     "role": "assistant",
+     "content": "Certainly! There are several other associations or organizations that are involved with acoustics and related fields. Some of these organizations are:\n\n1. Acoustical Society of America (ASA)\n2. Institute of Acoustics (IOA)\n3. International Commission for Acoustics (ICA)\n4. European Acoustics Association (EAA)\n5. Acoustical Society of Japan (ASJ)\n6. Audio Engineering Society (AES)\n7. International Institute of Noise Control Engineering (I-INCE)\n8. British Society of Audiology (BSA)\n\nThese …"
+    }
+   ]
+  }
+ ]
+}

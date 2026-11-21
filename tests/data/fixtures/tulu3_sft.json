@@ -1,0 +1,76 @@
+{
+ "source": "tulu3_sft",
+ "repo": "allenai/tulu-3-sft-mixture",
+ "config": "default",
+ "split": "train",
+ "revision": "b14afda60f1bbebe55d5d2fa1e4df5042f97f8be",
+ "license": "odc-by-1.0 (subsets carry their own licences; the CC BY-NC No Robots subset is excluded)",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept. The last three rows (excluded subsets) were read from the parquet files.",
+ "records": [
+  {
+   "messages": [
+    {
+     "role": "user",
+     "content": "怎么不回信息"
+    },
+    {
+     "role": "assistant",
+     "content": "因为这是你在本次对话的首个提问，我无法得知其它对话中的情况，很抱歉。"
+    }
+   ],
+   "source": "ai2-adapt-dev/oasst1_converted"
+  },
+  {
+   "messages": [
+    {
+     "role": "user",
+     "content": "Xin chào"
+    },
+    {
+     "role": "assistant",
+     "content": "Chào bạn, bạn cần giúp gì không?"
+    }
+   ],
+   "source": "ai2-adapt-dev/oasst1_converted"
+  },
+  {
+   "messages": [
+    {
+     "role": "user",
+     "content": "Write a haiku about a tsunami"
+    },
+    {
+     "role": "assistant",
+     "content": "Waves larger than life\nA terrific crash on shore\nTragedy will strike"
+    }
+   ],
+   "source": "ai2-adapt-dev/no_robots_converted"
+  },
+  {
+   "messages": [
+    {
+     "role": "user",
+     "content": "Heyyyyyyyyyy"
+    },
+    {
+     "role": "assistant",
+     "content": "Heyyy, what's up."
+    }
+   ],
+   "source": "ai2-adapt-dev/tulu_hard_coded_repeated_10"
+  },
+  {
+   "messages": [
+    {
+     "role": "user",
+     "content": "Gaawu\n"
+    },
+    {
+     "role": "assistant",
+     "content": "Saturday\t"
+    }
+   ],
+   "source": "ai2-adapt-dev/tulu_v3.9_aya_100k"
+  }
+ ]
+}

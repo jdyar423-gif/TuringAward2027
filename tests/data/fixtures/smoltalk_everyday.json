@@ -1,0 +1,71 @@
+{
+ "source": "smoltalk_everyday",
+ "repo": "HuggingFaceTB/smoltalk",
+ "config": "everyday-conversations",
+ "split": "train",
+ "revision": "5feaf2fd3ffca7c237fc38d1861bc30365d48ffa",
+ "license": "apache-2.0 (card text; the YAML header has no licence field)",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept.",
+ "records": [
+  {
+   "messages": [
+    {
+     "role": "user",
+     "content": "Hey!"
+    },
+    {
+     "role": "assistant",
+     "content": "Hello! How can I help you today?"
+    },
+    {
+     "role": "user",
+     "content": "I'm going to the train station. What time does the next train to New York leave?"
+    },
+    {
+     "role": "assistant",
+     "content": "The next train to New York leaves at 3:00 PM. Would you like to know the platform number?"
+    },
+    {
+     "role": "user",
+     "content": "Yes, what platform is it on?"
+    },
+    {
+     "role": "assistant",
+     "content": "The 3:00 PM train to New York is on Platform 5. Have a safe trip!"
+    }
+   ]
+  },
+  {
+   "messages": [
+    {
+     "role": "user",
+     "content": "Hi there"
+    },
+    {
+     "role": "assistant",
+     "content": "Hello! How can I help you today?"
+    },
+    {
+     "role": "user",
+     "content": "I'm looking for some new music to listen to. What's a good movie soundtrack?"
+    },
+    {
+     "role": "assistant",
+     "content": "The soundtrack from the movie \"Guardians of the Galaxy\" is very popular and has a great mix of classic songs."
+    },
+    {
+     "role": "user",
+     "content": "That sounds interesting. Who composed the score for that movie?"
+    },
+    {
+     "role": "assistant",
+     "content": "The score was composed by Tyler Bates, but the soundtrack also features a lot of popular songs from the 1970s."
+    },
+    {
+     "role": "user",
+     "content": "I'll have to check it out."
+    }
+   ]
+  }
+ ]
+}

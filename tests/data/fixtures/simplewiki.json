@@ -1,0 +1,19 @@
+{
+ "source": "simplewiki",
+ "repo": "wikimedia/wikipedia",
+ "config": "20231101.simple",
+ "split": "train",
+ "revision": "b04c8d1ceb2f5cd4588862100d08de323dccfbaa",
+ "license": "cc-by-sa-3.0 and gfdl (card)",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept.",
+ "records": [
+  {
+   "title": "Adobe Illustrator",
+   "text": "Adobe Illustrator is a computer program for making graphic design and illustrations. It is made by Adobe Systems. Pictures created in Adobe Illustrator can be made bigger or smaller, and look exactly the same at any size. It works well with the rest of the products with the Adobe name.\n\nHistory\nIt was first released in 1986 for the Apple Macintosh. The latest version is Adobe Illustrator CS6, part of Creative Suite 6.\n\nRelease history\n\nReferences\n\nVector graphics editors\nAdobe software"
+  },
+  {
+   "title": "Andouille",
+   "text": "Andouille is a type of pork sausage. It is spicy (hot in taste) and smoked. There are different kinds, all with different combinations of pork meat, fat, intestines (tubes going to the stomach), and tripe (the wall of the stomach).\n\nOther sorts are \"French andouille\" and \"German andouille\"; they are less spicy than Cajun. Cajun has extra salt, black pepper, and garlic. Andouille makers smoke the sausages over pecan wood and sugar cane for a maximum of seven or eight hours, at about 175 degrees Fahrenheit (80 degrees Celsius).\n\nSausage"
+  }
+ ]
+}

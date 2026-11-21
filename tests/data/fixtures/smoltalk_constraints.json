@@ -1,0 +1,35 @@
+{
+ "source": "smoltalk_constraints",
+ "repo": "HuggingFaceTB/smoltalk",
+ "config": "smol-constraints",
+ "split": "train",
+ "revision": "5feaf2fd3ffca7c237fc38d1861bc30365d48ffa",
+ "license": "apache-2.0 (card text; the YAML header has no licence field)",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept.",
+ "records": [
+  {
+   "messages": [
+    {
+     "role": "user",
+     "content": "Answer the following question with exactly 15 words. Explain the significance of the [event] in [location] during [year]. Finish your response with this exact phrase [ender].\n"
+    },
+    {
+     "role": "assistant",
+     "content": "The [event] in [location] during [year] marked a pivotal moment, influencing [impact]. [ender]"
+    }
+   ]
+  },
+  {
+   "messages": [
+    {
+     "role": "user",
+     "content": "What are the benefits of using a standing desk at work? Your response should contain at least 2 bullet points. Use the markdown bullet points such as: * This is point 1.\n"
+    },
+    {
+     "role": "assistant",
+     "content": "* Using a standing desk can improve posture and reduce the risk of back and neck pain associated with prolonged sitting.\n* Standing desks may increase energy levels and reduce feelings of fatigue throughout the workday."
+    }
+   ]
+  }
+ ]
+}

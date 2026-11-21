@@ -1,0 +1,21 @@
+{
+ "source": "neural_bridge_rag",
+ "repo": "neural-bridge/rag-dataset-12000",
+ "config": "default",
+ "split": "train",
+ "revision": "586c0d0ddeb022fccd909c7b415cc2ca8660baa4",
+ "license": "apache-2.0 (the card also asks users to abide by the terms of use of the web corpus it was drawn from)",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept.",
+ "records": [
+  {
+   "context": "We Ship Fast!\nOrder by 1PM CST for Same Day Shipping (Mon-Fri)\nTruglo Riser Mount Picatinny-style 1/2″ – TG8970.\nTRUGLO 1/2″ Picatinny-Style Riser Mount AR-15 Flattop Matte\nThe TRUGLO Picatinny Riser Mount is great for raining your red dot sight 1/2″ to be at\nthe proper height for an ideal cheek weld. This aluminum riser is easy to install and\ngreat for any flattop AR-15. It is approximately 4″ long.\nFeatures:\n– Raises mounting surface by 1/2″. Mounts to existing Picatinny-style rail.\n– CNC-machined aluminum. Great for any AR-15 Flattop.\n– Easy to install without modification. Length is …",
+   "question": "What is the purpose of the TRUGLO Picatinny Riser Mount?",
+   "answer": "The TRUGLO Picatinny Riser Mount is great for raising your red dot sight 1/2″ to be at the proper height for an ideal cheek weld."
+  },
+  {
+   "context": "This year's Southern Living Idea House by Bunny Williams featured a tweed stair runner which I think is quite good for wear and tear. I also love its casual but traditional look and feel. You can also check out my previous posts on the master bedroom, kitchen - dining room, great room, den and butler's pantry.\nTuesday, December 29, 2015\nTweed Stair Runner - very smart\nPosted by My Notting Hill at 12/29/2015\nLabels: 2015 Southern Living Idea House\n2 comments:\nbeen meaning to tell you i loved the showhouse when I went 2 weeks ago! so glad you wrote about it and brought it too my attention. I …",
+   "question": "Who is the designer of this year's Southern Living Idea House?",
+   "answer": "Bunny Williams."
+  }
+ ]
+}

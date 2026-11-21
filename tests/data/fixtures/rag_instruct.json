@@ -1,0 +1,27 @@
+{
+ "source": "rag_instruct",
+ "repo": "FreedomIntelligence/RAG-Instruct",
+ "config": "default",
+ "split": "train",
+ "revision": "05323227f08cd6f8c4fcc2d4c1e0a2e1c4a0fca5",
+ "license": "apache-2.0",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept.",
+ "records": [
+  {
+   "question": "Explain the challenges faced during the winter months on the section of road between Northop and Holywell.",
+   "answer": "The section of road between Northop and Holywell is elevated and prone to poor weather conditions such as fog, ice, and snow in the winter. These conditions can make driving hazardous, reducing visibility and increasing the risk of accidents. The elevation and topography of the area contribute to these challenges, as higher altitudes are typically more affected by such weather patterns.",
+   "documents": [
+    "A570 road The A570 is a primary route in Northern England, that runs from St Helens to Southport. Until the early 1970s, the road ran from a junction with the A57 road at Bold Heath, four miles west of Warrington. The road currently begins at …",
+    "1989 to carry westbound traffic. Eastbound traffic would now travel through the 1932 Penmaenbach Tunnel using both its original lanes. Four years later, work to build the Pen-y-clip tunnel was completed. Like at Penmaenbach it carried westbound …",
+    "airport using the A555, gained its final approval in March 2015 and was scheduled for completion and opening in spring 2018. Persistent heavy rain from December 2017 to February 2018 and the collapse of Carillion delayed the opening date until later …",
+    "interchange of the A48 and the A469. It becomes an urban dual-carriageway along Manor Way, with a speed limit and with many traffic-signalled crossings. It passes without interruption under the M4 at the giant Coryton roundabout. For the next it is …",
+    "Snowdonia. The approach to Holyhead required major work with a new section over the sea paralleling the Stanley Embankment that carries the original A5 and the North Wales Coast railway. Work started in early 2017 on the upgrading of the 1960s built …",
+    "A556 road The A556 is a road in England which extends from the village of Delamere in Cheshire West and Chester to the Bowdon Interchange in Cheshire East, bordering Greater Manchester. The road contains a mixture of single and dual carriageway …",
+    "to the south and Ellesmere Port to its termination at Dunkirk, Cheshire, where it becomes the A494. Traffic for North Wales can take either the M53 or the A494 to reach the A55. The motorway services on the M56 are Chester (Run by Roadchef) and Lymm …",
+    "from the Britannia Bridge to Holyhead, giving the town a dual carriageway connection to North Wales and the main British motorway network. The A55 forms part of Euroroute E22. The Anglesey section was financed through a Private Finance Initiative …",
+    "A4055 road The A4055 is the main road link between Cardiff Bay and Barry. The road goes through the village of Dinas Powys and there has been a call for by-pass due to the volume of traffic from Barry to and from Cardiff. However the Vale of …",
+    "from nearby Warton Aerodrome made a test landing on the motorway, in order to prove its capability to use makeshift runways in time of war. Data from driver location signs are used to provide distance and carriageway identifier information. M55 …"
+   ]
+  }
+ ]
+}

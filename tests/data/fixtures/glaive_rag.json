@@ -1,0 +1,21 @@
+{
+ "source": "glaive_rag",
+ "repo": "glaiveai/RAG-v1",
+ "config": "default",
+ "split": "train",
+ "revision": "03eb928590e5c957ecf36d420c4ee8043f718121",
+ "license": "apache-2.0",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept.",
+ "records": [
+  {
+   "question": "Considering the principles of network externalities and dynamic competition, how might firms strategize their investments in advertising and product enhancements to influence market outcomes in a scenario with competing standards?",
+   "documents": "Document:0\nTitle: Market Evolution with Network Externalities\nText: These lecture notes cover analytical aspects of markets with network externalities, focusing on situations where competing firms adopt different networks or standards. Examples include VHS vs. Beta in video cassette recorders and HD-DVD vs. Blu-Ray in high-definition DVD players. We explore how …\n\nDocument:1\nTitle: Dynamic Competition in Network Markets\nText: In the context of dynamic models of competition in markets with network externalities, firms often face decisions on how much to invest in advertising, pricing strategies, and product enhancements. The 'DOS/MAC' exercise illustrates dynamic competition where two firms strategize to outperform each …\n\nDocument:2\nTitle: Equilibrium Scenarios in Network Externalities\nText: This document discusses the concept of multiple equilibria in markets with network externalities, using the example of fax machines. One scenario posits that if consumers believe no one else will buy a fax machine, then no one buys it, creating a self-fulfilling prophecy of market failure. Another …",
+   "answer": "Cited Documents: 0, 1\nAnswer: <co:0> In markets with competing standards, such as VHS versus Beta or HD-DVD versus Blu-Ray, firms must carefully consider their strategies regarding pricing, advertising, and product design to influence market outcomes. </co> <co:1> As illustrated in the 'DOS/MAC' exercise, firms in dynamically competitive network markets need to balance their spending on advertising, price reductions, and product enhancements to potentially secure a dominant market position. </co> <co:0> The evolution of these markets often depends on how well each firm can anticipate and react to the competitive landscape and consumer expectations. </co>"
+  },
+  {
+   "question": "How can blockchain technology enhance the security of online voting systems?",
+   "documents": "Document:0\n\nTitle: Advances in Quantum Computing\n\nText: Quantum computing has been a rapidly advancing field in the realm of computational sciences, promising to revolutionize industries by providing breakthroughs in processing power. Quantum computers operate fundamentally differently from traditional binary digital electronic computers. Instead of …\n\nDocument:1\n\nTitle: Trends in Renewable Energy\n\nText: The renewable energy sector has seen significant growth over the past decade, driven by increasing awareness of climate change and the need for sustainable energy sources. Solar power, wind energy, hydroelectricity, and biomass are among the leading sources of renewable energy. Each of these …",
+   "answer": "Cited Documents: None\nAnswer: Blockchain technology could potentially enhance the security of online voting systems by providing a decentralized and transparent ledger of all votes cast. This technology inherently offers immutability and transparency, which means that once a vote is recorded on a blockchain, it cannot be altered, and all transactions are visible to authorized parties. This could help in reducing fraud and ensuring the integrity of the voting process. Furthermore, blockchain's distributed nature can prevent system failures and attacks that target centralized databases, which are common in traditional online voting systems. By using cryptographic techniques to secure data, blockchain-based voting systems could ensure that voter information and vote tallies are kept confidential while maintaining a verifiable audit trail for each vote cast, enhancing both security and trust in the electoral process."
+  }
+ ]
+}

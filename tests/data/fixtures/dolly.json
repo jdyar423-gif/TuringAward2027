@@ -1,0 +1,23 @@
+{
+ "source": "dolly",
+ "repo": "databricks/databricks-dolly-15k",
+ "config": "default",
+ "split": "train",
+ "revision": "721815b9fa637f55fa82de54f99195bbec3cd0ce",
+ "license": "cc-by-sa-3.0",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept.",
+ "records": [
+  {
+   "instruction": "What is the average lifespan of a Golden Retriever?",
+   "context": "Golden Retrievers are a generally healthy breed; they have an average lifespan of 12 to 13 years. Irresponsible breeding to meet high demand has led to the prevalence of inherited health problems in some breed lines, including allergic skin conditions, eye problems and sometimes snappiness. These problems are rarely encountered in dogs bred from responsible breeders.",
+   "response": "The average lifespan of a Golden Retriever is 12 to 13 years.",
+   "category": "information_extraction"
+  },
+  {
+   "instruction": "Who saved Andromeda from the sea monster",
+   "context": "",
+   "response": "Perseus",
+   "category": "open_qa"
+  }
+ ]
+}

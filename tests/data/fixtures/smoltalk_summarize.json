@@ -1,0 +1,43 @@
+{
+ "source": "smoltalk_summarize",
+ "repo": "HuggingFaceTB/smoltalk",
+ "config": "smol-summarize",
+ "split": "train",
+ "revision": "5feaf2fd3ffca7c237fc38d1861bc30365d48ffa",
+ "license": "apache-2.0 (card text; the YAML header has no licence field)",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept.",
+ "records": [
+  {
+   "messages": [
+    {
+     "role": "system",
+     "content": "Provide a concise, objective summary of the input text in up to three sentences, focusing on key actions and intentions without using second or third person pronouns."
+    },
+    {
+     "role": "user",
+     "content": "Hi Sarah,\n\nTuesday afternoon works great for me too. Let's meet at The Coffee House on Main Street at 2 pm. I'll bring some samples of the resources we discussed.\n\nI'm excited to chat more with you about our work and share some strategies that have been effective for my students.\n\nSee you then!\n\nEmily"
+    },
+    {
+     "role": "assistant",
+     "content": "Emily confirms the meeting for Tuesday afternoon at 2 pm at The Coffee House on Main Street. She will bring samples of the resources discussed and looks forward to sharing effective strategies for students."
+    }
+   ]
+  },
+  {
+   "messages": [
+    {
+     "role": "system",
+     "content": "Provide a concise, objective summary of the input text in up to three sentences, focusing on key actions and intentions without using second or third person pronouns."
+    },
+    {
+     "role": "user",
+     "content": "Hi Alex,\n\nThank you so much for offering to look at my materials. I will send them over to you by the end of the week.\n\nNext Friday works great for me. I can meet for coffee around 4:15pm if that works for you. Just let me know where you'd like to meet.\n\nThanks again for all your help. I'll be in touch soon.\n\nBest,\nEmily"
+    },
+    {
+     "role": "assistant",
+     "content": "Emily will send the materials for graduate school applications by the end of the week. She has agreed to meet for coffee next Friday at 4:15pm and is waiting for a location confirmation."
+    }
+   ]
+  }
+ ]
+}

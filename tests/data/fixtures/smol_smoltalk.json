@@ -1,0 +1,35 @@
+{
+ "source": "smol_smoltalk",
+ "repo": "HuggingFaceTB/smol-smoltalk",
+ "config": "default",
+ "split": "train",
+ "revision": "f73fe857d519ff6ac5af2ea67c4d3834da7b8bcc",
+ "license": "apache-2.0",
+ "how": "Rows recorded on 2026-11-21 from the datasets-server /first-rows endpoint (or, where noted, read from the parquet files of the listed revision); long strings shortened at a word boundary with ' …'; only the columns the adapter reads are kept.",
+ "records": [
+  {
+   "messages": [
+    {
+     "role": "user",
+     "content": "Your response should contain exactly 5 bullet points. Use the markdown bullet points such as: * This is point 1. Additionally, your entire response should be in all lowercase letters. no capital letters are allowed.\n"
+    },
+    {
+     "role": "assistant",
+     "content": "* this is point one\n* this is point two\n* this is point three\n* this is point four\n* this is point five"
+    }
+   ]
+  },
+  {
+   "messages": [
+    {
+     "role": "user",
+     "content": "Your response should contain less than 50 words. Do not include keywords [forbidden_words] in the response. [forbidden_words] are: forbidden, restricted, not allowed, prohibited, banned. Finish your response with this exact phrase [ender]. No other words should follow this phrase. [ender] is \"Is there anything else I can help with?\"\n"
+    },
+    {
+     "role": "assistant",
+     "content": "Sure I can help with that Is there anything else I can help with?"
+    }
+   ]
+  }
+ ]
+}
