@@ -170,9 +170,18 @@ class DataCfg:
     chat_frac: float = 0.25      # fraction of tokens from chat sources during pre-training
     chat_frac_tail: float = 0.7  # ... during the final chat-heavy phase
     tail_from: float = 0.92
-    library_frac_base: float = 0.15   # base sequences that carry a retrieved passage
-    library_frac_chat: float = 0.4
-    distractor_frac: float = 0.35     # of library sequences: passage is a distractor
+    library_frac_base: float = 0.02   # share of the non-chat tokens given to library tasks (reading and
+                                      # question-answer tasks, bes.data.rag_format, in library rows); the
+                                      # library kind is capped at MixCfg.max_epochs passes over its entries
+                                      # (lib_v2: ~42M tokens a pass, ~1.7% of a 2e10-token run), so this is
+                                      # about what can be delivered (with MixCfg.library_weight in chat rows
+                                      # the kind still asks for more; mixture.plan moves the surplus)
+    library_frac_chat: float = 0.4    # probability that a chat or rag sample goes through the retrieval of
+                                      # inference (rag_format.insert_retrieval: a question-like user message,
+                                      # then the library's gate); only samples whose gate opens get a passage,
+                                      # so far fewer chat samples carry one (Loader.stats() reports the share)
+    distractor_frac: float = 0.35     # of the passages retrieval puts into chat samples (where the gate
+                                      # opened): a distractor instead of the gated passage
     passage_loss_w: float = 0.25
     hindsight_frac: float = 0.12      # chat samples given a hindsight constraint
     assistant_only_from: float = 0.92  # from this progress on, loss on assistant tokens only
@@ -401,14 +410,18 @@ class MixCfg:
 
     Appended by the data-mixture track; not (yet) a field of ``Cfg``. Sub-kind weights are token
     shares of the conversations in chat rows, renormalised over the sub-kinds that have data on
-    disk; library tasks also fill ``DataCfg.library_frac_base`` of the base rows. Variant
-    fractions are per built sample and are renormalised over the variants that are possible.
+    disk; library tasks also fill ``DataCfg.library_frac_base`` of the non-chat tokens. These are
+    targets: ``mixture.plan`` caps every source at ``max_epochs`` reads, which holds the library
+    tasks (lib_v2: ~42M tokens a pass) at about 1.7% of a 2e10-token run whatever they ask; the
+    loader warns when a cap cuts a planned share by more than a third. Variant fractions are per
+    built sample and are renormalised over the variants that are possible.
     """
 
-    chat_weight: float = 0.62        # chat sources (SmolTalk family, Tulu 3, UltraChat, SYNTH)
-    rag_weight: float = 0.15         # sources that bring their own passages (SQuAD v2, SYNTH RAG, ...)
+    chat_weight: float = 0.57        # chat sources (SmolTalk family, Tulu 3, UltraChat, SYNTH); retrieval
+                                     # is inserted into them (DataCfg.library_frac_chat)
+    rag_weight: float = 0.20         # sources that bring their own passages (SQuAD v2, SYNTH RAG, ...)
     math_weight: float = 0.13        # math sources (GSM8K with calculator spans, Orca-Math)
-    library_weight: float = 0.10     # library tasks built from the written library
+    library_weight: float = 0.10     # library tasks built from the written library (capped by max_epochs)
     max_epochs: float = 8.0          # no source and no library entry is read more often than this
     read_weight: float = 0.6         # library tasks: reading tasks from "wiki" passages ...
     qa_weight: float = 0.4           # ... and question-answer tasks from "qa" entries
@@ -424,10 +437,15 @@ class MixCfg:
     qa_closed: float = 0.30          # ... closed book
     distractor_random: float = 0.5   # share of distractors drawn uniformly (else a ranked neighbour)
     distractor_topk: int = 4         # ranks searched for a ranked distractor
-    read_task_tokens: float = 66.0   # mean tokens per reading-task draw, declined draws count 0
-                                     # (measured on the first library build: 51% of draws usable, 131 tokens each)
-    qa_task_tokens: float = 44.0     # mean tokens per question-answer task (measured on NQ-open
-                                     # train pairs with a BM25 stand-in for the qa index)
+    read_task_tokens: float = 66.0   # tokens of one pass of reading tasks per wiki entry (entries that give
+                                     # no task count 0; lib_v2: 286,019 of 535,296 entries give one, 128 tokens
+                                     # each, i.e. 68); the draws skip the entries rag_format.reading_suitable
+                                     # rules out
+    qa_task_tokens: float = 44.0     # mean tokens per question-answer task (lib_v2: 45.6)
+    retrieval_later_turn: float = 0.5  # conversations with several user turns: probability that retrieval
+                                       # serves a later user turn (uniform among them) instead of the first
+    later_window: float = 0.5        # a conversation longer than T + 1: probability that a draw keeps one of
+                                     # its later windows (samples.fit_draw) instead of its prefix
 
 
 # --------------------------------------------------------------------------- loader
@@ -463,3 +481,6 @@ class LoaderCfg:
     journal_name: str = "loader_journal.jsonl"  # under RunCfg.out_dir unless a path is given
     copy_out: bool = True            # return batches copied out of the shared ring
     stats_blocks: int = 32           # block summaries kept for Loader.stats()
+    heldout_frac: float = 0.003      # (journal) share of the conversations of every chat, rag and math
+                                     # source kept out of training by a hash of (source, shard, segment);
+                                     # Loader.heldout / loader.heldout_samples read them

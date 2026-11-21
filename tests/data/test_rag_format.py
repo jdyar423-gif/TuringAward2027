@@ -534,7 +534,8 @@ def test_insert_retrieval_gated(lib, tok):
     assert out.ids.tolist() == s.ids[:u].tolist() + turn.tolist() + s.ids[u:].tolist()
     assert out.tags == ("retrieval:gated",) and (out.source, out.kind) == (s.source, s.kind)
     np.testing.assert_array_equal(out.w, S.loss_weights(out.ids, out.roles))
-    assert stats.as_dict()["retrieval"] == {"calls": 1, "fired": 1, "fired_rate": 1.0, "distractor_share": 0.0}
+    assert stats.as_dict()["retrieval"] == {"calls": 1, "fired": 1, "fired_rate": 1.0, "question_like_rate": 1.0,
+                                            "gate_rate": 1.0, "distractor_share": 0.0, "later_turn_share": 0.0}
     closed = R.insert_retrieval(chat(tok, user="Who was Zorblax Quux?"), lib, tok, S.rng_for(0),
                                 DataCfg(distractor_frac=0.0), stats=stats)
     assert closed.tags == () and stats.counts["retrieval:gate_closed"] == 1
@@ -564,7 +565,8 @@ def test_insert_retrieval_respects_exclusions(lib, tok):
             if out.tags:
                 text = messages_of(out, tok)[0]["content"]
                 assert not text.startswith("Alan Turing\n")
-    assert all(c[2] == excl["exclude_pids"] and c[3] == (tid,) for c in lib.calls)
+    # every call excludes the sample's entries (a distractor search also the gated passage)
+    assert all(set(excl["exclude_pids"]) <= set(c[2]) and tid in c[3] for c in lib.calls)
 
 
 def test_insert_retrieval_skips(lib, tok):
@@ -593,6 +595,228 @@ def test_insert_retrieval_max_len(lib, tok):
     same = R.insert_retrieval(short, lib, tok, S.rng_for(0), DataCfg(distractor_frac=0.0),
                               max_len=len(short), stats=stats)
     assert same is short and stats.counts["retrieval:too_long"] == 1
+
+
+def library_turns(sample) -> list[int]:
+    return [s for role, s, _ in S.turn_spans(sample.ids) if role == LIBRARY]
+
+
+def test_no_passage_where_the_gate_stays_closed(lib, tok):
+    """A question the gate does not answer gets no passage, not even a distractor: at
+    inference a passage appears only when the gate opens."""
+    stats = R.RagStats()
+    closed = chat(tok, user="Who was Zorblax Quux?")
+    assert query_type("Who was Zorblax Quux?") in lib.cfg.gate.allowed_types
+    assert lib.retrieve("Who was Zorblax Quux?") is None
+    for seed in range(30):
+        out = R.insert_retrieval(closed, lib, tok, S.rng_for("closed", seed), DataCfg(distractor_frac=1.0),
+                                 stats=stats)
+        assert out is closed
+    c = stats.counts
+    assert c["retrieval:question_like"] == 30 and c["retrieval:gate_closed"] == 30 and c["retrieval:fired"] == 0
+
+
+def test_distractors_are_a_share_of_the_passages_the_gate_lets_in(lib, tok):
+    """Over many draws: a passage is inserted exactly when the gate opens on the served user
+    message (reference: the library's own retrieve), distractor_frac of the inserted passages
+    are distractors, and a distractor is neither the gated passage nor from its article."""
+    questions = ["Who was Alan Turing?", "Who was Zorblax Quux?", "What is the capital of France?",
+                 "Tell me about photosynthesis.", "Write a poem about the sea.", "Who wrote Hamlet?",
+                 "Where is Rome?", "Why do glorbs flim?"]
+    data = DataCfg(distractor_frac=0.35)
+    stats = R.RagStats()
+    n_draws = n_passages = n_distractors = 0
+    for i in range(480):
+        q = questions[i % len(questions)]
+        s = chat(tok, user=q)
+        gate = lib.retrieve(q) if query_type(q) in lib.cfg.gate.allowed_types else None
+        out = R.insert_retrieval(s, lib, tok, S.rng_for("share", i), data, stats=stats)
+        n_draws += 1
+        assert (out is not s) == (gate is not None), q          # a passage exactly where the gate opens
+        if gate is None:
+            continue
+        n_passages += 1
+        text = messages_of(out, tok)[0]["content"]
+        if out.tags[0] == "retrieval:gated":
+            assert text == gate.text
+            continue
+        n_distractors += 1
+        src = [p for p in range(lib.n_passages) if lib.passage(p).text == text]
+        assert src and gate.pid not in src
+        assert all(lib.tid[p] != lib.tid[gate.pid] for p in src if lib.tid[gate.pid] >= 0)
+    p = data.distractor_frac
+    assert n_passages > 150
+    assert abs(n_distractors / n_passages - p) < 4 * (p * (1 - p) / n_passages) ** 0.5
+    r = stats.as_dict()["retrieval"]
+    assert r["fired"] == n_passages and r["distractor_share"] == pytest.approx(n_distractors / n_passages)
+    assert r["gate_rate"] == pytest.approx(n_passages / stats.counts["retrieval:question_like"])
+
+
+def multi_turn(tok, users, system=None, reply="Here is a reply. " * 4):
+    conv = [{"role": "system", "content": system}] if system else []
+    for u in users:
+        conv += [{"role": "user", "content": u}, {"role": "assistant", "content": reply.strip()}]
+    return conv, S.conversation_sample(conv, tok, source="smol_smoltalk", kind="chat")
+
+
+def test_a_later_user_turn_is_served_as_the_responder_serves_it(lib, tok):
+    """With retrieval_later_turn = 1 a conversation with several user turns gets its passage
+    right before a later user turn, after the earlier exchanges: the tokens up to that turn's
+    ASSISTANT are exactly the prompt bes.decode.respond.fit_prompt renders for the
+    conversation up to that user message with the passage; the turns after it stay."""
+    from bes.decode.respond import OurChat, fit_prompt
+
+    conv, s = multi_turn(tok, ["Hello there.", "Who was Alan Turing?", "What is the capital of France?"],
+                         system="Be brief.")
+    mix = MixCfg(retrieval_later_turn=1.0)
+    stats = R.RagStats()
+    served = set()
+    for seed in range(40):
+        out = R.insert_retrieval(s, lib, tok, S.rng_for("later", seed), DataCfg(distractor_frac=0.0), mix,
+                                 stats=stats)
+        assert out is not s                   # both later questions open the gate
+        msgs = messages_of(out, tok)
+        k = [m["role"] for m in msgs].index("library")
+        user = msgs[k + 1]["content"]
+        assert user in ("Who was Alan Turing?", "What is the capital of France?")
+        served.add(user)
+        j = [m["content"] for m in conv].index(user)
+        prompt, info = fit_prompt(OurChat(tok), conv[:j + 1], lib.retrieve(user).text, 10 ** 6)
+        assert info["dropped_turns"] == 0
+        assert out.ids[:len(prompt)].tolist() == prompt
+        assert msgs[:k] == conv[:j] and msgs[k + 1:] == S.canonical_messages(conv[j:])
+        assert "retrieval:later_turn" in out.tags and len(library_turns(out)) == 1
+    assert served == {"Who was Alan Turing?", "What is the capital of France?"}
+    assert stats.counts["retrieval:later_turn"] == 40
+    first = R.insert_retrieval(s, lib, tok, S.rng_for(0), DataCfg(distractor_frac=0.0),
+                               MixCfg(retrieval_later_turn=0.0))
+    assert first is s                         # the first user turn is small talk: no passage
+    rates = [R.insert_retrieval(multi_turn(tok, ["Who was Alan Turing?", "Who wrote Hamlet?"])[1], lib, tok,
+                                S.rng_for("rate", i), DataCfg(distractor_frac=0.0)) for i in range(400)]
+    later = np.mean(["retrieval:later_turn" in o.tags for o in rates])
+    assert abs(later - MixCfg().retrieval_later_turn) < 4 * (0.25 / 400) ** 0.5
+
+
+def test_fit_served_drops_the_oldest_exchanges_like_fit_prompt(tok):
+    """Fitting a sample whose passage serves its last user turn: the oldest exchanges go first,
+    the system turn stays, exactly the exchanges fit_prompt keeps for the same budget; the turns
+    after the served exchange go before any exchange is dropped."""
+    from bes.decode.respond import OurChat, fit_prompt
+
+    passage = "Alan Turing\nAlan Turing was an English mathematician. He broke codes."
+    rng = np.random.default_rng(0)
+    checked = 0
+    for trial in range(30):
+        n = int(rng.integers(2, 6))
+        k = int(rng.integers(1, n))                       # the served user turn (0-based), not the first
+        users = [f"Question number {i}: " + "word " * int(rng.integers(3, 30)) for i in range(n)]
+        conv, _ = multi_turn(tok, users, system="Be brief." if trial % 2 else None,
+                             reply="An answer sentence. " * int(rng.integers(2, 12)))
+        with_lib = list(conv)
+        j = [m["content"] for m in conv].index(users[k])
+        with_lib.insert(j, {"role": "library", "content": passage})
+        s = S.conversation_sample(with_lib, tok)
+        lib_start = library_turns(s)[0]
+        reply_len = len(cf.render_turn("assistant", conv[j + 1]["content"], tok)[0]) - 1   # content + END
+        for max_len in sorted(set(int(x) for x in rng.integers(20, len(s) + 20, 6))):
+            got = R.fit_served(s, lib_start, max_len)
+            try:
+                prompt, info = fit_prompt(OurChat(tok), conv[:j + 1], passage, max_len - reply_len)
+                fits = not (info["dropped_passage"] or info["dropped_system"] or info["cut_user"])
+            except ValueError:                                # nothing fits that budget
+                fits = False
+            assert (got is not None) == fits
+            if got is None:
+                continue
+            assert len(got) <= max_len and len(library_turns(got)) == 1
+            assert got.ids[:len(prompt)].tolist() == prompt   # the same exchanges as at inference
+            assert messages_of(got, tok)[-1]["role"] == "assistant"
+            assert len(got) >= len(prompt) + reply_len        # the served reply is whole
+            if info["dropped_turns"] == 0:                    # only later turns were cut
+                assert got.ids.tolist() == s.ids[:len(got)].tolist()
+            checked += 1
+    assert checked > 50
+
+
+def test_one_passage_per_conversation(lib, tok):
+    """A conversation that already holds a library turn anywhere gets no other one."""
+    conv = [{"role": "user", "content": "Who was Alan Turing?"}, {"role": "assistant", "content": "A mathematician."},
+            {"role": "library", "content": "Paris\nParis is the capital of France."},
+            {"role": "user", "content": "What is the capital of France?"}, {"role": "assistant", "content": "Paris."}]
+    s = S.conversation_sample(conv, tok, kind="rag")
+    stats = R.RagStats()
+    for seed in range(20):
+        assert R.insert_retrieval(s, lib, tok, S.rng_for(seed), DataCfg(distractor_frac=0.5),
+                                  MixCfg(retrieval_later_turn=0.5), stats=stats) is s
+    assert stats.counts["retrieval:skip_has_library"] == 20
+
+
+# --------------------------------------------------------------- reading-task pre-filter
+def test_reading_suitable_predicts_every_decline(lib, tok):
+    """An entry outside reading_suitable declines for every draw; one inside builds a task;
+    the slow path (passage per entry) is the reference for the mask."""
+    mask = R.reading_suitable(lib)
+    assert mask.shape == (lib.n_wiki,) and not mask.flags.writeable
+    view = R.as_view(lib)
+    for pid in range(lib.n_wiki):
+        built = [R.reading_task(pid, lib, tok, S.rng_for("suit", pid, k)) is not None for k in range(6)]
+        assert all(built) if mask[pid] else not any(built), pid
+        p = view.passage(pid)
+        lines = p.text.split("\n")[1:] if p.text.startswith(p.title + "\n") else None
+        lead = lib.title_range(lib.tid[pid]).start == pid
+        title = strip_disambiguator(p.title)
+        ok = lines is not None and title and len(title.split()) <= R.MAX_TITLE_WORDS and \
+            not title.lower().startswith("list of") and (lead or (lines[0].strip().lower() in R.SECTION_HEADINGS))
+        if not ok:
+            assert not mask[pid]
+    assert 0 < mask.sum() < lib.n_wiki
+    no_sections = R.reading_suitable(lib, MixCfg(section_tasks=False))
+    assert (no_sections <= mask).all() and no_sections.sum() < mask.sum()
+
+
+def test_a_prepared_view_deals_only_suitable_entries(lib, tok, tmp_path):
+    """After prepare_tasks every suitable wiki entry is drawn once per epoch and no other;
+    question-answer draws are unchanged; the view pickles without its passage cache."""
+    import pickle
+
+    mask = R.reading_suitable(lib)
+    view = R.as_view(lib).prepare_tasks(MixCfg(), cache_dir=tmp_path)
+    suitable = sorted(int(p) for p in np.flatnonzero(mask))
+    n = len(suitable)
+    draws = [R.pick_entry(view, "library_read", c, seed=3) for c in range(2 * n)]
+    assert sorted(draws[:n]) == suitable and sorted(draws[n:]) == suitable and draws[:n] != draws[n:]
+    assert all(R.reading_task(p, view, tok, S.rng_for("dealt", c)) is not None for c, p in enumerate(draws))
+    plain = R.as_view(FakeLibrary())
+    assert [R.pick_entry(view, "library_qa", c, 1) for c in range(9)] == \
+        [R.pick_entry(plain, "library_qa", c, 1) for c in range(9)]
+    view.passage(0)
+    again = pickle.loads(pickle.dumps(view))
+    assert again._cache == {} and list(again.task_entries("library_read")) == suitable
+
+
+@pytest.mark.skipif(not (LIB_DIR / "library.json").exists(), reason="no built library in data_cache")
+def test_reading_suitable_on_the_real_library(tok, tmp_path):
+    """lib_v2: the one-pass mask (Packed.iter_bodies) equals the per-passage reference on a
+    sample of entries, entries outside it decline, it is cached under cache_dir, and draws
+    from a prepared view almost never decline (about half did before)."""
+    real = Library.load(str(LIB_DIR))
+    R._SUITABLE_MEMO.clear()
+    mask = R.reading_suitable(real, cache_dir=tmp_path)
+    assert list(tmp_path.glob("reading_suitable-*.npy")) and 0.4 < mask.mean() < 0.7
+    R._SUITABLE_MEMO.clear()
+    assert np.array_equal(R.reading_suitable(real, cache_dir=tmp_path), mask)       # read back
+    view = R.as_view(real)
+    for pid in np.random.default_rng(1).choice(len(mask), 300, replace=False).tolist():
+        p = view.passage(pid)
+        got = R._reading_form(p.title, R._passage_lines(p), view.is_lead(pid), MixCfg())
+        assert mask[pid] == (not isinstance(got, str) and R._answer_possible(got[2], MixCfg()))
+        if not mask[pid]:
+            assert R.reading_task(pid, view, tok, S.rng_for("real-suit", pid)) is None
+    prepared = R.as_view(real).prepare_tasks(MixCfg(), cache_dir=tmp_path)
+    stats = R.RagStats()
+    built = sum(R.library_task("library_read", R.pick_entry(prepared, "library_read", c), prepared, tok,
+                               S.rng_for("real-dealt", c), stats=stats) is not None for c in range(200))
+    assert built >= 196
 
 
 def test_not_in_the_passage_samples_pass_through(lib, tok):

@@ -21,7 +21,7 @@ from bes.config import (ASSISTANT, BOS, CALC, CALC_END, END, EQ, LIBRARY, PAD, S
 from bes.data import chat_format as cf
 from bes.data import loader as LD
 from bes.data import shards as SH
-from bes.data.samples import WeightRule, conversation_cuts
+from bes.data.samples import WeightRule
 from bes.exact.features import exact_features
 from bes.train.schedule import stage_at
 from bes.tokenizer.tok import load
@@ -209,6 +209,34 @@ def segments_of(tokens, seg) -> list[tuple[int, int]]:
     return out
 
 
+def ref_turns(conv: list[int]) -> list[tuple[int, int, int]]:
+    """``(role token, start, stop)`` of the turns of a rendered conversation (scanning for END)."""
+    out, i = [], 1
+    while i < len(conv):
+        j = conv.index(END, i + 1)
+        out.append((conv[i], i, j + 1))
+        i = j + 1
+    return out
+
+
+def ref_pieces(conv: list[int]) -> tuple[set[tuple], set[tuple]]:
+    """``(prefixes, windows)`` the loader may place for a stored conversation: its prefixes that
+    end with the END of an assistant turn, and its windows: BOS, the system turn when it opens
+    the conversation, then the turns from a later exchange on (a user turn, or the library turn
+    right before it), cut after the END of an assistant turn."""
+    turns = ref_turns(conv)
+    head = conv[:turns[0][2]] if turns and turns[0][0] == SYSTEM else conv[:1]
+    starts = [turns[k - 1][1] if k and turns[k - 1][0] == LIBRARY else s
+              for k, (r, s, _) in enumerate(turns) if r == USER]
+    prefixes = {tuple(conv[:e]) for r, _, e in turns if r == ASSISTANT}
+    windows = set()
+    for s in starts[1:]:
+        for r, _, e in turns:
+            if r == ASSISTANT and e > s:
+                windows.add(tuple(head + conv[s:e]))
+    return prefixes, windows
+
+
 def check_row_structure(tokens, seg, w) -> None:
     """SPEC section 1/3 invariants of one row."""
     T = len(seg)
@@ -309,7 +337,8 @@ def test_rows_hold_whole_documents_and_turn_boundary_conversations(data, tok, tm
     """Without content transforms: every base piece is a contiguous slice of a document (with a
     fresh BOS when it does not start at the document's start), a cut document continues in the
     stream's next base row, and every chat piece is a prefix of a stored conversation that ends
-    at an assistant turn (the whole conversation when it fits)."""
+    at an assistant turn (the whole conversation when it fits) or, for a conversation longer
+    than the row, one of its later windows (system turn kept, oldest exchanges dropped)."""
     root, store = data
     cfg = small_cfg(hindsight_frac=0.0)
     V = LC.n_streams
@@ -319,13 +348,14 @@ def test_rows_hold_whole_documents_and_turn_boundary_conversations(data, tok, tm
             for i in range(1, len(d) - 3):
                 gram.setdefault(tuple(d[i:i + 4].tolist()), (name, k, i))
     convs = {tuple(c.tolist()) for name in ("smol_smoltalk", "gsm8k", "squad_v2") for c in store[name]}
-    prefixes = {}
+    prefixes, windows = set(), set()
     for c in convs:
-        for cut in conversation_cuts(np.array(c)).tolist():
-            prefixes[c[:cut]] = len(c)
+        p, w = ref_pieces(list(c))
+        prefixes |= p
+        windows |= {x for x in w if len(c) > cfg.data.seq_len + 1}
     st = stage(cfg, chat_frac=0.4)
     last_cut: dict[int, tuple[str, int, int]] = {}       # stream -> (doc, next offset) after its last base row
-    chat_pieces = base_pieces = continued = 0
+    chat_pieces = base_pieces = continued = n_windows = 0
     with make(cfg, tok, root, tmp_path / "j.jsonl") as loader:
         A, B, T = st.shape
         for i in range(12):
@@ -340,7 +370,9 @@ def test_rows_hold_whole_documents_and_turn_boundary_conversations(data, tok, tm
                     is_chat = any(int(x) in ROLE_CODE for x in tokens)
                     if is_chat:
                         for p in pieces:
-                            assert tuple(p.tolist()) in prefixes
+                            key = tuple(p.tolist())
+                            assert key in prefixes or key in windows
+                            n_windows += key not in prefixes
                             chat_pieces += 1
                         continue
                     for j, p in enumerate(pieces):
@@ -360,7 +392,7 @@ def test_rows_hold_whole_documents_and_turn_boundary_conversations(data, tok, tm
                             end = off + len(p) - 1
                             last_cut[v] = (name, k, end) if end < len(doc) else None
                         base_pieces += 1
-    assert chat_pieces > 20 and base_pieces > 50 and continued > 5
+    assert chat_pieces > 20 and base_pieces > 50 and continued > 5 and n_windows > 0
 
 
 def test_row_kinds_are_balanced_in_every_micro_batch(data, tok, tmp_path):
@@ -712,6 +744,12 @@ def test_library_rows_retrieval_and_the_library_check(data, tok, tmp_path):
         stats = loader.stats()
         rec = loader.records[0]
     assert rec["library"]["id"] == "fake-1" and rec["rows"][1] > 0.1 and rec["lib"]
+    from bes.data import rag_format as R
+
+    suitable = R.reading_suitable(FakeLibrary(), mix)          # reading tasks draw only these
+    assert rec["library"]["tasks"] == {"rule": R.SUITABLE_RULE, "library_read": int(suitable.sum())}
+    assert suitable.sum() > 0
+    assert not any(k.startswith("library_read/") and k.endswith("declined") for b in stats["blocks"] for k in b["fail"])
     assert rec["probs"]["chat"][1] == 1.0                     # retrieval on every chat draw
     lib_turns = sum(int((b["tokens"] == LIBRARY).sum()) for b in batches)
     assert lib_turns > 0
@@ -730,6 +768,146 @@ def test_library_rows_retrieval_and_the_library_check(data, tok, tmp_path):
             loader(i, st)
         used = [r["library"] is not None for r in loader.records]
     assert used[0] is False and used[-1] is True
+
+
+class ClosedGate(FakeLibrary):
+    """The fake library with a gate that never opens (ranked look-ups still work)."""
+
+    def retrieve(self, query, exclude_pids=(), exclude_titles=(), log=None, kinds=None):
+        return None
+
+
+def test_chat_samples_carry_passages_only_where_the_gate_opens(tmp_path, tok):
+    """Retrieval on every chat draw, no other source of library turns: with a gate that never
+    opens no conversation gets a passage (a distractor only ever replaces a gated passage); with
+    the fake gate some do, and Loader.stats() reports the realised shares."""
+    root = tmp_path / "data"
+    rng = np.random.default_rng(11)
+    write_docs(root, "climbmix", 0, rng, 200, 8, 120)
+    write_convs(root, "smol_smoltalk", 0, lambda: chat_messages(rng, int(rng.integers(1, 3))), 300, tok)
+    cfg = small_cfg(hindsight_frac=0.0)
+    st = stage(cfg, chat_frac=0.9, library_frac_base=0.0, library_frac_chat=1.0)
+    mix = MixCfg(max_epochs=1000.0, library_weight=0.0)
+    seen = {}
+    for name, lib in (("closed", ClosedGate()), ("open", FakeLibrary())):
+        with make(cfg, tok, root, tmp_path / f"{name}.jsonl", library=lib, mix=mix) as loader:
+            batches = [loader(i, st) for i in range(6)]
+            blocks = loader.stats()["blocks"]
+        if name == "closed":
+            assert not any((b["tokens"] == LIBRARY).any() for b in batches)
+        n = sum(b["passages"]["chat"]["samples"] for b in blocks)
+        m = sum(b["passages"]["chat"]["with_passage"] for b in blocks)
+        rag = [b["retrieval"]["retrieval"] for b in blocks]
+        seen[name] = (sum(int((b["tokens"] == LIBRARY).sum()) for b in batches), n, m, rag)
+        for b in blocks:
+            p = b["passages"]["chat"]
+            assert p["passage_share"] == pytest.approx(p["with_passage"] / p["samples"])
+            assert 0.0 <= p["distractor_share"] <= 1.0 and p["with_passage"] <= p["samples"]
+    turns, n, m, rag = seen["closed"]
+    assert n > 50 and m == 0 and turns == 0
+    assert sum(r["calls"] for r in rag) > 50 and all(r["gate_rate"] == 0.0 for r in rag)
+    turns, n, m, rag = seen["open"]
+    assert n > 50 and 0 < m < n and 0 < turns <= m
+
+
+def test_a_planned_share_cut_by_the_caps_is_warned_once(data, tok, tmp_path, caplog):
+    """A source whose planned token share the epoch caps cut below two thirds of its target is
+    named in one warning per run (with both numbers), however many blocks are planned, and
+    listed in stats()["warnings"]; sources the caps do not cut that much are not."""
+    import logging
+
+    root, _ = data
+    cfg = small_cfg()
+    st = stage(cfg, p=0.01, chat_frac=0.5)                  # p < horizon_min_p: the configured horizon
+    lc = dataclasses.replace(LC, horizon_tokens=3e5)
+    with caplog.at_level(logging.WARNING, logger="bes.data.loader"):
+        with make(cfg, tok, root, tmp_path / "j.jsonl", lc=lc) as loader:
+            for i in range(14):
+                loader(i, st)
+            warnings = loader.stats()["warnings"]
+            recs = loader.records
+    assert len(recs) >= 3
+    cut = {s for r in recs for s, want in r["mixture"]["target"].items()
+           if r["mixture"]["share"].get(s, 0.0) < (2 / 3) * want}
+    assert cut and {w["source"] for w in warnings} == cut
+    logged = [r.getMessage() for r in caplog.records if r.name == "bes.data.loader"]
+    for w in warnings:
+        mine = [msg for msg in logged if f" of {w['source']} from " in msg]
+        assert len(mine) == 1 and f"{w['target']:.4f}" in mine[0] and f"{w['share']:.4f}" in mine[0]
+        rec = next(r for r in recs if r["id"] == w["block"])
+        assert w["target"] == rec["mixture"]["target"][w["source"]] and w["share"] < (2 / 3) * w["target"]
+
+
+def ref_heldout(name: str, shard: int, seg: int, frac: float) -> bool:
+    """The held-out rule with Python integers (independent of the loader's numpy code)."""
+    mask = (1 << 64) - 1
+
+    def sm(x: int) -> int:
+        x = (x + 0x9E3779B97F4A7C15) & mask
+        x = ((x ^ (x >> 30)) * 0xBF58476D1CE4E5B9) & mask
+        x = ((x ^ (x >> 27)) * 0x94D049BB133111EB) & mask
+        return x ^ (x >> 31)
+
+    import hashlib
+
+    key = int.from_bytes(hashlib.blake2b(name.encode(), digest_size=8, person=b"bes-heldout").digest(), "little")
+    return (sm(sm(sm(key) ^ shard) ^ seg) >> 11) < frac * 2 ** 53
+
+
+def test_heldout_conversations_never_reach_training(tmp_path, tok):
+    """About heldout_frac of the conversations of every chat, rag and math source (a hash of
+    source, shard id and segment index) never appear in a batch over several epochs, every other
+    one does; heldout_samples / Loader.heldout return exactly those, deterministically, without
+    worker processes; the rule is part of the journal header."""
+    root = tmp_path / "data"
+    rng = np.random.default_rng(13)
+    store: dict[str, list[np.ndarray]] = {}
+    write_convs(root, "smol_smoltalk", 0, lambda: chat_messages(rng, 1), 120, tok, store)
+    write_convs(root, "smol_smoltalk", 1, lambda: chat_messages(rng, 1), 60, tok, store)
+    write_convs(root, "gsm8k", 0, lambda: math_messages(rng), 60, tok, store)
+    write_convs(root, "squad_v2", 0, lambda: rag_messages(rng), 60, tok, store)
+    write_docs(root, "climbmix", 0, rng, 100, 8, 60)
+    frac = 0.15
+    where = {"smol_smoltalk": [(0, i) for i in range(120)] + [(1, i) for i in range(60)],
+             "gsm8k": [(0, i) for i in range(60)], "squad_v2": [(0, i) for i in range(60)]}
+    held = {name: {tuple(store[name][k].tolist()) for k, (sh, i) in enumerate(pos) if ref_heldout(name, sh, i, frac)}
+            for name, pos in where.items()}
+    kept = {name: {tuple(c.tolist()) for c in store[name]} - held[name] for name in where}
+    assert all(0 < len(held[n]) < 0.4 * len(store[n]) for n in where)
+    # the API needs no loader and no worker
+    got = LD.heldout_samples(root, "chat", 10 ** 6, seed=0, frac=frac)
+    assert {tuple(s.ids.tolist()) for s in got} == held["smol_smoltalk"]
+    assert all(s.source == "smol_smoltalk" and s.kind == "chat" and s.tags == ("heldout",) for s in got)
+    some = LD.heldout_samples(root, "math", 3, seed=1, frac=frac)
+    assert len(some) == 3 and {tuple(s.ids.tolist()) for s in some} <= held["gsm8k"]
+    assert [s.key() for s in some] == [s.key() for s in LD.heldout_samples(root, "math", 3, seed=1, frac=frac)]
+    assert LD.heldout_samples(root, "chat", 0, frac=frac) == [] and LD.heldout_samples(root, "rag", 5, frac=0.0) == []
+    with pytest.raises(ValueError):
+        LD.heldout_samples(root, "climbmix", 3)
+    cfg = small_cfg(seq_len=128, micro_seqs=4, accum=2, hindsight_frac=0.0)
+    st = stage(cfg, chat_frac=1.0, library_frac_base=0.0, library_frac_chat=0.0)
+    lc = dataclasses.replace(LC, heldout_frac=frac)
+    pieces: set[tuple] = set()
+    with make(cfg, tok, root, tmp_path / "j.jsonl", lc=lc) as loader:
+        for i in range(70):
+            b = loader(i, st)
+            for a in range(b["tokens"].shape[0]):
+                for r in range(b["tokens"].shape[1]):
+                    tokens = b["tokens"][a, r]
+                    pieces |= {tuple(tokens[s:e].tolist()) for s, e in segments_of(tokens, b["seg"][a, r])
+                               if tokens[s] == BOS}
+        epochs = loader.stats()["blocks"][-1]["epochs"]
+        assert {tuple(s.ids.tolist()) for s in loader.heldout("squad_v2", 1000)} == held["squad_v2"]
+        fails = sum(blk["fail"].get(f"{n}/heldout", 0) for blk in loader.stats()["blocks"] for n in where)
+    assert all(epochs[n]["min"] >= 2 for n in where)            # every stream is in its third epoch
+    for name in where:
+        assert not (pieces & held[name]), name                  # never trained
+        assert kept[name] <= pieces, name                       # everything else was
+    assert fails > 0
+    head = json.loads((tmp_path / "j.jsonl").read_text().splitlines()[0])["settings"]
+    assert head["loader"]["heldout_frac"] == frac and head["heldout"]["rule"] == LD.HELDOUT_RULE
+    with pytest.raises(ValueError, match="other settings"):
+        make(cfg, tok, root, tmp_path / "j.jsonl", lc=dataclasses.replace(lc, heldout_frac=0.01))
 
 
 # --------------------------------------------------------------------------- journal

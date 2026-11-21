@@ -25,8 +25,11 @@ kind         target share               sources (weights within the kind)
 
 Sources without data on disk are skipped and the weights of their kind renormalised (they are
 listed in ``Mixture.missing``). Rows: *base rows* carry the ``base`` kind, *library rows* the
-part ``(1 - c) L`` of the library kind (the library share of the base rows), *chat rows*
-everything else; ``Mixture.chat_rows`` gives the sub-kind shares inside chat rows.
+part ``(1 - c) L`` of the library kind (the library share of the non-chat tokens), *chat rows*
+everything else; ``Mixture.chat_rows`` gives the sub-kind shares inside chat rows. ``L`` and
+``mu_lib`` are targets: one pass over the library's entries is ``library_available`` tokens
+(lib_v2: ~42M), so at ``max_epochs = 8`` the library kind gets at most ~1.7% of a 2e10-token
+horizon, and the caps below move the rest of its target to the other kinds.
 
 Epoch caps
 ----------
@@ -52,12 +55,14 @@ with the stage; while downloads are still running, pass the tokens until the nex
 Transform policy
 ----------------
 :func:`transform_probs`: hindsight relabelling (``samples.apply_hindsight``) with probability
-``DataCfg.hindsight_frac`` on ``chat`` samples; retrieval insertion
+``DataCfg.hindsight_frac`` on ``chat`` samples; the retrieval of inference
 (``rag_format.insert_retrieval``) with probability ``stage.library_frac_chat`` on ``chat`` and
-``rag`` samples when a library is available (``rag`` samples that already bring a passage pass
-through unchanged); nothing on ``math``, ``library`` and ``base`` samples. :func:`apply_transforms`
-runs them in that order (hindsight first, so that the retrieval sees the final user message, as
-at inference).
+``rag`` samples when a library is available: it puts a passage in only where the responder
+would show one (a question-like user message and an open gate; ``rag`` samples that already
+bring a passage pass through unchanged), so the share of conversations with a passage is
+``library_frac_chat`` times the gate rate (``Loader.stats()`` reports it); nothing on ``math``,
+``library`` and ``base`` samples. :func:`apply_transforms` runs them in that order (hindsight
+first, so that the retrieval sees the final user message, as at inference).
 
 Intended use (one row of ``T + 1`` tokens at stage ``st``; all draws from
 ``samples.rng_for(seed, <explicit keys>)``)
@@ -73,7 +78,8 @@ Intended use (one row of ``T + 1`` tokens at stage ``st``; all draws from
              s = rag_format.library_task(task, pid, lib, tok, rng, rule, mix)   # None: next pid
     chat:    sub ~ mx.chat_rows (token shares: draw segments with segment_probs(...) and mean
              lengths, or schedule by token deficit); src ~ mx.sources[sub] (library: as above)
-             s = from_tokens(seg, roles, rule, source=src, kind=sub); s, _ = fit(s, T + 1)
+             s = from_tokens(seg, roles, rule, source=src, kind=sub)
+             s = fit_draw(s, T + 1, rng, mix.later_window)     # prefix or a later window
              s = apply_transforms(s, draw_transforms(sub, st, rng), tok, rng, lib=lib, max_len=T + 1)
 """
 from __future__ import annotations

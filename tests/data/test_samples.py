@@ -375,6 +375,123 @@ def test_fit_never_ends_on_a_user_turn(tok):
     assert S.fit(only_user, 10 ** 6) == (None, None)
 
 
+# ---------------------------------------------------------------------------- windows
+def ref_windows(conv, tok, max_len):
+    """Brute force on messages: ``conv`` = [system] + exchanges ``[library] user assistant``
+    (a last exchange may lack its assistant); pieces = [system] + a run of whole exchanges, the
+    longest that fits ``max_len`` rendered tokens, the first starting at the first exchange, each
+    next one at the exchange after the previous piece; an exchange that cannot fit on its own is
+    skipped. ``[conv]`` when it fits and ends with an assistant turn."""
+    head = conv[:1] if conv and conv[0]["role"] == "system" else []
+    groups, cur = [], []
+    for m in conv[len(head):]:
+        cur.append(m)
+        if m["role"] == "assistant":
+            groups.append(cur)
+            cur = []
+    complete = len(groups)                          # a trailing group without assistant is dropped
+
+    def length(msgs):
+        return len(cf.render_conversation(msgs, tok)[0])
+
+    if not cur and length(conv) <= max_len:
+        return [conv]
+    out, i = [], 0
+    while i < complete:
+        k = 0
+        while i + k < complete and length(head + sum(groups[i:i + k + 1], [])) <= max_len:
+            k += 1
+        if k == 0:
+            i += 1
+            continue
+        out.append(head + sum(groups[i:i + k], []))
+        i += k
+    return out
+
+
+def long_conversation(rng: random.Random, n: int):
+    conv = [{"role": "system", "content": rng.choice(TEXTS[:4])}] if rng.random() < 0.5 else []
+    for _ in range(n):
+        if rng.random() < 0.25:
+            conv.append({"role": "library", "content": rng.choice(PROSE)})
+        conv.append({"role": "user", "content": rng.choice(TEXTS + PROSE)})
+        conv.append({"role": "assistant", "content": " ".join(rng.choice(PROSE) for _ in range(rng.randint(1, 3)))})
+    return conv
+
+
+def test_fit_windows_match_a_brute_force_on_messages(tok):
+    """fit_windows: the prefix, then the windows that keep the system turn and start at the
+    exchange after the previous piece (never at an assistant turn or at a library turn without
+    its user turn), each the longest that fits, against a reference on message lists."""
+    rng = random.Random(21)
+    seen_windows = 0
+    for trial in range(40):
+        conv = long_conversation(rng, rng.randint(1, 6)) if trial % 4 else random_conversation(rng)
+        s = S.conversation_sample(conv, tok, source="x", kind="chat", tags=("t",))
+        for max_len in sorted({rng.randint(4, len(s) + 5) for _ in range(6)} | {len(s)}):
+            pieces = S.fit_windows(s, max_len)
+            want = [S.canonical_messages(p) for p in ref_windows(conv, tok, max_len)]
+            assert [S.tokens_to_messages(p.ids, tok) for p in pieces] == want, (trial, max_len)
+            for j, p in enumerate(pieces):
+                assert len(p) <= max_len and p.ids[-1] == END and p.ids[0] == BOS
+                np.testing.assert_array_equal(p.w, S.loss_weights(p.ids, p.roles, p.rule))
+                assert (p.source, p.kind) == ("x", "chat") and p.tags[0] == "t"
+                assert ("window" in p.tags) == (not s.ids[:len(p)].tolist() == p.ids.tolist())
+                seen_windows += "window" in p.tags
+            head, _ = S.fit(s, max_len)
+            if head is not None:
+                assert pieces[0].ids.tolist() == head.ids.tolist()
+    assert seen_windows > 30
+
+
+def test_window_keeps_the_system_turn_and_starts_at_an_exchange(tok):
+    conv = [{"role": "system", "content": "Be brief."},
+            {"role": "user", "content": "q1"}, {"role": "assistant", "content": "a1"},
+            {"role": "library", "content": "p2"}, {"role": "user", "content": "q2"},
+            {"role": "assistant", "content": "a2"}, {"role": "user", "content": "q3"},
+            {"role": "assistant", "content": "a3"}]
+    s = S.conversation_sample(conv, tok)
+    starts = S.exchange_starts(s.ids)
+    assert [int(s.ids[x]) for x in starts] == [USER, LIBRARY, USER]
+    assert S.window(s, starts[0]) is s
+    w = S.window(s, starts[1])
+    assert S.tokens_to_messages(w.ids, tok) == [conv[0]] + conv[3:] and "window" in w.tags
+    assert S.tokens_to_messages(S.window(s, starts[2]).ids, tok) == [conv[0]] + conv[6:]
+    for bad in (starts[1] + 1, int(np.flatnonzero(s.ids == ASSISTANT)[0]), 0):
+        with pytest.raises(ValueError):
+            S.window(s, bad)
+
+
+def test_fit_draw_takes_the_prefix_or_a_later_window(tok):
+    """fit_draw: a conversation that fits is kept; otherwise the prefix with probability
+    1 - later, else a later window drawn uniformly (a window whenever the prefix does not exist);
+    deterministic in the generator."""
+    rng = random.Random(5)
+    conv = long_conversation(rng, 6)
+    s = S.conversation_sample(conv, tok)
+    max_len = len(s) // 3
+    pieces = S.fit_windows(s, max_len)
+    assert len(pieces) >= 3
+    keys = [p.key() for p in pieces]
+    assert S.fit_draw(s, len(s), np.random.default_rng(0)) is s
+    assert all(S.fit_draw(s, max_len, np.random.default_rng(i), later=0.0).key() == keys[0] for i in range(20))
+    n = 3000
+    got = [keys.index(S.fit_draw(s, max_len, S.rng_for("draw", i), later=0.5).key()) for i in range(n)]
+    share = np.bincount(got, minlength=len(keys)) / n
+    assert abs(share[0] - 0.5) < 4 * (0.25 / n) ** 0.5
+    for j in range(1, len(keys)):
+        p = 0.5 / (len(keys) - 1)
+        assert abs(share[j] - p) < 4 * (p * (1 - p) / n) ** 0.5
+    assert S.fit_draw(s, max_len, S.rng_for("draw", 7)).key() == S.fit_draw(s, max_len, S.rng_for("draw", 7)).key()
+    long_first = [{"role": "user", "content": "x " * 400}, {"role": "assistant", "content": "y " * 400},
+                  {"role": "user", "content": "q"}, {"role": "assistant", "content": "a"}]
+    s2 = S.conversation_sample(long_first, tok)
+    out = S.fit_draw(s2, 100, np.random.default_rng(0), later=0.0)
+    assert S.fit(s2, 100)[0] is None and S.tokens_to_messages(out.ids, tok) == long_first[2:]
+    doc = S.document_sample(" ".join(PROSE), tok)
+    assert S.fit_draw(doc, 10, np.random.default_rng(0)).ids.tolist() == doc.ids[:10].tolist()
+
+
 # ------------------------------------------------------------------------- hindsight
 def hindsight_conversations(rng: random.Random, n: int):
     users = ["Tell me something.", "What do you think?", "Help me with this", "Write about it:\n\nsome topic"]

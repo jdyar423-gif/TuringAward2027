@@ -254,15 +254,38 @@ def test_epoch_limit_is_raised_when_all_data_is_too_small():
 
 def test_plan_over_the_real_schedule():
     cfg = Cfg()
+    mix = MixCfg()
     avail = {s.name: 1e15 for s in sources.SOURCES}
     avail.update(M.library_tokens(540_000, 0))
+    mu_lib = mix.library_weight / (mix.chat_weight + mix.rag_weight + mix.math_weight + mix.library_weight)
     for p in np.linspace(0, 1, 21):
         st = stage_at(float(p), cfg)
         mx = M.plan(st, avail, 2e10)
         check_plan(mx, avail, 2e10, MixCfg())
-        assert mx.rows["chat"] >= st.chat_frac - 1e-9          # only the library cap moves shares
         lib_cap = MixCfg().max_epochs * avail["library_read"] / 2e10
         assert mx.kinds["library"] == pytest.approx(min(lib_cap, mx.kind_target["library"]))
+        # only the library cap moves shares: the other kinds keep the proportions of their targets
+        # (the capped library part of the chat rows is the most the chat rows can lose)
+        ratios = [mx.kinds[k] / mx.kind_target[k] for k in ("base", "chat", "rag", "math")]
+        assert max(ratios) == pytest.approx(min(ratios)) and min(ratios) >= 1.0 - 1e-9
+        assert mx.rows["chat"] >= st.chat_frac * (1.0 - mu_lib) - 1e-9
+
+
+def test_the_library_share_asked_of_the_base_rows_is_deliverable():
+    """The cap on the library kind (max_epochs passes over its entries) holds it at about 1.7%
+    of a 2e10-token run with the built library's sizes; the share asked of the base rows must be
+    below that at every stage (it was 0.15 of the non-chat tokens, about 11%)."""
+    cfg = Cfg()
+    mix = MixCfg()
+    lib_tokens = M.library_tokens(535_296, 156_800)             # data_cache/library/lib_v2
+    cap = mix.max_epochs * sum(lib_tokens.values()) / 2e10
+    assert 0.015 < cap < 0.02
+    for p in np.linspace(0, 1, 21):
+        st = stage_at(float(p), cfg)
+        assert (1 - st.chat_frac) * st.library_frac_base <= cap
+    assert DataCfg().library_frac_base == pytest.approx(0.02)
+    weights = (mix.chat_weight, mix.rag_weight, mix.math_weight, mix.library_weight)
+    assert weights == pytest.approx((0.57, 0.20, 0.13, 0.10)) and sum(weights) == pytest.approx(1.0)
 
 
 def test_segment_probs_reproduce_token_shares():

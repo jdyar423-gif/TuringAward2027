@@ -8,15 +8,22 @@ choices come from it) and returns :class:`bes.data.samples.Sample` objects whose
 the given :class:`~bes.data.samples.WeightRule`.
 
 :func:`insert_retrieval`
-    A conversation whose first user turn is question-like (the library's own
-    ``query_type``, ``lib.cfg.gate.allowed_types``) gets a ``LIBRARY`` turn right before that
-    user turn: with probability ``1 - DataCfg.distractor_frac`` the gated passage
-    (``lib.retrieve``; nothing is inserted when the gate stays closed, as at inference), else a
-    distractor (``MixCfg.distractor_random`` of them a uniformly drawn passage, the others one
-    of the next ``MixCfg.distractor_topk`` ranked passages whose article is not the top
-    article). Documents, conversations that already have a library turn before their first
-    user turn (the retrieval sources, including SQuAD v2's "not in the passage" questions) and
-    conversations without a question-like first user turn pass through unchanged.
+    The retrieval of inference (``bes.decode.respond``) on one user turn of a conversation:
+    the first user turn, or with probability ``MixCfg.retrieval_later_turn`` (conversations with
+    several user turns) a later one drawn uniformly. When that message is question-like (the
+    library's own ``query_type``, ``lib.cfg.gate.allowed_types``) and the gate opens
+    (``lib.retrieve``), a ``LIBRARY`` turn goes right before that user turn, after the earlier
+    exchanges, as the responder places it: the gated passage, or with probability
+    ``DataCfg.distractor_frac`` a distractor instead (``MixCfg.distractor_random`` of them a
+    uniformly drawn passage, the others one of the next ``MixCfg.distractor_topk`` ranked
+    passages whose article is neither the top article nor the gated passage's). So passages
+    appear exactly where inference would show one, and ``distractor_frac`` of them are
+    distractors (on top of the gate's own errors). With ``max_len`` the sample is fitted as the
+    responder fits a prompt: the turns after the served exchange go first, then the oldest
+    exchanges (the system turn stays). One passage per conversation: documents, conversations
+    that already have a library turn (the retrieval sources, including SQuAD v2's "not in the
+    passage" questions), and conversations whose chosen user turn is not question-like or whose
+    gate stays closed pass through unchanged.
 :func:`reading_task`
     From a "wiki" passage, no language model involved. Lead passage: the user asks about the
     article title (neutral templates such as "Tell me about X.", "Who or what is X?", "X?");
@@ -25,7 +32,11 @@ the given :class:`~bes.data.samples.WeightRule`.
     first one to three sentences of the passage text. Variants (``MixCfg.read_*``): ``open``
     (the passage as ``LIBRARY`` turn), ``closed`` (no library turn), ``distractor`` (a passage
     of another article). A library turn only comes before a question the library's query
-    typing accepts, as at inference (else the task is closed book).
+    typing accepts, as at inference (else the task is closed book). :func:`reading_suitable`
+    marks, in one pass over the library, the passages a reading task can be built from (the
+    checks above that need no random draw); a :class:`LibraryView` prepared with it
+    (:meth:`LibraryView.prepare_tasks`) deals reading tasks over those entries only, so draws
+    no longer read a passage only to decline it.
 :func:`qa_task`
     From a "qa" entry (title = stored question, body = stored answer). The user asks the
     stored question; the assistant gives the stored answer through a few templates. Variants
@@ -55,18 +66,21 @@ passages) ranked distractors read one passage instead of ``k``.
 """
 from __future__ import annotations
 
+import hashlib
+import os
 import re
 from collections import Counter
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 
 from bes.config import LIBRARY, USER, DataCfg, MixCfg
 from bes.data import chat_format as cf
-from bes.data.samples import (ROLE_LIBRARY, Sample, WeightRule, conversation_sample, fit,
-                              permute_index, turn_spans)
+from bes.data.samples import (ROLE_LIBRARY, Sample, WeightRule, conversation_cuts, conversation_sample,
+                              exchange_starts, head_stop, permute_index, turn_spans, window)
 from bes.exact import constraints as C
 
 LIB_KINDS = ("wiki", "qa")
@@ -80,12 +94,14 @@ LIBRARY_TASKS: dict[str, str] = {"library_read": "wiki", "library_qa": "qa"}
 class RagStats:
     """Counters for the loader's log; merge the stats of several workers with :meth:`merge`.
 
-    ``counts[key]``: events (``retrieval:calls``, ``retrieval:fired``, ``retrieval:gated``,
-    ``retrieval:distractor_ranked``, ``retrieval:skip_has_library``, ``read:open``,
-    ``read:declined_<reason>``, ``qa:neighbour_same_answer``, ...). ``tokens[label]`` /
-    ``samples[label]``: tokens and number of built samples per label (``read:open``,
-    ``qa:copy``, ``retrieval:gated``, ...); ``passage_tokens[label]``: tokens of the inserted
-    library turns.
+    ``counts[key]``: events (``retrieval:calls``, ``retrieval:question_like``,
+    ``retrieval:gate_open``, ``retrieval:fired``, ``retrieval:gated``,
+    ``retrieval:distractor_ranked``, ``retrieval:later_turn``, ``retrieval:skip_has_library``,
+    ``read:open``, ``read:declined_<reason>``, ``qa:neighbour_same_answer``, ...; the
+    ``retrieval:gated`` / ``retrieval:distractor_*`` counts are of inserted passages).
+    ``tokens[label]`` / ``samples[label]``: tokens and number of built samples per label
+    (``read:open``, ``qa:copy``, ``retrieval:gated``, ...); ``passage_tokens[label]``: tokens of
+    the inserted library turns.
     """
 
     counts: Counter = field(default_factory=Counter)
@@ -108,10 +124,14 @@ class RagStats:
             mine.update(theirs)
 
     def as_dict(self) -> dict[str, Any]:
-        """Plain dict: the counters, mean tokens per label and the retrieval rates
-        (``fired_rate`` = fired / calls, ``distractor_share`` = distractors / fired)."""
+        """Plain dict: the counters, mean tokens per label and the realised retrieval shares:
+        ``fired_rate`` = passages inserted / calls, ``question_like_rate`` = question-like
+        messages / calls, ``gate_rate`` = gate opened / question-like, ``distractor_share`` =
+        distractors / passages inserted, ``later_turn_share`` = passages before a later user
+        turn / passages inserted."""
         c = self.counts
         calls, fired = c["retrieval:calls"], c["retrieval:fired"]
+        ql, opened = c["retrieval:question_like"], c["retrieval:gate_open"]
         distractors = c["retrieval:distractor_ranked"] + c["retrieval:distractor_random"]
         return {
             "counts": dict(sorted(c.items())),
@@ -121,7 +141,10 @@ class RagStats:
                                     for k, n in sorted(self.samples.items()) if n},
             "retrieval": {"calls": calls, "fired": fired,
                           "fired_rate": fired / calls if calls else 0.0,
-                          "distractor_share": distractors / fired if fired else 0.0},
+                          "question_like_rate": ql / calls if calls else 0.0,
+                          "gate_rate": opened / ql if ql else 0.0,
+                          "distractor_share": distractors / fired if fired else 0.0,
+                          "later_turn_share": c["retrieval:later_turn"] / fired if fired else 0.0},
         }
 
 
@@ -152,7 +175,8 @@ def kind_of(passage: Any) -> str:
 class LibraryView:
     """The library contract the builders use, on top of ``bes.library.retrieve.Library`` or any
     object with the extended contract (module docstring). Apart from the wrapped library it
-    only keeps a small cache of the passages read last (results do not depend on it)."""
+    keeps a small cache of the passages read last (results do not depend on it; not pickled)
+    and, once :meth:`prepare_tasks` ran, the entries each library task draws from."""
 
     CACHE = 32
 
@@ -162,6 +186,29 @@ class LibraryView:
         gate = getattr(getattr(self.lib, "cfg", None), "gate", None)
         self.allowed_types = tuple(getattr(gate, "allowed_types", DEFAULT_ALLOWED_TYPES))
         self._cache: dict[int, Any] = {}
+        self.task_pids: dict[str, np.ndarray] = dict(lib.task_pids) if isinstance(lib, LibraryView) else {}
+
+    def __getstate__(self) -> dict[str, Any]:
+        state = dict(self.__dict__)
+        state["_cache"] = {}
+        return state
+
+    # ------------------------------------------------------------------ tasks
+    def task_entries(self, task: str) -> range | np.ndarray:
+        """Entries library task ``task`` draws from (``pick_entry``): every entry of its kind, or
+        after :meth:`prepare_tasks` the reading-suitable ones for ``"library_read"``."""
+        got = self.task_pids.get(task)
+        return got if got is not None else self.kind_range(LIBRARY_TASKS[task])
+
+    def prepare_tasks(self, mix: MixCfg = MixCfg(), cache_dir: str | os.PathLike | None = None) -> "LibraryView":
+        """Deal reading tasks only over the entries :func:`reading_suitable` keeps (computed
+        once per library content and rule: memoised in this process and saved under
+        ``cache_dir``); returns ``self``."""
+        mask = reading_suitable(self, mix, cache_dir)
+        pids = (self.kind_range("wiki").start + np.flatnonzero(mask)).astype(np.int32)
+        pids.setflags(write=False)
+        self.task_pids["library_read"] = pids
+        return self
 
     def _wrap(self, p: Any) -> Any:
         if not hasattr(p, "kind"):
@@ -363,55 +410,86 @@ def first_user_turn(spans: Sequence[tuple[int, int, int]]) -> int | None:
     return None
 
 
+def fit_served(sample: Sample, lib_start: int, max_len: int) -> Sample | None:
+    """``sample``, whose library turn starts at token ``lib_start`` right before the user turn
+    it serves, within ``max_len`` tokens as ``bes.decode.respond.fit_prompt`` fits a prompt:
+    the turns after the served exchange go first (``samples.fit``), then the oldest exchanges
+    (``samples.window``: the system turn stays); ``None`` when not even the system turn, the
+    passage and the served exchange fit (the responder would then drop the passage)."""
+    cuts = conversation_cuts(sample.ids)
+    served = cuts[cuts > lib_start]
+    if served.size == 0:
+        return None
+    end = int(served[0])
+    keep = head_stop(sample.ids)
+    for s in exchange_starts(sample.ids):
+        if s > lib_start:
+            break
+        if (keep + end - s if s > keep else end) <= max_len:
+            return window(sample, s, max_len)
+    return None
+
+
 def insert_retrieval(sample: Sample, lib: Any, tok, rng: np.random.Generator,
                      cfg: DataCfg = DataCfg(), mix: MixCfg = MixCfg(), *, max_len: int | None = None,
                      stats: RagStats | None = None) -> Sample:
-    """``sample`` with a ``LIBRARY`` turn before its first user turn, or ``sample`` unchanged
-    (rules in the module docstring). The retrieval excludes ``sample.exclude_pids`` /
-    ``exclude_titles``. With ``max_len`` the result is cut by ``samples.fit`` (later turns go
-    first); when even the first exchange no longer fits the sample is returned unchanged.
-    Tags gain ``retrieval:gated``, ``retrieval:ranked`` or ``retrieval:random``."""
+    """``sample`` with one ``LIBRARY`` turn where the responder would put one, or ``sample``
+    unchanged (rules in the module docstring). The retrieval excludes ``sample.exclude_pids`` /
+    ``exclude_titles``. With ``max_len`` the result is fitted by :func:`fit_served`; when not
+    even the served exchange fits with its passage the sample is returned unchanged. Tags gain
+    ``retrieval:gated``, ``retrieval:ranked`` or ``retrieval:random``, ``retrieval:later_turn``
+    when a later user turn is served, and ``window`` when old exchanges were dropped."""
     view = as_view(lib)
     _count(stats, "retrieval:calls")
     if not sample.is_conversation:
         _count(stats, "retrieval:skip_not_conversation")
         return sample
     spans = turn_spans(sample.ids)
-    k = first_user_turn(spans)
-    if k is None:
+    users = [k for k, (role, _, _) in enumerate(spans) if role == USER]
+    if not users:
         _count(stats, "retrieval:skip_no_user")
         return sample
-    _, start, stop = spans[k]
-    if k > 0 and spans[k - 1][0] == LIBRARY:
+    if any(role == LIBRARY for role, _, _ in spans):
         _count(stats, "retrieval:skip_has_library")
         return sample
+    k, later = users[0], False
+    if len(users) > 1 and rng.random() < mix.retrieval_later_turn:
+        k, later = users[1 + int(rng.integers(len(users) - 1))], True
+    _, start, stop = spans[k]
     query = tok.decode(sample.ids[start + 1:stop - 1].tolist())
     if not view.question_like(query):
         _count(stats, "retrieval:skip_not_question")
         return sample
-    excl = dict(exclude_pids=sample.exclude_pids, exclude_titles=sample.exclude_titles)
+    _count(stats, "retrieval:question_like")
+    ex_p, ex_t = tuple(sample.exclude_pids), tuple(sample.exclude_titles)
+    gated = view.retrieve(query, ex_p, ex_t)
+    if gated is None:
+        _count(stats, "retrieval:gate_closed")
+        return sample
+    _count(stats, "retrieval:gate_open")
+    passage, mode = gated, "gated"
     if rng.random() < cfg.distractor_frac:
-        passage, mode = pick_distractor(view, query, rng, mix, skip_top_title=True, **excl)
-        if passage is None:
-            _count(stats, "retrieval:no_distractor")
-            return sample
-        _count(stats, f"retrieval:distractor_{mode}")
-    else:
-        passage, mode = view.retrieve(query, **excl), "gated"
-        if passage is None:
-            _count(stats, "retrieval:gate_closed")
-            return sample
-        _count(stats, "retrieval:gated")
+        tid = int(gated.title_id)
+        d, d_mode = pick_distractor(view, query, rng, mix, exclude_pids=ex_p + (int(gated.pid),),
+                                    exclude_titles=ex_t + ((tid,) if tid >= 0 else ()),
+                                    skip_top_title=True)
+        if d is None:
+            _count(stats, "retrieval:no_distractor")          # the gated passage stays
+        else:
+            passage, mode = d, d_mode
     turn, turn_roles = cf.render_turn("library", passage.text, tok)
     ids = np.concatenate([sample.ids[:start], turn, sample.ids[start:]])
     roles = np.concatenate([sample.roles[:start], turn_roles, sample.roles[start:]])
-    out = sample.with_tokens(ids, roles, add_tags=(f"retrieval:{mode}",))
+    out = sample.with_tokens(ids, roles, add_tags=(f"retrieval:{mode}",) + (("retrieval:later_turn",) if later else ()))
     if max_len is not None:
-        out, _ = fit(out, max_len)
+        out = fit_served(out, start, max_len)
         if out is None:
             _count(stats, "retrieval:too_long")
             return sample
+    _count(stats, "retrieval:gated" if mode == "gated" else f"retrieval:distractor_{mode}")
     _count(stats, "retrieval:fired")
+    if later:
+        _count(stats, "retrieval:later_turn")
     if stats is not None:
         stats.built(f"retrieval:{mode}", out, len(turn))
     return out
@@ -488,9 +566,7 @@ def _answer_sentences(paragraph: str, rng: np.random.Generator, mix: MixCfg) -> 
     sents = split_sentences(paragraph)
     if not sents:
         return None
-    weights = [mix.read_one, mix.read_two, mix.read_three][:len(sents)]
-    if sum(weights) <= 0:
-        weights = [1.0] + [0.0] * (len(weights) - 1)
+    weights = _answer_weights(len(sents), mix)
     k = int(rng.choice(len(weights), p=_probs(weights))) + 1
     while k > 0 and not _TERMINAL.search(sents[k - 1]):
         k -= 1
@@ -500,28 +576,63 @@ def _answer_sentences(paragraph: str, rng: np.random.Generator, mix: MixCfg) -> 
     return answer if len(answer.split()) >= 3 else None
 
 
+def _reading_form(title: str, lines: list[str] | None, lead: bool,
+                  mix: MixCfg) -> tuple[str, str, str, str | None] | str:
+    """``(title without disambiguator, form, paragraph, heading)`` of a reading task on a
+    passage (``lines``: its lines after the title line, ``None`` without a title line; ``lead``:
+    the first passage of its article), or the reason why it is unsuitable. No random draw."""
+    from bes.library.terms import strip_disambiguator
+
+    if lines is None:
+        return "no_title_line"
+    t = strip_disambiguator(title).strip()
+    if not t or len(t.split()) > MAX_TITLE_WORDS or t.lower().startswith("list of"):
+        return "title"
+    if lead:
+        return t, "title", lines[0] if lines else "", None
+    if not mix.section_tasks:
+        return "section"
+    heading = SECTION_HEADINGS.get(lines[0].strip().lower()) if lines else None
+    if heading is None or len(lines) < 2:
+        return "section"
+    return t, "section", lines[1], heading
+
+
+def _answer_weights(n_sentences: int, mix: MixCfg) -> list[float]:
+    weights = [mix.read_one, mix.read_two, mix.read_three][:n_sentences]
+    if sum(weights) <= 0:
+        weights = [1.0] + [0.0] * (len(weights) - 1)
+    return weights
+
+
+def _answer_possible(paragraph: str, mix: MixCfg) -> bool:
+    """Whether :func:`_answer_sentences` returns an answer for some draw (it draws only among
+    the sentence counts with a positive weight)."""
+    from bes.library.clean import split_sentences
+
+    if not paragraph.strip() or _LIST_LINE.match(paragraph):
+        return False
+    sents = split_sentences(paragraph)
+    for k0, w in enumerate(_answer_weights(len(sents), mix), start=1):
+        if w <= 0:
+            continue
+        k = k0
+        while k > 0 and not _TERMINAL.search(sents[k - 1]):
+            k -= 1
+        if k > 0 and len(" ".join(sents[:k]).split()) >= 3:
+            return True
+    return False
+
+
 def reading_qa(p: Any, view: LibraryView, rng: np.random.Generator, mix: MixCfg = MixCfg(),
                question_like: bool = False) -> tuple[str, str, str] | str:
     """``(question, answer, form)`` of a reading task on passage ``p`` (``form`` is
     ``"title"`` or ``"section"``), or the reason (a string) why ``p`` is unsuitable. With
     ``question_like`` a question the library's query typing accepts is preferred."""
-    from bes.library.terms import strip_disambiguator
-
-    lines = _passage_lines(p)
-    if lines is None:
-        return "no_title_line"
-    title = strip_disambiguator(p.title).strip()
-    if not title or len(title.split()) > MAX_TITLE_WORDS or title.lower().startswith("list of"):
-        return "title"
-    if view.is_lead(p.pid):
-        form, paragraph, heading = "title", lines[0] if lines else "", None
-    else:
-        if not mix.section_tasks:
-            return "section"
-        heading = SECTION_HEADINGS.get(lines[0].strip().lower()) if lines else None
-        if heading is None or len(lines) < 2:
-            return "section"
-        form, paragraph = "section", lines[1]
+    got = _reading_form(p.title, _passage_lines(p), view.is_lead(p.pid), mix)
+    if isinstance(got, str):
+        return got
+    title, form, paragraph, heading = got
     answer = _answer_sentences(paragraph, rng, mix)
     if answer is None:
         return "answer"
@@ -533,6 +644,97 @@ def reading_qa(p: Any, view: LibraryView, rng: np.random.Generator, mix: MixCfg 
     if question is None:
         return "constraint"
     return question, answer, form
+
+
+#: Version of the rule of :func:`reading_suitable` (part of its cache key and of the loader's
+#: library fingerprint); bump when the checks change.
+SUITABLE_RULE = "reading-suitable/1"
+_SUITABLE_MEMO: dict[str, np.ndarray] = {}
+
+
+def _suitable_key(view: LibraryView, mix: MixCfg) -> str | None:
+    """Digest of the library's stored text structure (block and title-block CRCs, passage and
+    title directories) and of the rule; ``None`` for a library without ``packed`` arrays."""
+    packed = getattr(view.lib, "packed", None)
+    names = ("block_crc", "block_raw", "tblock_crc", "title_first", "pas_off")
+    if packed is None or not all(hasattr(packed, n) for n in names):
+        return None
+    h = hashlib.blake2b(digest_size=16)
+    rule = (SUITABLE_RULE, MAX_TITLE_WORDS, sorted(SECTION_HEADINGS.items()), bool(mix.section_tasks),
+            [float(x) > 0 for x in (mix.read_one, mix.read_two, mix.read_three)],
+            view.kind_range("wiki").start, len(view.kind_range("wiki")))
+    h.update(repr(rule).encode("utf-8"))
+    for n in names:
+        a = np.ascontiguousarray(np.asarray(getattr(packed, n)))
+        h.update(n.encode("ascii") + str(a.dtype).encode("ascii") + np.int64(a.size).tobytes())
+        h.update(a.tobytes())
+    return h.hexdigest()
+
+
+def _suitable_scan(view: LibraryView, mix: MixCfg) -> np.ndarray:
+    """``bool[n_wiki]`` by reading every wiki passage once, in id order."""
+    r = view.kind_range("wiki")
+    out = np.zeros(len(r), dtype=bool)
+    packed = getattr(view.lib, "packed", None)
+    fast = (view.native and r.start == 0 and packed is not None and callable(getattr(packed, "iter_bodies", None))
+            and callable(getattr(packed, "all_titles", None)) and hasattr(packed, "title_first")
+            and int(getattr(packed, "n_passages", -1)) == len(r))
+    if fast:
+        first = np.asarray(packed.title_first, dtype=np.int64)
+        fast = first.size >= 1 and int(first[0]) == 0 and int(first[-1]) == len(r) and bool((np.diff(first) >= 0).all())
+    if not fast:
+        for i, pid in enumerate(r):
+            p = view.passage(pid)
+            got = _reading_form(p.title, _passage_lines(p), view.is_lead(pid), mix)
+            out[i] = not isinstance(got, str) and _answer_possible(got[2], mix)
+        return out
+    titles = packed.all_titles()
+    tid_of = np.repeat(np.arange(first.size - 1), np.diff(first))
+    lead = np.zeros(len(r), dtype=bool)
+    lead[first[:-1][first[:-1] < len(r)]] = True
+    for pid, body in packed.iter_bodies():       # one block decompressed at a time
+        title = titles[int(tid_of[pid])]
+        got = _reading_form(title, body.split("\n") if title else None, bool(lead[pid]), mix)
+        out[pid] = not isinstance(got, str) and _answer_possible(got[2], mix)
+    return out
+
+
+def reading_suitable(lib: Any, mix: MixCfg = MixCfg(),
+                     cache_dir: str | os.PathLike | None = None) -> np.ndarray:
+    """``bool[n_wiki]`` (read-only): the "wiki" entries a reading task can be built from, i.e.
+    those that pass every check of :func:`reading_qa` that needs no random draw (a title line,
+    the title rules, a lead passage or a known section heading, an answer of one to three
+    sentences for some drawn count). A reading task on an entry outside it always declines; one
+    on an entry inside it can still decline when every question template compiles to a
+    constraint (rare). One pass over the library (``Packed.iter_bodies`` when the library has
+    it: one block decompression per 64 kB block; else ``passage`` per entry); the result is
+    memoised per library content and rule, and with ``cache_dir`` saved there as
+    ``reading_suitable-<digest>.npy`` and read back by later processes."""
+    view = as_view(lib)
+    key = _suitable_key(view, mix)
+    n = len(view.kind_range("wiki"))
+    hit = _SUITABLE_MEMO.get(key) if key is not None else None
+    path = Path(cache_dir) / f"reading_suitable-{key}.npy" if key is not None and cache_dir else None
+    if hit is None and path is not None and path.exists():
+        try:
+            got = np.load(path)
+            if got.dtype == np.bool_ and got.shape == (n,):
+                hit = got
+        except (OSError, ValueError):
+            hit = None
+    if hit is None:
+        hit = _suitable_scan(view, mix)
+        if path is not None:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_name(f"{path.name}.{os.getpid()}.tmp")
+            with open(tmp, "wb") as f:
+                np.save(f, hit)
+            os.replace(tmp, path)
+    hit = np.array(hit, dtype=bool, copy=True)
+    hit.setflags(write=False)
+    if key is not None:
+        _SUITABLE_MEMO[key] = hit
+    return hit
 
 
 def _variant(rng: np.random.Generator, variant: str | None, options: Sequence[tuple[str, float]]) -> str:
@@ -675,14 +877,15 @@ def qa_task(pid: int, lib: Any, tok, rng: np.random.Generator, rule: WeightRule 
 # ------------------------------------------------------------------------- dispatch
 def pick_entry(lib: Any, task: str, counter: int, seed: int = 0) -> int | None:
     """The library entry of draw number ``counter`` of ``task`` (``"library_read"`` or
-    ``"library_qa"``): every entry of the task's kind once per epoch of
-    ``len(kind_range)`` draws, in an order keyed by ``(seed, task, epoch)``
-    (``samples.permute_index``). ``None`` when the kind has no entries."""
-    r = as_view(lib).kind_range(LIBRARY_TASKS[task])
-    if len(r) == 0:
+    ``"library_qa"``): every entry the task draws from (``LibraryView.task_entries``: the
+    entries of its kind, or the reading-suitable ones of a prepared view) once per epoch of
+    that many draws, in an order keyed by ``(seed, task, epoch)`` (``samples.permute_index``).
+    ``None`` when there is no entry."""
+    entries = as_view(lib).task_entries(task)
+    if len(entries) == 0:
         return None
-    epoch, i = divmod(int(counter), len(r))
-    return r.start + permute_index(i, len(r), "library_task", task, int(seed), epoch)
+    epoch, i = divmod(int(counter), len(entries))
+    return int(entries[permute_index(i, len(entries), "library_task", task, int(seed), epoch)])
 
 
 def library_task(task: str, pid: int, lib: Any, tok, rng: np.random.Generator,
@@ -697,6 +900,7 @@ def library_task(task: str, pid: int, lib: Any, tok, rng: np.random.Generator,
 
 
 __all__ = ["RagStats", "LibPassage", "LibraryView", "as_view", "kind_of", "pick_distractor", "self_exclusion",
-           "first_user_turn", "insert_retrieval", "reading_qa", "reading_task", "qa_answer_text",
-           "qa_task", "pick_entry", "library_task", "TITLE_TEMPLATES", "SECTION_TEMPLATES",
-           "SECTION_HEADINGS", "QA_ANSWER_TEMPLATES", "LIBRARY_TASKS", "LIB_KINDS"]
+           "first_user_turn", "fit_served", "insert_retrieval", "reading_qa", "reading_suitable",
+           "reading_task", "qa_answer_text", "qa_task", "pick_entry", "library_task", "TITLE_TEMPLATES",
+           "SECTION_TEMPLATES", "SECTION_HEADINGS", "QA_ANSWER_TEMPLATES", "LIBRARY_TASKS", "LIB_KINDS",
+           "SUITABLE_RULE"]

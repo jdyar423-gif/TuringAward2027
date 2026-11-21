@@ -51,6 +51,15 @@ Transforms
   only after the ``END`` of an assistant turn (never inside a turn, never after a user turn);
   the cut-off turns are dropped. Documents are cut anywhere; the rest continues as a new
   sample that starts with a fresh ``BOS``.
+- :func:`window`: the conversation without its oldest exchanges (``BOS``, the system turn, then
+  the exchanges from a given one on), the truncation the responder applies at inference when
+  the context overflows (``bes.decode.respond.fit_prompt``). An *exchange* is ``[library] user
+  assistant``; a window always starts at one (:func:`exchange_starts`), never at an assistant
+  turn or at a library turn without its user turn.
+- :func:`fit_windows` / :func:`fit_draw`: a conversation longer than ``max_len`` as consecutive
+  windows (the prefix of :func:`fit`, then a window from the first exchange after it, ...);
+  a training draw takes the prefix or, with probability ``later``, one of the later windows,
+  so that the later turns of long conversations are trained too.
 - :func:`apply_hindsight`: tokens -> messages -> ``bes.data.hindsight.relabel`` -> tokens.
 
 Apply content transforms (hindsight, retrieval) before :func:`fit`, or pass ``max_len`` to them.
@@ -440,6 +449,99 @@ def fit(sample: Sample, max_len: int) -> tuple[Sample | None, Sample | None]:
     return sample.prefix(max_len), sample.with_tokens(rest_ids, rest_roles)
 
 
+def exchange_starts(ids: Sequence[int] | np.ndarray) -> list[int]:
+    """Token positions at which the exchanges (``[library] user assistant``) of a conversation
+    start, in order: every user turn, or the library turn right before it."""
+    spans = turn_spans(ids)
+    out = []
+    for k, (role, start, _) in enumerate(spans):
+        if role == USER:
+            out.append(spans[k - 1][1] if k > 0 and spans[k - 1][0] == LIBRARY else start)
+    return out
+
+
+def head_stop(ids: Sequence[int] | np.ndarray) -> int:
+    """End of what every window keeps: ``BOS`` and the system turn when the conversation opens
+    with one."""
+    spans = turn_spans(ids)
+    return spans[0][2] if spans and spans[0][0] == SYSTEM else 1
+
+
+def window(sample: Sample, start: int, max_len: int | None = None) -> Sample | None:
+    """The conversation without the exchanges before token position ``start`` (one of
+    :func:`exchange_starts`): ``BOS``, the system turn when there is one, then ``ids[start:]``
+    (``bes.decode.respond.fit_prompt`` drops the oldest exchanges first and keeps the system
+    turn); tags gain ``"window"``. The first exchange start gives the whole sample. With
+    ``max_len`` the window is cut by :func:`fit` (its longest admissible prefix; ``None`` when
+    not even its first exchange fits). Raises ``ValueError`` when ``start`` is not an exchange
+    start."""
+    if int(start) not in exchange_starts(sample.ids):
+        raise ValueError(f"position {start} does not start an exchange")
+    keep = head_stop(sample.ids)
+    out = sample
+    if start > keep:
+        out = sample.with_tokens(np.concatenate([sample.ids[:keep], sample.ids[start:]]),
+                                 np.concatenate([sample.roles[:keep], sample.roles[start:]]),
+                                 add_tags=("window",))
+    if max_len is not None:
+        out, _ = fit(out, max_len)
+    return out
+
+
+def _pieces(sample: Sample, max_len: int) -> tuple[Sample | None, list[Sample]]:
+    """``(prefix, later windows)`` of :func:`fit_windows` (``prefix`` is ``fit``'s head)."""
+    head, _ = fit(sample, max_len)
+    if head is sample:
+        return head, []
+    starts = exchange_starts(sample.ids)
+    keep = head_stop(sample.ids)
+    later: list[Sample] = []
+    i, end = 0, (len(head) if head is not None else 0)
+    if head is None:
+        i = 1
+    while i < len(starts) and starts[i] < end:
+        i += 1
+    while i < len(starts):
+        w = window(sample, starts[i], max_len) if starts[i] > keep else None
+        if w is None:
+            i += 1
+            continue
+        later.append(w)
+        end = starts[i] + len(w) - keep                 # end of the window in ``sample``
+        while i < len(starts) and starts[i] < end:
+            i += 1
+    return head, later
+
+
+def fit_windows(sample: Sample, max_len: int) -> list[Sample]:
+    """A conversation as consecutive pieces of at most ``max_len`` tokens: ``[sample]`` when it
+    fits (and ends with an assistant turn); otherwise its prefix (:func:`fit`; left out when not
+    even the first exchange fits), then the :func:`window` that starts at the first exchange
+    after the prefix, then the one after that window, and so on. An exchange that does not fit
+    on its own (with the system turn) starts no window and is skipped; ``[]`` when nothing fits.
+    Every piece is a conversation that ends with an assistant turn."""
+    if not sample.is_conversation:
+        raise ValueError("fit_windows takes a conversation")
+    head, later = _pieces(sample, max_len)
+    return ([head] if head is not None else []) + later
+
+
+def fit_draw(sample: Sample, max_len: int, rng: np.random.Generator, later: float = 0.5) -> Sample | None:
+    """What one training draw keeps of ``sample`` within ``max_len`` tokens (deterministic in
+    ``rng``). A document: the head of :func:`fit`. A conversation that fits: itself. Otherwise
+    one piece of :func:`fit_windows`: the prefix, or with probability ``later`` one of the later
+    windows, drawn uniformly (a later window whenever the prefix does not exist, the prefix when
+    there is no later window). ``None`` when nothing fits."""
+    if not sample.is_conversation:
+        return fit(sample, max_len)[0]
+    head, rest = _pieces(sample, max_len)
+    if not rest:
+        return head
+    if head is None or rng.random() < float(later):
+        return rest[int(rng.integers(len(rest)))]
+    return head
+
+
 # ------------------------------------------------------------------------- hindsight
 def apply_hindsight(sample: Sample, rng: np.random.Generator, tok,
                     max_len: int | None = None) -> Sample | None:
@@ -543,5 +645,5 @@ def permute_index(i: int, n: int, *keys: Any) -> int:
 
 __all__ = ["Sample", "WeightRule", "loss_weights", "make_sample", "from_tokens", "document_sample",
            "conversation_sample", "tokens_to_messages", "canonical_messages", "turn_spans",
-           "conversation_cuts", "fit", "apply_hindsight", "rng_for", "key_digest", "permute_index",
-           "KINDS"]
+           "conversation_cuts", "fit", "exchange_starts", "head_stop", "window", "fit_windows",
+           "fit_draw", "apply_hindsight", "rng_for", "key_digest", "permute_index", "KINDS"]

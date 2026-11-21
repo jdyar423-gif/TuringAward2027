@@ -176,9 +176,11 @@ def main(argv=None) -> int:
     lcfg = LoaderCfg(n_streams=args.streams, horizon_tokens=args.horizon,
                      **({"lookahead": args.lookahead} if args.lookahead else {}))
     lib_chat = 0.4 if library is not None else 0.0
-    # base: base rows only; chat: chat rows only (no library); lib: library rows only;
-    # mix: chat_frac 0.25 (T=1024) / 0.5 (T=2048) with library rows at about the share the
-    # epoch cap leaves them in the real run (~2.6 % of tokens: library_frac_base 0.035)
+    # base: base rows only; chat: chat rows only (no library); lib: library rows only (reading
+    # tasks only over rag_format.reading_suitable entries, as the loader prepares the library);
+    # mix: chat_frac 0.25 (T=1024) / 0.5 (T=2048) with library rows at library_frac_base 0.035,
+    # more than the epoch cap leaves them in the real run with lib_v2 (about 0.6 % of the tokens
+    # at chat_frac 0.25), so the mix is on the expensive side
     stages = {"base": (0.0, 0.0, 0.0), "chat": (1.0, 0.0, 0.0), "lib": (0.0, 1.0, 0.0),
               "mix": (None, 0.035 if library is not None else 0.0, lib_chat)}
     cases = []

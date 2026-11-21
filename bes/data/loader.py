@@ -63,10 +63,20 @@ Samples are referred to by *draw records* and rebuilt deterministically:
   has read its share of epoch ``e``, or as soon as the block's visible segments of ``s`` are
   ``1 + LoaderCfg.reepoch_growth`` times those of ``U_e``: shards committed during the run are
   read from the next block on;
-- chat, rag and math samples are cut at an assistant turn boundary to ``T + 1`` tokens
-  (``samples.fit``), then transformed (``mixture.apply_transforms``: hindsight, retrieval) with
-  draws keyed by ``(seed, source, epoch, stream, read)``;
-- library tasks: draw ``j`` of stream ``v`` is task draw ``v + j V`` (``rag_format.pick_entry``).
+- chat, rag and math samples are cut at an assistant turn boundary to ``T + 1`` tokens: a
+  conversation that does not fit keeps its prefix or, with probability ``MixCfg.later_window``,
+  one of its later windows (``samples.fit_draw``); then they are transformed
+  (``mixture.apply_transforms``: hindsight, retrieval); all draws keyed by ``(seed, source,
+  epoch, stream, read)``;
+- held-out split: a conversation of a chat, rag or math source whose ``(source, shard id,
+  segment index)`` hash falls below ``LoaderCfg.heldout_frac`` (:func:`is_heldout`, rule
+  :data:`HELDOUT_RULE` in the journal header) is skipped by every draw of every epoch;
+  :meth:`Loader.heldout` / :func:`heldout_samples` read those conversations (sampling prompts,
+  probes) without workers;
+- library tasks: draw ``j`` of stream ``v`` is task draw ``v + j V`` (``rag_format.pick_entry``);
+  the loader prepares the library (``LibraryView.prepare_tasks``), so reading tasks are dealt
+  only over the entries ``rag_format.reading_suitable`` keeps (cached next to the journal; the
+  journal's library fingerprint records the rule and the number of entries).
 
 Rows: base rows (``packing.fill_base``) from the base sources by token deficit; library rows
 and chat rows by best fit from a look-ahead buffer of ``lookahead`` samples; row kinds by the
@@ -80,7 +90,9 @@ the remaining tokens of the run (``tokens / p``, before ``p = horizon_min_p``
 ``size`` is the visible tokens, except for a source that got new shards within the last
 ``growing_blocks`` blocks: then the size the registry expects after its download, so that the
 first shards of a source still being downloaded do not cap it (and shift the mixture to other
-kinds) early in the run.
+kinds) early in the run. When a cap cuts a source's planned share below two thirds of its
+target, the loader logs one warning for that source per run (``logging``, logger
+``bes.data.loader``) and lists it in ``stats()["warnings"]``.
 
 Workers
 -------
@@ -111,7 +123,9 @@ from __future__ import annotations
 
 import base64
 import contextlib
+import hashlib
 import json
+import logging
 import multiprocessing as mp
 import os
 import signal
@@ -135,14 +149,53 @@ from bes.data import mixture as M
 from bes.data import packing as P
 from bes.data import shards as SH
 from bes.data import sources as registry
-from bes.data.rag_format import LIBRARY_TASKS, RagStats, as_view, library_task, pick_entry
-from bes.data.samples import WeightRule, fit, from_tokens, permute_index, rng_for
+from bes.data.rag_format import LIBRARY_TASKS, SUITABLE_RULE, RagStats, as_view, library_task, pick_entry
+from bes.data.samples import Sample, WeightRule, fit, fit_draw, from_tokens, permute_index, rng_for
 
 JOURNAL_FORMAT = "bes-loader-journal/1"
 SHARD_KINDS = ("base", "chat", "rag", "math")
 ROW_KINDS = ("base", "library", "chat")
 #: Remaining epoch budget kept for a source that has used up ``max_epochs`` (share of an epoch).
 BUDGET_FLOOR = 1e-3
+#: A planned share cut below this fraction of its target by the epoch caps is warned about.
+CUT_WARN = 2.0 / 3.0
+#: Kinds whose conversations the held-out split applies to, and its rule (journal header).
+HELDOUT_KINDS = ("chat", "rag", "math")
+HELDOUT_RULE = ("heldout/1: h = sm(sm(sm(blake2b64(source)) ^ shard) ^ segment), held out when "
+                "h >> 11 < frac * 2^53 (sm = SplitMix64 finaliser)")
+_LOG = logging.getLogger(__name__)
+_PASSAGE_TAGS = ("retrieval:gated", "retrieval:ranked", "retrieval:random")
+
+
+# ---------------------------------------------------------------------- held-out split
+def _splitmix64(x: np.ndarray) -> np.ndarray:
+    """SplitMix64 finaliser on ``uint64`` arrays (wrapping arithmetic)."""
+    x = x + np.uint64(0x9E3779B97F4A7C15)
+    x = (x ^ (x >> np.uint64(30))) * np.uint64(0xBF58476D1CE4E5B9)
+    x = (x ^ (x >> np.uint64(27))) * np.uint64(0x94D049BB133111EB)
+    return x ^ (x >> np.uint64(31))
+
+
+def _name_key(name: str) -> np.ndarray:
+    digest = hashlib.blake2b(name.encode("utf-8"), digest_size=8, person=b"bes-heldout").digest()
+    return np.array([int.from_bytes(digest, "little")], dtype=np.uint64)
+
+
+def heldout_hash(source: str, shard: int, segments: Any) -> np.ndarray:
+    """``uint64[n]``: the hash of the held-out rule (:data:`HELDOUT_RULE`) of segments
+    ``segments`` (indices inside shard ``shard`` of ``source``)."""
+    seg = np.atleast_1d(np.asarray(segments, dtype=np.int64)).astype(np.uint64)
+    base = _splitmix64(_splitmix64(_name_key(source)) ^ np.uint64(int(shard)))
+    return _splitmix64(base ^ seg)
+
+
+def is_heldout(source: str, shard: int, segments: Any, frac: float) -> np.ndarray:
+    """``bool[n]``: which of ``segments`` of shard ``shard`` of ``source`` are kept out of
+    training (about ``frac`` of them; none for ``frac <= 0``)."""
+    seg = np.atleast_1d(np.asarray(segments, dtype=np.int64))
+    if frac <= 0 or seg.size == 0:
+        return np.zeros(seg.shape, dtype=bool)
+    return (heldout_hash(source, shard, seg) >> np.uint64(11)).astype(np.float64) < float(frac) * 2.0 ** 53
 
 #: SPEC section 3: key -> (dtype, trailing dims after ``[A, B, T]``); ``tokens`` has ``T + 1``.
 #: Equal to ``bes.train.train.BATCH_FIELDS`` (not imported: that module imports jax).
@@ -204,13 +257,16 @@ def source_kind(name: str) -> str:
 
 
 def library_fingerprint(lib: Any) -> dict[str, Any] | None:
-    """Identity of a library for the journal: entry counts and, when known, the stored numbers
-    and the directory (``None`` without a library)."""
+    """Identity of a library for the journal: entry counts, when known the stored numbers and
+    the directory, and for a view prepared for the library tasks (``LibraryView.prepare_tasks``)
+    the entries each task draws from (``None`` without a library)."""
     if lib is None:
         return None
     view = as_view(lib)
     info: dict[str, Any] = {"n_passages": int(view.n_passages), "wiki": len(view.kind_range("wiki")),
                             "qa": len(view.kind_range("qa"))}
+    if view.task_pids:
+        info["tasks"] = {"rule": SUITABLE_RULE, **{k: len(v) for k, v in sorted(view.task_pids.items())}}
     meta = getattr(view.lib, "meta", None)
     if isinstance(meta, Mapping) and isinstance(meta.get("accounting"), Mapping):
         info["numbers"] = meta["accounting"].get("total_numbers")
@@ -415,11 +471,16 @@ class ShardStore:
             self._open[(name, sid)] = sh
         return sh
 
-    def segment(self, name: str, n_shards: int, p: int) -> tuple[np.ndarray, np.ndarray | None]:
-        """``(ids uint16[n], roles int8[n] or None)`` of segment ``p`` of the universe."""
+    def locate(self, name: str, n_shards: int, p: int) -> tuple[int, int, int]:
+        """``(k, shard id, index in the shard)`` of segment ``p`` of the universe of the first
+        ``n_shards`` shards (``k``: the shard's place in first-seen order)."""
         c = self._cumulative(name, n_shards)
         k = int(np.searchsorted(c, p, side="right"))
-        local = p - (int(c[k - 1]) if k else 0)
+        return k, int(self.order[name][k][0]), p - (int(c[k - 1]) if k else 0)
+
+    def segment(self, name: str, n_shards: int, p: int) -> tuple[np.ndarray, np.ndarray | None]:
+        """``(ids uint16[n], roles int8[n] or None)`` of segment ``p`` of the universe."""
+        k, _, local = self.locate(name, n_shards, p)
         sh = self.shard(name, k)
         return sh.segment(local), sh.segment_roles(local)
 
@@ -444,6 +505,63 @@ def scan_new_shards(root: Path, names: Sequence[str],
                         int(size)])
         if new:
             out[name] = new
+    return out
+
+
+def heldout_samples(data_dir: str | os.PathLike, kind_or_source: str, n: int, seed: int = 0, *,
+                    data: DataCfg = DataCfg(), frac: float = LoaderCfg().heldout_frac) -> list[Sample]:
+    """Up to ``n`` held-out conversations, read straight from the committed shards under
+    ``data_dir/tok`` (no loader and no worker processes needed).
+
+    ``kind_or_source``: a registry source of kind ``chat``, ``rag`` or ``math``, or one of these
+    kinds (its sources by their mixture weights, ``sources.mixture_weights(kind,
+    data.permissive_only)``: weighted sampling without replacement, every held-out conversation
+    of a source equally likely). Held out: the segments :func:`is_heldout` marks with ``frac``
+    (``LoaderCfg.heldout_frac``; the rule is :data:`HELDOUT_RULE`, stored in the loader
+    journal's header); the training stream skips exactly these, in every epoch. Returns
+    ``bes.data.samples.Sample`` objects (whole stored conversations, ``tags = ("heldout",)``),
+    ordered by their draw; deterministic in ``seed`` and the shards on disk (shards committed
+    later add held-out conversations). Raises ``KeyError`` for an unknown name and
+    ``ValueError`` for a source of another kind."""
+    if kind_or_source in HELDOUT_KINDS:
+        kind = kind_or_source
+        weights = registry.mixture_weights(kind, data.permissive_only)
+    else:
+        src = registry.get(kind_or_source)
+        if src.kind not in HELDOUT_KINDS:
+            raise ValueError(f"{src.name} is a {src.kind} source; the held-out split covers {HELDOUT_KINDS}")
+        kind, weights = src.kind, {src.name: 1.0}
+    keys, refs = [], []
+    seed_key = _splitmix64(np.array([int(seed) & ((1 << 64) - 1)], dtype=np.uint64))
+    for name, w in sorted(weights.items()):
+        directory = Path(data_dir) / "tok" / name
+        if w <= 0 or not directory.exists():
+            continue
+        found = []
+        for sid, entry in sorted(SH.read_manifest(directory).items()):
+            m = int(entry.get("n_segments", 0))
+            local = np.flatnonzero(is_heldout(name, sid, np.arange(m), frac)) if m > 0 else np.zeros(0, np.int64)
+            if local.size:
+                h = _splitmix64(_splitmix64(_splitmix64(_name_key(name) ^ seed_key) ^ np.uint64(sid))
+                                ^ local.astype(np.uint64))
+                found.append((sid, entry, local, ((h >> np.uint64(11)).astype(np.float64) + 0.5) / 2.0 ** 53))
+        total = sum(x[2].size for x in found)
+        for sid, entry, local, u in found:
+            keys.append(np.log(u) * (total / w))                  # Efraimidis-Spirakis keys
+            refs += [(name, sid, entry, int(x)) for x in local]
+    if not refs or n <= 0:
+        return []
+    key = np.concatenate(keys)
+    order = np.lexsort((np.arange(key.size), -key))[:int(n)]
+    out, open_shards = [], {}
+    for i in order.tolist():
+        name, sid, entry, x = refs[i]
+        sh = open_shards.get((name, sid))
+        if sh is None:
+            sh = open_shards[(name, sid)] = SH.open_shard(Path(data_dir) / "tok" / name, entry)
+        roles = sh.segment_roles(x)
+        out.append(from_tokens(np.asarray(sh.segment(x)), None if roles is None else np.asarray(roles),
+                               source=name, kind=kind, tags=("heldout",)))
     return out
 
 
@@ -589,14 +707,23 @@ class Stream:
         t0 = time.process_time()
         n = ctx.store.n_segments(name, u)
         p = permute_index(P.epoch_position(self.v, j, ctx.V, n), n, ctx.seed, "epoch", name, e)
+        kind = ctx.kinds[src]
+        if cap and kind in HELDOUT_KINDS and ctx.lcfg.heldout_frac > 0:
+            _, sid, local = ctx.store.locate(name, u, p)
+            if bool(is_heldout(name, sid, local, ctx.lcfg.heldout_frac)[0]):    # never trained
+                ctx.stats.c[f"fail/{name}/heldout"] += 1
+                ctx.stats.time["read"] += time.process_time() - t0
+                return None
         ids, roles = ctx.store.segment(name, u, p)
         if cap == 0:
             out = np.array(ids, dtype=np.int32)
             ctx.stats.time["read"] += time.process_time() - t0
             return out
-        s = from_tokens(np.asarray(ids), None if roles is None else np.asarray(roles),
-                        source=name, kind=ctx.kinds[src])
-        head, _ = fit(s, cap)
+        s = from_tokens(np.asarray(ids), None if roles is None else np.asarray(roles), source=name, kind=kind)
+        if len(s) > cap and s.is_conversation:      # the prefix or a later window, per draw
+            head = fit_draw(s, cap, rng_for(ctx.seed, "fit", name, e, self.v, j), ctx.mix.later_window)
+        else:
+            head, _ = fit(s, cap)
         ctx.stats.time["read"] += time.process_time() - t0
         if head is None:
             ctx.stats.c[f"fail/{name}/too_long"] += 1
@@ -610,7 +737,21 @@ class Stream:
                                       lib=ctx.lib, data=ctx.data, mix=ctx.mix, max_len=cap, stats=ctx.rag)
             phase = {1: "hindsight", 2: "retrieval", 3: "hindsight+retrieval"}[int(flags)]
             ctx.stats.time[phase] += time.process_time() - t1
+        self._conv_stats(kind, head)
         return head
+
+    def _conv_stats(self, kind: str, s: Any) -> None:
+        """Counters of the realised passages and windows of a conversation of sub-kind ``kind``
+        (``conv/``, ``conv_passage/``, ``conv_distractor/``, ``conv_later/``, ``conv_window/``)."""
+        c = self.ctx.stats.c
+        c[f"conv/{kind}"] += 1
+        tags = set(s.tags)
+        if "window" in tags:
+            c[f"conv_window/{kind}"] += 1
+        if tags.intersection(_PASSAGE_TAGS):
+            c[f"conv_passage/{kind}"] += 1
+            c[f"conv_distractor/{kind}"] += int("retrieval:gated" not in tags)
+            c[f"conv_later/{kind}"] += int("retrieval:later_turn" in tags)
 
     def _from_library(self, draw: tuple) -> Any:
         ctx = self.ctx
@@ -1294,12 +1435,13 @@ def journal_settings(seed: int, lcfg: LoaderCfg, data: DataCfg, mix: MixCfg, tok
                      names: Sequence[str]) -> dict[str, Any]:
     """Everything outside the block records that decides batches (the journal header)."""
     keep = ("n_streams", "block_steps", "lookahead", "lib_lookahead", "max_wait", "max_draw_attempts",
-            "reepoch_growth")
+            "reepoch_growth", "heldout_frac")
     d = asdict(data)
     return json.loads(json.dumps({
         "format": JOURNAL_FORMAT, "seed": int(seed), "loader": {k: getattr(lcfg, k) for k in keep},
         "data": {k: d[k] for k in ("hindsight_frac", "distractor_frac", "passage_loss_w",
                                    "use_library", "permissive_only")},
+        "heldout": {"rule": HELDOUT_RULE, "kinds": list(HELDOUT_KINDS)},
         "mix": asdict(mix), "tokenizer": str(getattr(tok, "sha256", "")), "names": list(names)}))
 
 
@@ -1344,9 +1486,10 @@ class Loader:
         self.index_of = {n: i for i, n in enumerate(self.names)}
         self.kinds = tuple(source_kind(n) for n in self.names)
         self.shard_names = tuple(n for n in self.names if n not in LIBRARY_TASKS)
-        self._library = _resolve_library(library)
-        self._lib_fp = library_fingerprint(self._library)
         self.journal_path = Path(journal) if journal is not None else Path(cfg.run.out_dir) / self.lcfg.journal_name
+        self._warnings: dict[str, dict[str, Any]] = {}
+        self._library = self._prepared(_resolve_library(library))
+        self._lib_fp = library_fingerprint(self._library)
         self.shapes = tuple(schedule.shapes(cfg))
         self.slot_bytes = max(batch_nbytes(s) for s in self.shapes)
         self.n_slots = max(2, int(self.lcfg.ring))
@@ -1411,6 +1554,8 @@ class Loader:
             for name, entries in rec.get("new_shards", {}).items():
                 self.order.setdefault(name, []).extend(entries)
         self.chain = build_chain(self.records, self.lcfg.block_steps)
+        for b in self.chain:
+            self._note_cuts(b.rec)
         used = [b.rec.get("library") for b in self.chain if b.rec.get("library") is not None]
         if used and not all(_same_library(u, self._lib_fp) for u in used):
             raise ValueError(f"{self.journal_path}: its blocks used the library {used[-1]}, "
@@ -1554,10 +1699,13 @@ class Loader:
             "consumed": dict(consumed), "horizon": horizon, "growing": sorted(growing),
             "sizes": {k: v for k, v in sizes.items() if v > 0},
             "mixture": {"kinds": mx.kinds, "capped": list(mx.capped), "epochs": mx.epochs,
-                        "notes": list(mx.notes), "missing": list(mx.missing)},
+                        "notes": list(mx.notes), "missing": list(mx.missing),
+                        "target": {s: v for s, v in sorted(mx.target.items()) if v > 0},
+                        "share": {s: v for s, v in sorted(mx.share.items()) if v > 0}},
             "states": encode_states(states), "time": time.time(),
         }
         SH.append_jsonl(self.journal_path, rec)
+        self._note_cuts(rec)
         self._next_id += 1
         self.records.append(rec)
         self.chain = build_chain(self.records, self.lcfg.block_steps)
@@ -1565,6 +1713,26 @@ class Loader:
         self._state_cache[(blk.id, blk.start)] = states
         self._timing["plan_s"] += time.perf_counter() - t0
         return blk
+
+    def _note_cuts(self, rec: Mapping[str, Any]) -> None:
+        """Warn (once per source in this process; kept for :meth:`stats`) when the epoch caps
+        cut a source's planned token share in block record ``rec`` below ``CUT_WARN`` of its
+        target."""
+        mixture = rec.get("mixture") or {}
+        target, share = mixture.get("target") or {}, mixture.get("share") or {}
+        for src, want in sorted(target.items()):
+            got = float(share.get(src, 0.0))
+            if src in self._warnings or not want > 0 or got >= CUT_WARN * float(want):
+                continue
+            size = (rec.get("sizes") or {}).get(src)
+            msg = (f"loader: the epoch caps cut the planned token share of {src} from {float(want):.4f} "
+                   f"to {got:.4f} (at most {self.mix.max_epochs:g} reads of "
+                   f"{float(size or 0):.3g} tokens over a horizon of {float(rec.get('horizon', 0)):.3g} "
+                   f"tokens; block {rec.get('id')} at step {rec.get('start')}); the rest of its share "
+                   f"goes to other sources")
+            self._warnings[src] = {"source": src, "target": float(want), "share": got,
+                                   "block": rec.get("id"), "step": rec.get("start"), "message": msg}
+            _LOG.warning(msg)
 
     def _send_plan(self, blk: Block) -> None:
         if blk.id not in self._sent_plans:
@@ -1763,10 +1931,26 @@ class Loader:
 
     def set_library(self, library: Any) -> None:
         """Use ``library`` (or none) from the next planned block on; a journal can only be
-        reopened with the library its blocks used."""
-        self._library = _resolve_library(library)
+        reopened with the library its blocks used. Prepares the reading-task pre-filter
+        (``rag_format.reading_suitable``, a few seconds for lib_v2, cached next to the
+        journal)."""
+        self._library = self._prepared(_resolve_library(library))
         self._lib_fp = library_fingerprint(self._library)
         self.exec.static("library", self._library)
+
+    def _prepared(self, lib: Any) -> Any:
+        """``lib`` as a view whose reading tasks draw only suitable entries (none without a
+        library or with ``DataCfg.use_library = False``)."""
+        if lib is None or not self.data.use_library:
+            return lib
+        return as_view(lib).prepare_tasks(self.mix, cache_dir=self.journal_path.parent)
+
+    def heldout(self, kind_or_source: str, n: int, seed: int = 0) -> list[Sample]:
+        """Up to ``n`` held-out conversations of a source or of the sources of a kind
+        (``chat | rag | math``): :func:`heldout_samples` on this loader's data directory with its
+        settings. The training stream never returns them; no worker is involved."""
+        return heldout_samples(self.data_dir, kind_or_source, n, seed, data=self.data,
+                               frac=self.lcfg.heldout_frac)
 
     def worker_pids(self) -> list[int]:
         """Process ids of the workers (empty in-process)."""
@@ -1853,6 +2037,7 @@ class Loader:
             "fail": {k[5:]: v for k, v in c.items() if k.startswith("fail/")},
             "cut_tokens": {k[4:]: v for k, v in c.items() if k.startswith("cut/")},
             "fallback_rows": int(c.get("row/fallback", 0)), "empty_rows": int(c.get("row/empty", 0)),
+            "passages": self._passage_shares(c),
             "retrieval": bs["rag"].as_dict(), "time_s": dict(bs["time"]), "errors": list(bs["errors"]),
             "n_visible": rec["n_visible"] if rec else None,
             "capped": rec["mixture"]["capped"] if rec else None,
@@ -1863,16 +2048,34 @@ class Loader:
             out["epochs"] = self._epochs(states)
         return out
 
+    @staticmethod
+    def _passage_shares(c: Mapping[str, float]) -> dict[str, dict[str, float]]:
+        """Per conversation sub-kind: conversations built, those that carry a passage inserted by
+        retrieval (share of all), the distractor share and the later-turn share of those
+        passages, and the share of conversations that are a later window."""
+        out = {}
+        for key in sorted(k for k in c if k.startswith("conv/")):
+            kind = key[5:]
+            n = int(c[key])
+            m = int(c.get(f"conv_passage/{kind}", 0))
+            out[kind] = {"samples": n, "with_passage": m, "passage_share": m / n if n else 0.0,
+                         "distractor_share": c.get(f"conv_distractor/{kind}", 0) / m if m else 0.0,
+                         "later_turn_share": c.get(f"conv_later/{kind}", 0) / m if m else 0.0,
+                         "window_share": c.get(f"conv_window/{kind}", 0) / n if n else 0.0}
+        return out
+
     def stats(self) -> dict[str, Any]:
         """The trainer's log record of the loader: per block the realised mixture (tokens by
-        row kind, sub-kind and source, padding share, retrieval and hindsight counters, failed
-        draws, epoch counters) and the coordinator's timing (seconds waiting, copying, planning,
-        replaying)."""
+        row kind, sub-kind and source, padding share, retrieval and hindsight counters, the
+        realised passage shares of the conversations, failed draws, epoch counters), the
+        coordinator's timing (seconds waiting, copying, planning, replaying) and the
+        ``warnings`` of this run (planned shares the epoch caps cut by more than a third)."""
         blocks = [self._summary(i, bs) for i, bs in self._block_stats.items()]
         total_time: Counter = Counter()
         for bs in self._block_stats.values():
             total_time.update(bs["time"])
         return {"block": blocks[-1] if blocks else None, "blocks": blocks,
+                "warnings": list(self._warnings.values()),
                 "time_s": dict(total_time), "coordinator": dict(self._timing),
                 "resets": dict(self._resets), "workers": {"n": len(self._streams_of),
                                                           "restarts": self.exec.restarts,
@@ -1884,4 +2087,5 @@ class Loader:
 __all__ = ["Loader", "LoaderCfg", "BATCH_FIELDS", "batch_shapes", "batch_nbytes", "batch_views",
            "source_table", "source_kind", "library_fingerprint", "StreamState", "Plan", "Block",
            "build_chain", "encode_states", "decode_states", "fresh_states", "journal_settings",
-           "StreamWorker", "WorkerInit", "ShardStore", "scan_new_shards", "stage_dict"]
+           "StreamWorker", "WorkerInit", "ShardStore", "scan_new_shards", "stage_dict",
+           "heldout_samples", "heldout_hash", "is_heldout", "HELDOUT_RULE", "HELDOUT_KINDS"]
