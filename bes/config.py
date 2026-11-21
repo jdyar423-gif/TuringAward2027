@@ -105,6 +105,11 @@ class ModelCfg:
     remat: bool = False
     table_grad: str = "onehot"   # vocabulary-table gradients: "onehot" (chunked matmul) | "take" (scatter-add)
     loss_chunk: int = 8192       # rows of float32 [rows, V] logits per cross-entropy chunk
+    splash_block_q: int = 512    # splash attention query tile (clipped to the padded length)
+    splash_block_kv: int = 512   # splash attention key/value tile
+    splash_block_kv_compute: int = 512  # inner key/value step of the splash kernels
+    splash_fused_bwd: bool = False      # one fused dQ/dK/dV backward kernel instead of two
+    splash_interpret: str = "auto"      # Pallas interpret mode: "auto" (= not on TPU) | "true" | "false"
 
     @property
     def d_ffn(self) -> int:
@@ -252,3 +257,87 @@ def to_dict(cfg: Cfg) -> dict[str, Any]:
 def config_hash(cfg: Cfg) -> str:
     blob = json.dumps(to_dict(cfg), sort_keys=True, default=str).encode()
     return hashlib.sha256(blob).hexdigest()[:16]
+
+
+# ---------------------------------------------------------------------------- library
+@dataclass(frozen=True)
+class LibraryCfg:
+    """Written library (``bes/library/``); values measured in gate E1 (docs/E1_COVERAGE.md).
+
+    Appended by the library track; not (yet) a field of ``Cfg``. ``bes.library`` takes its
+    defaults from here.
+    """
+
+    budget_numbers: int = 60_000_000   # text blocks + passage directory + title list
+    index_numbers: int = 4_000_000     # stored truncated BM25 index (all of its tables)
+    index_bits: int = 18               # 2**18 hashed term buckets
+    index_max_list: int = 1024         # postings kept per bucket at most (bounds the read set)
+    max_passage_words: int = 110
+    max_passage_tokens: int = 160      # title line + body, measured with count_tokens
+    block_raw_bytes: int = 65536       # decompressed bytes per independent xz block
+    bm25_k1: float = 0.6
+    bm25_b: float = 0.3
+    title_weight: float = 1.0          # title terms count 1 + title_weight times
+    lead_title_weight: float = 6.0     # ... in the first passage of an article
+    max_query_terms: int = 16
+    gate_min_score: float = 20.0       # BM25 units; gate chosen on dev at precision >= 0.35
+    gate_min_margin: float = 0.1       # (s1 - s2) / s1 against the best other article
+    gate_min_margin_title: float = 0.05  # margin needed when the title matches
+    gate_min_title_match: float = 0.5  # share of title terms present in the query
+    gate_min_coverage: float = 0.0     # s1 / best reachable score (0 = unused)
+    library_dir: str = "data_cache/library/lib_60M"
+
+
+# -------------------------------------------------------------- preference optimisation
+@dataclass(frozen=True)
+class PrefCfg:
+    """Preference pairs and DPO (``bes/data/prefs.py``, ``bes/train/prefopt.py``; plan 5 item 2).
+
+    Appended by the preference-optimisation track; not (yet) a field of ``Cfg``. The candidate
+    learning rates are an argument of ``prefopt.run_prefopt`` (default ``(1e-6, 3e-6)``).
+    """
+
+    seq_len: int = 1024            # row length T: prompt + ASSISTANT + response + END must fit T+1
+    pairs_per_micro: int = 16      # pairs per micro-batch (rows B = 2 * pairs_per_micro)
+    n_micro: int = 4               # micro-batches A per optimiser step (64 pairs per step)
+    beta: float = 0.1              # DPO temperature (published range at this scale 0.1-0.5)
+    adam_b1: float = 0.9           # plain Adam for every trainable leaf, one uniform learning rate
+    adam_b2: float = 0.999
+    adam_eps: float = 1e-8
+    warmup_frac: float = 0.1       # linear warm-up over this fraction of the epoch's steps ...
+    final_lr_frac: float = 0.0     # ... then linear decay towards this fraction of the peak
+    grad_clip: float = 1.0         # global gradient-norm clip (0 disables)
+    heldout_frac: float = 0.05     # pairs held out (split by prompt) for the health checks
+    seed: int = 0                  # shuffling and the held-out split
+    max_len_ratio: float = 3.0     # length guard: drop pairs whose chosen response (with END) is
+                                   # more than this times longer than the rejected one (0 = off)
+    mask_forced: bool = True       # calculator results forced by the host carry no DPO weight
+    max_loss_rise: float = 0.03    # health: held-out assistant loss may rise at most 3 %
+    len_ratio_min: float = 0.7     # health: mean sampled response length / start value ...
+    len_ratio_max: float = 1.6     # ... must stay in [len_ratio_min, len_ratio_max]
+    rep_ratio_max: float = 1.2     # health: repeated 4-gram rate at most 1.2 x the start value
+    min_acc_gain: float = 0.0      # health: held-out preference accuracy must exceed start + this
+    cache_gb: float = 8.0          # host memory for feature batches kept between passes (0 = none)
+
+
+@dataclass(frozen=True)
+class CriticCfg:
+    """Fitting the critic head on the frozen core (``bes/train/critic_fit.py``; plan 4G, F3).
+
+    Appended by the preference-optimisation track; not (yet) a field of ``Cfg``.
+    """
+
+    steps: int = 300               # Adam steps on cached final-token hidden states
+    lr: float = 1e-3
+    adam_b1: float = 0.9
+    adam_b2: float = 0.999
+    adam_eps: float = 1e-8
+    batch: int = 512               # scalar-labelled samples per step (0 = all of them)
+    pair_batch: int = 512          # preference pairs per step (0 = all of them)
+    pair_weight: float = 1.0       # weight of the pairwise ranking loss next to the scalar loss
+    l2: float = 1e-4               # L2 penalty on both critic matrices
+    heldout_frac: float = 0.2      # prompts held out for the rank-correlation report
+    seed: int = 0
+    min_rho: float = 0.3           # the critic is used only if the held-out rho reaches this
+    seq_len: int = 1024            # row length when collecting hidden states
+    batch_rows: int = 32           # rows per forward pass when collecting hidden states
