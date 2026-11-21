@@ -32,7 +32,19 @@
 **T2　複製是跑在網路之上的 LZ77。** 以「延續次數／目前仍匹配的位置數」預測的複製器，對一段在藏書中唯一的片段恰付 log₂(M/occ) 位元（逐步機率相乘後望遠鏡消去）。檢索的作用是預付 log₂(M/M_ret)。最優信任度對匹配片段上網路累積的驚奇為仿射，並在續抄機率處飽和。
 檢驗：`test_t2_copy_pointer_cost_telescopes_to_log_m_over_occ`。
 
-**T3　歸一化的數值形式。** 恆等式 lse(z+S) = lse(z) + log1p(Σ_v softmax(z)_v·expm1(S_v)) 在 fp64 成立到 1e-12，但當大部分質量落在被大幅下修的 token 上時，fp32 會嚴重抵消；直接對合併後的 logits 做「減最大值的 log-sum-exp」才穩定。實作只用後者，恆等式僅作測試。
+**T1b　後驗預測式輸出律（實作採用）。** 令 q = softmax(z) 為網路的分佈，候選帶給每個候選 c_k 一個非負質量 m_k，定義
+ p(v) = (q(v) + Σ_k m_k·[c_k = v]) / (1 + Σ_k m_k)。
+(i) 它精確歸一，歸一化常數是閉式 1 + Σm，不需要再掃一次詞表；
+(ii) 取 m_v = (n_v − d·t_v)/(θ + d·T) 時，它恰為以網路分佈為基底測度的 Pitman–Yor 後驗預測 (n_v − d t_v)/(θ+n) + (θ + dT)/(θ+n)·q(v)；候選帶提供的 (n_b, n, K) 正是所需的充分統計量，這是 B4 在輸出端的落點；
+(iii) 它等於加性傾斜 g_k = log(1 + m_k/q(c_k))：傾斜量取決於網路自己給候選的機率，這是「只看隱狀態與計數特徵的傾斜」表達不了的；
+(iv) 損失最多上升 log(1 + Σm)（候選全錯時），有界；
+(v) 單一候選、真實機率 p > q 時，最優質量為 (p − q)/(1 − p)，並達到 T1 的粗化 KL 上界。
+尺度一的匯點注意力（B1）與這條輸出律是同一個估計式：(Σ 證據 + 先驗強度 × 先驗均值)/(計數 + 先驗強度)。
+實作：log m_k = Σ_f β_f[特徵_kf] + ⟨h·A, c_k⟩ − 6，上限 10；全部在 fp32。質量為零時與純交叉熵逐位元相同。
+微型模型實測（真實網頁文本、200 步、保留集損失）：無候選帶 5.813；有上限的加性傾斜 5.369；本輸出律 5.355；再把暫存器與候選輸入表的學習率降為 1/30 後更低（見 `docs/CHANGES.md`）。
+檢驗：`test_t1b_additive_mass_law_is_the_pitman_yor_predictive_with_the_network_as_base`。
+
+**T3　加性傾斜的數值形式（已不在實作中）。** 恆等式 lse(z+S) = lse(z) + log1p(Σ_v softmax(z)_v·expm1(S_v)) 在 fp64 成立到 1e-12，但當大部分質量落在被大幅下修的 token 上時，fp32 會嚴重抵消。T1b 的閉式歸一化避開了這個問題。
 檢驗：`test_t3_tilt_identity_holds_but_complement_form_is_the_stable_one`。
 
 ## 尺度三：整段回覆——Feynman–Kac 路徑測度
