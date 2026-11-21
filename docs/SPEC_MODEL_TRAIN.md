@@ -23,7 +23,7 @@ h      = rmsnorm(sum_n lanes[n]) * g_head
 z      = softcap * tanh(((h @ P) @ E_out.T) / softcap)          # float32
 q      = softmax(z)
 a_k    = sum_f beta_f[feat_kf] + <h @ A_t, c_k> - mass_offset,     c_k = sum_f E_tfeat_f[feat_kf]
-m_k    = exp(min(a_k, mass_log_cap)) * mask_k * src_scale[src_k]
+m_k    = exp(soft_cap(a_k, mass_log_cap)) * mask_k * src_scale[src_k]   # identity up to cap - 2, then a tanh knee
 p(v)   = (q(v) + sum_k m_k [cand_k = v]) / (1 + sum_k m_k)          # bes/model/predictive.py
 ```
 `block(u) : u += attn(rmsnorm(u)*g1); u += mlp(rmsnorm(u)*g2)`, MLP = `W_down relu(W_up x)^2`,
@@ -42,6 +42,11 @@ predictive with the network as base measure (`docs/MATH.md` T1, `tests/math/test
 normalised in closed form, `-log p(y) <= -log q(y) + log(1 + sum_k m_k)`, and exactly `q` when
 every mass is zero. With the zero-initialised trust tables every active slot starts at mass
 `exp(-mass_offset)` (`ModelCfg.mass_offset = 6`, `mass_log_cap = 10`).
+Decoding temperature acts on the network's distribution only:
+`p_T(v) = (softmax(z / T)(v) + sum_k m_k [cand_k = v]) / (1 + sum_k m_k)`; the tape's share
+`M / (1 + M)` is a calibrated probability and is never sharpened (tempering the mixture makes
+copy loops absorbing, docs/CHANGES.md section 10). During decoding `src_scale[5]` (candidates
+whose source is the reply being written) is `DecodeCfg.self_evidence_weight`.
 
 ### 4.2 Attention with exact key biases, sink and confidence
 
@@ -177,8 +182,10 @@ One stored number = 2 bytes; `budget.count` receives the library and index sizes
 
 ## 8. Decoding (`bes/decode/`)
 
-`sampling.py` (temperature, top-p, n-gram blocking outside code and quotes with an exemption for
-library copies, cap on verbatim copy runs), `potentials.py` (token-local potentials from the
+`sampling.py` (top-p / top-k / min-p on the final distribution, n-gram blocking outside code and
+quotes, an optional cap on verbatim copy runs from a LIBRARY passage, off by default; the
+temperature is applied inside the model, to the network's distribution only),
+`potentials.py` (token-local potentials from the
 registers and the compiled constraints with reachability pruning; forced calculator results),
 `smc.py` (K batched particles, locally optimal proposal, incremental weights = allowed mass,
 adaptive resampling at sentence boundaries when ESS < K/2, KV-cache particle copy), `select.py`
