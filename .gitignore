@@ -8,3 +8,4 @@ __pycache__/
 *.u16
 *.tmp
 .ipynb_checkpoints/
+/.claude/
