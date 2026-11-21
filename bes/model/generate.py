@@ -16,13 +16,17 @@ Cache (a dict of arrays, static shapes, compiled once per ``(B, Tmax)``)::
 A key is visible to a query when ``pos_k <= pos_q`` and ``seg_k == seg_q``; slots are only an
 address, so gaps of padding or empty slots are harmless. Every call appends ``Tq`` slots at
 ``t`` (``prefill``: a chunk ``[B, Tq]``; ``decode_step``: one token per row) and returns the
-logits of the chunk's last position. Positions whose ``seg`` is negative are padding: they are
+next-token scores of the chunk's last position (``model.logits_from_hidden``: ``softmax`` of the
+scores is the output law ``p``; with a candidate tape they are its normalised
+log-probabilities, so ``logsumexp = 0``). Positions whose ``seg`` is negative are padding: they are
 written with ``seg = -1`` and never seen by real queries, which gives left-padded ragged prompts
 and fixed-size prefill chunks (one compilation for any prompt length).
 
 Feature rows (``reg``, ``clock``, ``cand_tok``, ``cand_feat``) follow ``docs/SPEC.md`` 2: the row
 of position ``t`` describes the state after consuming token ``t`` and its candidate tape lists
-candidates for token ``t + 1``; the output tilt is applied at the last position with that row.
+candidates for token ``t + 1``; their masses enter the output law at the last position with that
+row (``consts["enable"]["src"]`` scales them per ``src`` value, e.g. ``src_5 < 1`` for evidence
+from the text being generated).
 
 Host-side loops: :func:`generate` (one stream) and :func:`generate_particles` (``K`` rows, each
 an independent particle of the same prompt, with optional resampling through
@@ -121,7 +125,8 @@ def extend(params: dict, consts: dict, cache: dict, feats: dict, cfg):
     ``cand_feat [B, Tq, K, N_CAND_FEAT]``. The slots ``[t, t + Tq)`` must fit in the cache
     (checked by the host loops; ``dynamic_update_slice`` would clamp the start index).
     Returns ``(logits float32[B, V], hidden float32[B, d], cache)`` at the chunk's last
-    position (the tilt uses that position's candidate row).
+    position: ``logits`` are the scores of ``model.logits_from_hidden`` (``softmax`` = the
+    output law, with the masses of that position's candidate row).
     """
     M.check_cfg(cfg)
     dt = act_dtype(cfg)

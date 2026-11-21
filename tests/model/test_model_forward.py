@@ -101,15 +101,28 @@ def test_segment_isolation_and_shift_invariance():
                                base[:, L0:], atol=2e-4, rtol=1e-4)
 
 
-def test_zero_initialised_paths_are_inert_at_init():
-    """At initialisation the register, candidate-input and tilt paths add exactly zero."""
+def test_zero_initialised_paths_at_init():
+    """At initialisation the register and candidate-input paths add exactly zero, and the
+    output law gives every active slot the mass exp(-mass_offset)."""
     cfg = tiny_cfg()
     params = init(cfg, seed=7)
-    feats, _, _ = M.split_batch(make_batch(cfg, seed=8))
+    batch = make_batch(cfg, seed=8)
+    feats, _, _ = M.split_batch(batch)
     f = jitted("logits_fn", cfg)
     on = np.asarray(f(params, M.make_consts(cfg), feats))
-    off = np.asarray(f(params, M.make_consts(cfg, reg=0.0, cand_in=0.0, cand_out=0.0), feats))
+    off = np.asarray(f(params, M.make_consts(cfg, reg=0.0, cand_in=0.0), feats))
     np.testing.assert_array_equal(on, off)
+    # the output law at init: p = (q + exp(-off) * #slots holding v) / (1 + exp(-off) * #active)
+    logq = np.asarray(f(params, M.make_consts(cfg, cand_out=0.0), feats), np.float64)
+    q = np.exp(logq - np.log(np.exp(logq).sum(-1, keepdims=True)))
+    e = np.exp(-cfg.mass_offset)
+    cand = batch["cand_tok"]
+    p = q.copy()
+    for b, t, k in zip(*np.nonzero(cand >= 0)):
+        p[b, t, cand[b, t, k]] += e
+    p /= (1.0 + e * (cand >= 0).sum(-1))[..., None]
+    np.testing.assert_allclose(on, np.log(p), atol=2e-5, rtol=0)
+    assert np.max(np.abs(on - logq)) > 1e-3
     # the sink and confidence paths are live from the start and switch off exactly
     plain = np.asarray(f(params, M.make_consts(cfg, **M.switches_off()), feats))
     assert np.max(np.abs(plain - on)) > 0.0
@@ -145,10 +158,12 @@ def test_activation_dtype_paths_run(dtype):
 def test_make_consts_switches():
     cfg = tiny_cfg()
     c = M.make_consts(cfg)
-    assert set(c["enable"]) == set(M.SWITCHES) | {"kind"}
+    assert set(c["enable"]) == set(M.SWITCHES) | {"kind", "src"}
     assert all(float(c["enable"][s]) == 1.0 for s in M.SWITCHES)
-    c = M.make_consts(cfg, kind_4=0, sink=False)
+    assert np.asarray(c["enable"]["src"]).tolist() == [1.0] * 8
+    c = M.make_consts(cfg, kind_4=0, sink=False, src_5=0.25)
     assert np.asarray(c["enable"]["kind"]).tolist() == [1, 1, 1, 1, 0, 1, 1, 1]
+    assert np.asarray(c["enable"]["src"]).tolist() == [1, 1, 1, 1, 1, 0.25, 1, 1]
     assert float(c["enable"]["sink"]) == 0.0
     off = M.make_consts(cfg, **M.switches_off())
     assert all(float(off["enable"][s]) == 0.0 for s in M.SWITCHES)

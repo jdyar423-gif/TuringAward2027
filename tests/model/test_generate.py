@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from _model_testlib import jitted, make_batch, random_params, tiny_cfg
-from bes.config import END, special_id
+from bes.config import CAND_FEATS, END, special_id
 from bes.model import generate as G
 from bes.model import model as M
 
@@ -81,8 +81,9 @@ def incremental(dec, params, consts, cfg, feats, split, chunk=8, tmax=TMAX, cach
 @pytest.mark.parametrize("split", [1, pytest.param(6, marks=pytest.mark.slow), 11, 12,
                                    pytest.param(17, marks=pytest.mark.slow), 24])
 def test_prefill_then_decode_equals_full_forward(setup, split):
-    """All features on (registers, clocks, candidate input and tilt, sink, confidence, value
-    embeddings); row 1 holds two segments (BOS at 0 and 11). Logits and hidden states."""
+    """All features on (registers, clocks, candidate input and the output law, sink,
+    confidence, value embeddings); row 1 holds two segments (BOS at 0 and 11). Scores and
+    hidden states."""
     cfg, params, consts, feats, full, hidden = setup
     hs = []
     z, cache = incremental(G.jitted(cfg), params, consts, cfg, feats, split, hidden_out=hs)
@@ -232,6 +233,27 @@ def test_runtime_switches_are_honoured(setup):
     full = np.asarray(jitted("logits_fn", cfg)(params, consts, feats))
     z, _ = incremental(G.jitted(cfg), params, consts, cfg, feats, split=9)
     np.testing.assert_allclose(z, full[:, 8:], atol=ATOL, rtol=0)
+
+
+def _logsumexp(z: np.ndarray) -> np.ndarray:
+    z = np.asarray(z, np.float64)
+    top = z.max(-1, keepdims=True)
+    return (top + np.log(np.exp(z - top).sum(-1, keepdims=True)))[..., 0]
+
+
+def test_down_weighted_self_evidence_in_decoding(setup):
+    """``src_5 = 0.25`` (the decoder's weight for evidence from the text being generated):
+    prefill + decode equals the full forward, the scores are normalised log-probabilities,
+    and the multiplier changes them."""
+    cfg, params, _, feats, full_default, _ = setup
+    consts = M.make_consts(cfg, src_5=0.25)
+    full = np.asarray(jitted("logits_fn", cfg)(params, consts, feats))
+    z, _ = incremental(G.jitted(cfg), params, consts, cfg, feats, split=9)
+    np.testing.assert_allclose(z, full[:, 8:], atol=ATOL, rtol=0)
+    assert np.max(np.abs(_logsumexp(z))) < 1e-5 and np.max(np.abs(_logsumexp(full))) < 1e-5
+    src = [name for name, _ in CAND_FEATS].index("src")
+    assert np.any(feats["cand_feat"][..., src] == 5)
+    assert np.max(np.abs(full - full_default)) > 1e-4
 
 
 def test_decode_is_deterministic(setup):

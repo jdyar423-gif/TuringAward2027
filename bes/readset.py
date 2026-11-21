@@ -21,12 +21,15 @@ table                  row                                                      
 ``emb/tok``            the token                                                    input
 ``emb/ve``             the token (one ``[n_loops, ve_dim]`` row)                    input
 ``emb/reg/<f>``        the register value of field ``f`` (if the ``reg`` switch)    input
-``cand/in_tok``        the candidate of every active slot (``m_k != 0``, path on)   input
+``cand/in_tok``        the candidate of every active slot (``mask_k != 0``)         input
 ``cand/in_feat/<f>``   feature ``f`` of every active slot                           input
-``trust/feat/<f>``     feature ``f`` of every slot active for the tilt              output
+``trust/feat/<f>``     feature ``f`` of every slot with output mass                 output
+``trust/bias/<f>``     feature ``f`` of every slot with output mass (width 1)       output
 =====================  ===========================================================  ==========
 
-Dense leaves of switched-off paths are not read (``cand/in_proj`` without ``cand_in``,
+A slot has output mass (``bes.model.predictive``) when its ``cand_out`` slot mask is non-zero,
+its id lies in the vocabulary and the ``src`` multiplier of its source is non-zero. Dense
+leaves of switched-off paths are not read (``cand/in_proj`` without ``cand_in``,
 ``trust/proj`` without ``cand_out``, the sink scalars without ``sink``); the critic is read only
 by decoders that use it (``include_critic``).
 
@@ -54,9 +57,10 @@ from bes.roles import leaves_with_paths, role_of
 RMS_EPS = 1e-6      # bes.model.layers.RMS_EPS
 L2_EPS = 1e-12      # bes.model.layers.L2_EPS
 VE_GATE_CHANNELS = 12
-TRUST_CAP = 8.0
 KIND_FIELD = [name for name, _ in CAND_FEATS].index("kind")
 N_KINDS = dict(CAND_FEATS)["kind"]
+SRC_FIELD = [name for name, _ in CAND_FEATS].index("src")
+N_SRC = dict(CAND_FEATS)["src"]
 SWITCHES = ("reg", "cand_in", "cand_out", "conf", "sink", "clock")
 #: dense leaves that a runtime switch removes from the computation
 _DENSE_SWITCH = {"cand/in_proj": "cand_in", "trust/proj": "cand_out",
@@ -65,15 +69,16 @@ _DENSE_SWITCH = {"cand/in_proj": "cand_in", "trust/proj": "cand_out",
 
 # ---------------------------------------------------------------------------- helpers
 def _enable(consts: Mapping | None, cfg) -> dict[str, Any]:
-    """Runtime switches as floats (``kind`` as ``float64[N_KINDS]``); defaults follow the
-    static flags (as ``bes.model.model.make_consts``)."""
+    """Runtime switches as floats (``kind`` as ``float64[N_KINDS]``, ``src`` as
+    ``float64[N_SRC]``); defaults follow the static flags (as ``bes.model.model.make_consts``)."""
     static = {"reg": cfg.use_reg, "cand_in": cfg.use_cand_in, "cand_out": cfg.use_cand_out,
               "conf": cfg.use_conf, "sink": cfg.use_sink, "clock": cfg.clock_planes > 0}
     en = {} if consts is None else consts["enable"]
     out: dict[str, Any] = {n: float(np.asarray(en[n])) if n in en else float(static[n])
                            for n in SWITCHES}
-    out["kind"] = (np.asarray(en["kind"], np.float64) if "kind" in en
-                   else np.ones(N_KINDS, np.float64))
+    for name, size in (("kind", N_KINDS), ("src", N_SRC)):
+        out[name] = (np.asarray(en[name], np.float64) if name in en
+                     else np.ones(size, np.float64))
     return out
 
 
@@ -94,9 +99,17 @@ def _row_feats(feats: Mapping) -> dict[str, np.ndarray]:
 
 def _slot_mask(cand_tok_row: np.ndarray, cand_feat_row: np.ndarray, kind_on: np.ndarray,
                path_on: float) -> np.ndarray:
-    """``m_k`` of ``bes.model.oracle_io.cand_mask`` for one position: float64 ``[K]``."""
+    """``mask_k`` of ``bes.model.oracle_io.cand_mask`` for one position: float64 ``[K]``."""
     kind = np.clip(cand_feat_row[:, KIND_FIELD].astype(np.int64), 0, N_KINDS - 1)
     return (cand_tok_row >= 0).astype(np.float64) * kind_on[kind] * float(path_on)
+
+
+def _out_weight(cfg, en: Mapping, cand_tok_row: np.ndarray, cand_feat_row: np.ndarray) -> np.ndarray:
+    """Constant factor of the output-law mass of each slot of one position: the ``cand_out``
+    slot mask times the ``src`` multiplier, zero for ids outside the vocabulary. float64 ``[K]``."""
+    src = np.clip(cand_feat_row[:, SRC_FIELD].astype(np.int64), 0, N_SRC - 1)
+    return (_slot_mask(cand_tok_row, cand_feat_row, en["kind"], en["cand_out"])
+            * (cand_tok_row < cfg.vocab_size) * en["src"][src])
 
 
 def position_reads(cfg, en: Mapping, token: int, reg_row=None, cand_tok_row=None,
@@ -105,7 +118,7 @@ def position_reads(cfg, en: Mapping, token: int, reg_row=None, cand_tok_row=None
     """Rows read by one position: ``{table path: {row, ...}}`` (see the module table).
 
     en: switches from :func:`_enable`; inputs / outputs select the input-side and the
-    output-side (tilt) rows.
+    output-side (output-law) rows.
     """
     v = cfg.vocab_size
     out: dict[str, set[int]] = defaultdict(set)
@@ -122,19 +135,22 @@ def position_reads(cfg, en: Mapping, token: int, reg_row=None, cand_tok_row=None
         cand_tok_row = np.asarray(cand_tok_row).astype(np.int64)
         cand_feat_row = (np.zeros(cand_tok_row.shape + (len(CAND_FEATS),), np.int64)
                          if cand_feat_row is None else np.asarray(cand_feat_row).astype(np.int64))
-    for side, flag, use, switch, tok_table, feat_prefix in (
-            ("in", inputs, cfg.use_cand_in, "cand_in", "cand/in_tok", "cand/in_feat"),
-            ("out", outputs, cfg.use_cand_out, "cand_out", None, "trust/feat")):
+    for side, flag, use, switch, tok_table, prefixes in (
+            ("in", inputs, cfg.use_cand_in, "cand_in", "cand/in_tok", ("cand/in_feat",)),
+            ("out", outputs, cfg.use_cand_out, "cand_out", None, ("trust/feat", "trust/bias"))):
         if not (flag and use and has_cand and en[switch] != 0):
             continue
-        m = _slot_mask(cand_tok_row, cand_feat_row, en["kind"], en[switch])
-        if side == "out":                  # a tilt on an id outside the vocabulary lands nowhere
-            m = m * (cand_tok_row < v)
+        if side == "out":                  # no mass outside the vocabulary or at src scale 0
+            m = _out_weight(cfg, en, cand_tok_row, cand_feat_row)
+        else:
+            m = _slot_mask(cand_tok_row, cand_feat_row, en["kind"], en[switch])
         for k in np.flatnonzero(m):
             if tok_table is not None:
                 out[tok_table].add(int(np.clip(cand_tok_row[k], 0, v - 1)))
             for f, (name, card) in enumerate(CAND_FEATS):
-                out[f"{feat_prefix}/{name}"].add(int(np.clip(cand_feat_row[k, f], 0, card - 1)))
+                row = int(np.clip(cand_feat_row[k, f], 0, card - 1))
+                for prefix in prefixes:
+                    out[f"{prefix}/{name}"].add(row)
     return out
 
 
@@ -325,8 +341,10 @@ def _rotate(x: np.ndarray, cos: np.ndarray, sin: np.ndarray) -> np.ndarray:
 
 def reference_logits(store: RowStore, consts: Mapping | None, feats: Mapping, cfg,
                      kv: Mapping | None = None) -> np.ndarray:
-    """Tilted logits ``float64[V]`` of the last position of one sequence, computed in numpy
-    from a :class:`RowStore` only.
+    """Next-token scores ``float64[V]`` of the last position of one sequence, computed in
+    numpy from a :class:`RowStore` only: with the tape path on, the log-probabilities of the
+    output law ``p = (q + sum_k m_k onehot(cand_k)) / (1 + sum_k m_k)``, else the softcapped
+    logits (compare them through :func:`max_logprob_diff`).
 
     Without ``kv`` (strict): every position the last one can see is recomputed from scratch.
     With ``kv`` (step): ``kv = {"k", "v": [n_loops, n_blocks, S, H, head_dim], "seg", "pos":
@@ -425,12 +443,21 @@ def reference_logits(store: RowStore, consts: Mapping | None, feats: Mapping, cf
     if cfg.use_cand_out and ct is not None and en["cand_out"] != 0:
         ct = np.asarray(ct).astype(np.int64)
         cf = _cand_feat(f, last, ct)
-        m = _slot_mask(ct, cf, en["kind"], en["cand_out"]) * (ct < cfg.vocab_size)
+        weight = _out_weight(cfg, en, ct, cf)
         ht = h @ D("trust/proj")
-        for k in np.flatnonzero(m):
-            c = sum(store.row(f"trust/feat/{name}", int(np.clip(cf[k, i], 0, card - 1)))
-                    for i, (name, card) in enumerate(CAND_FEATS))
-            z[ct[k]] += TRUST_CAP * np.tanh(float(ht @ c) / TRUST_CAP) * m[k]
+        add, total = np.zeros_like(z), 0.0
+        for k in np.flatnonzero(weight):
+            rows = [(name, int(np.clip(cf[k, i], 0, card - 1)))
+                    for i, (name, card) in enumerate(CAND_FEATS)]
+            c = sum(store.row(f"trust/feat/{name}", r) for name, r in rows)
+            bias = sum(float(store.row(f"trust/bias/{name}", r)) for name, r in rows)
+            a = bias + float(ht @ c) - cfg.mass_offset
+            mass = math.exp(min(a, cfg.mass_log_cap)) * float(weight[k])
+            add[ct[k]] += mass
+            total += mass
+        logq = log_softmax(z)
+        hit = add > 0
+        z = np.where(hit, np.log(np.where(hit, np.exp(logq) + add, 1.0)), logq) - math.log1p(total)
     return z
 
 
@@ -450,7 +477,8 @@ def kv_from_cache(cache: Mapping, row: int = 0) -> dict[str, np.ndarray]:
 
 
 def jax_last_logits(params: Any, consts: Mapping, feats: Mapping, cfg) -> np.ndarray:
-    """Logits ``float64[V]`` of the JAX model at the last position of one sequence."""
+    """Scores ``float64[V]`` of the JAX model (``logits_fn``) at the last position of one
+    sequence."""
     import jax
 
     from bes.model import model as M

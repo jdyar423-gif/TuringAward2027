@@ -1,5 +1,9 @@
 """With every feature switch off the model equals a plain looped transformer with value
-embeddings, written here independently in numpy (float64)."""
+embeddings, written here independently in numpy (float64).
+
+With a candidate tape in the inputs the model's scores are the output law's normalised
+log-probabilities (``softmax`` of them is the distribution), so distributions are compared
+through log-softmax."""
 from __future__ import annotations
 
 import dataclasses
@@ -20,6 +24,12 @@ def _softmax(x):
     x = x - np.max(x, axis=-1, keepdims=True)
     e = np.exp(x)
     return e / np.sum(e, axis=-1, keepdims=True)
+
+
+def _log_softmax(x):
+    x = np.asarray(x, np.float64)
+    x = x - np.max(x, axis=-1, keepdims=True)
+    return x - np.log(np.sum(np.exp(x), axis=-1, keepdims=True))
 
 
 def plain_looped_reference(P: dict, tokens: np.ndarray, seg: np.ndarray, cfg) -> np.ndarray:
@@ -83,10 +93,10 @@ def test_all_switches_off_equals_plain_looped_transformer(clock_planes):
     got = np.asarray(jitted("logits_fn", cfg)(params, consts, feats))
     want = plain_looped_reference(to_numpy(params), np.asarray(feats["tokens"]), batch["seg"], cfg)
     assert got.shape == want.shape == (2, 20, cfg.vocab_size)
-    np.testing.assert_allclose(got, want, atol=5e-5, rtol=0)
+    np.testing.assert_allclose(_log_softmax(got), _log_softmax(want), atol=5e-5, rtol=0)
     # the feature paths are really switched off: turning them on changes the output
     on = np.asarray(jitted("logits_fn", cfg)(params, M.make_consts(cfg), feats))
-    assert np.max(np.abs(on - got)) > 1e-2
+    assert np.max(np.abs(_log_softmax(on) - _log_softmax(got))) > 1e-2
 
 
 def test_static_flags_off_equal_runtime_switches_off():
@@ -103,4 +113,4 @@ def test_static_flags_off_equal_runtime_switches_off():
     p_s["core"]["attn"] = {k: v for k, v in params["core"]["attn"].items()
                            if k not in ("sink_logit", "sink_value")}
     stat = np.asarray(jitted("logits_fn", cfg_s)(p_s, M.make_consts(cfg_s, clock=0.0), feats))
-    np.testing.assert_allclose(stat, off, atol=1e-5, rtol=1e-5)
+    np.testing.assert_allclose(_log_softmax(stat), _log_softmax(off), atol=1e-5, rtol=1e-5)

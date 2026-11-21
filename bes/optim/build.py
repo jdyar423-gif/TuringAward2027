@@ -4,7 +4,9 @@ Group set-up follows ``kschwethelm/looped-lm-scaling`` ``nanochat/gpt.py``
 (``GPT.setup_optimizer``, lines 591-669, MIT licence): matrices of the blocks go to the spectral
 optimiser with ``lr_matrix``; embeddings, unembedding, norm gains and the hyper-connection scalars
 go to Adam with their own learning rates multiplied by ``(d_model / d_ref) ** -0.5`` (lines
-634-649). As in that file the width factor is *not* applied to the matrix group unless
+634-649). The ``feature`` group (zero-initialised feature tables of this model: registers,
+candidate input, trust biases) is an extra Adam group with its own, much lower rate. As in that
+file the width factor is *not* applied to the matrix group unless
 ``OptimCfg.width_scale_matrix`` is set. The training script multiplies every group's learning rate
 by one schedule factor (``scripts/base_train.py`` lines 612-616); here that factor is ``lr_scale``.
 
@@ -19,6 +21,7 @@ matrix    MuonH (``"muonh"``) or      ``lr_matrix`` (x width factor if ``width_s
           Muon (``"muon"``)           ``"muon"`` also applies ``sqrt(max(1, d_out/d_in))``)
 embed     Adam                        ``lr_embed * w``
 unembed   Adam                        ``lr_unembed * w``
+feature   Adam                        ``lr_feature * w``
 norm      Adam                        ``lr_norm * w``
 scalar    Adam                        ``lr_scalar * w``
 frozen    none (never moves)          --
@@ -44,8 +47,8 @@ import numpy as np
 from bes.config import Cfg, OptimCfg
 from bes.optim import adam, muon_normuon, muonh
 
-GROUPS = ("matrix", "embed", "unembed", "norm", "scalar", "frozen")
-ADAM_GROUPS = ("embed", "unembed", "norm", "scalar")
+GROUPS = ("matrix", "embed", "unembed", "feature", "norm", "scalar", "frozen")
+ADAM_GROUPS = ("embed", "unembed", "feature", "norm", "scalar")
 KINDS = ("muonh", "muon")
 NS_DTYPES = ("float32", "bfloat16")
 
@@ -110,6 +113,7 @@ def group_lrs(cfg: Cfg) -> dict[str, float]:
         "matrix": o.lr_matrix * (w if o.width_scale_matrix else 1.0),
         "embed": o.lr_embed * w,
         "unembed": o.lr_unembed * w,
+        "feature": o.lr_feature * w,
         "norm": o.lr_norm * w,
         "scalar": o.lr_scalar * w,
         "frozen": 0.0,

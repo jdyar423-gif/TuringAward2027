@@ -11,7 +11,7 @@ mode (blocks, lanes, initialisation, per-loop KV layout) and `karpathy/nanochat`
 ### 4.1 Forward pass
 
 ```
-e      = rmsnorm(E_tok[x] + sum_f E_reg_f[reg_f] + W_cin @ sum_k m_k (E_ctok[cand_k] + sum_f E_cfeat_f[feat_kf]))
+e      = rmsnorm(E_tok[x] + sum_f E_reg_f[reg_f] + W_cin @ sum_k mask_k (E_ctok[cand_k] + sum_f E_cfeat_f[feat_kf]))
 lanes  = (e, e)                                        # n_lanes copies
 for r in 0..n_loops-1:                                 # lax.scan; optional jax.checkpoint
     u     = sum_n alpha[r,n] * lanes[n]
@@ -21,13 +21,27 @@ for r in 0..n_loops-1:                                 # lax.scan; optional jax.
     lanes = mix[r] @ lanes + beta[r][:,None] * s
 h      = rmsnorm(sum_n lanes[n]) * g_head
 z      = softcap * tanh(((h @ P) @ E_out.T) / softcap)          # float32
-z     += sum_k b_k * onehot(cand_k),  b_k = 8 tanh(<h @ A_t, c_k> / 8),  c_k = sum_f E_tfeat_f[feat_kf]
+q      = softmax(z)
+a_k    = sum_f beta_f[feat_kf] + <h @ A_t, c_k> - mass_offset,     c_k = sum_f E_tfeat_f[feat_kf]
+m_k    = exp(min(a_k, mass_log_cap)) * mask_k * src_scale[src_k]
+p(v)   = (q(v) + sum_k m_k [cand_k = v]) / (1 + sum_k m_k)          # bes/model/predictive.py
 ```
 `block(u) : u += attn(rmsnorm(u)*g1); u += mlp(rmsnorm(u)*g2)`, MLP = `W_down relu(W_up x)^2`,
 no biases. Initial lane coefficients: `alpha[r] = onehot(r mod n_lanes)`, `mix[r] = I`,
 `beta[r] = 1`. All matrices that the spectral optimiser trains must be **non-zero** at
 initialisation (it keeps each matrix on the sphere of its initial Frobenius norm); new feature
 paths are disabled through zero-initialised *tables or scalars* trained by Adam instead.
+
+Output law: `beta_f` are the trust biases (`trust/bias/<f>`, not the lane coefficients),
+`E_tfeat_f` the trust feature tables and `A_t` the trust projection (`trust/proj`).
+`mask_k` is the slot mask (a candidate is present, its kind switch and the path switch are on);
+`src_scale` (`consts["enable"]["src"]`, default 1) multiplies the masses per value of the `src`
+feature (the decoder uses `src_5 < 1` for evidence from the text being generated). Empty slots
+and ids `>= V` carry no mass; repeated ids add. The output law is the Pitman-Yor posterior
+predictive with the network as base measure (`docs/MATH.md` T1, `tests/math/test_claims.py`):
+normalised in closed form, `-log p(y) <= -log q(y) + log(1 + sum_k m_k)`, and exactly `q` when
+every mass is zero. With the zero-initialised trust tables every active slot starts at mass
+`exp(-mass_offset)` (`ModelCfg.mass_offset = 6`, `mass_log_cap = 10`).
 
 ### 4.2 Attention with exact key biases, sink and confidence
 
@@ -62,10 +76,13 @@ Per head, `head_dim = 128` is split into `126` content dims and `bias_dims = 2` 
 (`emb/tok`, `emb/ve`, `emb/reg/<field>`, `cand/in_tok`, `cand/in_feat/<f>`, `cand/in_proj`,
 `core/attn/{wq,wk,wv,wo}` stacked over blocks, `core/attn/{q_gain,sink_logit,sink_value,ve_gate}`,
 `core/mlp/{w_up,w_down}`, `core/norm/{g1,g2}`, `loop/g`, `lanes/{alpha,mix,beta}`,
-`head/{g,proj,out}`, `trust/{proj,feat/<f>}`, `critic/{w1,w2}`).
+`head/{g,proj,out}`, `trust/{proj,feat/<f>,bias/<f>}`, `critic/{w1,w2}`; `trust/bias/<f>` is
+`float32[card_f]`, one scalar per feature value).
 - `bes/roles.py`: `role_of(path) -> Role(kind, group)` with `kind in {"dense", "lookup"}` and
-  optimiser `group in {"matrix", "embed", "unembed", "norm", "scalar", "frozen"}`; every leaf
-  must be covered (test).
+  optimiser `group in {"matrix", "embed", "unembed", "feature", "norm", "scalar", "frozen"}`;
+  every leaf must be covered (test). `feature` (Adam, `OptimCfg.lr_feature`, much lower than
+  `lr_embed`) holds `emb/reg/*`, `cand/in_tok`, `cand/in_feat/*` and `trust/bias/*`;
+  `trust/feat/*` is in `unembed`; `emb/tok` and `emb/ve` stay in `embed`.
 - `bes/budget.py`: `count(params, cfg, assets=None) -> Budget(total, active_step,
   active_strict(T, distinct_tokens))`. Lookup tables count one row per read. A test asserts
   `total <= 100e6` and `active_step <= 20e6` for `configs/final.py` and `configs/no_library.py`.
@@ -75,13 +92,21 @@ Per head, `head_dim = 128` is split into `126` content dims and `bias_dims = 2` 
 ### 4.4 Loss and generation
 
 - `loss_fn(params, consts, batch, cfg) -> (loss, metrics)` on one micro-batch (`[B,T]` arrays);
-  weighted mean cross-entropy over `w`; logits and log-sum-exp in float32; tokens processed in
-  chunks so that the `[n, V]` logits never exceed about 0.6 GB; the candidate tilt is added
-  without scatter (compare/one-hot product) and costs at most a few percent of the step.
+  weighted mean over `w` of the output law's cross-entropy (`model.token_ce`, shared with
+  `prefopt`). The network part `ce_base = -log q(y)` is a chunked float32 cross-entropy (the
+  `[n, V]` logits never exceed about 0.6 GB) with no candidate code path; the tape adds only
+  per-token terms, `ce = -log(q(y) + M_y) + log1p(M)` with `M_y = sum_k m_k [cand_k = y]` and
+  `M = sum_k m_k` (no extra pass over the vocabulary, no scatter). Metrics include
+  `tape_mass` (mean `M`) and `tape_gain` (mean `ce_base - ce`, nats; can be negative).
   `consts["enable"]` holds 0/1 switches (`reg`, `cand_in`, `cand_out`, per candidate kind,
-  `conf`, `sink`) so one compiled graph covers the whole fallback ladder.
+  `conf`, `sink`, `clock`) and the `src` multipliers, so one compiled graph covers the whole
+  fallback ladder.
+- `logits_fn` / `logits_from_hidden` return scores `s` with `softmax(s) = p`: the law's
+  log-probabilities when the tape path is on (compare/select against an iota), else the
+  softcapped logits.
 - With every feature path disabled the model must equal the plain looped transformer (test);
-  with `b_k = 0` the loss must be bit-identical to the loss without the tilt (test).
+  with every mass zero (`cand_out` off, its kinds off or `src` multipliers zero) the loss must
+  be bit-identical to the plain cross-entropy (test).
 - Generation (`generate.py`): `init_cache`, `prefill(params, consts, cache, feats)`,
   `decode_step(params, consts, cache, tok, feats) -> (logits[B,V], hidden, cache)` with a KV
   cache of shape `[n_loops, n_blocks, B, H, Tmax, head_dim]`, static shapes, jit-compiled once

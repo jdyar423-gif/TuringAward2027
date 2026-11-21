@@ -21,7 +21,8 @@ from bes.roles import leaves_with_paths, role_of
 TOL = 1e-4
 VARIANTS = {
     "all_on": {},
-    "switched": {"reg": 0.0, "cand_in": 0.0, "kind_3": 0.0, "clock": 0.0},
+    "switched": {"reg": 0.0, "cand_in": 0.0, "kind_3": 0.0, "clock": 0.0, "src_5": 0.0,
+                 "src_2": 0.5},
     "no_sink": {"sink": 0.0, "conf": 0.0, "cand_out": 0.0},
 }
 
@@ -100,6 +101,22 @@ def test_poisoning_unread_rows_leaves_the_output_unchanged(tiny, variant):
     worse = R.poison(params, {**reads, "emb/tok": reads["emb/tok"][reads["emb/tok"] != f["tokens"][12]]},
                      scale=1e3, seed=5)
     assert np.max(np.abs(_jax_last(cfg, worse, consts, f) - _jax_last(cfg, params, consts, f))) > 1e-3
+    # the trust biases are rows of the read set too: raising one read row changes the output
+    # law, raising every unread one changes nothing (the poisoning above covered them as well)
+    if VARIANTS[variant].get("cand_out", 1.0):
+        bias = {p: r for p, r in reads.items() if p.startswith("trust/bias/")}
+        assert len(bias) == len(CAND_FEATS)
+        name = "count"
+        moved = jax.tree.map(np.array, params)
+        moved["trust"]["bias"][name][int(bias[f"trust/bias/{name}"][0])] += 20.0
+        assert R.max_logprob_diff(_jax_last(cfg, moved, consts, f), _jax_last(cfg, params, consts, f)) > 1e-3
+        unread = jax.tree.map(np.array, params)
+        for nm, card in CAND_FEATS:
+            rows = np.setdiff1d(np.arange(card), bias[f"trust/bias/{nm}"])
+            unread["trust"]["bias"][nm][rows] += 20.0
+        np.testing.assert_array_equal(_jax_last(cfg, unread, consts, f), _jax_last(cfg, params, consts, f))
+    else:
+        assert not any(p.startswith("trust/") for p in reads)
 
 
 def test_poisoning_outside_the_step_set_with_a_cached_state(tiny):
@@ -148,8 +165,8 @@ def test_read_sets_equal_the_gradient_support(tiny, variant):
 
 @pytest.mark.slow
 def test_out_of_vocabulary_candidates(tiny):
-    """A candidate id >= V still reads its (clipped) input row, but its tilt lands on no logit,
-    so its trust-feature rows are not part of the read set."""
+    """A candidate id >= V still reads its (clipped) input row, but it carries no mass in the
+    output law, so its trust rows (features and biases) are not part of the read set."""
     cfg, params = tiny
     f = _seq(cfg, seed=11)
     f["cand_tok"][-1, :2] = cfg.vocab_size + 5
@@ -255,7 +272,7 @@ def test_counts_of_the_shipped_configurations(name):
         assert lg.dense == sum(i.total for i in b.items if i.kind == "dense")
         assert max(c.step for c in counts) <= b.active_step <= budget.ACTIVE_CAP
         assert max(c.strict for c in counts) <= b.active_strict(T, distinct)
-        # the input-side union only grows (the tilt rows of each position come on top)
+        # the input-side union only grows (the output-law rows of each position come on top)
         union = [sum(n for p, n in c.strict_rows.items() if not p.startswith("trust/"))
                  for c in counts]
         assert all(a <= b_ for a, b_ in zip(union, union[1:]))

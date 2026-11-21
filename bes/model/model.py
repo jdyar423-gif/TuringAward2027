@@ -1,6 +1,6 @@
 """BES looped transformer: parameters, constants, forward pass and loss (SPEC section 4).
 
-    e      = rmsnorm(E_tok[x] + sum_f E_reg_f[reg_f] + W_cin @ sum_k m_k (E_ctok[cand_k] + sum_f E_cfeat_f[feat_kf]))
+    e      = rmsnorm(E_tok[x] + sum_f E_reg_f[reg_f] + W_cin @ sum_k mask_k (E_ctok[cand_k] + sum_f E_cfeat_f[feat_kf]))
     lanes  = (e, ..., e)
     for r in 0..n_loops-1:                                   # lax.scan, optional jax.checkpoint
         u     = sum_n alpha[r, n] lanes[n]
@@ -8,15 +8,19 @@
         s     = rmsnorm(u) * g_loop[r]
         lanes = mix[r] @ lanes + beta[r][:, None] * s
     h      = rmsnorm(sum_n lanes[n]) * g_head
-    z      = softcap * tanh(((h @ P) @ E_out.T) / softcap) + sum_k b_k onehot(cand_k)
+    q      = softmax(softcap * tanh(((h @ P) @ E_out.T) / softcap))
+    a_k    = sum_f beta_f[feat_kf] + <h A_t, c_k> - mass_offset,      c_k = sum_f E_tfeat_f[feat_kf]
+    m_k    = exp(min(a_k, mass_log_cap)) * mask_k * src_scale[src_k]
+    p(v)   = (q(v) + sum_k m_k [cand_k = v]) / (1 + sum_k m_k)          # bes.model.predictive
 
 Core design and initialisation ported from kschwethelm/looped-lm-scaling ``nanochat/gpt.py``
 ("hyperconnect" mode) and the value-embedding gate from karpathy/nanochat ``nanochat/gpt.py``
 (both MIT licence). Every new feature path starts from zero-initialised tables or scalars, so
-at initialisation the register, candidate-input and tilt paths contribute exactly zero; the
-sink and confidence paths are active from the start (sink logit 0, prior mean 0) and are
-removed exactly by their switches. ``make_consts`` holds the runtime 0/1 switches so one
-compiled graph covers every rung of the fallback ladder.
+at initialisation the register and candidate-input paths contribute exactly zero and every
+active candidate slot carries the small mass ``exp(-mass_offset)``; the sink and confidence
+paths are active from the start (sink logit 0, prior mean 0) and are removed exactly by their
+switches. ``make_consts`` holds the runtime switches so one compiled graph covers every rung
+of the fallback ladder.
 
 Input dictionaries (``feats``): ``tokens`` int ``[B, T]`` (required) and optionally ``seg``
 ``[B, T]`` (default 0), ``pos`` ``[B, T]`` (default ``arange(T)``), ``reg`` ``[B, T, N_REG]``,
@@ -33,15 +37,18 @@ import jax.numpy as jnp
 import numpy as np
 
 from bes.config import CAND_FEATS, REG_FIELDS, special_id
-from bes.model import attention, controller, head, oracle_io, rope_clocks, sinks, tables
+from bes.model import (attention, controller, head, oracle_io, predictive, rope_clocks, sinks,
+                       tables)
 from bes.model.critic import critic  # noqa: F401  (re-exported for other tracks)
 from bes.model.layers import (F32, act_dtype, hi, leaf_key, mlp, normal_init, rmsnorm,
                               uniform_init)
 
 N_KINDS = dict(CAND_FEATS)["kind"]
+N_SRC = dict(CAND_FEATS)["src"]
 ROLE_FIELD = [name for name, _ in REG_FIELDS].index("role")
 N_ROLES = dict(REG_FIELDS)["role"]
-#: names of the scalar runtime switches in ``consts["enable"]`` (plus the vector ``kind``)
+#: names of the scalar runtime switches in ``consts["enable"]`` (plus the vectors ``kind``
+#: and ``src``)
 SWITCHES = ("reg", "cand_in", "cand_out", "conf", "sink", "clock")
 
 
@@ -73,8 +80,8 @@ def init_params(cfg, key: jax.Array) -> dict:
     every matrix uniform with std ``1/sqrt(fan_in)`` (all non-zero), RMSNorm gains 1, cyclic
     lanes, value embeddings like ``W_v``, value gate uniform(0, 0.02), query gain
     ``sqrt(dc)`` (the reference scale ``q.k / sqrt(dims)`` of RMS-normalised vectors).
-    Feature tables (registers, candidate tables, trust features) and the sink scalars are
-    zero; the critic output weights are zero.
+    Feature tables (registers, candidate tables, trust features and trust biases) and the sink
+    scalars are zero; the critic output weights are zero.
     """
     check_cfg(cfg)
     v, d, nh, hd = cfg.vocab_size, cfg.d_model, cfg.n_heads, cfg.head_dim
@@ -128,7 +135,8 @@ def init_params(cfg, key: jax.Array) -> dict:
     }
     if cfg.use_cand_out:
         params["trust"] = {"proj": uni("trust/proj", (d, cd), d),
-                           "feat": {name: zeros((card, cd)) for name, card in CAND_FEATS}}
+                           "feat": {name: zeros((card, cd)) for name, card in CAND_FEATS},
+                           "bias": {name: zeros((card,)) for name, card in CAND_FEATS}}
     params["critic"] = {"w1": uni("critic/w1", (d, cfg.critic_hidden), d),
                         "w2": zeros((cfg.critic_hidden,))}
     return params
@@ -140,25 +148,32 @@ def make_consts(cfg, **switches) -> dict:
     Keyword switches (0/1 floats or bools): ``reg``, ``cand_in``, ``cand_out``, ``conf``,
     ``sink``, ``clock`` (multiplies the clock values; 0 leaves the clock planes unrotated);
     ``kind`` (a scalar or a sequence of ``N_KINDS`` per candidate kind) or ``kind_<i>``.
+    ``src`` (a scalar or a sequence of ``N_SRC``) or ``src_<i>``: non-negative multipliers of
+    the output-law masses of the candidates whose ``src`` feature is ``i`` (default 1; e.g.
+    ``src_5=0.25`` down-weights evidence from the text being generated).
     Defaults: on when the static ``cfg.use_*`` flag (``clock_planes > 0`` for ``clock``) is
     on. A switch never re-enables a path whose static flag is off.
     Returns ``{"rope_freq": float32[1 + N_CLOCKS, P], "enable": {name: float32 scalar,
-    "kind": float32[N_KINDS]}}``.
+    "kind": float32[N_KINDS], "src": float32[N_SRC]}}``.
     """
     values = {"reg": cfg.use_reg, "cand_in": cfg.use_cand_in, "cand_out": cfg.use_cand_out,
               "conf": cfg.use_conf, "sink": cfg.use_sink, "clock": cfg.clock_planes > 0}
-    kind = np.ones(N_KINDS, np.float32)
+    vectors = {"kind": np.ones(N_KINDS, np.float32), "src": np.ones(N_SRC, np.float32)}
     for name, value in switches.items():
+        stem, _, idx = name.partition("_")
         if name in values:
             values[name] = value
-        elif name == "kind":
-            kind = np.broadcast_to(np.asarray(value, np.float32), (N_KINDS,)).copy()
-        elif name.startswith("kind_") and name[5:].isdigit() and int(name[5:]) < N_KINDS:
-            kind[int(name[5:])] = float(value)
+        elif name in vectors:
+            vectors[name] = np.broadcast_to(np.asarray(value, np.float32),
+                                            vectors[name].shape).copy()
+        elif stem in vectors and idx.isdigit() and int(idx) < vectors[stem].size:
+            vectors[stem][int(idx)] = float(value)
         else:
             raise KeyError(f"unknown switch {name!r}")
+    if not np.all(vectors["src"] >= 0):
+        raise ValueError(f"src multipliers must be non-negative, got {vectors['src'].tolist()}")
     enable = {name: jnp.asarray(float(values[name]), F32) for name in SWITCHES}
-    enable["kind"] = jnp.asarray(kind)
+    enable.update({name: jnp.asarray(v) for name, v in vectors.items()})
     freq = rope_clocks.freq_table(cfg, np.dtype(hi(act_dtype(cfg))))
     return {"rope_freq": jnp.asarray(freq), "enable": enable}
 
@@ -299,33 +314,70 @@ def forward_hidden(params: dict, consts: dict, feats: dict, cfg) -> jax.Array:
     return forward(params, consts, feats, cfg)[0]
 
 
-def tilt_terms(params: dict, consts: dict, hidden: jax.Array, feats: dict, cfg):
-    """``(cand_tok [..., K], b float32[..., K], m float32[..., K])`` of the output tilt, or
-    ``(None, None, None)`` when the tilt path is statically off or no tape is given."""
+def tape_masses(params: dict, consts: dict, hidden: jax.Array, feats: dict, cfg):
+    """``(cand_tok int[..., K], m float32[..., K])``: the candidates and their masses in the
+    output law (``bes.model.predictive.masses``), or ``(None, None)`` when the tape path is
+    statically off or no tape is given.
+
+    hidden: ``[..., d]``; feats: ``cand_tok [..., K]`` and optionally ``cand_feat [..., K, F]``
+    with the same leading shape. The runtime switches enter through the slot mask
+    (``cand_out``, ``kind``) and the ``src`` multipliers.
+    """
     cand_tok, cand_feat = _cand(feats)
     if not cfg.use_cand_out or cand_tok is None:
-        return None, None, None
+        return None, None
     en = consts["enable"]
-    m = oracle_io.cand_mask(cand_tok, cand_feat, en["kind"], en["cand_out"])
-    return cand_tok, oracle_io.trust(params["trust"], hidden, cand_feat, m), m
+    mask = oracle_io.cand_mask(cand_tok, cand_feat, en["kind"], en["cand_out"])
+    src = en["src"] if "src" in en else jnp.ones((N_SRC,), F32)
+    return cand_tok, predictive.masses(params["trust"], hidden, cand_tok, cand_feat, mask, src, cfg)
 
 
 def logits_from_hidden(params: dict, consts: dict, hidden: jax.Array, feats: dict, cfg) -> jax.Array:
-    """Tilted logits ``float32[..., V]`` from a hidden state ``[..., d]``.
+    """Final next-token scores ``s float32[..., V]`` from a hidden state ``[..., d]``, with
+    ``softmax(s) = p`` (the output law).
 
     feats may hold ``cand_tok [..., K]`` / ``cand_feat [..., K, F]`` with the same leading
-    shape as ``hidden`` (e.g. ``[B]`` for one decoding step); without them there is no tilt.
+    shape as ``hidden`` (e.g. ``[B]`` for one decoding step). When the tape path is statically
+    on and a tape is given, ``s = log p`` (normalised log-probabilities,
+    ``predictive.mix_logprobs``); otherwise ``s`` are the softcapped logits unchanged. Callers
+    rely only on ``softmax(s) = p``.
     """
     z = head.logits(params["head"], hidden, cfg)
-    cand_tok, b, _ = tilt_terms(params, consts, hidden, feats, cfg)
-    if cand_tok is not None:
-        z = oracle_io.add_tilt(z, cand_tok, b)
-    return z
+    cand_tok, m = tape_masses(params, consts, hidden, feats, cfg)
+    if cand_tok is None:
+        return z
+    return predictive.mix_logprobs(z, cand_tok, m)
 
 
 def logits_fn(params: dict, consts: dict, feats: dict, cfg) -> jax.Array:
-    """Unchunked tilted logits ``float32[B, T, V]`` (tests and generation references)."""
+    """Unchunked scores ``float32[B, T, V]`` of :func:`logits_from_hidden` (tests and
+    generation references)."""
     return logits_from_hidden(params, consts, forward_hidden(params, consts, feats, cfg), feats, cfg)
+
+
+def token_ce(params: dict, consts: dict, hidden: jax.Array, feats: dict, y: jax.Array, cfg, *,
+             parts: bool = False):
+    """Per-token cross-entropy of the output law, tape included: ``float32[n]``.
+
+    hidden: ``[..., d]`` final hidden states; y: int ``[...]`` targets (same leading shape,
+    flattened to ``n`` rows); feats: the tape as in :func:`tape_masses`. The network part
+    ``-log q(y)`` comes from ``head.chunked_ce`` (chunks of ``cfg.loss_chunk`` rows); the tape
+    adds per-token terms only (``predictive.mix_ce``). With ``parts`` returns
+    ``(ce, ce_base, mass)``: ``ce_base = -log q(y)`` and ``mass = sum_k m_k`` (``float32[n]``,
+    zeros without a tape).
+    """
+    d = hidden.shape[-1]
+    yy = jnp.asarray(y).reshape(-1)
+    ce_base = head.chunked_ce(params["head"], hidden.reshape(-1, d), yy, cfg)
+    cand_tok, m = tape_masses(params, consts, hidden, feats, cfg)
+    if cand_tok is None:
+        ce, mass = ce_base, jnp.zeros_like(ce_base)
+    else:
+        k = cand_tok.shape[-1]
+        cand, m = cand_tok.reshape(-1, k), m.reshape(-1, k)
+        ce = predictive.mix_ce(ce_base, yy, cand, m, cfg.vocab_size)
+        mass = jnp.sum(m, axis=-1)
+    return (ce, ce_base, mass) if parts else ce
 
 
 # ------------------------------------------------------------------------------- loss
@@ -343,32 +395,31 @@ def loss_fn(params: dict, consts: dict, batch: dict, cfg) -> tuple[jax.Array, di
     """Weighted mean cross-entropy of one micro-batch and metrics.
 
     batch: ``tokens int[B, T+1]``, ``w float32[B, T]`` and optional ``seg``, ``reg``,
-    ``clock``, ``cand_tok``, ``cand_feat`` (``[B, T, ...]``). Logits and log-sum-exp are
-    float32 and computed in chunks of ``cfg.loss_chunk`` rows.
+    ``clock``, ``cand_tok``, ``cand_feat`` (``[B, T, ...]``). The cross-entropy is that of the
+    output law (:func:`token_ce`); logits and log-sum-exp are float32 and computed in chunks of
+    ``cfg.loss_chunk`` rows.
     Metrics: ``loss``, ``ce_sum`` (sum of w * ce), ``weight`` (sum of w), ``tokens`` (count of
-    w > 0), ``trust_abs`` (mean |b| over active candidate slots), ``sink_mass``
-    (``[n_blocks]``), ``ce_by_role`` / ``weight_by_role`` / ``loss_share_by_role`` (``[6]``,
-    by the role register of the input position; zeros without registers).
+    w > 0), ``tape_mass`` (w-weighted mean of the total tape mass ``M = sum_k m_k``),
+    ``tape_gain`` (w-weighted mean of ``-log q(y) - ce`` in nats: what the tape buys; it can be
+    negative), ``sink_mass`` (``[n_blocks]``), ``ce_by_role`` / ``weight_by_role`` /
+    ``loss_share_by_role`` (``[6]``, by the role register of the input position; zeros
+    without registers).
     """
     feats, y, w = split_batch(batch)
     h, aux = forward(params, consts, feats, cfg)
-    b_, t_, d = h.shape
+    b_, t_, _ = h.shape
     n = b_ * t_
-    cand_tok, b, m = tilt_terms(params, consts, h, feats, cfg)
-    ce = head.chunked_ce(params["head"], h.reshape(n, d), y.reshape(n),
-                         None if cand_tok is None else cand_tok.reshape(n, -1),
-                         None if b is None else b.reshape(n, -1), cfg)
+    ce, ce_base, mass = token_ce(params, consts, h, feats, y, cfg, parts=True)
     w = w.reshape(n)
     weight = jnp.sum(w)
     wce = w * ce
     ce_sum = jnp.sum(wce)
-    loss = ce_sum / jnp.maximum(weight, 1e-9)
+    denom = jnp.maximum(weight, 1e-9)
+    loss = ce_sum / denom
     metrics = {"loss": loss, "ce_sum": ce_sum, "weight": weight,
-               "tokens": jnp.sum((w > 0).astype(F32)), "sink_mass": aux["sink_mass"]}
-    if b is None:
-        metrics["trust_abs"] = jnp.zeros((), F32)
-    else:
-        metrics["trust_abs"] = jnp.sum(jnp.abs(b)) / jnp.maximum(jnp.sum(m), 1.0)
+               "tokens": jnp.sum((w > 0).astype(F32)), "sink_mass": aux["sink_mass"],
+               "tape_mass": jnp.sum(w * mass) / denom,
+               "tape_gain": jnp.sum(w * (ce_base - ce)) / denom}
     reg = _feat(feats, "reg")
     if reg is None:
         zeros = jnp.zeros((N_ROLES,), F32)

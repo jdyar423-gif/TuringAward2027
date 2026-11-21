@@ -1,16 +1,19 @@
-"""Roles cover every parameter leaf; the budget reproduces the plan's ledger and its caps."""
+"""Roles cover every parameter leaf and give the optimiser groups; the budget reproduces the
+plan's ledger and its caps."""
 from __future__ import annotations
 
 import dataclasses
 import functools
+import os
 
 import jax
 import pytest
 
-from _model_testlib import config_model, init, tiny_cfg
+from _model_testlib import ROOT, config_model, init, tiny_cfg
 from bes import budget, roles
-from bes.config import CAND_FEATS, CAND_SLOTS, REG_FIELDS
+from bes.config import CAND_FEATS, CAND_SLOTS, REG_FIELDS, load_config
 from bes.model import model as M
+from bes.optim.build import build, group_lrs, width_factor
 
 
 def _shapes(cfg):
@@ -26,7 +29,10 @@ CONFIGS = {
         use_cand_out=False, ve_dim=0, clock_planes=0),
 }
 
-LOOKUPS = ("emb/tok", "emb/ve", "emb/reg/", "cand/in_tok", "cand/in_feat/", "trust/feat/")
+LOOKUPS = ("emb/tok", "emb/ve", "emb/reg/", "cand/in_tok", "cand/in_feat/", "trust/feat/",
+           "trust/bias/")
+#: leaves of the Adam "feature" group (zero-initialised feature tables)
+FEATURE = ("emb/reg/", "cand/in_tok", "cand/in_feat/", "trust/bias/")
 
 
 @pytest.mark.parametrize("name", sorted(CONFIGS))
@@ -46,13 +52,38 @@ def test_every_leaf_has_a_role(name):
 
 def test_role_paths_and_unknown_leaves():
     assert roles.role_of("core/attn/wq") == roles.Role("dense", "matrix")
-    assert roles.role_of(("emb", "reg", "role")) == roles.Role("lookup", "embed")
+    assert roles.role_of(("emb", "reg", "role")) == roles.Role("lookup", "feature")
+    assert roles.role_of("emb/tok") == roles.Role("lookup", "embed")
     assert roles.role_of("head/out").group == "unembed"
+    assert roles.role_of("trust/feat/kind") == roles.Role("lookup", "unembed")
+    assert roles.role_of("trust/bias/src") == roles.Role("lookup", "feature")
+    assert roles.role_of("cand/in_tok").group == roles.role_of("cand/in_feat/mlen").group == "feature"
     assert roles.role_of("critic/w1").group == "frozen"
     with pytest.raises(KeyError):
         roles.role_of("core/attn/unknown")
     with pytest.raises(ValueError):
         roles.Role("dense", "bogus")
+
+
+@pytest.mark.parametrize("name", ["final", "smoke"])
+def test_optimiser_groups_of_the_model_leaves(name):
+    """Every leaf of the real parameter tree gets its role's optimiser group and that group's
+    rate: the feature group (register, candidate-input and trust-bias tables) gets
+    ``lr_feature`` times the width factor, the trust feature tables the unembedding rate."""
+    from bes.optim.build import GROUPS
+    cfg = load_config(os.path.join(ROOT, "configs", f"{name}.py"))
+    opt = build(cfg, _shapes(cfg.model))
+    lrs, w = group_lrs(cfg), width_factor(cfg)
+    assert set(GROUPS) == set(roles.GROUPS)
+    assert lrs["feature"] == pytest.approx(cfg.optim.lr_feature * w)
+    assert lrs["unembed"] == pytest.approx(cfg.optim.lr_unembed * w)
+    for lp in opt.plan:
+        assert lp.group == roles.role_of(lp.path).group, lp.path
+        assert lp.base_lr == lrs[lp.group], lp.path
+        assert (lp.group == "feature") == lp.path.startswith(FEATURE), lp.path
+        if lp.path.startswith("trust/feat/"):
+            assert lp.group == "unembed", lp.path
+    assert {lp.group for lp in opt.plan} == set(roles.GROUPS)
 
 
 def test_final_budget_reproduces_the_plan_ledger():
@@ -72,10 +103,14 @@ def test_final_budget_reproduces_the_plan_ledger():
     assert abs(rows["small"][0] - 0.35e6) < 0.1e6                                  # plan: 0.35M
     assert abs(b.total - 98.6e6) / 98.6e6 < 0.005                                  # plan: ~98.6M
     assert abs(b.active_step - 19.2e6) / 19.2e6 < 0.01                             # plan: ~19.2M
-    # lookup reads: one row per read
+    # lookup reads: one row per read (trust biases: rows of width 1)
     reg_rows = len(REG_FIELDS) * d
-    cand_rows = CAND_SLOTS * cfg.cand_dim + 2 * sum(min(CAND_SLOTS, c) for _, c in CAND_FEATS) * cfg.cand_dim
+    feat_rows = sum(min(CAND_SLOTS, c) for _, c in CAND_FEATS)
+    cand_rows = CAND_SLOTS * cfg.cand_dim + 2 * feat_rows * cfg.cand_dim + feat_rows
     assert rows["tables"][1] == reg_rows + cand_rows
+    bias = [i for i in b.items if i.name.startswith("trust/bias/")]
+    assert len(bias) == len(CAND_FEATS) and all(i.width == 1 and i.kind == "lookup" for i in bias)
+    assert sum(i.total for i in bias) == sum(c for _, c in CAND_FEATS)
 
 
 def test_strict_count_formula():
@@ -86,7 +121,7 @@ def test_strict_count_formula():
     d, cd = cfg.d_model, cfg.cand_dim
     for T, D in ((1024, 325), (2048, 540), (2048, 2048), (8, 3)):
         reg = sum(min(card, T) for _, card in REG_FIELDS) * d
-        feats = 2 * sum(min(card, T * CAND_SLOTS) for _, card in CAND_FEATS) * cd
+        feats = (2 * cd + 1) * sum(min(card, T * CAND_SLOTS) for _, card in CAND_FEATS)
         want = dense + D * (d + cfg.n_loops * cfg.ve_dim + cd) + reg + feats + assets
         assert b.active_strict(T, D) == want
     assert b.active_strict(1024, 100) < b.active_strict(1024, 200) < b.active_strict(2048, 400)

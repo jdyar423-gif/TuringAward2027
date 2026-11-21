@@ -1,8 +1,9 @@
 """DPO (``bes/train/prefopt.py``): log-probabilities, reference terms, the step, frozen leaves,
 health checks and selection.
 
-References are written in the tests: per-row log-probabilities from the unchunked tilted
-logits of ``model.logits_fn`` with an explicit ``log_softmax`` / target pick / weighted sum,
+References are written in the tests: per-row log-probabilities from the unchunked scores of
+``model.logits_fn`` (the output law, candidate tape included) with an explicit
+``log_softmax`` / target pick / weighted sum,
 rows built by list concatenation, the DPO loss and its gradient recomputed micro-batch by
 micro-batch without ``lax.scan``. Every test shares one tiny model, one batch shape and one
 optimiser (a role function that also freezes ``head/g``), so the DPO step compiles once.
@@ -53,8 +54,9 @@ def pref():
 
 @pytest.fixture(scope="module")
 def params(cfg):
-    """Initial parameters with every zero-initialised table perturbed (an active tilt and
-    candidate input), a non-trivial unembedding and a non-zero critic."""
+    """Initial parameters with every zero-initialised table perturbed (trained-looking trust
+    tables of the output law and candidate input), a non-trivial unembedding and a non-zero
+    critic."""
     p = jax.jit(functools.partial(M.init_params, cfg.model))(jax.random.PRNGKey(0))
     rng = np.random.default_rng(1)
     flat, treedef = jax.tree_util.tree_flatten_with_path(p)
@@ -63,7 +65,7 @@ def params(cfg):
         name = "/".join(k.key for k in path)
         a = np.asarray(leaf)
         noise = rng.standard_normal(a.shape).astype(np.float32)
-        if name.startswith(("emb/reg/", "cand/in_feat/", "trust/feat/")) or name in (
+        if name.startswith(("emb/reg/", "cand/in_feat/", "trust/feat/", "trust/bias/")) or name in (
                 "cand/in_tok", "critic/w2"):
             a = a + 0.3 * noise
         elif name == "head/out":
@@ -112,15 +114,16 @@ def step_fn(cfg, optimizer):
 
 
 # ------------------------------------------------------------------------ references
-def ref_row_logp(params, consts, cfg, tok, prompt, resp, *, tilt=True):
+def ref_row_logp(params, consts, cfg, tok, prompt, resp, *, tape=True):
     """Unchunked reference: one row built by concatenation, its features computed on their
-    own, tilted logits from ``logits_fn``, explicit log-softmax, weighted sum of the targets."""
+    own, scores of the output law from ``logits_fn``, explicit log-softmax, weighted sum of
+    the targets (``tape=False``: the network alone, ``cand_out`` switched off)."""
     content = list(prompt) + [ASSISTANT] + list(resp) + [END]
     L = len(content)
     tokens = np.array(content + [PAD] * (T + 1 - L), np.int32)[None]
     seg = np.array([[0 if t < L else 1 for t in range(T)]], np.int32)
     feats = {"tokens": tokens[:, :T], "seg": seg, **exact_features(tokens[:, :T], seg, tok)}
-    c = consts if tilt else M.make_consts(cfg.model, cand_out=0.0)
+    c = consts if tape else M.make_consts(cfg.model, cand_out=0.0)
     z = np.asarray(_logits(cfg.model)(params, c, feats), np.float64)[0]         # [T, V]
     logp = z - np.log(np.sum(np.exp(z - z.max(-1, keepdims=True)), -1, keepdims=True)) - z.max(
         -1, keepdims=True)
@@ -148,11 +151,11 @@ def test_row_logps_equal_the_unchunked_reference(params, consts, cfg, tok, pairs
             for r, resp in zip((2 * p, 2 * p + 1), (pair.chosen, pair.rejected)):
                 want = ref_row_logp(params, consts, cfg, tok, pair.prompt.tolist(), resp.tolist())
                 assert got[a, r] == pytest.approx(want, rel=1e-5, abs=1e-4)
-    # the candidate tilt is part of the value
+    # the candidate tape's output law is part of the value
     pair = pairs[int(batch["index"][0, 0])]
-    untilted = ref_row_logp(params, consts, cfg, tok, pair.prompt.tolist(), pair.chosen.tolist(),
-                            tilt=False)
-    assert abs(untilted - got[0, 0]) > 1e-2
+    without = ref_row_logp(params, consts, cfg, tok, pair.prompt.tolist(), pair.chosen.tolist(),
+                           tape=False)
+    assert abs(without - got[0, 0]) > 1e-2
     # and the sum over rows is the loss function's weighted cross-entropy
     mb = {k: v[0] for k, v in batch.items() if k in D.DEVICE_KEYS}
     _, metrics = jax.jit(lambda p, c, b: M.loss_fn(p, c, b, cfg.model))(params, consts, mb)

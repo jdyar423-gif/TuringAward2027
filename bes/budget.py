@@ -69,6 +69,7 @@ _LOOKUP_READS: list[tuple[str, int, str]] = [
     ("cand/in_tok", CAND_SLOTS, "tokens"),
     ("cand/in_feat/*", CAND_SLOTS, "window"),
     ("trust/feat/*", CAND_SLOTS, "window"),
+    ("trust/bias/*", CAND_SLOTS, "window"),      # rows of width 1 (one scalar per feature value)
 ]
 
 #: rows of the plan's ledger (section 4) and the leaves they hold

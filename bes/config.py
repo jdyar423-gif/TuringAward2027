@@ -97,7 +97,7 @@ class ModelCfg:
     use_conf: bool = True        # last value dim is the constant 1 -> non-sink mass
     use_reg: bool = True         # register embeddings
     use_cand_in: bool = True     # candidate tape as input features
-    use_cand_out: bool = True    # candidate tape as output tilt
+    use_cand_out: bool = True    # candidate tape in the output law (bes.model.predictive)
     cand_dim: int = 64
     critic_hidden: int = 256
     attn_impl: str = "xla"       # "xla" (dense, any backend) | "splash" (TPU)
@@ -110,6 +110,8 @@ class ModelCfg:
     splash_block_kv_compute: int = 512  # inner key/value step of the splash kernels
     splash_fused_bwd: bool = False      # one fused dQ/dK/dV backward kernel instead of two
     splash_interpret: str = "auto"      # Pallas interpret mode: "auto" (= not on TPU) | "true" | "false"
+    mass_offset: float = 6.0     # output law: log-mass a_k = bias + <h A, c_k> - mass_offset
+    mass_log_cap: float = 10.0   # output law: m_k = exp(min(a_k, mass_log_cap)) * mask_k * src_scale
 
     @property
     def d_ffn(self) -> int:
@@ -146,6 +148,7 @@ class OptimCfg:
     muon_momentum_start: float = 0.85     # "muon" only: momentum of the first update
     muon_momentum_warmup_steps: int = 400  # "muon" only: linear start -> peak over these updates
     muon_momentum_end: float = 0.90       # "muon" only: linear peak -> end over the LR warm-down
+    lr_feature: float = 0.01     # Adam "feature" group: register, candidate-input and trust-bias tables
 
 
 # ------------------------------------------------------------------------------- data

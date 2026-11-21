@@ -84,9 +84,9 @@ forward and both backward kernels: the per-example grid is `(6, 2, 2)` at `T = 1
 3. **The dense `xla` attention materialises `[B, H, T, T]` float32 logits and probabilities** per
    block and loop. It compiles and fits at the training shapes with remat (table below) but is
    meant for tests; train with splash.
-4. **Remat.** `configs/final.py` leaves `remat=False` (the `ModelCfg` default), and with it
-   neither training shape compiles: the compiler needs 32.93 GB of temporaries (table below).
-   Set `remat=True`; tune the policy on the chip.
+4. **Remat.** `configs/final.py` sets `remat=True`. With `remat=False` (the `ModelCfg` default,
+   still used by `configs/no_library.py`) neither training shape compiles: the compiler needs
+   32.93 GB of temporaries (table below). Tune the policy on the chip.
 5. **Decoding reads the whole cache every step.** The cache is
    `[n_loops, n_blocks, B, H, Tmax, head_dim]` for keys and values in bf16:
    `2 * 8 * 2 * 6 * 128 * 2 bytes = 48 KiB` per row and slot, i.e. 0.75 GiB for `B = 8`,
@@ -147,7 +147,7 @@ No optimised HLO above contains a scatter. Host memory of the compiling process 
 
 Consequences:
 
-- **`configs/final.py` must enable remat** (`ModelCfg(remat=True, ...)`): without it neither
+- **`configs/final.py` enables remat** (`ModelCfg(remat=True, ...)`): without it neither
   training shape fits. With full remat of the loop body the step needs about 4.2 GiB of the
   31 GiB, so there is room for a cheaper policy (keeping some activations, or recomputing only
   every other loop) or larger micro-batches; that trade-off is for the benchmark.

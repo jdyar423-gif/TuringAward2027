@@ -7,8 +7,10 @@
 * ``group``: optimiser group, one of :data:`GROUPS`:
   ``matrix``  spectral optimiser (MuonH / Muon); every such matrix is non-zero at init,
               stored ``[..., d_in, d_out]``;
-  ``embed``   Adam, embedding-like tables (vocabulary, value, register and candidate tables);
-  ``unembed`` Adam, output embedding;
+  ``embed``   Adam, vocabulary-indexed input tables (token and value embeddings);
+  ``unembed`` Adam, output embedding and the trust feature tables of the output law;
+  ``feature`` Adam at a much lower rate, the zero-initialised feature tables: registers,
+              candidate input (token and feature tables) and the trust biases;
   ``norm``    Adam, RMSNorm gains;
   ``scalar``  Adam, lanes, attention gains, sink scalars and the value-embedding gate;
   ``frozen``  not updated by the main optimiser (the critic, fitted in a separate stage).
@@ -26,7 +28,7 @@ from typing import Any, Iterable
 import jax
 
 KINDS = ("dense", "lookup")
-GROUPS = ("matrix", "embed", "unembed", "norm", "scalar", "frozen")
+GROUPS = ("matrix", "embed", "unembed", "feature", "norm", "scalar", "frozen")
 
 
 @dataclass(frozen=True)
@@ -42,6 +44,8 @@ class Role:
 
 
 _LOOKUP_EMBED = Role("lookup", "embed")
+_LOOKUP_FEATURE = Role("lookup", "feature")
+_LOOKUP_UNEMBED = Role("lookup", "unembed")
 _MATRIX = Role("dense", "matrix")
 _SCALAR = Role("dense", "scalar")
 _NORM = Role("dense", "norm")
@@ -51,9 +55,9 @@ _FROZEN = Role("dense", "frozen")
 _RULES: list[tuple[str, Role]] = [
     ("emb/tok", _LOOKUP_EMBED),
     ("emb/ve", _LOOKUP_EMBED),
-    ("emb/reg/*", _LOOKUP_EMBED),
-    ("cand/in_tok", _LOOKUP_EMBED),
-    ("cand/in_feat/*", _LOOKUP_EMBED),
+    ("emb/reg/*", _LOOKUP_FEATURE),
+    ("cand/in_tok", _LOOKUP_FEATURE),
+    ("cand/in_feat/*", _LOOKUP_FEATURE),
     ("cand/in_proj", _MATRIX),
     ("core/attn/wq", _MATRIX),
     ("core/attn/wk", _MATRIX),
@@ -75,7 +79,8 @@ _RULES: list[tuple[str, Role]] = [
     ("head/proj", _MATRIX),
     ("head/out", Role("dense", "unembed")),
     ("trust/proj", _MATRIX),
-    ("trust/feat/*", _LOOKUP_EMBED),
+    ("trust/feat/*", _LOOKUP_UNEMBED),
+    ("trust/bias/*", _LOOKUP_FEATURE),
     ("critic/w1", _FROZEN),
     ("critic/w2", _FROZEN),
 ]

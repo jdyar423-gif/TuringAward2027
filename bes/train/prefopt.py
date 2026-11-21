@@ -8,7 +8,8 @@ theta and the frozen reference theta0::
     loss   = -log sigmoid(beta * margin) = softplus(-beta * margin)
 
 ``log pi(y|x)`` is the weighted sum of the response-token log-probabilities under the full model,
-candidate tilt included (the weights come from ``bes.data.prefs``), see :func:`row_logps`. The
+the candidate tape's output law included (the weights come from ``bes.data.prefs``), see
+:func:`row_logps`. The
 reference terms are computed once before training (:func:`compute_ref_logps`) and stored with
 the pairs (``PairBatches.ref``), so a training step runs the policy only. At theta = theta0
 every margin is 0 and the loss is ``log 2``.
@@ -67,7 +68,6 @@ import numpy as np
 
 from bes.config import Cfg, PrefCfg
 from bes.data.prefs import PairBatches, PrefSplit, shuffled_order
-from bes.model import head
 from bes.model import model as M
 from bes.optim.build import build as _build_optimizer
 from bes.optim.build import global_norm, path_str
@@ -87,20 +87,14 @@ def token_logps(params: dict, consts: dict, batch: Mapping[str, Any], cfg) -> ja
 
     batch: one micro-batch in the SPEC section 3 layout without the ``A`` axis (``tokens
     [B, T+1]`` and the optional features). Uses the model's public pieces exactly as
-    ``loss_fn`` does -- ``forward_hidden``, ``tilt_terms`` and ``head.chunked_ce`` -- so the
-    vocabulary projection runs over row chunks of ``cfg.loss_chunk`` (one float32
-    ``[chunk, V]`` block live at a time, in the forward and the backward) and the candidate tilt
-    is included.
+    ``loss_fn`` does -- ``forward_hidden`` and ``token_ce`` (one implementation of the
+    per-token cross-entropy) -- so the vocabulary projection runs over row chunks of
+    ``cfg.loss_chunk`` (one float32 ``[chunk, V]`` block live at a time, in the forward and the
+    backward) and the candidate tape's output law is included.
     """
     feats, y, _ = M.split_batch(dict(batch))
     h = M.forward_hidden(params, consts, feats, cfg)
-    b_, t_, d = h.shape
-    n = b_ * t_
-    cand_tok, b, _ = M.tilt_terms(params, consts, h, feats, cfg)
-    ce = head.chunked_ce(params["head"], h.reshape(n, d), y.reshape(n),
-                         None if cand_tok is None else cand_tok.reshape(n, -1),
-                         None if b is None else b.reshape(n, -1), cfg)
-    return -ce.reshape(b_, t_)
+    return -M.token_ce(params, consts, h, feats, y, cfg).reshape(y.shape)
 
 
 def row_logps(params: dict, consts: dict, batch: Mapping[str, Any], cfg) -> jax.Array:

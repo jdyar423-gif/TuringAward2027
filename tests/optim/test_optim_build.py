@@ -11,10 +11,11 @@ import pytest
 from bes.config import Cfg, ModelCfg, OptimCfg, load_config
 from bes.optim import build, global_norm, group_lrs
 from bes.optim import adam, muon_normuon, muonh
-from bes.optim.build import OptState, default_role_fn, path_str
+from bes.optim.build import ADAM_GROUPS, GROUPS, OptState, default_role_fn, path_str
 
 ROLES = {"core/attn/wq": "matrix", "core/mlp/w_up": "matrix", "core/norm/g1": "norm",
-         "emb/tok": "embed", "head/out": "unembed", "lanes/beta": "scalar", "fz/table": "frozen"}
+         "emb/tok": "embed", "head/out": "unembed", "lanes/beta": "scalar", "fz/table": "frozen",
+         "cand/in_tok": "feature"}
 
 
 def make_params(seed=0, d=16, v=12):
@@ -23,7 +24,7 @@ def make_params(seed=0, d=16, v=12):
     return {"core": {"attn": {"wq": f(2, d, d)}, "mlp": {"w_up": f(2, d, 4 * d)},
                      "norm": {"g1": jnp.ones((2, d))}},
             "emb": {"tok": f(v, d)}, "head": {"out": f(v, d)}, "lanes": {"beta": jnp.ones((4, 2))},
-            "fz": {"table": f(5, d)}}
+            "fz": {"table": f(5, d)}, "cand": {"in_tok": f(v, 4)}}
 
 
 def make_cfg(kind="muonh", d_model=768, **optim):
@@ -51,8 +52,11 @@ def test_group_learning_rates():
     assert lrs["unembed"] == pytest.approx(0.004 * w)
     assert lrs["norm"] == pytest.approx(0.005 * w)
     assert lrs["scalar"] == pytest.approx(0.01 * w)
+    assert lrs["feature"] == pytest.approx(0.01 * w)             # 30x below the embedding rate
+    assert set(lrs) == set(GROUPS) and set(ADAM_GROUPS) < set(lrs)
     assert group_lrs(make_cfg(width_scale_matrix=True))["matrix"] == pytest.approx(0.014 * w)
     assert group_lrs(make_cfg(d_model=128))["embed"] == pytest.approx(0.3 * 2.0)
+    assert group_lrs(make_cfg(d_model=128, lr_feature=0.02))["feature"] == pytest.approx(0.02 * 2.0)
 
 
 @pytest.mark.parametrize("kind", ["muonh", "muon"])
@@ -96,7 +100,7 @@ def test_first_adam_step_size_per_group():
     new, _ = opt.update(rand_like(params, 5), opt.init(params), params, 0.5)
     lrs = group_lrs(cfg)
     for path, group in ROLES.items():
-        if group in ("embed", "unembed", "norm", "scalar"):
+        if group in ("embed", "unembed", "feature", "norm", "scalar"):
             leaf_new, leaf_old = new, params
             for k in path.split("/"):
                 leaf_new, leaf_old = leaf_new[k], leaf_old[k]

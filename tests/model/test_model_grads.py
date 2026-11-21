@@ -21,20 +21,26 @@ def _micro_cfg(**kw):
 
 
 def test_check_grads_tiny_model_all_features_on():
-    """Reverse-mode gradients of the full loss (registers, clocks, candidate input, tilt, sink,
-    confidence, value embeddings, chunked loss with padding) against finite differences.
+    """Reverse-mode gradients of the full loss (registers, clocks, candidate input, the output
+    law with trust features, trust biases and a src multiplier, sink, confidence, value
+    embeddings, chunked loss with padding) against finite differences.
 
     Run in float64 (``jax.enable_x64``) so that finite differences are accurate; the step
-    1e-6 keeps the O(eps) error of the ReLU^2 kink negligible."""
-    cfg32 = _micro_cfg()
+    1e-6 keeps the O(eps) error of the ReLU^2 kink negligible. ``mass_offset = 3`` gives the
+    candidate masses order one, and some targets are planted among the candidates."""
+    cfg32 = _micro_cfg(mass_offset=3.0)
     params32 = random_params(cfg32, seed=21)
     batch = make_batch(cfg32, B=2, T=10, seed=22, seg_starts=((0,), (0, 6)))
+    batch["cand_tok"][:, ::2, 0] = batch["tokens"][:, 1::2]
+    batch["cand_feat"][:, ::2, 0, 0] = 1
     with jax.enable_x64(True):
         cfg = dataclasses.replace(cfg32, act_dtype="float64")
         params = jax.tree.map(lambda a: jnp.asarray(a, jnp.float64), params32)
-        consts = M.make_consts(cfg)
+        consts = M.make_consts(cfg, src_5=0.5)
         f = jax.jit(lambda p: M.loss_fn(p, consts, batch, cfg)[0])
         assert f(params).dtype == jnp.float64
+        met = jax.jit(lambda p: M.loss_fn(p, consts, batch, cfg)[1])(params)
+        assert float(met["tape_mass"]) > 1.0 and abs(float(met["tape_gain"])) > 1e-2
         check_grads(f, (params,), order=1, modes=["rev"], eps=1e-6)
 
 
@@ -51,8 +57,9 @@ def test_onehot_table_gradients_equal_scatter_add_gradients():
 
 
 def test_compiled_loss_gradient_has_no_scatter():
-    """Default path: table gradients, tilt and target selection compile without scatter
-    (positive control: the ``take`` mode does produce scatter-adds)."""
+    """Default path: table gradients, the output law (trust lookups, per-token mixing) and
+    target selection compile without scatter (positive control: the ``take`` mode does
+    produce scatter-adds)."""
     cfg = _micro_cfg()
     params = random_params(cfg, seed=25)
     consts = M.make_consts(cfg)
@@ -89,6 +96,7 @@ def test_spectral_matrices_nonzero_at_init_final_config():
     assert _assert_matrices_nonzero(params) >= 9
     # zero-initialised feature tables really are zero
     for path, leaf in leaves_with_paths(params):
-        if path.startswith(("emb/reg/", "cand/in_tok", "cand/in_feat/", "trust/feat/")) or \
+        if path.startswith(("emb/reg/", "cand/in_tok", "cand/in_feat/", "trust/feat/",
+                            "trust/bias/")) or \
                 path in ("core/attn/sink_logit", "core/attn/sink_value", "critic/w2"):
             assert float(jnp.max(jnp.abs(leaf))) == 0.0, path
