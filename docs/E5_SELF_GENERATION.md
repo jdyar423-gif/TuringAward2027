@@ -10,6 +10,79 @@ Settings: `tape_off` (the tape switched off at evaluation time); `mix_w1` (the t
 
 Definitions (`bes/eval/probes.py`): **rep4** = share of the 4-gram occurrences of a sample that repeat an earlier 4-gram of the same sample; **loop** = the sample did not emit END within its budget and its last max(2p, 32) tokens are exactly periodic with a period p <= 32 (an absorbing repetition loop); **copy** = share of generated tokens inside a run of >= 8 tokens that occurs verbatim in the prompt.
 
-## Status
+## Setup
 
-**Not run yet.** Run `scripts/run_probes.py --e5 --from runs/e2 --out runs/e5` after the E2 reference has finished, then regenerate this file with `--e5 --report`.
+- Model: arm `ref` of `runs/e2b` (1,000,000 training tokens); baseline: the E2 `no_tape` arm; 48 held-out prompts per domain (chat: system + first user turn of smol-smoltalk test conversations; web: the first 96 tokens of ClimbMix shard_00997 documents).
+
+## chat
+
+| T | setting | rep4 (± SE) | loop | copy | mean length | stopped |
+|---|---|---|---|---|---|---|
+| 0.5 | `mix_w1` | 0.326 ± 0.055 | 13/48 = 27% [17%, 41%] | 0.614 | 95 | 58% |
+| 0.5 | `net_w1` | 0.134 ± 0.029 | 1/48 = 2% [0%, 11%] | 0.068 | 70 | 83% |
+| 0.5 | `net_w0.5` | 0.050 ± 0.013 | 0/48 = 0% [0%, 7%] | 0.079 | 57 | 94% |
+| 0.5 | `net_w0.25` | 0.033 ± 0.010 | 0/48 = 0% [0%, 7%] | 0.055 | 63 | 88% |
+| 0.5 | `net_w0` | 0.014 ± 0.004 | 0/48 = 0% [0%, 7%] | 0.043 | 66 | 85% |
+| 0.5 | `tape_off` | 0.032 ± 0.007 | 0/48 = 0% [0%, 7%] | 0.000 | 88 | 67% |
+| 0.5 | `no_tape_arm` | 0.022 ± 0.006 | 0/48 = 0% [0%, 7%] | 0.000 | 67 | 81% |
+| 0.7 | `mix_w1` | 0.227 ± 0.039 | 7/48 = 15% [7%, 27%] | 0.511 | 93 | 65% |
+| 0.7 | `net_w1` | 0.027 ± 0.009 | 1/48 = 2% [0%, 11%] | 0.049 | 72 | 83% |
+| 0.7 | `net_w0.5` | 0.019 ± 0.005 | 0/48 = 0% [0%, 7%] | 0.059 | 77 | 79% |
+| 0.7 | `net_w0.25` | 0.008 ± 0.002 | 0/48 = 0% [0%, 7%] | 0.047 | 71 | 88% |
+| 0.7 | `net_w0` | 0.002 ± 0.001 | 0/48 = 0% [0%, 7%] | 0.045 | 73 | 81% |
+| 0.7 | `tape_off` | 0.003 ± 0.001 | 0/48 = 0% [0%, 7%] | 0.000 | 86 | 62% |
+| 0.7 | `no_tape_arm` | 0.005 ± 0.002 | 0/48 = 0% [0%, 7%] | 0.000 | 87 | 69% |
+| 0.8 | `mix_w1` | 0.179 ± 0.033 | 3/48 = 6% [2%, 17%] | 0.301 | 89 | 71% |
+| 0.8 | `net_w1` | 0.036 ± 0.010 | 0/48 = 0% [0%, 7%] | 0.048 | 78 | 79% |
+| 0.8 | `net_w0.5` | 0.008 ± 0.003 | 0/48 = 0% [0%, 7%] | 0.034 | 82 | 73% |
+| 0.8 | `net_w0.25` | 0.004 ± 0.001 | 0/48 = 0% [0%, 7%] | 0.038 | 77 | 85% |
+| 0.8 | `net_w0` | 0.001 ± 0.001 | 0/48 = 0% [0%, 7%] | 0.033 | 75 | 79% |
+| 0.8 | `tape_off` | 0.000 ± 0.000 | 0/48 = 0% [0%, 7%] | 0.000 | 84 | 67% |
+| 0.8 | `no_tape_arm` | 0.002 ± 0.001 | 0/48 = 0% [0%, 7%] | 0.000 | 90 | 75% |
+
+### Verdicts (chat)
+
+| setting | verdict | violations |
+|---|---|---|
+| `mix_w1` | **worse** | T=0.5 rep4 +0.304 (SE 0.055) vs no_tape_arm; T=0.5 loop +0.271 (SE 0.065) vs no_tape_arm; T=0.5 copy +0.614 (SE 0.062) vs no_tape_arm; T=0.7 rep4 +0.223 (SE 0.038) vs no_tape_arm; T=0.7 loop +0.146 (SE 0.051) vs no_tape_arm; T=0.7 copy +0.511 (SE 0.052) vs no_tape_arm; T=0.8 rep4 +0.177 (SE 0.034) vs no_tape_arm; T=0.8 copy +0.301 (SE 0.049) vs no_tape_arm |
+| `net_w0` | **worse** | T=0.5 copy +0.043 (SE 0.012) vs no_tape_arm; T=0.7 copy +0.045 (SE 0.021) vs no_tape_arm; T=0.8 copy +0.033 (SE 0.012) vs no_tape_arm |
+| `net_w0.25` | **worse** | T=0.5 copy +0.055 (SE 0.018) vs no_tape_arm; T=0.7 copy +0.047 (SE 0.021) vs no_tape_arm; T=0.8 copy +0.038 (SE 0.014) vs no_tape_arm |
+| `net_w0.5` | **worse** | T=0.5 copy +0.079 (SE 0.022) vs no_tape_arm; T=0.7 rep4 +0.014 (SE 0.005) vs no_tape_arm; T=0.7 copy +0.059 (SE 0.023) vs no_tape_arm; T=0.8 copy +0.034 (SE 0.011) vs no_tape_arm |
+| `net_w1` | **worse** | T=0.5 rep4 +0.112 (SE 0.030) vs no_tape_arm; T=0.5 copy +0.068 (SE 0.021) vs no_tape_arm; T=0.7 rep4 +0.023 (SE 0.009) vs no_tape_arm; T=0.7 copy +0.049 (SE 0.021) vs no_tape_arm; T=0.8 rep4 +0.034 (SE 0.010) vs no_tape_arm; T=0.8 copy +0.048 (SE 0.014) vs no_tape_arm |
+
+## web
+
+| T | setting | rep4 (± SE) | loop | copy | mean length | stopped |
+|---|---|---|---|---|---|---|
+| 0.5 | `mix_w1` | 0.687 ± 0.034 | 25/48 = 52% [38%, 66%] | 0.494 | 128 | 0% |
+| 0.5 | `net_w1` | 0.238 ± 0.032 | 7/48 = 15% [7%, 27%] | 0.019 | 128 | 0% |
+| 0.5 | `tape_off` | 0.017 ± 0.003 | 0/48 = 0% [0%, 7%] | 0.000 | 128 | 0% |
+| 0.5 | `no_tape_arm` | 0.033 ± 0.006 | 0/48 = 0% [0%, 7%] | 0.000 | 125 | 8% |
+| 0.7 | `mix_w1` | 0.508 ± 0.039 | 18/48 = 38% [25%, 52%] | 0.274 | 125 | 2% |
+| 0.7 | `net_w1` | 0.095 ± 0.026 | 2/48 = 4% [1%, 14%] | 0.006 | 128 | 0% |
+| 0.7 | `tape_off` | 0.002 ± 0.001 | 0/48 = 0% [0%, 7%] | 0.000 | 128 | 2% |
+| 0.7 | `no_tape_arm` | 0.002 ± 0.001 | 0/48 = 0% [0%, 7%] | 0.000 | 127 | 4% |
+| 0.8 | `mix_w1` | 0.225 ± 0.027 | 5/48 = 10% [5%, 22%] | 0.157 | 128 | 0% |
+| 0.8 | `net_w1` | 0.045 ± 0.017 | 0/48 = 0% [0%, 7%] | 0.013 | 128 | 0% |
+| 0.8 | `tape_off` | 0.000 ± 0.000 | 0/48 = 0% [0%, 7%] | 0.000 | 125 | 4% |
+| 0.8 | `no_tape_arm` | 0.000 ± 0.000 | 0/48 = 0% [0%, 7%] | 0.000 | 128 | 2% |
+
+### Verdicts (web)
+
+| setting | verdict | violations |
+|---|---|---|
+| `mix_w1` | **worse** | T=0.5 rep4 +0.654 (SE 0.034) vs no_tape_arm; T=0.5 loop +0.521 (SE 0.073) vs no_tape_arm; T=0.5 copy +0.494 (SE 0.062) vs no_tape_arm; T=0.7 rep4 +0.506 (SE 0.039) vs no_tape_arm; T=0.7 loop +0.375 (SE 0.071) vs no_tape_arm; T=0.7 copy +0.274 (SE 0.046) vs no_tape_arm; T=0.8 rep4 +0.225 (SE 0.027) vs no_tape_arm; T=0.8 loop +0.104 (SE 0.045) vs no_tape_arm; T=0.8 copy +0.157 (SE 0.036) vs no_tape_arm |
+| `net_w1` | **worse** | T=0.5 rep4 +0.205 (SE 0.033) vs no_tape_arm; T=0.5 loop +0.146 (SE 0.051) vs no_tape_arm; T=0.5 copy +0.019 (SE 0.009) vs no_tape_arm; T=0.7 rep4 +0.093 (SE 0.026) vs no_tape_arm; T=0.8 rep4 +0.045 (SE 0.017) vs no_tape_arm; T=0.8 copy +0.013 (SE 0.005) vs no_tape_arm |
+
+## Decision
+
+No self-evidence scale passes on chat prompts with the temperature on the network: switch the tape off at decoding (or down-weight below the tested values) until a retrained model passes.
+Chat prompts, tape on, self-evidence 1, the temperature on the network: worse than the baseline.
+Chat prompts, tape on, self-evidence 1, the whole mixture tempered: worse than the baseline.
+Web prompts, tape on, self-evidence 1, the temperature on the network: worse than the baseline.
+Web prompts, tape on, self-evidence 1, the whole mixture tempered: worse than the baseline.
+
+## Limits
+
+- Micro model (d=128, 1-4M tokens): its unconditional samples are far less fluent than the final model's, so loop and repetition rates are high for every setting; the gate compares settings on the same model and prompts, not absolute rates.
+- One sample per prompt and setting; the paired SE is over prompts.
