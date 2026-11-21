@@ -20,19 +20,29 @@ def _budget(name, assets=None):
 
 @pytest.mark.parametrize("name", ["final", "strict", "no_library"])
 def test_standard_reading_is_under_the_caps(name):
-    cfg, b = _budget(name, budget.PLAN_ASSETS if name != "no_library" else None)
+    """With the library that is actually built: every stored table and the analytical worst
+    case of one retrieval's read set (docs/E1_COVERAGE.md)."""
+    cfg, b = _budget(name, budget.V2_ASSETS if name != "no_library" else None)
     assert b.total <= 100e6
     assert b.active_step <= 20e6
     assert cfg.model.remat          # required to fit device memory (docs/TPU_NOTES.md)
 
 
+def test_built_library_assets_are_what_the_documents_say():
+    v2 = budget.V2_ASSETS
+    assert v2.library_numbers + v2.index_numbers == 63_720_178       # docs/E1_COVERAGE.md
+    assert v2.library_read + v2.index_read == 232_818                # Library.read_bound total
+    assert v2.library_read + v2.index_read <= 300_000                # LibraryCfg.max_read_numbers
+
+
 def test_strict_config_is_under_20m_in_the_strict_reading_too():
     """The budget's window formula is an upper bound of the measured read set; 840 distinct
-    tokens is the largest count observed in 2048-token windows of real text."""
-    _, final = _budget("final")
-    _, strict = _budget("strict")
+    tokens is the largest count observed in 2048-token windows of real text. The built library's
+    worst-case retrieval read is included."""
+    _, final = _budget("final", budget.V2_ASSETS)
+    _, strict = _budget("strict", budget.V2_ASSETS)
     assert strict.active_strict(1024, 480) <= 20e6
     assert strict.active_strict(2048, 840) <= 20e6
     assert final.active_strict(2048, 840) > 20e6          # why the strict variant exists
     assert final.active_step - strict.active_step == pytest.approx(
-        2 * 2 * 768 * (3072 - 2752) + 768 * (256 - 128) + (256 - 128), abs=1)
+        2 * 2 * 768 * (3072 - 2688) + 768 * (256 - 128) + (256 - 128), abs=1)

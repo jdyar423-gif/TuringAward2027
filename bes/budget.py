@@ -59,6 +59,24 @@ class Assets:
 PLAN_ASSETS = Assets(library_numbers=60_000_000, index_numbers=4_000_000,
                      library_read=2 * LIBRARY_BLOCK_NUMBERS, index_read=450)
 
+#: The library actually built by ``scripts/build_library.py`` with the default ``LibraryCfg``
+#: (docs/E1_COVERAGE.md): every stored table, and the analytical worst case of one retrieval
+#: (``Library.read_bound``: index lists 132,628 + question-answer index 58,900 + blocks,
+#: directory and title tables 41,290). Use ``assets_of(library)`` for a library on disk.
+V2_ASSETS = Assets(library_numbers=40_220_179, index_numbers=23_499_999,
+                   library_read=41_290, index_read=191_528)
+
+
+def assets_of(library: Any) -> Assets:
+    """Assets of a built library object (``bes.library.retrieve.Library``): its exact stored
+    numbers and the analytical bound of one retrieval's read set."""
+    acc = library.accounting()
+    bound = library.read_bound()
+    total_read = int(bound["total"] if isinstance(bound, dict) else bound)
+    index = int(acc["index_numbers"])
+    return Assets(library_numbers=int(acc["total_numbers"]) - index, index_numbers=index,
+                  library_read=total_read, index_read=0)
+
 #: lookup tables: (pattern, rows read per generated token, strict rule)
 #:   "tokens": rows indexed by token ids (strict: one row per distinct token in the window);
 #:   "window": rows indexed by small features (strict: every row T positions can touch).

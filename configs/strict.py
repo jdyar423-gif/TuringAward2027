@@ -10,6 +10,6 @@ from bes.config import Cfg, ModelCfg, RunCfg
 
 CFG = Cfg(
     model=ModelCfg(attn_impl="splash", act_dtype="bfloat16", remat=True,
-                   ffn_width=2752, critic_hidden=128),
+                   ffn_width=2688, critic_hidden=128),
     run=RunCfg(name="strict", out_dir="runs/strict"),
 )
