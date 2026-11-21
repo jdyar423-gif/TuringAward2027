@@ -1,0 +1,19 @@
+# Dependencies of the 24-hour run on a Colab TPU runtime (notebooks/colab_v6e_24h.ipynb).
+#
+# jax, jaxlib and libtpu are NOT listed: the run uses the jax the TPU runtime ships with. The
+# notebook installs this file with a constraints file that holds jax, jaxlib and libtpu at their
+# installed versions (pip fails instead of replacing them) and checks the versions afterwards:
+#
+#   pip freeze | grep -iE '^(jax|jaxlib|libtpu)==' > constraints-jax.txt
+#   pip install -r requirements-colab.txt -c constraints-jax.txt
+#
+# Versions are those the code was tested with (Python 3.13). llama-cpp-python has no wheel on
+# PyPI for 0.3.37: pip builds it from source (cmake and a C++ compiler; 5 to 15 minutes; set
+# CMAKE_BUILD_PARALLEL_LEVEL to the core count to speed it up).
+llama-cpp-python==0.3.37    # opponents and the judge (GGUF on the host CPU), bes/eval/proxy
+optax==0.2.9                # optimisers (needs jax>=0.5.3; never upgrades a newer jax)
+tiktoken==0.14.0            # tokenizer runtime, bes/tokenizer
+rustbpe==0.1.0              # tokenizer training, scripts/build_tokenizer.py
+pyarrow==26.0.1             # parquet downloads, bes/data
+huggingface_hub==2.4.0      # downloads of data, library sources and GGUF files
+regex==2026.11.19           # tokenizer split pattern, exact layer
