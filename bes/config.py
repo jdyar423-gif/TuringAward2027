@@ -112,10 +112,11 @@ class ModelCfg:
     splash_interpret: str = "auto"      # Pallas interpret mode: "auto" (= not on TPU) | "true" | "false"
     mass_offset: float = 6.0     # output law: log-mass a_k = bias + <h A, c_k> - mass_offset
     mass_log_cap: float = 10.0   # output law: m_k = exp(min(a_k, mass_log_cap)) * mask_k * src_scale
+    ffn_width: int = 0           # feed-forward width; 0 = d_model * ffn_mult
 
     @property
     def d_ffn(self) -> int:
-        return self.d_model * self.ffn_mult
+        return self.ffn_width if self.ffn_width > 0 else self.d_model * self.ffn_mult
 
 
 # -------------------------------------------------------------------------- optimiser
