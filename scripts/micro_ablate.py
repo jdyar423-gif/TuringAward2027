@@ -91,6 +91,10 @@ E2_ARMS: tuple[Arm, ...] = (
         component=f"feature-group learning rate {3 * _LRF:g} instead of {_LRF:g}"),
     Arm("mass_offset_4", ("model.mass_offset=4",), kind="setting", component="initial tape log-mass -4 instead of -6"),
     Arm("mass_offset_8", ("model.mass_offset=8",), kind="setting", component="initial tape log-mass -8 instead of -6"),
+    Arm("src5_train_025", switches=(("src_5", 0.25),), kind="setting",
+        component="self-evidence masses x0.25 during training (as the decoder applies them)"),
+    Arm("src5_train_0", switches=(("src_5", 0.0),), kind="setting",
+        component="no masses from the assistant turn being written, during training"),
 )
 #: Arms the task list names that the queue cannot run, with the reason.
 SKIPPED: tuple[tuple[str, str], ...] = (
