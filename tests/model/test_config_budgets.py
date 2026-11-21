@@ -30,8 +30,8 @@ def test_standard_reading_is_under_the_caps(name):
 
 def test_built_library_assets_are_what_the_documents_say():
     v2 = budget.V2_ASSETS
-    assert v2.library_numbers + v2.index_numbers == 63_720_178       # docs/E1_COVERAGE.md
-    assert v2.library_read + v2.index_read == 232_818                # Library.read_bound total
+    assert v2.library_numbers + v2.index_numbers == 63_768_391       # docs/E1_COVERAGE.md
+    assert v2.library_read + v2.index_read == 245_223                # Library.read_bound total
     assert v2.library_read + v2.index_read <= 300_000                # LibraryCfg.max_read_numbers
 
 

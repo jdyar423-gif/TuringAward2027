@@ -19,9 +19,8 @@ from bes.library.build import dir_digest
 from bes.library.clean import proxy_count_tokens
 from bes.library.index import IndexCfg, IndexRead
 from bes.library.pack import PackCfg
-from bes.library.retrieve import (Library, ReadLog, RetrieveCfg, TitleTable, key_hash, query_title_key,
-                                  query_type, title_key)
-from bes.library.terms import STOPWORDS, stem, strip_disambiguator
+from bes.library.retrieve import Library, ReadLog, RetrieveCfg, query_title_key, query_type, title_key
+from bes.library.terms import STOPWORDS, stem
 
 FILLER = ("people city river music history language country year world government school "
           "animal plant water food family art book game team sport").split()
@@ -168,47 +167,26 @@ def ref_title_key(title: str) -> str:
     return " ".join(stem(t) for t in words if t not in STOPWORDS)
 
 
-def test_title_lookup_against_brute_force():
+def test_title_lookup_primary_topics():
+    """The look-up of the small corpus (the full rule is checked against a brute force in
+    test_library_review.py): plain titles own their key, a variant only with a clear lead."""
     lib = build()
     titles = lib.packed.all_titles()
-    for q in ["Who was Napoleon?", "What is Mercury?", "Tell me about Alan Turing.", "hamlet",
-              "Who was Napoleon Dynamite?", "What does Paris mean?", "Who wrote Hamlet?", "Black hole"]:
-        key = query_title_key(q)
-        matches = [i for i, t in enumerate(titles) if ref_title_key(t) == key and key]
-        hit = lib.titles.lookup(key)
-        if not matches:
-            assert hit is None or ref_title_key(titles[hit[0]]) != key
+    for q, want, variant in (("Who was Napoleon?", "Napoleon", False), ("What is a black hole?", "Black hole", False),
+                             ("What is Mercury?", "Mercury (planet)", True),       # importance 5 against 1
+                             ("Tell me about Alan Turing.", "Alan Turing", False), ("hamlet", None, None),
+                             ("Hamlet", "Hamlet", False), ("What does Paris mean?", "Paris", False),
+                             ("Who wrote Hamlet?", None, None), ("Who was Napoleon Dynamite?", "Napoleon Dynamite", False)):
+        hit = lib.title_hit(q)
+        if want is None:
+            assert hit is None, q
             continue
-        assert hit is not None
-        tid, amb = hit
-        plain = [i for i in matches if "(" not in titles[i]]
-        pool = plain or matches                                   # the primary topic first
-        assert tid in pool
-        assert amb == (len(matches) > 1 and not (tid in plain and len(plain) == 1))
-    tid, amb = lib.titles.lookup(query_title_key("What is Mercury?"))
-    assert titles[tid] == "Mercury (planet)" and amb             # no primary topic: more important kept
-    tid, amb = lib.titles.lookup(query_title_key("What is a black hole?"))
-    assert titles[tid] == "Black hole" and not amb               # the plain title is the primary topic
+        assert hit is not None and titles[hit[0]] == want and hit[1] == variant, (q, hit)
+        assert ref_title_key(titles[hit[0]]).split()[-1] in ref_title_key(q.rstrip("?.")).split()
     c = lib.candidates("Who was Napoleon?", 1, kinds=("wiki",))[0]
     assert lib.passage(c.pid).title == "Napoleon" and c.feats["exact_title"] and c.pid == lib.title_range(
         lib.title_id_of(c.pid)).start
     assert title_key("Mercury (planet)") == "mercury" and query_title_key("What does Paris mean?") == "pari"
-
-
-def test_title_hash_collision_is_rejected(monkeypatch):
-    lib = build()
-    import bes.library.retrieve as R
-
-    monkeypatch.setattr(R, "key_hash", lambda key: 7)       # every key collides
-    titles = lib.packed.all_titles()
-    table = TitleTable.build(titles)
-    lib.titles = table
-    tid, _ = table.lookup("anything")
-    # the table answers for any key, the library verifies the stored title
-    c = lib.candidates("Who was Napoleon?", 1, kinds=("wiki",))[0]
-    if titles[tid] != "Napoleon":
-        assert not (c.feats["exact_title"] and lib.passage(c.pid).title != "Napoleon")
-    assert key_hash is not R.key_hash
 
 
 # ------------------------------------------------------------------ read set

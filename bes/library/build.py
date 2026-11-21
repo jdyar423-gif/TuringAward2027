@@ -23,7 +23,7 @@ from bes.config import LibraryCfg
 from bes.library.clean import CleanCfg, CountTokens, count_tokens_name, default_count_tokens, iter_articles
 from bes.library.index import IndexCfg, TruncatedIndex
 from bes.library.pack import PackCfg, _atomic_write
-from bes.library.retrieve import Library, RetrieveCfg, TitleTable, query_type
+from bes.library.retrieve import Library, RetrieveCfg, TitleTable
 from bes.library.select import (SelectCfg, Selection, article_order, benefits, duplicate_mask,
                                 estimate_costs, importance, mention_counts, passage_order,
                                 passage_prior, select_for_budget)
@@ -158,6 +158,52 @@ def title_importance(pool: Pool, sig: Signals, sel: Selection, select_cfg: Selec
     return imp[pool.p_article[sel.pool_idx[tf]]]
 
 
+def name_importance(pool: Pool, sig: Signals, sel: Selection, select_cfg: SelectCfg = SelectCfg()) -> np.ndarray:
+    """float64 [titles]: ``title_importance`` without the mention part for disambiguated
+    titles. The mention count of "Jefferson (footballer, born 1981)" is its share of every
+    mention of the bare name "Jefferson" (``select.mention_counts`` splits a shared key), and
+    those mostly mean Thomas Jefferson; who-frames rank persons by this value."""
+    from bes.library.terms import strip_disambiguator
+
+    imp = title_importance(pool, sig, sel, select_cfg)
+    tf = np.asarray(sel.packed.title_first[:-1], dtype=np.int64)
+    arts = pool.p_article[sel.pool_idx[tf]]
+    length = 1.0 + select_cfg.length_coef * np.log1p(pool.article_words[arts].astype(np.float64) / 100.0)
+    dis = np.array([strip_disambiguator(pool.titles[int(a)]) != pool.titles[int(a)] for a in arts], dtype=bool)
+    return np.where(dis, length, imp)
+
+
+def provenance_dir(lib_dir: str) -> str:
+    """Where the build keeps a library's provenance arrays (pool index of every passage, title
+    importance): next to the library directory, never inside it (it is not shipped and not
+    counted, and an export copies the library directory whole), under the first 16 hex digits
+    of the SHA-256 of its ``library.json`` (a library that is renamed after the build, as the
+    supervisor does with ``<name>.building``, still finds its provenance)."""
+    with open(os.path.join(lib_dir, "library.json"), "rb") as f:
+        h = hashlib.sha256(f.read()).hexdigest()[:16]
+    return os.path.join(os.path.dirname(os.path.abspath(lib_dir)), "provenance", h)
+
+
+def write_provenance(lib_dir: str, **arrays: np.ndarray) -> str:
+    """Save ``arrays`` under ``provenance_dir(lib_dir)`` (after the library's last save) and
+    remove a ``provenance/`` folder that an older build left inside the library."""
+    import shutil
+
+    d = provenance_dir(lib_dir)
+    os.makedirs(d, exist_ok=True)
+    for k, v in arrays.items():
+        np.save(os.path.join(d, f"{k}.npy"), np.asarray(v))
+    stale = os.path.join(lib_dir, "provenance")
+    if os.path.isdir(stale):
+        shutil.rmtree(stale)
+    return d
+
+
+def load_provenance(lib_dir: str, name: str) -> np.ndarray:
+    """One provenance array of a built library (``write_provenance``)."""
+    return np.load(os.path.join(provenance_dir(lib_dir), f"{name}.npy"))
+
+
 def build_for_budget(pool: Pool, sig: Signals, budget_numbers: int,
                      index_cfg: IndexCfg = IndexCfg(), pack_cfg: PackCfg = PackCfg(),
                      select_cfg: SelectCfg = SelectCfg(), retrieve_cfg: RetrieveCfg = RetrieveCfg(),
@@ -176,7 +222,14 @@ def build_for_budget(pool: Pool, sig: Signals, budget_numbers: int,
     _say(log, f"build: index {index.accounting()['index_numbers']} numbers ({time.time() - t0:.0f}s)")
     tf = np.asarray(sel.packed.title_first[:-1], dtype=np.int64)
     titles = [pool.titles[int(pool.p_article[sel.pool_idx[t]])] for t in tf]
-    table = TitleTable.build(titles, title_importance(pool, sig, sel, select_cfg))
+    from bes.library.titles import analyse, article_texts
+
+    infos = [analyse(t, x) for t, x in zip(titles, article_texts(sel.passages))]
+    t_imp = title_importance(pool, sig, sel, select_cfg)
+    n_imp = name_importance(pool, sig, sel, select_cfg)
+    table = TitleTable.build(titles, t_imp, infos=infos, name_importance=n_imp)
+    _say(log, f"build: title table {table.hash.shape[0]} keys, {sum(i.person for i in infos)} person articles "
+              f"({time.time() - t0:.0f}s)")
     meta = {
         "source": pool.meta.get("source"), "budget_numbers": int(budget_numbers),
         "select_cfg": dataclasses.asdict(select_cfg), "selection_history": sel.history,
@@ -186,12 +239,11 @@ def build_for_budget(pool: Pool, sig: Signals, budget_numbers: int,
         "count_tokens": count_tokens_name_ or count_tokens_name(count_tokens),
     }
     lib = Library(sel.packed, index, retrieve_cfg, count_tokens, meta, qa=qa, titles=table)
+    lib.title_infos = infos                  # build-time analysis of every title (not saved)
     if out_dir is not None:
         lib.save(out_dir)
-        prov = os.path.join(out_dir, "provenance")
-        os.makedirs(prov, exist_ok=True)
-        np.save(os.path.join(prov, "pool_idx.npy"), sel.pool_idx)  # provenance (not shipped)
         write_attribution(pool, sel, out_dir, cache_dir)
+        write_provenance(out_dir, pool_idx=sel.pool_idx, title_importance=t_imp, name_importance=n_imp)
     _say(log, f"build: done ({time.time() - t0:.0f}s) {lib.accounting()['total_numbers']} numbers")
     return lib, sel
 
@@ -255,13 +307,19 @@ def drop_long_renders(pairs, max_tokens: float, count_tokens: CountTokens):
 
 
 def dev_queries(lib: Library, pairs, raw, n_per_source: int, n_probes: int, seed: int,
-                title_imp: np.ndarray | None) -> list[dict]:
+                title_imp: np.ndarray | None, infos=None, n_names: int = 0, n_contrast: int = 0,
+                chat: bool = False, name_imp: np.ndarray | None = None) -> list[dict]:
     """Dev queries (``bes.library.devsets``): stored NQ / TriviaQA train questions with their
-    own entry excluded, and head-entity probes for the dev half of the titles."""
+    own entry excluded, head-entity probes and common-name probes for the dev half of the
+    titles, contrastive questions made from the dev half of the stored questions (their
+    original entry is a wrong answer) and conversation turns that must retrieve nothing.
+    ``infos``: ``bes.library.titles.TitleInfo`` of every title (persons, names); ``name_imp``
+    (``name_importance``, default ``title_imp``) ranks the persons of the common-name probes."""
     from bes.library import devsets as D
-    from bes.library.qa import entry_order
+    from bes.library.qa import answer_key, entry_order
 
     out: list[dict] = []
+    ent_of = None
     if lib.qa is not None and pairs:
         order = entry_order(pairs, lib.qa.cfg.order)
         ent_of = np.empty(len(pairs), np.int64)
@@ -276,54 +334,105 @@ def dev_queries(lib: Library, pairs, raw, n_per_source: int, n_probes: int, seed
                 q_raw, ans = raw[(p.source, p.row)]
                 out.append({"q": q_raw, "ans": D.answers(ans), "set": name,
                             "exclude_pids": [lib.n_wiki + int(ent_of[i])]})
+    titles = None
     if n_probes and title_imp is not None:
         titles = lib.packed.all_titles()
-        for x in D.probes(titles, title_imp, n_probes, "dev", seed):
+        persons = None if infos is None else [i.person for i in infos]
+        for x in D.probes(titles, title_imp, n_probes, "dev", seed, persons=persons):
             x["set"] = "dev_probe"
+            x["exclude_pids"] = []
+            out.append(x)
+    if n_names and title_imp is not None and infos is not None:
+        titles = titles or lib.packed.all_titles()
+        for x in D.name_probes(titles, title_imp if name_imp is None else name_imp, infos, n_names, "dev", seed):
+            x["exclude_pids"] = []
+            out.append(x)
+    if n_contrast and ent_of is not None:
+        qs = [p.question for p in pairs]
+        for x in D.contrast_questions(qs, n_contrast, seed, "dev"):
+            i = x["entry"]
+            x["orig_pid"] = lib.n_wiki + int(ent_of[i])
+            x["orig_akey"] = answer_key(pairs[i].answer)
+            x["exclude_pids"] = []
+            out.append(x)
+    if chat and pairs:
+        rng = random.Random(seed + 1)
+        firsts = [pairs[i].question for i in rng.sample(range(len(pairs)), min(200, len(pairs)))]
+        for x in D.conversation_negatives(firsts, seed):
             x["exclude_pids"] = []
             out.append(x)
     return out
 
 
-def candidate_rows(lib: Library, queries: Sequence[dict], kinds=None) -> list[dict]:
-    """For every query: the wiki and qa candidates (features + labels) as the gate sees them."""
+def row_label(lib: Library, x: dict, c) -> bool | None:
+    """Label of one candidate for a dev or evaluation query (None: unknown). Probes: the
+    passage belongs to the probed article; contrastive questions: their original entry, or an
+    entry with the same answer, is wrong (anything else is unknown); conversation negatives:
+    every entry is wrong; questions: an answer string occurs in the passage or stored answer."""
     from bes.library import devsets as D
+    from bes.library.qa import answer_key
+
+    s = x["set"]
+    if s.endswith("_chat"):
+        return False
+    if s.endswith("_contrast"):
+        if c.kind != "qa":
+            return None
+        return False if (c.pid == x["orig_pid"] or answer_key(lib.passage(c.pid).body) == x["orig_akey"]) else None
+    if c.kind == "wiki":
+        if "tid" in x:
+            return lib.title_id_of(c.pid) == x["tid"]
+        return D.contains(lib.passage(c.pid).text, x["ans"])
+    return bool(x["ans"]) and D.qa_hit(lib.passage(c.pid).body, x["ans"])
+
+
+def candidate_rows(lib: Library, queries: Sequence[dict], kinds=None) -> list[dict]:
+    """For every query: the wiki and qa candidates (features + labels) as the gate sees them;
+    ``qtype`` is the turn type (``turn_type`` with the query's ``context``)."""
+    from bes.library.retrieve import turn_type
 
     rows = []
     for x in queries:
-        r = {"set": x["set"], "qtype": query_type(x["q"]), "wiki": None, "qa": None}
+        r = {"set": x["set"], "qtype": turn_type(x["q"], x.get("context")), "wiki": None, "qa": None}
         for c in lib.candidates(x["q"], 1, x.get("exclude_pids", ()), (), None, kinds, cross=True):
             if r[c.kind] is not None:
                 continue
-            if c.kind == "wiki":
-                if "tid" in x:
-                    y = lib.title_id_of(c.pid) == x["tid"]
-                else:
-                    y = D.contains(lib.passage(c.pid).text, x["ans"])
-            else:
-                y = bool(x["ans"]) and D.qa_hit(lib.passage(c.pid).body, x["ans"])
             r[c.kind] = {"pid": c.pid, "feats": {k: v for k, v in c.feats.items() if k != "answer"},
-                         "y": bool(y)}
+                         "y": row_label(lib, x, c)}
         rows.append(r)
     return rows
 
 
 def _set_weights(rows: Sequence[dict]) -> np.ndarray:
+    """Each dev set with right answers weighs the same in total; a row of a negative set
+    (``negative_set``) weighs like a row of the largest of those sets. (With equal set weights
+    the few contrastive rows that reach the gate outweighed 1,800 NQ rows and turned the
+    weight of ``sym`` negative.)"""
     sets = sorted({r["set"] for r in rows})
     n = {s: sum(1 for r in rows if r["set"] == s) for s in sets}
-    return np.array([1.0 / n[r["set"]] for r in rows])
+    big = max([n[s] for s in sets if not negative_set(s)] or [1])
+    return np.array([1.0 / (big if negative_set(r["set"]) else n[r["set"]]) for r in rows])
 
 
 def labelled_kinds(row: dict, kinds=("wiki", "qa")) -> tuple[str, ...]:
     """Kinds whose label is defined for a row: probes have no answer string, so only their
-    wiki candidate (the probed article or not) is labelled."""
-    return tuple(k for k in kinds if k == "wiki") if row["set"].endswith("probe") else tuple(kinds)
+    wiki candidate (the probed article or not) is labelled; a contrastive question only its
+    qa candidate, when it is its original entry or has its answer (``row_label``)."""
+    if row["set"].endswith(("probe", "names")):
+        return tuple(k for k in kinds if k == "wiki")
+    return tuple(k for k in kinds if row.get(k) is None or row[k].get("y") is not None)
+
+
+def negative_set(name: str) -> bool:
+    """Dev sets without right answers: contrastive questions and conversation negatives."""
+    return name.endswith(("_contrast", "_chat"))
 
 
 def decisions(rows: Sequence[dict], gate, allowed=("question", "lookup"), kinds=("wiki", "qa"),
               labelled_only: bool = False):
     """(p of the returned candidate or -inf, label of that candidate, its kind) per row.
-    ``labelled_only`` restricts every row to its ``labelled_kinds``."""
+    ``labelled_only`` restricts every row to its ``labelled_kinds``; an unknown label counts
+    as wrong otherwise."""
     p = np.full(len(rows), -np.inf)
     y = np.zeros(len(rows), dtype=bool)
     kind = [""] * len(rows)
@@ -340,20 +449,23 @@ def decisions(rows: Sequence[dict], gate, allowed=("question", "lookup"), kinds=
                 best = (pr, kd)
         if best is not None:
             p[i], kind[i] = best
-            y[i] = r[best[1]]["y"]
+            y[i] = bool(r[best[1]]["y"])
     return p, y, kind
 
 
 def fit_gate(rows: Sequence[dict], target: float = _L.gate_precision, l2: float = 1e-3,
-             allowed=("question", "lookup")):
-    """Fit both kinds' logistic models on dev rows (each dev set weighted equally) and choose
-    the threshold: the largest dev coverage at which every dev set separately has precision
-    >= ``target`` (``gate.choose_threshold_sets``)."""
+             allowed=("question", "lookup"), max_negative_rate: float = 0.05):
+    """Fit both kinds' logistic models on dev rows (each dev set weighted equally; a candidate
+    whose label is unknown is left out) and choose the threshold: the largest dev coverage at
+    which every dev set with right answers separately has precision >= ``target`` and every
+    negative set (``negative_set``) returns a known-wrong entry for at most
+    ``max_negative_rate`` of its queries (``gate.choose_threshold_sets``)."""
     from bes.library import gate as G
 
     coef = {}
     for kd in G.KINDS:
-        sub = [r for r in rows if r[kd] is not None and r["qtype"] in allowed and kd in labelled_kinds(r)]
+        sub = [r for r in rows if r[kd] is not None and r["qtype"] in allowed and kd in labelled_kinds(r)
+               and r[kd]["y"] is not None]
         if not sub:
             coef[kd] = np.zeros(len(G.FEATURES[kd]) + 1)
             coef[kd][-1] = -20.0
@@ -363,9 +475,12 @@ def fit_gate(rows: Sequence[dict], target: float = _L.gate_precision, l2: float 
         coef[kd] = G.fit_logistic(x, y, _set_weights(sub), l2=l2)
     model = G.GateModel.stored(coef, 1.0)
     p, y, _ = decisions(rows, model, allowed, labelled_only=True)
-    t, point = G.choose_threshold_sets(p, y, [r["set"] for r in rows], target)
+    sets = [r["set"] for r in rows]
+    t, point = G.choose_threshold_sets(p, y, sets, target, negative=sorted({s for s in sets if negative_set(s)}),
+                                       max_negative_rate=max_negative_rate)
     model = G.GateModel.stored(coef, t if np.isfinite(t) else 1.0 + 1e-6)
-    return model, {"threshold": float(model.threshold), "dev_point": point}
+    return model, {"threshold": float(model.threshold), "dev_point": point, "target": target,
+                   "max_negative_rate": max_negative_rate}
 
 
 # ------------------------------------------------------------------------------ v2
@@ -379,6 +494,10 @@ class BuildCfg:
     permissive_only: bool = _L.qa_permissive_only
     dev_per_source: int = 3000
     dev_probes: int = 2000
+    dev_names: int = 2000                      # common-name probes (dev half of the persons)
+    dev_contrast: int = 2000                   # contrastive questions (dev half of the stored ones)
+    dev_chat: bool = True                      # conversation turns that must retrieve nothing
+    max_negative_rate: float = 0.05            # known-wrong returns allowed on those two sets
     seed: int = 0
     total_cap: int = _L.total_numbers_cap
 
@@ -400,6 +519,7 @@ def build_v2(cache_dir: str, out_dir: str | None, cfg: BuildCfg = BuildCfg(),
                                 cache_dir=cache_dir, count_tokens=count_tokens)
     sel.passages = []                     # not needed any more (packed into lib)
     imp = title_importance(pool, sig, sel)
+    n_imp = name_importance(pool, sig, sel)
     store = None
     pairs, raw = [], {}
     if cfg.qa:
@@ -409,9 +529,11 @@ def build_v2(cache_dir: str, out_dir: str | None, cfg: BuildCfg = BuildCfg(),
         store = Q.QAStore.build(pairs, Q.QACfg(), meta={"permissive_only": cfg.permissive_only})
         lib.qa = store
         _say(log, f"qa: store {store.accounting()['qa_numbers']} numbers ({time.time() - t0:.0f}s)")
-    dq = dev_queries(lib, pairs, raw, cfg.dev_per_source, cfg.dev_probes, cfg.seed, imp)
+    dq = dev_queries(lib, pairs, raw, cfg.dev_per_source, cfg.dev_probes, cfg.seed, imp,
+                     infos=lib.title_infos, n_names=cfg.dev_names, n_contrast=cfg.dev_contrast, chat=cfg.dev_chat,
+                     name_imp=n_imp)
     rows = candidate_rows(lib, dq)
-    gate, info = fit_gate(rows)
+    gate, info = fit_gate(rows, max_negative_rate=cfg.max_negative_rate)
     lib.gate = gate
     report["gate"] = info
     report["dev_sets"] = {s: sum(1 for x in dq if x["set"] == s) for s in sorted({x["set"] for x in dq})}
@@ -425,10 +547,7 @@ def build_v2(cache_dir: str, out_dir: str | None, cfg: BuildCfg = BuildCfg(),
     if out_dir is not None:
         lib.save(out_dir)
         write_attribution(pool, sel, out_dir, cache_dir)
-        prov = os.path.join(out_dir, "provenance")         # not shipped, not counted
-        os.makedirs(prov, exist_ok=True)
-        np.save(os.path.join(prov, "pool_idx.npy"), sel.pool_idx)
-        np.save(os.path.join(prov, "title_importance.npy"), imp)
+        write_provenance(out_dir, pool_idx=sel.pool_idx, title_importance=imp, name_importance=n_imp)
         write_attribution_md(out_dir, sorted({p.source for p in pairs}))
         if store is not None:
             write_qa_attribution(store, pairs, out_dir)

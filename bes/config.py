@@ -353,7 +353,11 @@ class LibraryCfg:
     qa_read_postings: int = 16_384        # qa postings read per query at most
     qa_min_sym: float = 0.5               # qa candidates below this symmetric overlap are ignored
     qa_permissive_only: bool = False      # True: only qa sources with a clear licence (NQ-open)
-    gate_precision: float = 0.5           # calibrated gate: dev precision floor of the threshold
+    gate_precision: float = 0.8           # calibrated gate: dev precision floor of the threshold
+    # -- review fixes (docs/E1_COVERAGE.md): contrast veto, primary topics, conversation turns
+    qa_read_entries: int = 3              # qa candidates read per query at most (contrast check)
+    title_margin: float = 1.0             # importance margin of a primary topic over the next article
+    person_margin: float = 1.0            # ... of a person over the next person with that name
 
 
 # -------------------------------------------------------------- preference optimisation

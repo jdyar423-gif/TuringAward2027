@@ -445,10 +445,18 @@ def prepare(root: Path, *, per_set: int, n_probes: int, seed: int, sets: Sequenc
             raise FileNotFoundError(f"no built library at {ldir}")
         lib = Library.load(str(ldir))
         library_id = stable_hash((ldir / "library.json").read_text(), 12)
-        imp = ldir / "provenance" / "title_importance.npy"
-        importance = np.load(imp) if imp.exists() else None
+        imp = ldir / "provenance" / "title_importance.npy"      # layout of older builds
+        if imp.exists():
+            importance = np.load(imp)
+        else:
+            from bes.library.build import load_provenance
+            try:
+                importance = load_provenance(str(ldir), "title_importance")
+            except OSError:
+                importance = None
         if want_probes and importance is None:
-            raise FileNotFoundError(f"{imp} is missing (title importance of the probes)")
+            raise FileNotFoundError("the title importance of the probes is missing "
+                                    f"(provenance of the library at {ldir})")
     except (OSError, ValueError) as err:
         if want_probes:
             raise ValueError(f"the head-entity probes need the built library: {err} (pass --library DIR, "

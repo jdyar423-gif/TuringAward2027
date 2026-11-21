@@ -329,9 +329,16 @@ class Responder:
         except Exception as err:                    # a compiler bug must not kill the reply
             return constraints.ConstraintSpec(), f"{type(err).__name__}: {err}"
 
-    def retrieve(self, user_text: str):
+    def retrieve(self, user_text: str, history: Sequence[str] | None = None):
+        """The gated library entry for the last user message; ``history`` are the earlier user
+        turns (a turn that leans on them, or chit-chat, retrieves nothing)."""
         if self.library is None:
             return None
+        if history:
+            try:
+                return self.library.retrieve(user_text, context=list(history))
+            except TypeError:                       # a library object without the context argument
+                pass
         return self.library.retrieve(user_text)
 
     def program(self, spec, r: Resolved):
@@ -386,7 +393,7 @@ class Responder:
         user_text = msgs[-1]["content"]
         history = [m["content"] for m in msgs[:-1] if m["role"] == "user"]
         spec, spec_error = self.compile_spec(user_text)
-        passage = self.retrieve(user_text) if d.use_library else None
+        passage = self.retrieve(user_text, history) if d.use_library else None
         budget = self.context - d.max_new_tokens
         prompt, fit = fit_prompt(self.chat, msgs, None if passage is None else passage.text, budget)
         program, prog_error = None, None

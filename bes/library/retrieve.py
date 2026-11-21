@@ -13,13 +13,16 @@ stored question, ``body`` = the stored answer, ``text = "Q: <question>\\nA: <ans
 
 Candidates of one query:
 
-* wiki: the lead passage of the article whose title key equals the query's content terms
-  (``TitleTable``; "Who was Napoleon?" -> "Napoleon"), else the best BM25 passage;
-* qa: the best stored question by symmetric overlap (``bes.library.qa``), when its
-  ``sym >= qa_min_sym``.
+* wiki: for an identity request (``identity_frame``: "Who was X?", "What is X?", "Tell me
+  about X.", a bare name) the lead passage of the primary topic of X's key
+  (``bes.library.titles.TitleTable``; "Who was Napoleon?" -> "Napoleon", "Who was Galileo?"
+  -> "Galileo Galilei"), else the best BM25 passage;
+* qa: the best stored question by symmetric overlap (``bes.library.qa``) among the first
+  ``qa_read_entries`` that pass the contrast check, when its ``sym >= qa_min_sym``.
 
-Gate: the query type must be allowed (``query_type``: questions and short look-ups; no
-writing, coding, translation or arithmetic tasks). With a fitted ``GateModel`` the candidate
+Gate: the turn type must be allowed (``turn_type``: questions and short look-ups; no
+writing, coding, translation or arithmetic tasks, no chat; with ``context`` (the earlier
+user turns) no later turn that leans on them). With a fitted ``GateModel`` the candidate
 with the larger calibrated probability is returned when that probability reaches the
 model's threshold. Without one (tests, old libraries) the hand-set ``GateCfg`` rule applies
 to the BM25 candidate: top score ``s1 >= min_score``, coverage ``s1 / s_max >=
@@ -45,14 +48,16 @@ import numpy as np
 from bes.config import LibraryCfg
 from bes.library.clean import CountTokens, default_count_tokens, render_passage, split_sentences
 from bes.library.index import IndexCfg, IndexRead, TruncatedIndex
-from bes.library.pack import Packed, PackCfg, _atomic_save_npy, _atomic_write, bsearch_right, numbers_of, pack
-from bes.library.terms import strip_disambiguator, term_hash, terms, tokens
+from bes.library.pack import Packed, PackCfg, _atomic_save_npy, _atomic_write, numbers_of, pack
+from bes.library.terms import STOPWORDS, strip_disambiguator, terms, tokens
+from bes.library.titles import (DEF_WORDS, TitleTable, case_tokens, key_hash, object_keys,  # noqa: F401
+                                surface, title_key, verify)
 
 # ------------------------------------------------------------------------- query type
 
 _LEADS = ("please", "can you", "could you", "would you", "will you", "i want you to",
           "i need you to", "i'd like you to", "i would like you to", "kindly", "pls", "hey",
-          "hi", "hello", "ok", "okay", "so")
+          "hi", "hello", "ok", "okay", "so", "now", "then", "and", "but", "also", "well")
 _TASK = frozenset(
     """write compose draft create generate rewrite rephrase paraphrase summarize summarise
     translate edit proofread correct fix make design brainstorm suggest imagine pretend act
@@ -133,6 +138,145 @@ def personal(low: str) -> bool:
     return bool(_PERSONAL_RX.search(t.strip()))
 
 
+# Greetings, wishes, thanks, acknowledgements and requests to go on: chat, not a look-up.
+_ACK = (r"thanks|thank you|thank u|thx|ty|many thanks|cheers|ok|okay|k|kk|cool|great|good|nice|awesome|amazing|"
+        r"excellent|perfect|sure|of course|yes|yeah|yep|yup|yes please|no|nope|nah|no thanks|no thank you|"
+        r"interesting|wow|oh|ah|hmm|huh|really|indeed|right|correct|exactly|true|wrong|lol|haha|got it|"
+        r"i see|i understand|understood|makes sense|that makes sense|sounds good|sounds great|never ?mind|"
+        r"no problem|no worries|my pleasure|you'?re welcome|well done|good job|great job|nice job|good work|"
+        r"great work|nice work|great answer|good answer|nice one|that'?s (?:it|all|fine|ok|okay|great|good|"
+        r"cool|nice|right|correct|wrong|true|not true|incorrect|interesting|funny|helpful|awesome|perfect|"
+        r"amazing)|that (?:is|was) (?:it|all|great|good|nice|right|correct|wrong|true|not true|incorrect|"
+        r"interesting|funny|helpful|awesome|perfect|amazing|very helpful)|you(?:'re| are) (?:wrong|right|"
+        r"great|awesome|funny|amazing|the best|welcome)|agreed|fair enough|fine|alright|all right|bye|"
+        r"goodbye|good ?bye|see you|see you later|see ya|later|take care|good ?night|good morning|"
+        r"good afternoon|good evening|good day|hello|hi|hey|hiya|yo|greetings|hello there|hi there|hey there|"
+        r"what'?s up|sup|how are you|how are you doing|how are you today|how are you doing today|"
+        r"how'?s it going|how do you do|merry christmas|happy (?:new year|birthday|holidays|easter|"
+        r"thanksgiving|halloween|diwali|eid|hanukkah|valentine'?s day)|congrats|congratulations|good luck|"
+        r"best wishes|all the best|try again|again|go on|go ahead|continue|keep going|carry on|more|"
+        r"tell me more|say more|one more|another one|next|next one|please continue|please go on|"
+        r"and|so|why|what|really|ok so|i love you|love you|sorry|my bad|oops|wait|stop|enough|so much|"
+        r"very much|a lot|lots|too")
+_CHAT_RX = re.compile(r"^(?:(?:" + _ACK + r")\b[\s,.!?:;)(-]*)+$")
+
+
+def chit_chat(text: str) -> bool:
+    """Greetings, wishes, thanks, acknowledgements and requests to retry or go on: one or
+    more such phrases and nothing else ("ok great", "cool, thanks!"), or one followed by a
+    short remark about the answer ("thanks, that was helpful")."""
+    low = re.sub(r"[\"“”`*_~]", " ", text.strip().lower().replace("’", "'"))
+    low = re.sub(r"\s+", " ", low).strip()
+    if not low or len(low) > 80:
+        return False
+    if _CHAT_RX.match(low):
+        return True
+    # "thanks, that was helpful" / "cool, thanks!": an acknowledgement opening a short remark
+    m = re.match(r"^(?:" + _ACK + r")\b[\s,.!?:;-]+(.*)$", low)
+    if m and m.group(1):
+        rest = m.group(1)
+        return bool(re.fullmatch(r"(?:that|this|it|you)(?:'s| is| was| were| are)? ?(?:very |so |really |"
+                                 r"super |quite )?(?:helpful|useful|great|good|nice|clear|interesting|cool|"
+                                 r"perfect|amazing|awesome|right|correct|fine|enough)[\s.!?]*|"
+                                 r"(?:" + _ACK + r")\b[\s,.!?]*", rest))
+    return False
+
+
+# Back-references a later turn may lean on: pronouns, demonstratives, "the second one".
+_BACKREF_RX = re.compile(
+    r"\b(?:it|its|itself|they|them|their|theirs|themselves|he|him|his|himself|she|her|hers|herself|"
+    r"this|that|these|those)\b|"
+    r"\bthe (?:first|second|third|fourth|fifth|last|next|previous|other|same|former|latter|above|"
+    r"following|latest|earlier|later|original|new|old)(?: \w+)?\b|"
+    r"\b(?:the )?(?:other|same|former|latter) ones?\b|\bwhich ones?\b|\b(?:option|choice|number|item|step|"
+    r"point) (?:[a-d]|\d+|one|two|three)\b|\b(?:both|either|neither)\b")
+_OPENER_RX = re.compile(r"^(?:(?:and|but|or|so|also|then|now|ok|okay|well|oh|hmm|alright|right)\b[\s,]*)+")
+_ELLIPSIS_RX = re.compile(r"^(?:what|how) about\b|^(?:what|how) (?:else|so)\b|^why (?:not|so)\b|"
+                          r"^same (?:for|with|about)\b|^(?:in|for|with|without|on|at|by|to|from|of) [\w' -]+\W*$|"
+                          r"^\W*$")
+
+
+def capitalised_names(text: str) -> list[str]:
+    """Words written with a capital letter that do not start the message or a sentence
+    (lower case; an acronym of two or more capitals counts anywhere)."""
+    out = []
+    initial = True
+    for w in re.findall(r"[\w'’-]+|[.!?;:]", text):
+        if w in ".!?;:":
+            initial = True
+            continue
+        w = w.strip("'’-")
+        if w and ((len(w) > 1 and w.isupper()) or (w[:1].isupper() and not initial)):
+            out.append(w.lower())
+        initial = False
+    return out
+
+
+def self_contained(text: str) -> bool:
+    """Whether a later user turn can be looked up on its own: no elliptical opening ("what
+    about X?", "and in France?"), no back-reference (it / its / he / she / they / that /
+    "the second one") unless the message names something itself (a capitalised name or at
+    least three content terms), and at least two content terms or a capitalised name."""
+    low = _OPENER_RX.sub("", re.sub(r"\s+", " ", text.strip().lower()))
+    names = [w for w in capitalised_names(text) if w not in STOPWORDS]
+    content = [t for t in terms(text) if t not in DEF_WORDS]
+    if _ELLIPSIS_RX.search(low):
+        return False
+    t = _QUOTED_RX.sub(" ", low)
+    m = _TITLE_CTX_RX.search(t)              # "who sang it's a long way to the top": a title
+    head = t[:m.start()] if m is not None else t
+    if _BACKREF_RX.search(head) and not names and len(content) < 3:
+        return False
+    return len(content) >= 2 or bool(names)
+
+
+def turn_type(text: str, context: Sequence[str] | None = None) -> str:
+    """``query_type`` of a user message, or ``"followup"`` for a later turn (``context``: the
+    earlier user turns) that is not ``self_contained``."""
+    if context and not self_contained(text):
+        return "followup"
+    return query_type(text)
+
+
+# Identity requests: the frames under which an exact title match counts.
+_FRAME_RX = re.compile(
+    r"^(?:(?:and|so|ok|okay|well|hey|hi|hello|please|now)[ ,]+)*(?:(?:can|could|would|will) you (?:please )?)?"
+    r"(?P<f>what(?:'s| is) (?:the )?definition of|(?:the )?definition of|"
+    r"(?:what|who)(?:'s| is| are| was| were)|whats|whos|"
+    r"tell me (?:something |more |all |a (?:little|bit) )?about|(?:what|how much) do you know about|"
+    r"do you know (?:about|anything about)|(?:give|show) me (?:some )?(?:information|info|facts|an overview|"
+    r"a summary) (?:about|on|of)|define|explain|describe|"
+    r"i want to (?:know|learn) (?:more )?about|information (?:about|on)|"
+    r"facts (?:about|on)|an? overview of)\s+(?P<x>.+?)[\s?.!]*$", re.I)
+_MEAN_RX = re.compile(r"^(?:what|whats|what's) (?:does|do) (?P<x>.+?) mean[\s?.!]*$", re.I)
+# An object that belongs to something else ("its capital", "her husband") names no article.
+_RELATIVE_OBJECT_RX = re.compile(r"^(?:its|his|her|their|my|your|our|this|that|these|those|it|he|she|they|"
+                                 r"him|them)\b", re.I)
+
+
+def identity_frame(query: str) -> tuple[str, str] | None:
+    """``(kind, object)`` of an identity request: ``who`` ("Who was X?"), ``what`` ("What is
+    X?"), ``neutral`` ("Tell me about X.", "Define X.", "What does X mean?") or ``bare`` (the
+    message is the name itself, at most six words); None for every other message ("Why is the
+    sky blue?", "What does len do?", "try again")."""
+    t = re.sub(r"\s+", " ", query.strip())
+    m = _MEAN_RX.match(t)
+    if m:
+        out = ("neutral", m.group("x"))
+    elif (m := _FRAME_RX.match(t)) is not None:
+        f = m.group("f").lower()
+        kind = "who" if f.startswith("who") else "what" if f.startswith("what") and "definition" not in f \
+            else "neutral"
+        out = (kind, m.group("x"))
+    elif not re.search(r"[?!;:]|\.\s", t) and len(t.split()) <= 6 and re.search(r"\w", t):
+        out = ("bare", t.rstrip("."))
+    else:
+        return None
+    if _RELATIVE_OBJECT_RX.match(out[1]):
+        return None                          # "What is its capital?", "Who is her husband?"
+    return out
+
+
 def query_type(text: str) -> str:
     """Coarse type of a user message: ``question``, ``lookup``, ``task``, ``math`` or ``other``.
 
@@ -158,7 +302,7 @@ def query_type(text: str) -> str:
                 low = low[len(lead):].lstrip(" ,")
                 changed = True
     words = re.findall(r"[a-z0-9']+", low)
-    if not words or all(w in _SMALL_TALK for w in words):
+    if not words or all(w in _SMALL_TALK for w in words) or chit_chat(t):
         return "other"
     if _MATH_RX.search(low) or (len(set(_NUM_RX.findall(low))) >= 2 and _WORD_PROBLEM_RX.search(low)):
         return "math"
@@ -209,6 +353,7 @@ class RetrieveCfg:
     qa_min_sym: float = _L.qa_min_sym          # qa candidates below this overlap are ignored
     agree_min_sym: float = 0.5                 # an "other" qa entry counts for agree/disagree
     cache_blocks: int = 64                     # decompressed blocks kept per process (LRU)
+    qa_read_entries: int = _L.qa_read_entries  # qa candidates read (contrast check) per query at most
 
 
 # ------------------------------------------------------------------------- read log
@@ -309,85 +454,13 @@ def cap_tokens(title: str, body: str, max_tokens: float, count_tokens: CountToke
 
 
 # ------------------------------------------------------------------------- title table
-
-#: Words dropped from a query before its title key is formed ("what does X mean", "facts
-#: about X", "tell me about X"); terms of ``bes.library.terms.terms`` (already stemmed).
-DEF_WORDS = frozenset("explain describe define definition mean meaning know information info "
-                      "overview summary fact give learn".split())
-
-
-def title_key(title: str) -> str:
-    """Content terms of a title without its disambiguator (``"Mercury (planet)"`` ->
-    ``"mercury"``)."""
-    return " ".join(terms(strip_disambiguator(title)))
+# ``TitleTable`` (primary topics, person names, who-frames) lives in ``bes.library.titles``.
 
 
 def query_title_key(query: str) -> str:
-    """Content terms of a query without question and definition words."""
+    """Content terms of a whole query without definition words (the look-up key before the
+    identity frames of ``identity_frame``; kept for callers that key whole messages)."""
     return " ".join(t for t in terms(query) if t not in DEF_WORDS)
-
-
-def key_hash(key: str) -> int:
-    return term_hash("\x00title\x00" + key) & 0xFFFFFFFF
-
-
-class TitleTable:
-    """Exact title look-up: ``hash`` uint32 [K] sorted, ``ref`` uint32 [K] = title id, with
-    bit 31 set when the key is ambiguous. When several titles share a key, the title without
-    a disambiguator wins (Wikipedia gives the plain title to the primary topic: "Black hole"
-    over "Black Hole (2019 movie)"), then the more important one; the key is ambiguous unless
-    the kept title is the only plain one ("Mercury (planet)" / "Mercury (element)" are). A hit
-    is verified against the stored title text, so a hash collision cannot return a wrong
-    article."""
-
-    ARRAYS = ("hash", "ref")
-
-    def __init__(self, hashes: np.ndarray, refs: np.ndarray):
-        self.hash = hashes
-        self.ref = refs
-
-    @classmethod
-    def build(cls, titles: Sequence[str], importance: Sequence[float] | None = None) -> "TitleTable":
-        imp = np.ones(len(titles)) if importance is None else np.asarray(importance, dtype=np.float64)
-        best: dict[int, tuple[tuple, int, int]] = {}   # hash -> (priority, n titles, n plain)
-        for tid, t in enumerate(titles):
-            k = title_key(t)
-            if not k:
-                continue
-            h = key_hash(k)
-            plain = strip_disambiguator(t) == t
-            pri = (plain, float(imp[tid]), -tid)
-            cur = best.get(h)
-            if cur is None:
-                best[h] = (pri, 1, int(plain))
-            else:
-                best[h] = (max(pri, cur[0]), cur[1] + 1, cur[2] + int(plain))
-        hs = np.array(sorted(best), dtype=np.uint32)
-        refs = []
-        for h in hs:
-            pri, n, n_plain = best[int(h)]
-            amb = n > 1 and not (pri[0] and n_plain == 1)
-            refs.append((-pri[2]) | (int(amb) << 31))
-        return cls(hs, np.array(refs, dtype=np.uint32))
-
-    def numbers(self) -> int:
-        return numbers_of(self.hash.nbytes) + numbers_of(self.ref.nbytes)
-
-    def lookup(self, key: str, log: ReadLog | None = None) -> tuple[int, bool] | None:
-        """(title id, ambiguous) of a key, or None (binary search; reads the probed hashes)."""
-        if not key or self.hash.shape[0] == 0:
-            return None
-        h = key_hash(key)
-        lo, probes = bsearch_right(self.hash, h)
-        if log is not None:
-            log.title_lookup += 2 * len(set(probes))
-        i = lo - 1
-        if i < 0 or int(self.hash[i]) != h:
-            return None
-        r = int(self.ref[i])
-        if log is not None:
-            log.title_lookup += 2
-        return r & 0x7FFFFFFF, bool(r >> 31)
 
 
 # ------------------------------------------------------------------------- library
@@ -446,15 +519,20 @@ class Library:
               index_cfg: IndexCfg = IndexCfg(), pack_cfg: PackCfg = PackCfg(),
               cfg: RetrieveCfg = RetrieveCfg(), count_tokens: CountTokens = default_count_tokens,
               meta: dict | None = None, prior: Sequence[float] | None = None,
-              qa=None, title_importance: Sequence[float] | None = None, gate=None) -> "Library":
+              qa=None, title_importance: Sequence[float] | None = None, gate=None,
+              name_importance: Sequence[float] | None = None) -> "Library":
         """Build from (title, body) pairs; passages of one title must be contiguous.
 
         Passage ids follow the given order; title ids are assigned in order of appearance.
         ``prior`` (one positive value per passage) steers which postings the truncated
         index keeps (``bes.library.index``); None means uniform. ``qa`` is an optional
-        ``QAStore``; ``title_importance`` (one value per title) decides which title keeps a
-        shared title key; ``gate`` an optional fitted ``GateModel``.
+        ``QAStore``; ``title_importance`` (one value per title) decides which article is the
+        primary topic of a shared title key, ``name_importance`` (default the same) which
+        person a who-frame means (``bes.library.titles``); ``gate`` an optional fitted
+        ``GateModel``.
         """
+        from bes.library.titles import article_texts
+
         titles: list[str] = []
         tids: list[int] = []
         last = None
@@ -467,7 +545,8 @@ class Library:
             raise ValueError("passages of one title must be contiguous")
         packed = pack([b for _, b in passages], tids, titles, pack_cfg)
         index = TruncatedIndex.build(passages, index_cfg, prior)
-        table = TitleTable.build(titles, title_importance)
+        table = TitleTable.build(titles, title_importance, article_texts(passages),
+                                 name_importance=name_importance)
         lib = cls(packed, index, cfg, count_tokens, meta, qa=qa, titles=table, gate=gate)
         if out_dir is not None:
             lib.save(out_dir)
@@ -543,7 +622,7 @@ class Library:
         g = 1 << ic.group_bits
         b = {"index": nt + ic.max_query_terms * (2 * ic.max_list + g + 2)}
         if self.titles is not None:
-            b["title_lookup"] = 2 * lg(int(self.titles.hash.shape[0])) + 2
+            b["title_lookup"] = self.titles.lookups_per_query() * (2 * lg(int(self.titles.hash.shape[0])) + 2)
         comp_t = np.diff(np.asarray(self.packed.tblock_off, dtype=np.int64))
         max_tb = int(numbers_of(int(comp_t.max())) + 8) if comp_t.size else 0
         comp = np.diff(np.asarray(self.packed.block_off, dtype=np.int64))
@@ -558,8 +637,9 @@ class Library:
             b["qa_index"] = nt + qc.max_query_terms * (qg + 2) + 2 * r + r + (r + 1) // 2
             qcomp = np.diff(np.asarray(self.qa.blocks.block_off, dtype=np.int64))
             max_qb = int(numbers_of(int(qcomp.max())) + 8) if qcomp.size else 0
-            b["qa_blocks"] = 2 * max_qb
-            b["qa_directory"] = 2 * (2 * lg(self.qa.blocks.n_blocks) + 2)
+            n_read = max(2, int(self.cfg.qa_read_entries))
+            b["qa_blocks"] = n_read * max_qb
+            b["qa_directory"] = n_read * (2 * lg(self.qa.blocks.n_blocks) + 2)
         b["total"] = sum(b.values())
         return b
 
@@ -729,7 +809,7 @@ class Library:
 
     def _wiki_feats(self, query: str, pid: int, s1: float, pids: np.ndarray, scores: np.ndarray,
                     smax: float | None, log: ReadLog | None, exact: bool = False,
-                    ambiguous: bool = False, qkey: str | None = None) -> dict:
+                    variant: bool = False, person: bool = False) -> dict:
         tid = self.title_id_of(pid, log)
         r = self.title_range(tid, log)
         s2 = 0.0
@@ -742,46 +822,81 @@ class Library:
         tt = set(terms(strip_disambiguator(title)))
         qt = set(terms(query))
         tm = (len(tt & qt) / len(tt)) if tt else 0.0
-        if not exact:
-            exact = bool(title_key(title)) and title_key(title) == (qkey if qkey is not None else query_title_key(query))
         cov = 1.0 if smax is None else (min(1.0, s1 / smax) if smax > 0 else 0.0)
         margin = (s1 - s2) / s1 if s1 > 0 else (-1.0 if s2 > 0 else 0.0)
         return {"s1": s1, "s2": s2, "margin": max(-1.0, margin), "title_match": tm, "coverage": cov,
-                "qtype": query_type(query), "tid": tid, "exact_title": exact, "ambiguous": ambiguous,
-                "lead": pid == r.start, "n_terms": len(set(terms(query))), "cross": False}
+                "qtype": query_type(query), "tid": tid, "exact_title": exact, "variant": variant,
+                "person": person, "lead": pid == r.start, "n_terms": len(set(terms(query))), "cross": False}
+
+    def title_hit(self, query: str, log: ReadLog | None = None) -> tuple[int, bool, bool] | None:
+        """``(title id, variant, person)`` of the exact-title look-up, or None. Only identity
+        requests look up (``identity_frame``; who-frames ask the person entries first); a
+        one-term key needs an explicit frame or a capitalised name ("What is a pointer?",
+        "Galileo", not "try again"); an object with inner stopwords must equal the owner's
+        title ("for loop" is not "While loop"); the hit is verified against the stored title
+        (hash collisions). The first key form with an entry decides."""
+        if self.titles is None:
+            return None
+        frame = identity_frame(query)
+        if frame is None:
+            return None
+        kind, obj = frame
+        keys = object_keys(obj)
+        if not keys:
+            return None
+        if kind == "bare" and len(keys[0].split()) == 1 and not any(
+                w[:1].isupper() for w in case_tokens(obj) if w.lower() not in STOPWORDS):
+            return None
+        who = kind == "who"
+        hit, key = None, ""
+        for key in (keys[::-1] if who else keys):        # person names are stored unstemmed
+            hit = self.titles.lookup(key, log, who=who)
+            if hit is not None:
+                break
+        if hit is None or not 0 <= hit[0] < self.packed.n_titles:
+            return None
+        title = self.title_text(hit[0], log)
+        if not verify(key, title):
+            return None
+        xs = surface(obj)
+        if any(w in STOPWORDS for w in xs) and xs != surface(title):
+            return None
+        return hit
 
     # ------------------------------------------------------------------ candidates
     def _wiki_candidates(self, query: str, exclude_pids, exclude_titles, log: ReadLog | None,
                          k: int) -> list[_Cand]:
         pids, sc, smax = self.search_max(query, exclude_pids, exclude_titles, log)
         out: list[_Cand] = []
-        qkey = query_title_key(query)
-        hit = self.titles.lookup(qkey, log) if self.titles is not None else None
+        hit = self.title_hit(query, log)
         ex_p = set(int(p) for p in exclude_pids)
         ex_t = set(int(t) for t in exclude_titles)
         if hit is not None and hit[0] not in ex_t:
-            tid, amb = hit
-            if self.title_key_of(tid, log) == qkey:            # verify (hash collisions)
-                lead = self.title_range(tid, log).start
-                if lead not in ex_p:
-                    hitpos = np.flatnonzero(pids == lead)
-                    s = float(sc[hitpos[0]]) if hitpos.size else 0.0
-                    out.append(_Cand("wiki", lead, s, self._wiki_feats(
-                        query, lead, s, pids, sc, smax, log, exact=True, ambiguous=amb, qkey=qkey)))
+            tid, variant, person = hit
+            lead = self.title_range(tid, log).start
+            if lead not in ex_p:
+                hitpos = np.flatnonzero(pids == lead)
+                s = float(sc[hitpos[0]]) if hitpos.size else 0.0
+                out.append(_Cand("wiki", lead, s, self._wiki_feats(
+                    query, lead, s, pids, sc, smax, log, exact=True, variant=variant, person=person)))
         for p, s in zip(pids[: k + 1], sc[: k + 1]):
             if len(out) >= k:
                 break
             if any(c.pid == int(p) for c in out):
                 continue
             out.append(_Cand("wiki", int(p), float(s), self._wiki_feats(query, int(p), float(s), pids, sc,
-                                                                       smax, log, qkey=qkey)))
+                                                                       smax, log)))
         return out[:k]
 
     def title_key_of(self, tid: int, log: ReadLog | None = None) -> str:
         return title_key(self.title_text(tid, log))
 
     def _qa_candidates(self, query: str, exclude_pids, log: ReadLog | None, k: int) -> list[_Cand]:
-        from bes.library.qa import QARead, answer_key
+        """Up to ``k`` qa candidates. The best stored questions by ``sym`` are read in order
+        (at most ``cfg.qa_read_entries``); one that asks for a different fact than the user's
+        question (``bes.library.qa.contrast_mismatch``: other numbers, order, degree,
+        relation or polarity words, or names missing on either side) is dropped."""
+        from bes.library.qa import QARead, answer_key, contrast, contrast_mismatch
 
         if self.qa is None:
             return []
@@ -790,27 +905,32 @@ class Library:
         m = self.qa.search(query, ex, qr)
         if log is not None:
             log.qa_index += qr.total
-        n = int(np.count_nonzero(m.sym >= self.cfg.qa_min_sym - 1e-12)) if m.size else 0
-        if n == 0:
+        lo = self.cfg.qa_min_sym - 1e-12
+        if m.size == 0 or m.sym[0] < lo:
             return []
-        top = min(n, k)
-        need = min(m.size, max(top, 2))
-        ans, raw = {}, {}
-        for j in range(need):
-            if j < top or m.sym[j] >= self.cfg.agree_min_sym:
-                raw[j] = self._qa_entry(int(m.entries[j]), log)[1]
-                ans[j] = answer_key(raw[j])
+        user = contrast(query)
+        kept: list[tuple[int, str, str]] = []          # (rank, answer, answer key)
+        n_read = min(m.size, max(1, int(self.cfg.qa_read_entries)))
+        for j in range(n_read):
+            if m.sym[j] < min(lo, self.cfg.agree_min_sym - 1e-12):
+                break
+            question, answer = self._qa_entry(int(m.entries[j]), log)
+            if contrast_mismatch(user, contrast(question)) is None:
+                kept.append((j, answer, answer_key(answer)))
         out = []
-        for i in range(top):
-            other = 1 if i == 0 else 0      # the best-ranked other candidate
-            o_sym = float(m.sym[other]) if m.size > 1 else 0.0
-            o_ok = m.size > 1 and o_sym >= self.cfg.agree_min_sym and other in ans
-            f = {"sym": float(m.sym[i]), "cov_q": float(m.cov_q[i]), "cov_e": float(m.cov_e[i]),
-                 "type_match": bool(m.type_match[i]), "no_wh": m.qtype == 0,
-                 "sym_margin": float(m.sym[i]) - o_sym, "agree": bool(o_ok and ans[other] == ans[i]),
-                 "disagree": bool(o_ok and ans[other] != ans[i]), "wq": m.wq, "n_terms": m.n_terms,
-                 "cross": False, "answer": raw[i]}
-            out.append(_Cand("qa", self.n_wiki + int(m.entries[i]), float(m.sym[i]), f))
+        for j, answer, akey in [x for x in kept if m.sym[x[0]] >= lo][:k]:
+            others = [x for x in kept if x[0] != j]
+            if others:
+                o_sym = float(m.sym[others[0][0]])
+            else:                                       # the best candidate not read, if any
+                o_sym = float(m.sym[n_read]) if m.size > n_read else 0.0
+            o = others[0] if others and m.sym[others[0][0]] >= self.cfg.agree_min_sym - 1e-12 else None
+            f = {"sym": float(m.sym[j]), "cov_q": float(m.cov_q[j]), "cov_e": float(m.cov_e[j]),
+                 "type_match": bool(m.type_match[j]), "no_wh": m.qtype == 0,
+                 "sym_margin": float(m.sym[j]) - o_sym, "agree": bool(o is not None and o[2] == akey),
+                 "disagree": bool(o is not None and o[2] != akey), "wq": m.wq, "n_terms": m.n_terms,
+                 "cross": False, "answer": answer}
+            out.append(_Cand("qa", self.n_wiki + int(m.entries[j]), float(m.sym[j]), f))
         return out
 
     def _cross(self, wiki: list[_Cand], qa: list[_Cand], log: ReadLog | None) -> None:
@@ -856,11 +976,16 @@ class Library:
 
     # ------------------------------------------------------------------ public api
     def retrieve(self, query: str, exclude_pids: Iterable[int] = (), exclude_titles: Iterable[int] = (),
-                 log: ReadLog | None = None, kinds: Sequence[str] | None = None) -> Passage | None:
+                 log: ReadLog | None = None, kinds: Sequence[str] | None = None,
+                 context: Sequence[str] | None = None) -> Passage | None:
         """At most one entry for a user message, or None when the gate does not pass.
 
-        ``kinds=None`` considers both kinds; ``("wiki",)`` or ``("qa",)`` restricts."""
-        if query_type(query) not in self.cfg.gate.allowed_types:
+        ``kinds=None`` considers both kinds; ``("wiki",)`` or ``("qa",)`` restricts.
+        ``context``: the earlier user turns of the conversation (oldest first; None or empty
+        for a first turn). A later turn that is not self-contained (``turn_type``:
+        "What is its capital?", "And cats?", "Who is the author?") retrieves nothing; neither
+        does chat ("merry christmas", "thanks, that was helpful") in any turn."""
+        if turn_type(query, context) not in self.cfg.gate.allowed_types:
             return None
         if self.gate is None:              # hand-set rule gate on the BM25 passage
             if kinds is not None and "wiki" not in kinds:

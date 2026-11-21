@@ -3,6 +3,8 @@
     python scripts/measure_coverage.py --stage pool                 # pool statistics, exact BM25 ceiling
     python scripts/measure_coverage.py --stage sweep --library D    # wiki index size sweep (dev recall)
     python scripts/measure_coverage.py --stage lib --library D      # all E1 tables for a built library
+    python scripts/measure_coverage.py --stage adv-sets --library D # the review's adversarial sets (once)
+    python scripts/measure_coverage.py --stage adv --library D [--tag before]   # evaluate them on D
     python scripts/measure_coverage.py --stage report               # JSON files -> docs/E1_COVERAGE.md
 
 Every stage stays below 3 GB and uses one thread; results go to ``data_cache/library/e1v2_*.json``.
@@ -50,11 +52,15 @@ from bes.library.sources import QA_SOURCES, Pool, download_qa, iter_qa  # noqa: 
 from bes.library.terms import terms  # noqa: E402
 
 L = LibraryCfg()
-EVAL_SETS = ("nq", "tqa", "popqa", "eval_probe")
-ALL_TYPES = ("question", "lookup", "task", "math", "other")
-DEV_SETS = ("dev_nq", "dev_tqa", "dev_probe")
+EVAL_SETS = ("nq", "tqa", "popqa", "eval_probe", "eval_names")
+ALL_TYPES = ("question", "lookup", "task", "math", "other", "followup")
+DEV_SETS = ("dev_nq", "dev_tqa", "dev_probe", "dev_names")
+NEG_DEV_SETS = ("dev_contrast", "dev_chat")
 NAMES = {"nq": "NQ-open val", "tqa": "TriviaQA val", "popqa": "PopQA", "eval_probe": "head-entity probes (eval)",
-         "dev_nq": "dev NQ train (LOO)", "dev_tqa": "dev TriviaQA train (LOO)", "dev_probe": "head-entity probes (dev)"}
+         "eval_names": "common-name probes (eval)", "dev_nq": "dev NQ train (LOO)",
+         "dev_tqa": "dev TriviaQA train (LOO)", "dev_probe": "head-entity probes (dev)",
+         "dev_names": "common-name probes (dev)", "dev_contrast": "contrastive questions (dev)",
+         "dev_chat": "conversation negatives (dev)"}
 
 
 def t_now(t0: float) -> str:
@@ -111,17 +117,25 @@ def load_eval(cache_dir: str, n_tqa: int, n_pop: int, n_dolly: int, seed: int) -
 
 
 def load_lib_and_dev(a, t0, lib_path: str):
-    lib = Library.load(lib_path)
-    imp = np.load(os.path.join(lib_path, "provenance", "title_importance.npy"))
-    pairs, stats, keys, raw = load_qa_pairs(a.cache_dir)
-    from bes.library.build import drop_long_renders
+    """The library, its title analysis and importance, the stored pairs and the dev sets as
+    the build made them (``bes.library.build.dev_queries``)."""
+    from bes.library.build import drop_long_renders, load_provenance
+    from bes.library.titles import analyse_library
 
+    lib = Library.load(lib_path)
+    imp = load_provenance(lib_path, "title_importance")
+    nimp = load_provenance(lib_path, "name_importance")
+    infos = analyse_library(lib)
+    pairs, stats, keys, raw = load_qa_pairs(a.cache_dir)
     pairs, _ = drop_long_renders(pairs, L.max_passage_tokens, bpe_count_tokens)
     b = lib.meta.get("build", {})
-    dq = dev_queries(lib, pairs, raw, a.n_dev, a.n_probes, b.get("seed", a.seed), imp)
-    dev = {s: [x for x in dq if x["set"] == s] for s in DEV_SETS}
+    ds = b.get("dev_sets", {})
+    dq = dev_queries(lib, pairs, raw, a.n_dev, a.n_probes, b.get("seed", a.seed), imp, infos=infos,
+                     n_names=ds.get("dev_names", a.n_probes), n_contrast=ds.get("dev_contrast", a.n_probes),
+                     chat="dev_chat" in ds, name_imp=nimp)
+    dev = {s: [x for x in dq if x["set"] == s] for s in DEV_SETS + NEG_DEV_SETS}
     print(t_now(t0), "dev:", {k: len(v) for k, v in dev.items()}, flush=True)
-    return lib, imp, pairs, dev
+    return lib, (imp, nimp, infos), pairs, dev
 
 
 # --------------------------------------------------------------------------- stage pool
@@ -251,11 +265,14 @@ def wiki_hit(lib: Library, x: dict) -> tuple[bool, bool]:
 
 def stage_sweep(a, t0) -> dict:
     log = lambda m: print(t_now(t0), m, flush=True)  # noqa: E731
+    from bes.library.build import load_provenance
+
     base, imp, pairs, dev = load_lib_and_dev(a, t0, a.library)
     del pairs
+    dev = {s: dev[s] for s in DEV_SETS if s != "dev_names"}
     pool = prepare_pool(a.cache_dir, log=log)
     sig = prepare_signals(pool, a.cache_dir, PackCfg(), log=log)
-    pool_idx = np.load(os.path.join(a.library, "provenance", "pool_idx.npy"))
+    pool_idx = load_provenance(a.library, "pool_idx")
     prior = passage_prior(pool, importance(pool, sig.mentions))[pool_idx]
     passages = [(pool.titles[int(pool.p_article[i])], pool.body(int(i))) for i in pool_idx]
     del pool, sig
@@ -289,7 +306,7 @@ def stage_sweep(a, t0) -> dict:
                 reads.append(rl.index)
             row["index_read_max"] = int(np.max(reads))
             row["index_read_mean"] = float(np.mean(reads))
-            row["dev_mean_r1"] = float(np.mean([row[s]["r@1"] for s in DEV_SETS]))
+            row["dev_mean_r1"] = float(np.mean([row[s]["r@1"] for s in qsets]))
             out["rows"].append(row)
             log(f"sweep {bud} {ml}: total {row['total_numbers']} dev {row['dev_mean_r1']:.4f} "
                 + " ".join(f"{s} {row[s]['r@1']:.3f}" for s in qsets))
@@ -368,16 +385,18 @@ def summarize_rows(rows, lib, kinds_list=(("wiki",), ("qa",), ("wiki", "qa"))) -
 
 def stage_lib(a, t0) -> dict:
     log = lambda m: print(t_now(t0), m, flush=True)  # noqa: E731
-    lib, imp, pairs, dev = load_lib_and_dev(a, t0, a.library)
+    lib, (imp, nimp, infos), pairs, dev = load_lib_and_dev(a, t0, a.library)
     sets = load_eval(a.cache_dir, a.n_tqa, a.n_popqa, a.n_dolly, a.seed)
-    sets["eval_probe"] = D.probes(lib.packed.all_titles(), imp, a.n_probes, "eval", a.seed)
+    titles = lib.packed.all_titles()
+    sets["eval_probe"] = D.probes(titles, imp, a.n_probes, "eval", a.seed, persons=[i.person for i in infos])
+    sets["eval_names"] = D.name_probes(titles, nimp, infos, a.n_probes, "eval", a.seed)
     R: dict = {"library": a.library, "accounting": lib.accounting(), "gate_threshold": lib.gate.threshold,
                "read_bound": lib.read_bound(),
                "gate_coef": {k: [float(x) for x in v] for k, v in lib.gate.coef.items()},
                "n": {k: len(v) for k, v in {**sets, **dev}.items()}, "meta_build": lib.meta.get("build", {})}
     stored = [p.question for p in pairs]
     rows_all = {}
-    for s in DEV_SETS + EVAL_SETS + ("dolly", "proxy"):
+    for s in DEV_SETS + NEG_DEV_SETS + EVAL_SETS + ("dolly", "proxy"):
         xs = dev[s] if s in dev else sets[s]
         rows = candidate_rows(lib, xs)
         for r, x in zip(rows, xs):
@@ -388,6 +407,15 @@ def stage_lib(a, t0) -> dict:
     R["sets"] = {s: summarize_rows(rows_all[s], lib) for s in DEV_SETS + EVAL_SETS}
     R["qtypes"] = {s: float(np.mean([r["qtype"] in ("question", "lookup") for r in rows_all[s]]))
                    for s in DEV_SETS + EVAL_SETS}
+    R["negative_dev"] = {}
+    for s in NEG_DEV_SETS:                      # no right answers: the share of known-wrong returns
+        p, y, kd = decisions(rows_all[s], lib.gate, labelled_only=True)
+        fired = p >= lib.gate.threshold
+        p_all, _, _ = decisions(rows_all[s], lib.gate)
+        R["negative_dev"][s] = {"n": len(rows_all[s]), "known_wrong": float(fired.mean()) if len(rows_all[s]) else 0.0,
+                                "any_entry": float((p_all >= lib.gate.threshold).mean()) if len(rows_all[s]) else 0.0,
+                                "followup_or_chat_type": float(np.mean([r["qtype"] not in ("question", "lookup")
+                                                                        for r in rows_all[s]]))}
     # train/test question overlap (near-duplicate stored question, Jaccard of content terms)
     R["overlap"] = {}
     for s in ("nq", "tqa", "popqa"):
@@ -471,11 +499,508 @@ def stage_lib(a, t0) -> dict:
     return R
 
 
+# --------------------------------------------------------------------------- adversarial sets
+#
+# The review's measurements (docs/E1_COVERAGE.md, "Review fixes"): perturbed stored questions,
+# common names, messages that are not factual look-ups and real second user turns. ``adv-sets``
+# writes the sets once (``e1v2_advsets.json``, from the library given); ``adv`` evaluates them on
+# any library through ``Library.retrieve`` with only the calls an older ``bes.library`` also has,
+# so the same file measures the library before and after the fixes.
+
+PERTURB_COUNTRIES = ("france germany italy spain england scotland ireland wales canada mexico brazil argentina "
+                     "china japan india russia australia egypt kenya nigeria sweden norway denmark finland poland "
+                     "austria hungary greece turkey iran iraq israel portugal belgium netherlands switzerland").split()
+
+
+def review_variants(q: str, keys: set) -> list[tuple[str, str]]:
+    """The review's perturbation classes (its qa_perturb.py): before<->after, one ordinal edit,
+    dropping 'not', another year, another country (capitalised); plus the same country swap in
+    lower case (no case information, so no name check can see it)."""
+    import re
+
+    from bes.library.qa import question_key
+
+    def swap(q, a, b):
+        rx = re.compile(r"\b" + a + r"\b", re.I)
+        if not rx.search(q):
+            return None
+        return rx.sub(lambda m: b if m.group(0).islower() else b.capitalize(), q, count=1)
+
+    out = []
+    for a, b in (("before", "after"), ("after", "before")):
+        v = swap(q, a, b)
+        if v:
+            out.append(("before<->after", v))
+    for a, b in (("first", "second"), ("first", "last"), ("last", "first")):
+        v = swap(q, a, b)
+        if v:
+            out.append((f"{a}->{b}", v))
+            break
+    if re.search(r"\bnot\b", q, re.I):
+        out.append(("drop 'not'", re.sub(r"\s*\bnot\b", "", q, count=1, flags=re.I)))
+    m = re.search(r"\b(19[0-9]{2}|20[0-2][0-9])\b", q)
+    if m:
+        y = int(m.group(1))
+        for d in (4, 1, -4, -1):
+            v = q[:m.start(1)] + str(y + d) + q[m.end(1):]
+            if question_key(v) not in keys:
+                out.append(("other year", v))
+                break
+    low = q.lower()
+    for c in PERTURB_COUNTRIES:
+        if re.search(r"\b" + c + r"\b", low):
+            others = [x for x in PERTURB_COUNTRIES if x != c and not re.search(r"\b" + x + r"\b", low)]
+            o = others[(len(q) * 7 + len(c)) % len(others)]
+            out.append(("other country", re.sub(r"\b" + c + r"\b", o.capitalize(), q, count=1, flags=re.I)))
+            out.append(("other country, lower case", re.sub(r"\b" + c + r"\b", o, low, count=1)))
+            break
+    return out
+
+
+def stored_questions(lib) -> list[str]:
+    """Every stored qa question in entry order (block by block)."""
+    from bes.library.qa import parse_entry
+
+    b = lib.qa.blocks
+    out = []
+    for k in range(b.n_blocks):
+        raw = b.read_block(k)
+        lo, hi = int(b.block_first[k]), int(b.block_first[k + 1])
+        for e in range(lo, hi):
+            s0 = int(b.entry_off[e])
+            s1 = int(b.entry_off[e + 1]) if e + 1 < hi else len(raw)
+            out.append(parse_entry(raw[s0:s1])[0])
+    return out
+
+
+REVIEW_GROUPS = {
+    "follow-up turns": [
+        "What about the second one?", "And the third?", "What does that mean?", "Is that true?",
+        "Which one is better?", "How long does it take?", "Who invented it?", "When did he die?",
+        "What year was that?", "Can you explain it in simpler terms?", "What happened next?",
+        "Why is that?", "What about Mars?", "And in France?", "What is the first one?",
+        "Which is bigger?", "Who won?", "What is its capital?", "How old was he?",
+        "What was his name?", "Where was she born?", "What about the other one?", "Now in Spanish.",
+        "Now translate it to French.", "Shorter, please.", "Make it funnier", "In one sentence?",
+        "What about dogs?", "And cats?", "What is the last step?", "What is the next step?",
+        "What does the second line do?", "Is it safe?", "How much does it cost?", "Why not?",
+        "What else?", "Any other examples?", "What is the opposite?", "What color is it?",
+        "Who is the author?", "What is the title?", "What is the answer?", "Is it a mammal?"],
+    "acknowledgements": [
+        "thanks, that was helpful", "ok great", "that makes sense", "cool, thanks!", "nice one", "good job",
+        "yes please", "no thanks", "sounds good", "perfect", "awesome", "interesting", "great answer",
+        "that is wrong", "you are wrong", "try again", "go on", "continue", "more details", "keep going",
+        "in French", "shorter", "simpler", "bullet points", "with examples", "the second option",
+        "option B", "the first one", "both", "neither", "never mind", "good night", "see you later",
+        "happy birthday", "merry christmas", "I love you", "hello there", "what's up"],
+    "chat / opinion": [
+        "How are you doing today?", "Good morning! How's it going?", "What is the meaning of life?",
+        "What do you think about cats?", "Is coffee bad for you?", "What should I eat for dinner?",
+        "Can you help me with my homework?", "I feel sad today. What should I do?",
+        "What is the best way to learn guitar?", "Why is the sky blue?", "What is love?",
+        "Tell me a joke.", "What's your favorite color?", "Who are you?", "Are you a robot?",
+        "What time is it?", "What is today's date?", "What's the weather like?",
+        "Recommend a good book.", "What's a good name for a dog?", "Is it better to rent or buy a house?",
+        "What are some tips for a job interview?", "How do I make friends?", "What is happiness?",
+        "Should I learn Python or JavaScript first?", "What is the best phone?"],
+    "code": [
+        "How do I reverse a list in Python?", "What is a for loop?", "What does len do?",
+        "What is recursion?", "Explain bubble sort.", "What is a linked list?", "What is Python?",
+        "Fix this: print 'hello'", "What is the difference between a list and a tuple?",
+        "How to sort a dictionary by value", "What is a variable?", "What is an array?",
+        "What is a hash table?", "Binary search tree", "What is a pointer?", "What is HTML?"],
+    "math": [
+        "What is 15% of 80?", "What is 7 times 8?", "What is 12 plus 30?", "Is 17 a prime number?",
+        "What is the square root of 144?", "How many seconds are in an hour?", "What is half of 90?",
+        "What is 100 divided by 4?", "What is pi?", "What is the derivative of x^2?",
+        "How many centimeters are in a meter?", "What is two plus two?", "What is a prime number?",
+        "If I have 3 apples and eat one, how many are left?", "What is 3/4 as a percentage?"],
+    "stale answers": [
+        "Who is the most subscribed YouTuber?", "What is the most viewed video on YouTube?",
+        "Who has the most followers on Twitter?", "Who is the oldest person in the world?",
+        "How many seasons of Grey's Anatomy are there?", "How many states have the death penalty?",
+        "How many stores does Toys R Us have?", "Who has the most followers on Instagram?",
+        "Who is the most followed person on Instagram?", "How many seasons of Ray Donovan are there?",
+        "How many seasons of The Simpsons are there?", "How many episodes of One Piece are there?",
+        "What is the tallest building in the world?", "Who is the richest man in the world?",
+        "Who is the richest person in the world?", "How many countries are in NATO?",
+        "Who is the oldest living person?", "How many members does the European Union have?"],
+    "other question, same words": [
+        "Who wrote Romeo and Juliet?", "Who won the Super Bowl in 2020?", "Who won the Super Bowl in 2017?",
+        "Which countries do have a bill of rights?", "What year did the pistons win their first championship?",
+        "Who was president after Lincoln?", "Who was the second man on the moon?"],
+}
+REVIEW_NAMES = {   # the review's head_names.py, with the article each name means (None: unlabelled)
+    "Mozart": "Wolfgang Amadeus Mozart", "Beethoven": "Ludwig van Beethoven", "Bach": "Johann Sebastian Bach",
+    "Gandhi": "Mahatma Gandhi", "Darwin": "Charles Darwin", "Newton": "Isaac Newton", "Picasso": "Pablo Picasso",
+    "Columbus": "Christopher Columbus", "Churchill": "Winston Churchill", "Stalin": "Joseph Stalin",
+    "Hitler": "Adolf Hitler", "Lenin": "Vladimir Lenin", "Galileo": "Galileo Galilei",
+    "Copernicus": "Nicolaus Copernicus", "Aristotle": "Aristotle", "Plato": "Plato", "Socrates": "Socrates",
+    "Cleopatra": "Cleopatra VII", "Elvis": "Elvis Presley", "Shakespeare": "William Shakespeare",
+    "Einstein": "Albert Einstein", "Napoleon": "Napoleon", "Lincoln": "Abraham Lincoln",
+    "Washington": "George Washington", "Edison": "Thomas Edison", "Tesla": "Nikola Tesla",
+    "Freud": "Sigmund Freud", "Marx": "Karl Marx", "Chopin": "Frédéric Chopin", "Rembrandt": "Rembrandt",
+    "Michelangelo": "Michelangelo", "Dante": "Dante Alighieri", "Homer": "Homer", "Confucius": "Confucius",
+    "Buddha": None, "Moses": "Moses", "Jesus": "Jesus", "Muhammad": "Muhammad", "Caesar": "Julius Caesar",
+    "Beyonce": "Beyoncé", "Rihanna": "Rihanna", "Madonna": "Madonna (entertainer)", "Obama": "Barack Obama",
+    "Trump": "Donald Trump", "Putin": "Vladimir Putin", "Mandela": "Nelson Mandela",
+    "Kennedy": "John F. Kennedy", "Nixon": "Richard Nixon", "Reagan": "Ronald Reagan",
+    "Thatcher": "Margaret Thatcher"}
+LIVING = ("Beyonce", "Rihanna", "Madonna", "Obama", "Trump", "Putin")
+STALE_PATTERNS = {   # the review's stale_scan.py and the verifier's patterns
+    "most followed / subscribed / viewed": r"\bmost (?:followed|subscribed|subscribers|followers|viewed|liked|watched|"
+                                           r"streamed|downloaded)\b",
+    "how many seasons / episodes (no season number)": r"^how many (?:seasons|episodes|series)\b(?!.*\bseason \d)",
+    "how many ... does / do X have": r"^how many \w+(?: \w+)? (?:does|do) .* have\b",
+    "still have": r"\bstill have\b",
+    "oldest person / man / woman": r"\boldest (?:person|man|woman|living)\b",
+    "got the most": r"\bgot the most\b",
+    "member count of a union / league": r"how many (?:countries|members|member states|teams|states) (?:are )?(?:in|of|make up|belong)",
+}
+
+
+def stage_adv_sets(a, t0) -> dict:
+    """Write the adversarial evaluation sets (from the library given, with this code)."""
+    import pyarrow.parquet as pq
+
+    from bes.eval.proxy import prompts as P
+    from bes.library.build import load_provenance
+    from bes.library.devsets import entry_half
+    from bes.library.qa import question_key
+    from bes.library.titles import analyse_library
+
+    log = lambda m: print(t_now(t0), m, flush=True)  # noqa: E731
+    lib = Library.load(a.library)
+    qs = stored_questions(lib)
+    keys = {question_key(q) for q in qs}
+    rng = random.Random(a.seed)
+    order = [i for i in range(len(qs)) if entry_half(qs[i]) == "eval"]
+    rng.shuffle(order)
+    count: dict[str, int] = {}
+    perturb = []
+    for e in order:
+        for cls, v in review_variants(qs[e], keys):
+            if count.get(cls, 0) >= a.n_perturb or question_key(v) in keys or question_key(v) == question_key(qs[e]):
+                continue
+            count[cls] = count.get(cls, 0) + 1
+            perturb.append({"cls": cls, "q": v, "orig_q": qs[e]})
+    log(f"perturbation variants {count}")
+    titles = lib.packed.all_titles()
+    imp = load_provenance(a.library, "title_importance")
+    nimp = load_provenance(a.library, "name_importance")
+    infos = analyse_library(lib)
+    # the review's 300 most important person articles (its surname_probe2.py), asked by surname
+    import re
+
+    people = []
+    for tid in np.argsort(-imp, kind="stable")[:20000]:
+        t = titles[int(tid)]
+        if "(" in t or not re.fullmatch(r"[A-Z][a-z]+(?: [A-Z][a-z]+){1,2}", t):
+            continue
+        lead = lib.passage(lib.title_range(int(tid)).start).body[:160]
+        m = re.match(r"([^\n(]{0,80})\(([^)]*)\)", lead)
+        life = m is not None and (re.search(r"\bborn\b[^)]*\d{4}", m.group(2)) or
+                                  re.search(r"\d{3,4}[^)]*[\u2013\u2014-][^)]*\d{3,4}", m.group(2)))
+        if life and m.group(1).split()[:1] == t.split()[:1]:
+            people.append({"title": t, "q": f"Who was {t.split()[-1]}?"})
+        if len(people) >= 300:
+            break
+    R = {"library": a.library, "perturb": perturb, "surnames": people,
+         "names50": [{"name": k, "want": v, "q": ("Who is {}?" if k in LIVING else "Who was {}?").format(k)}
+                     for k, v in REVIEW_NAMES.items()],
+         "eval_probe": D.probes(titles, imp, a.n_probes, "eval", a.seed, persons=[i.person for i in infos]),
+         "eval_names": D.name_probes(titles, nimp, infos, a.n_probes, "eval", a.seed),
+         "groups": REVIEW_GROUPS}
+    for x in R["eval_probe"] + R["eval_names"]:
+        x["title"] = titles[x["tid"]]
+    # real second user turns: the review's seeded sample of the smol-smoltalk test split
+    f = pq.ParquetFile(os.path.join("data_cache", "samples", "HuggingFaceTB__smol-smoltalk", "data",
+                                    "test-00000-of-00001.parquet"))
+    convs = []
+    for g in range(f.metadata.num_row_groups):
+        t = f.read_row_group(g, columns=["messages", "source"])
+        for msgs, src in zip(t.column("messages").to_pylist(), t.column("source").to_pylist()):
+            users = [m_["content"] for m_ in msgs if m_["role"] == "user"]
+            if len(users) >= 2:
+                convs.append((src, users[0], users[1]))
+        del t
+    R["smoltalk"] = [{"src": s_, "first": u1, "second": u2}
+                     for s_, u1, u2 in random.Random(0).sample(convs, min(3000, len(convs)))]
+    R["proxy_second"] = [{"id": p_.id, "first": p_.turns[0], "second": p_.turns[1]}
+                         for p_ in P.select(P.load(), "dev") if len(p_.turns) >= 2]
+    log(f"sets: perturb {len(perturb)}, surnames {len(people)}, smoltalk {len(R['smoltalk'])}")
+    return R
+
+
+def stage_adv(a, t0) -> dict:
+    """Evaluate the adversarial sets on ``--library`` with the ``bes`` on ``sys.path``."""
+    import inspect
+    import re
+
+    log = lambda m: print(t_now(t0), m, flush=True)  # noqa: E731
+    S = json.load(open(os.path.join(a.cache_dir, "e1v2_advsets.json")))
+    lib = Library.load(a.library)
+    ctx_ok = "context" in inspect.signature(lib.retrieve).parameters
+
+    def ret(q, context=None):
+        return lib.retrieve(q, context=context) if (ctx_ok and context is not None) else lib.retrieve(q)
+
+    def show(p):
+        if p is None:
+            return None
+        return {"kind": p.kind, "prob": round(float(p.prob), 3), "title": p.title,
+                "answer": p.body if p.kind == "qa" else None}
+
+    qs = stored_questions(lib)
+    pid_of = {q: lib.n_wiki + e for e, q in enumerate(qs)}
+    R: dict = {"library": a.library, "code": os.path.dirname(os.path.dirname(os.path.abspath(sys.modules["bes"].__file__))),
+               "threshold": float(lib.gate.threshold), "context_argument": ctx_ok}
+    per: dict = {}
+    ex: dict = {}
+    for x in S["perturb"]:
+        d = per.setdefault(x["cls"], {"tested": 0, "fired": 0, "original": 0, "skipped": 0})
+        orig = pid_of.get(x["orig_q"])
+        if orig is None:                     # the original is not stored in this library
+            d["skipped"] += 1
+            continue
+        d["tested"] += 1
+        p = ret(x["q"])
+        if p is None:
+            continue
+        d["fired"] += 1
+        if p.kind == "qa" and p.pid == orig:
+            d["original"] += 1
+            if len(ex.setdefault(x["cls"], [])) < 3:
+                ex[x["cls"]].append({"asked": x["q"], "stored": x["orig_q"], "answer": p.body, "p": round(p.prob, 2)})
+    R["perturb"], R["perturb_examples"] = per, ex
+    log(f"perturb {per}")
+    titles = lib.packed.all_titles()
+    tid_of = {t: i for i, t in enumerate(titles)}
+    c = {"own": 0, "another article": 0, "qa entry": 0, "nothing": 0}
+    rows = []
+    for x in S["surnames"]:
+        p = ret(x["q"])
+        lab = "nothing" if p is None else "qa entry" if p.kind == "qa" else \
+            "own" if p.title == x["title"] else "another article"
+        c[lab] += 1
+        rows.append({"q": x["q"], "person": x["title"], "label": lab, "got": show(p)})
+    R["surnames"] = {"counts": c, "rows": rows}
+    c = {"own": 0, "another article": 0, "qa entry": 0, "nothing": 0, "unlabelled": 0}
+    rows = []
+    for x in S["names50"]:
+        p = ret(x["q"])
+        lab = "nothing" if p is None else "unlabelled" if x["want"] is None else "qa entry" if p.kind == "qa" \
+            else "own" if p.title == x["want"] else "another article"
+        c[lab] += 1
+        rows.append({"q": x["q"], "want": x["want"], "label": lab, "got": show(p)})
+    R["names50"] = {"counts": c, "rows": rows}
+    for s in ("eval_probe", "eval_names"):
+        n = fired = hit = 0
+        for x in S[s]:
+            if titles[x["tid"]] != x["title"]:
+                raise ValueError("the probe sets were made for a library with other titles")
+            n += 1
+            p = ret(x["q"])
+            if p is not None:
+                fired += 1
+                hit += p.kind == "wiki" and p.title_id == x["tid"]
+        R[s] = {"n": n, "coverage": fired / max(1, n), "precision": hit / max(1, fired)}
+    log(f"probes {R['eval_probe']} names {R['eval_names']}")
+    R["groups"] = {}
+    for g, qs_ in S["groups"].items():
+        rows = [{"q": q, "qtype": query_type(q), "got": show(ret(q)),
+                 "got_later_turn": show(ret(q, ["Tell me about the history of Rome."]))} for q in qs_]
+        R["groups"][g] = {"n": len(rows), "fired": sum(r["got"] is not None for r in rows),
+                          "fired_later_turn": sum(r["got_later_turn"] is not None for r in rows), "rows": rows}
+    sm = {"n": len(S["smoltalk"]), "first": 0, "second_alone": 0, "second_with_context": 0}
+    fired_ctx, fired_alone = [], []
+    for i, x in enumerate(S["smoltalk"]):
+        sm["first"] += ret(x["first"]) is not None
+        p = ret(x["second"])
+        if p is not None:
+            sm["second_alone"] += 1
+            fired_alone.append(i)
+        p2 = ret(x["second"], [x["first"]]) if ctx_ok else p
+        if p2 is not None:
+            sm["second_with_context"] += 1
+            fired_ctx.append({"i": i, "got": show(p2)})
+    sm["fired_with_context"] = fired_ctx
+    sm["fired_alone"] = fired_alone
+    R["smoltalk"] = sm
+    pr = {"n": len(S["proxy_second"]), "second_alone": 0, "second_with_context": 0, "rows": []}
+    for x in S["proxy_second"]:
+        p, p2 = ret(x["second"]), (ret(x["second"], [x["first"]]) if ctx_ok else None)
+        pr["second_alone"] += p is not None
+        pr["second_with_context"] += (p2 if ctx_ok else p) is not None
+        if p is not None or p2 is not None:
+            pr["rows"].append({"id": x["id"], "second": x["second"], "alone": show(p), "context": show(p2)})
+    R["proxy_second"] = pr
+    log(f"smoltalk {({k: v for k, v in sm.items() if not isinstance(v, list)})}, proxy second turns "
+        f"{pr['second_alone']}/{pr['second_with_context']}")
+    R["stale_scan"] = {}
+    for name, rx in STALE_PATTERNS.items():
+        r_ = re.compile(rx, re.I)
+        hits = [q for q in qs if r_.search(q)]
+        R["stale_scan"][name] = {"stored": len(hits), "examples": hits[:: max(1, len(hits) // 6)][:6]}
+    R["accounting"] = lib.accounting()
+    R["read_bound"] = lib.read_bound()
+    return R
+
+
 # --------------------------------------------------------------------------- report
 
 
 def pct(x) -> str:
     return "-" if x is None else f"{100 * x:.1f}"
+
+
+def review_section(a, R: dict, add) -> None:
+    """Before / after tables of the review fixes: the library and code at the commit before
+    them (``e1v2_lib_before.json``, ``e1v2_adv_before.json``) against this library."""
+    J = lambda nm: os.path.join(a.cache_dir, f"e1v2_{nm}.json")  # noqa: E731
+    if not (os.path.exists(J("adv")) and os.path.exists(J("adv_before")) and os.path.exists(J("lib_before"))):
+        return
+    A, AB, RB = json.load(open(J("adv"))), json.load(open(J("adv_before"))), json.load(open(J("lib_before")))
+    lab = json.load(open(J("smoltalk_labels"))) if os.path.exists(J("smoltalk_labels")) else None
+    add("## Review fixes: before / after\n")
+    add("A review of this library showed that a wrong entry placed before a question produces a confident wrong "
+        "answer: stored answers of a different question (another year, ordinal, polarity or entity), a person's "
+        "common name answered with a film or a unit, follow-up and chat messages answered with unrelated articles "
+        "through the exact-title rule, stale answers. What changed (`bes/library`):\n")
+    add("- **Contrast check** (`qa.contrast_mismatch`): a stored question is dropped as a candidate when it differs "
+        "from the user's in its numbers (digit tokens, ordinals, roman numerals, compared as numbers), order words "
+        "(last, next, ...), degree words (most, least, superlatives, comparatives), relation words (before, after, "
+        "since, until) or number of negations, or when a capitalised name of either side is missing from the other. "
+        "Up to three candidates are read. Decided by measurement (old library and gate, top candidates returned at "
+        "p >= 0.328 on dev NQ, dev TriviaQA, NQ-open val and TriviaQA val): the candidates each class removes were "
+        "22-70% correct (relation words 50-83% on groups of 8 to 23 questions), below the 0.8 target, so a veto, "
+        "not a gate feature (details in the notes).")
+    add("- **Primary topics** (`titles.TitleTable`): a plain title owns its key; a variant (disambiguated, 'The X', "
+        "plural, stopword-dropped) or a person article (surname or the single name its article uses) owns a key "
+        f"only when it leads every other article containing it by {L.title_margin} in importance; who-questions "
+        f"look among persons (lead by {L.person_margin}, importance without the bare-name mentions a disambiguated "
+        "title shares with its namesakes); ambiguous keys are not stored, so they give no exact-title credit; a "
+        "title word the article never writes in lower case is not plural-stemmed, nor is a capitalised query word. "
+        "Exact-title credit only for identity requests (who/what is X, tell me about X, define X, a bare name); a "
+        "one-term key needs such a frame or a capitalised name.")
+    add("- **Conversation turns** (`retrieve.turn_type`, `Library.retrieve(..., context=...)`): a later turn that "
+        "leans on an earlier one (it, its, he, she, they, that, 'the second one', 'what about X?', fewer than two "
+        "content terms without a capitalised name) retrieves nothing; chat and acknowledgements retrieve nothing in "
+        "any turn.")
+    add("- **Time filter**: rules for most followed / viewed / subscribed, 'got the most', counts of seasons, "
+        "episodes, stores, members ... 'are there' / 'does X have', 'still have', the oldest / richest / tallest "
+        "living, office holders without 'current' ('who is france's president', 'who runs X').")
+    add(f"- **Gate**: refitted on dev data with the contrastive questions, common-name probes and conversation "
+        f"negatives; a negative set's rows weigh like rows of the largest dev set; operating point: the smallest "
+        f"threshold at which every dev set with right answers reaches precision {L.gate_precision} (was 0.5) and "
+        f"the negative sets return a known-wrong entry for at most 5% of their queries.")
+    add("- **Provenance** (pool index, title importance) is written next to the library "
+        "(`data_cache/library/provenance/<hash of library.json>/`), no longer inside the shipped directory.\n")
+    acc_b, acc_a = RB["accounting"], R["accounting"]
+    add(f"Stored numbers {acc_b['total_numbers']:,} -> {acc_a['total_numbers']:,} (title look-up "
+        f"{acc_b['title_table_numbers']:,} -> {acc_a['title_table_numbers']:,}, qa layer {acc_b['qa_numbers']:,} -> "
+        f"{acc_a['qa_numbers']:,}, gate {acc_b['gate_numbers']} -> {acc_a['gate_numbers']}); worst-case read of one "
+        f"retrieval {RB['read_bound']['total']:,} -> {R['read_bound']['total']:,} (three qa entries read instead of "
+        f"two, four title look-ups instead of one); gate threshold {RB['gate_threshold']:.3f} -> "
+        f"{R['gate_threshold']:.3f}.\n")
+    # ---- evaluation, both kinds
+    add("Evaluation, both kinds, coverage / precision (before: the code and library before the fixes; the probe "
+        "rows of 'before' are the old probe definition, the head-entity and common-name rows below use the new "
+        "probe sets for both):\n")
+    add("| set | before: coverage / precision | after: coverage / precision |")
+    add("|---|---|---|")
+    for s in ("dev_nq", "dev_tqa", "nq", "tqa", "popqa"):
+        b, x = RB["sets"][s]["wiki+qa"], R["sets"][s]["wiki+qa"]
+        add(f"| {NAMES[s]} | {pct(b['coverage'])} / {pct(b['precision'])} | {pct(x['coverage'])} / {pct(x['precision'])} |")
+    for s, nm in (("eval_probe", "head-entity probes (eval, new definition)"), ("eval_names", "common-name probes (eval)")):
+        add(f"| {nm} | {pct(AB[s]['coverage'])} / {pct(AB[s]['precision'])} | {pct(A[s]['coverage'])} / "
+            f"{pct(A[s]['precision'])} |")
+    ob, oa = RB["overlap"]["nq"]["without"]["wiki+qa"], R["overlap"]["nq"]["without"]["wiki+qa"]
+    add(f"| NQ-open val without a near-duplicate stored question | {pct(ob['coverage'])} / {pct(ob['precision'])} | "
+        f"{pct(oa['coverage'])} / {pct(oa['precision'])} |")
+    add("")
+    # ---- curves before
+    add("Precision / coverage of the gate before the fixes (both kinds; the curves after are in the section below):\n")
+    grid = [c["t"] for c in RB["sets"]["dev_nq"]["wiki+qa"]["curve"]]
+    add("| set | " + " | ".join(f"t={t:.3f}" for t in grid) + " |")
+    add("|---|" + "---|" * len(grid))
+    for s in ("dev_nq", "dev_tqa", "dev_probe", "nq", "tqa", "popqa"):
+        cs = RB["sets"][s]["wiki+qa"]["curve"]
+        add(f"| {NAMES[s]} | " + " | ".join(f"{pct(c['coverage'])} / {pct(c['precision'])}" for c in cs) + " |")
+    add("")
+    # ---- perturbation
+    add("**Perturbed questions** (the review's test, `stage adv`): stored questions of the evaluation half of the store "
+        "edited so that the stored answer no longer fits (skipped when the edit is itself stored); share for which "
+        "the library returns the original entry, with its answer:\n")
+    add("| edit | variants | before | after |")
+    add("|---|---|---|---|")
+    for cls, x in A["perturb"].items():
+        b = AB["perturb"].get(cls, {})
+        add(f"| {cls} | {x['tested']} | {b.get('original', 0)} ({pct(b.get('original', 0) / max(1, b.get('tested', 1)))}%) | "
+            f"{x['original']} ({pct(x['original'] / max(1, x['tested']))}%) |")
+    add("\nThe lower-case country swap is an extra row: with no capital letters on either side no name can be "
+        "compared, and a rule for rare substituted terms would have removed dev returns that are 75-83% correct "
+        "at the operating point, so it was not added; long questions that differ in one lower-case place name are "
+        "the remaining known gap.\n")
+    # ---- common names
+    sb, sa = AB["surnames"]["counts"], A["surnames"]["counts"]
+    add("**Common names.** The review's 300 most important person articles asked 'Who was <surname>?', the review's "
+        "50 famous names, and the common-name probes of the evaluation half (persons asked by the name their "
+        "article uses most, when no more important person bears it):\n")
+    add("| set | before | after |")
+    add("|---|---|---|")
+    add(f"| 300 persons by surname: own article / another article / qa entry / nothing | {sb['own']} / "
+        f"{sb['another article']} / {sb['qa entry']} / {sb['nothing']} | {sa['own']} / {sa['another article']} / "
+        f"{sa['qa entry']} / {sa['nothing']} |")
+    nb, na = AB["names50"]["counts"], A["names50"]["counts"]
+    add(f"| 50 famous names: own / another / qa / nothing | {nb['own']} / {nb['another article']} / {nb['qa entry']} / "
+        f"{nb['nothing']} | {na['own']} / {na['another article']} / {na['qa entry']} / {na['nothing']} |")
+    add(f"| common-name probes (eval): coverage / precision | {pct(AB['eval_names']['coverage'])} / "
+        f"{pct(AB['eval_names']['precision'])} | {pct(A['eval_names']['coverage'])} / {pct(A['eval_names']['precision'])} |")
+    other = [r for r in A["surnames"]["rows"] if r["label"] == "another article"]
+    if other:
+        add("\nAfter, the 300-person set's 'another article' answers: " + "; ".join(
+            f"'{r['q']}' ({r['person']}) -> {r['got']['title']}" for r in other) + ".")
+    add("")
+    # ---- firing on messages that are not look-ups
+    add("**Messages that are not factual look-ups** (the review's lists; 'later turn': asked after 'Tell me about the "
+        "history of Rome.'): messages that get an entry:\n")
+    add("| messages | n | before | after, first turn | after, later turn |")
+    add("|---|---|---|---|---|")
+    for g, x in A["groups"].items():
+        add(f"| {g} | {x['n']} | {AB['groups'][g]['fired']} | {x['fired']} | {x['fired_later_turn']} |")
+    fired = [f"'{r['q']}' -> {r['got']['title'] if r['got']['kind'] == 'wiki' else 'qa: ' + str(r['got']['answer'])}"
+             for g, x in A["groups"].items() for r in x["rows"] if r["got"] is not None]
+    if fired:
+        add("\nAfter, first turns that get an entry: " + "; ".join(fired) + ".")
+    fb, fa = RB["firing"]["proxy"], R["firing"]["proxy"]
+    add("\nDev-half proxy prompts (first turns), share that gets an entry, before -> after: " + ", ".join(
+        f"{c} {pct(fb[c]['fires'])} -> {pct(fa[c]['fires'])}%" for c in fa) + "; Dolly-15k: " + ", ".join(
+        f"{c} {pct(RB['firing']['dolly'][c]['fires'])} -> {pct(R['firing']['dolly'][c]['fires'])}%"
+        for c in R["firing"]["dolly"]) + ".\n")
+    smb, sma = AB["smoltalk"], A["smoltalk"]
+    add(f"**Real second user turns** (the review's seeded sample of {sma['n']:,} smol-smoltalk test conversations): "
+        f"second turns that get an entry, retrieving on the turn alone as the responder does today: before "
+        f"{smb['second_alone']} ({pct(smb['second_alone'] / sma['n'])}%), after {sma['second_alone']} "
+        f"({pct(sma['second_alone'] / sma['n'])}%); after, with the first turn passed as context: "
+        f"{sma['second_with_context']} ({pct(sma['second_with_context'] / sma['n'])}%). First turns: "
+        f"{smb['first']} -> {sma['first']}. Dev-half proxy second turns: {AB['proxy_second']['second_alone']} -> "
+        f"{A['proxy_second']['second_with_context']} of {A['proxy_second']['n']}.")
+    if lab:
+        n_ok = sum(1 for v in lab["labels"].values() if v == "related")
+        add(f" Every second turn that gets an entry after the fixes (with context) was read by hand: {n_ok} of "
+            f"{len(lab['labels'])} entries are related to the turn ({lab.get('note', '')}).")
+    add("")
+    # ---- stale scan
+    add("**Stale answers**: stored questions matching the review's scan patterns (they also match stable "
+        "questions, e.g. 'how many toes does a llama have?'):\n")
+    add("| pattern | before | after |")
+    add("|---|---|---|")
+    for k, x in A["stale_scan"].items():
+        add(f"| {k} | {AB['stale_scan'][k]['stored']} | {x['stored']} |")
+    stale = A["groups"].get("stale answers", {}).get("rows", [])
+    add(f"\nThe review's natural stale questions that get an entry: before {AB['groups']['stale answers']['fired']} of "
+        f"{len(stale)}, after {sum(r['got'] is not None for r in stale)}.\n")
 
 
 def stage_report(a) -> str:
@@ -498,15 +1023,19 @@ def stage_report(a) -> str:
     n = R["n"]
     add(f"Evaluation questions: NQ-open validation {n['nq']} (all with answers), TriviaQA rc.nocontext validation "
         f"{n['tqa']} (seeded sample of the 9,961 unique questions), PopQA {n['popqa']} (seeded sample), "
-        f"head-entity probes {n['eval_probe']} (evaluation half of the titles), Dolly-15k {n['dolly']} instructions "
-        f"and the {n['proxy']} dev-half proxy prompts (first turns). Dev data (every choice: index size, gate): "
-        f"{n['dev_nq']} stored NQ-open train and {n['dev_tqa']} stored TriviaQA train questions asked with their "
-        f"own qa entry excluded (leave-one-out), and {n['dev_probe']} probes for the dev half of the titles.\n")
+        f"head-entity probes {n['eval_probe']} and common-name probes {n.get('eval_names', 0)} (evaluation half of "
+        f"the titles), Dolly-15k {n['dolly']} instructions and the {n['proxy']} dev-half proxy prompts (first "
+        f"turns). Dev data (every choice: index size, gate): {n['dev_nq']} stored NQ-open train and {n['dev_tqa']} "
+        f"stored TriviaQA train questions asked with their own qa entry excluded (leave-one-out), "
+        f"{n['dev_probe']} head-entity and {n.get('dev_names', 0)} common-name probes for the dev half of the "
+        f"titles, {n.get('dev_contrast', 0)} contrastive questions (perturbed stored questions of the dev half "
+        f"of the store) and {n.get('dev_chat', 0)} conversation turns that must retrieve nothing.\n")
     add("**Fair measurements.** NQ-open and TriviaQA have a known overlap between their train and test questions "
         "(paraphrases of the same question), and the qa layer stores the train questions, so their qa numbers "
         "are reported separately for test questions with and without a near-duplicate stored question. PopQA "
         "(templated questions about long-tail entities, no train split stored) and the proxy prompts are the fair "
         "out-of-distribution measurements.\n")
+    review_section(a, R, add)
     # ---- summary
     sb = R["sets"]
     add("## Summary\n")
@@ -515,19 +1044,23 @@ def stage_report(a) -> str:
         f"title look-up {acc['title_table_numbers']:,}, qa layer {acc['qa_numbers']:,}, gate {acc['gate_numbers']:,}.")
     th = R["gate_threshold"]
     add(f"- Calibrated gate: returns the candidate with the larger probability when p >= {th:.3f}, the smallest "
-        f"threshold at which every dev set separately reaches precision >= {L.gate_precision}.")
+        f"threshold at which every dev set with right answers separately reaches precision >= {L.gate_precision} "
+        f"and the contrastive and conversation dev sets return a known-wrong entry for at most 5% of their "
+        f"queries (measured: " + ", ".join(f"{NAMES[k]} {pct(v['known_wrong'])}%" for k, v in
+                                           R.get("negative_dev", {}).items()) + ").")
     bo = {s: sb[s]["wiki+qa"] for s in EVAL_SETS}
     ovn = R["overlap"]
     add(f"- Evaluation, both kinds: NQ-open val {pct(bo['nq']['coverage'])}% of questions answered at "
         f"{pct(bo['nq']['precision'])}% precision, TriviaQA val {pct(bo['tqa']['coverage'])}% at "
         f"{pct(bo['tqa']['precision'])}%, PopQA {pct(bo['popqa']['coverage'])}% at {pct(bo['popqa']['precision'])}%, "
-        f"head-entity probes {pct(bo['eval_probe']['coverage'])}% at {pct(bo['eval_probe']['precision'])}%.")
+        f"head-entity probes {pct(bo['eval_probe']['coverage'])}% at {pct(bo['eval_probe']['precision'])}%, "
+        f"common-name probes {pct(bo['eval_names']['coverage'])}% at {pct(bo['eval_names']['precision'])}%.")
     add(f"- Fair numbers: NQ-open questions without a near-duplicate stored question "
         f"({pct(1 - ovn['nq']['share'])}% of them) {pct(ovn['nq']['without']['wiki+qa']['coverage'])}% at "
         f"{pct(ovn['nq']['without']['wiki+qa']['precision'])}% (with one: {pct(ovn['nq']['with']['wiki+qa']['coverage'])}% at "
-        f"{pct(ovn['nq']['with']['wiki+qa']['precision'])}%); PopQA, out of distribution, stays below the 0.5 dev "
-        f"precision floor ({pct(bo['popqa']['precision'])}%): the floor fitted on NQ/TriviaQA-style questions does "
-        f"not transfer to long-tail entities.")
+        f"{pct(ovn['nq']['with']['wiki+qa']['precision'])}%); PopQA, out of distribution: "
+        f"{pct(bo['popqa']['coverage'])}% at {pct(bo['popqa']['precision'])}% (the floor is fitted on "
+        f"NQ/TriviaQA-style questions and head entities, not on long-tail entities).")
     fp = R["firing"]["proxy"]
     add("- Firing on the dev-half proxy prompts: " + ", ".join(f"{c} {pct(v['fires'])}%" for c, v in fp.items())
         + f"; Dolly creative_writing {pct(R['firing']['dolly']['creative_writing']['fires'])}%, brainstorming "
@@ -553,9 +1086,11 @@ def stage_report(a) -> str:
     from bes.library.gate import QA_FEATURES, WIKI_FEATURES
 
     add("## Gate model\n")
-    add(f"Two logistic regressions fitted on the dev rows (each dev set weighted equally, L2 1e-3), float32, "
+    add(f"Two logistic regressions fitted on the dev rows (each dev set with right answers weighted equally, a row "
+        f"of the contrastive or conversation sets like a row of the largest dev set; L2 1e-3), float32, "
         f"{acc['gate_numbers']} stored numbers with the threshold. The threshold is the smallest at which every "
-        f"dev set separately reaches precision >= {L.gate_precision}.\n")
+        f"dev set with right answers separately reaches precision >= {L.gate_precision} and the contrastive and "
+        f"conversation sets return a known-wrong entry for at most 5% of their queries.\n")
     for kd, names in (("wiki", WIKI_FEATURES), ("qa", QA_FEATURES)):
         c = R["gate_coef"][kd]
         add(f"- {kd}: " + ", ".join(f"{n} {v:+.3f}" for n, v in zip(list(names) + ["intercept"], c)))
@@ -695,7 +1230,8 @@ def stage_report(a) -> str:
             + f". Rendered entries over {L.max_passage_tokens} tokens dropped: {qc['long_render']}. Stored: "
             f"{qc['kept']:,} entries.\n")
         if "orders" in B:
-            add("Entry order and compression (raw LZMA2 preset 6, 64 kB blocks):\n")
+            add("Entry order and compression (raw LZMA2 preset 6, 64 kB blocks; measured on the 156,800-entry store "
+                "before the review's time rules):\n")
             add("| order | stored text numbers | compression |")
             add("|---|---|---|")
             for o, v in B["orders"].items():
@@ -731,7 +1267,9 @@ def stage_report(a) -> str:
 
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--stage", choices=("pool", "sweep", "lib", "report"), default="report")
+    ap.add_argument("--stage", choices=("pool", "sweep", "lib", "adv-sets", "adv", "report"), default="report")
+    ap.add_argument("--tag", default="", help="stage adv: suffix of the output file (e.g. 'before')")
+    ap.add_argument("--n-perturb", type=int, default=400, help="variants per perturbation class")
     ap.add_argument("--cache-dir", default="data_cache/library")
     ap.add_argument("--library", default=L.library_dir)
     ap.add_argument("--n-tqa", type=int, default=3000)
@@ -754,11 +1292,13 @@ def main(argv=None) -> int:
             f.write(md)
         print(t_now(t0), "wrote", a.md, flush=True)
         return 0
-    fn = {"pool": stage_pool, "sweep": stage_sweep, "lib": stage_lib}[a.stage]
+    fn = {"pool": stage_pool, "sweep": stage_sweep, "lib": stage_lib, "adv-sets": stage_adv_sets,
+          "adv": stage_adv}[a.stage]
     res = fn(a, t0)
-    with open(J(a.stage), "w") as f:
+    name = {"adv-sets": "advsets"}.get(a.stage, a.stage) + (f"_{a.tag}" if a.tag else "")
+    with open(J(name), "w") as f:
         json.dump(res, f)
-    print(t_now(t0), "wrote", J(a.stage), flush=True)
+    print(t_now(t0), "wrote", J(name), flush=True)
     return 0
 
 

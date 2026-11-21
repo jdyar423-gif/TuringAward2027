@@ -56,7 +56,7 @@ def test_fit_logistic_separable_data_stays_finite_and_deterministic():
 
 def feats_wiki(**kw):
     base = {"s1": 12.0, "margin": 0.3, "title_match": 1.0, "coverage": 0.8, "exact_title": True,
-            "ambiguous": False, "lead": True, "qtype": "question", "n_terms": 2, "cross": False}
+            "variant": False, "person": True, "lead": True, "qtype": "question", "n_terms": 2, "cross": False}
     base.update(kw)
     return base
 
@@ -73,7 +73,7 @@ def test_gate_probability_equals_direct_computation(tmp_path):
     coef = {"wiki": rng.normal(size=len(G.WIKI_FEATURES) + 1), "qa": rng.normal(size=len(G.QA_FEATURES) + 1)}
     m = G.GateModel.stored(coef, 0.37)
     fw = feats_wiki(qtype="lookup", s1=7.5)
-    x = [math.log1p(7.5), 0.3, 1.0, 0.8, 1.0, 0.0, 1.0, 1.0, math.log1p(2), 0.0]
+    x = [math.log1p(7.5), 0.3, 1.0, 0.8, 1.0, 0.0, 1.0, 1.0, 1.0, math.log1p(2), 0.0]
     cw = np.asarray(coef["wiki"], dtype=np.float32).astype(np.float64)
     z = sum(a * b for a, b in zip(cw[:-1], x)) + cw[-1]
     assert m.prob("wiki", fw) == pytest.approx(1 / (1 + math.exp(-z)), rel=1e-12)
@@ -128,3 +128,17 @@ def test_sigmoid_is_stable():
     s = G.sigmoid(z)
     assert np.all(np.isfinite(s)) and s[2] == 0.5 and s[0] == 0.0 and s[-1] == 1.0
     assert s[1] == pytest.approx(1 / (1 + math.exp(30.0)))
+
+
+def test_a_gate_fitted_on_other_features_is_refused(tmp_path):
+    """An older library's gate (other feature list) must not be read with today's vectors."""
+    import json
+
+    m = G.GateModel.stored({"wiki": np.zeros(len(G.WIKI_FEATURES) + 1), "qa": np.zeros(len(G.QA_FEATURES) + 1)}, 0.5)
+    m.save(str(tmp_path))
+    assert G.GateModel.load(str(tmp_path)).threshold == m.threshold
+    meta = json.loads((tmp_path / "gate.json").read_text())
+    meta["wiki_features"] = [f if f != "variant" else "ambiguous" for f in meta["wiki_features"]]
+    (tmp_path / "gate.json").write_text(json.dumps(meta))
+    with pytest.raises(ValueError, match="rebuild the library"):
+        G.GateModel.load(str(tmp_path))

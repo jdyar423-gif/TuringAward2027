@@ -39,6 +39,14 @@ read (a skipped, very common bucket still counts in ``Wq`` and ``We``, so a matc
 is missed and the score can only fall). Candidates are ranked by ``sym`` (ties: question type
 match, then entry id). The question types of the query and the entry (who / when / where /
 how many / ...) are compared because the wh-words are stopwords.
+
+Contrast check (``contrast``, ``contrast_mismatch``; applied by ``bes.library.retrieve``): the
+overlap cannot see the words that decide which fact a question asks for, because they are
+stopwords (before, after, not, most) or light common terms (first, second, last, 1966), so a
+stored question is not used when it differs from the user's in its numbers (digit tokens,
+ordinal words and numerals, roman numerals, compared as numbers), order words, degree words
+(superlatives, comparatives), relation words, number of negations, or when a capitalised name
+of either side is missing from the other side's terms.
 """
 from __future__ import annotations
 
@@ -148,19 +156,49 @@ TIME_RULES: tuple[tuple[str, re.Pattern], ...] = tuple((n, re.compile(p, re.I)) 
     ("last_time", r"\blast time\b|\bthe last (?:year|season|time|team|person|player|country|one)\b"),
     ("still", r"\bstill (?:alive|living|in existence|exists?|in office|married|together|playing|"
               r"active|open|running|operating|on the air|airing|in production|being made|in print|"
-              r"used|in use|on|going)\b"),
-    ("present_role", r"\bthe present\b|^(?:who|what|which) (?:is|are) "
-                     r"(?!(?:the )?(?:first|second|third|only|original|inaugural|founding)\b)(?:the )?(?:\w+ ){0,3}?"
+              r"used|in use|on|going|have|has|hold|holds|own|owns|uses|stands?|works?|lives?|runs?|"
+              r"allows?|exists?)\b"),
+    ("present_role", r"\bthe present\b|^(?:who|what|which)(?: is| are|'s|s| s) "
+                     r"(?!(?:the )?(?:first|second|third|only|original|inaugural|founding)\b)(?:the )?(?:[\w']+ ){0,3}?"
                      r"(?:president|prime minister|ceo|coo|cfo|chairman|chairperson|chairwoman|"
                      r"coach|manager|chief|speaker|governor|mayor|king|queen|monarch|pope|"
                      r"secretary|leader|captain|owner|minister|chancellor|director|editor|host|"
                      r"presenter|head|commissioner|ambassador|senator|representative|premier|"
                      r"champion|champions|holder|record holder|richest|oldest living)\b"),
+    # office holders phrased without "current": "who is france's president", "who runs apple"
+    ("present_office", r"^(?:who|which \w+)(?: is| are|'s|s| s)? (?:currently )?(?:runs|leads|governs|heads|"
+                       r"rules|coaches|manages|chairs|captains|owns|hosts|presents|anchors|edits)\b|"
+                       r"^(?:who|what)(?: is| are|'s|s| s) [\w' ]{0,40}'s? (?:president|prime minister|ceo|chairman|"
+                       r"coach|manager|leader|captain|owner|king|queen|governor|mayor|head coach|chancellor|"
+                       r"premier|ruler|monarch)\b"),
     ("records_counts", r"\b(?:has|have) the most\b|\bholds? the record\b|\bhow many times\b.*\b(?:has|have)\b|"
                        r"\bhow many\b.*\b(?:has|have)\s+(?:\w+\s+){0,3}(?:won|been|had|played|scored|appeared|"
                        r"made|sold|recorded|released|produced|lost|beaten|beat|reached|hosted|held|"
                        r"died|visited|joined|taken|gone|competed|entered)\b|"
-                       r"\bhow old (?:is|are)\b|\bhow long (?:has|have)\b"),
+                       r"\bhow old (?:is|are)\b|\bhow long (?:has|have)\b|"
+                       r"\b(?:has|have|'s|s) (?:won|scored|played|sold|made|got|gotten|received|earned|had) the most\b|"
+                       r"\bgot the most\b"),
+    # audience records ("the most followed person on instagram", "most viewed video on youtube")
+    ("most_followed", r"\bmost (?:followed|subscribed|subscribers|followers|viewed|views|liked|likes|watched|"
+                      r"streamed|streams|downloaded|downloads|played|searched|visited|popular)\b"),
+    # counts that change: "how many seasons of X are there", "how many stores does X have"
+    ("count_now", r"\bhow many (?:[\w']+ ){0,3}?(?:seasons?|episodes?|series|stores?|shops?|restaurants?|"
+                  r"locations?|branches|members?|member states|employees|staff|workers|users|subscribers|"
+                  r"followers|countries|states|nations|teams|clubs|franchises|people|citizens|residents|"
+                  r"inhabitants|speakers|titles|championships|rings|trophies|awards|grammys|oscars|emmys|medals|"
+                  r"goals|wins|albums|movies|films|books|children|kids|grandchildren)\b"
+                  r"(?=.*\b(?:are there|is there|have there been|so far|to date|does|do|have|has|allow|allows|"
+                  r"ban|bans|permit|permits|recogni[sz]e|legali[sz]ed?)\b)"
+                  r"(?!.*\b(?:did|were|was|had)\b)"
+                  r"(?!.*\b(?:season|series|volume|part|book|chapter|episode) (?:\d+|one|two|three|four|five|"
+                  r"six|seven|eight|nine|ten)\b)(?!.*\b(?:1[0-9]{3}|20[0-9]{2})\b)"),
+    # living superlatives ("who is the oldest person in the world", "the richest man", "tallest building")
+    ("living_superlative", r"\b(?:oldest|youngest|tallest|shortest|heaviest|richest|wealthiest|poorest|"
+                           r"highest[- ]paid|fattest|strongest)\b(?: [\w']+){0,3} (?:person|man|woman|men|women|"
+                           r"people|living|alive|celebrity|celebrities|billionaire|human|humans|athlete|"
+                           r"player|actor|actress|singer|youtuber|family|families)\b|"
+                           r"\b(?:richest|wealthiest|highest[- ]paid)\b|"
+                           r"\btallest (?:building|buildings|structure|structures|tower|towers|skyscrapers?)\b"),
     ("won_undated", r"^(?:who|which (?:team|country|player|club|nation|state|school|horse|driver|band|"
                     r"movie|film|song|album|actor|actress))\s+(?:won|wins|has won)\b"
                     r"(?!.*(?:\d|\b(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|"
@@ -181,6 +219,122 @@ def time_sensitive(question: str) -> str | None:
     for name, rx in TIME_RULES:
         if rx.search(q):
             return name
+    return None
+
+
+# ------------------------------------------------------------------------------ contrast words
+
+#: Ordinal and cardinal number words compared as numbers ("second" = "2nd" = "II" = "2").
+ORDINAL_NUMBERS = {w: str(i) for i, w in enumerate(
+    "zeroth first second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth thirteenth "
+    "fourteenth fifteenth sixteenth seventeenth eighteenth nineteenth twentieth".split())}
+_ORD_SUFFIX_RX = re.compile(r"^(\d+)(?:st|nd|rd|th)$")
+_ROMAN_RX = re.compile(r"^(?=[ivx]{2,}$)x{0,3}(?:ix|iv|v?i{0,3})$")
+_ROMAN = {"i": 1, "v": 5, "x": 10}
+#: Order words that are not numbers.
+ORDER_WORDS = frozenset("last next previous penultimate latter former".split())
+#: Degree words: superlatives and comparatives (most of them stopwords or very common terms).
+DEGREE_WORDS = frozenset("""most least more less fewer best worst largest smallest biggest highest lowest
+    longest shortest tallest oldest youngest newest earliest latest fastest slowest richest poorest deepest
+    heaviest lightest greatest nearest closest furthest farthest hottest coldest warmest driest wettest
+    brightest strongest weakest busiest cheapest larger smaller bigger higher lower longer shorter taller
+    older younger better worse greater faster slower earlier later heavier lighter deeper closer further
+    farther hotter colder richer poorer""".split())
+#: Temporal relation words (stopwords): "before the war" and "after the war" ask different things.
+RELATION_WORDS = frozenset("before after prior since until till".split())
+NEGATION_WORDS = frozenset("not no nor never without none neither nobody nothing nowhere cannot".split())
+_NEG_CLITIC = frozenset("didn doesn don isn wasn aren weren hasn haven hadn couldn wouldn shouldn mustn won can "
+                        "ain shan needn".split())
+_WORD_RX = re.compile(r"[\w'’-]+|[.!?;:\"“”(]")
+
+
+def _number(t: str) -> str | None:
+    m = _ORD_SUFFIX_RX.match(t)
+    if m:
+        return str(int(m.group(1)))
+    if t in ORDINAL_NUMBERS:
+        return ORDINAL_NUMBERS[t]
+    if _ROMAN_RX.match(t):
+        v, prev = 0, 0
+        for c in reversed(t):
+            x = _ROMAN[c]
+            v = v - x if x < prev else v + x
+            prev = max(prev, x)
+        return str(v)
+    if any(c.isdigit() for c in t):
+        return t
+    return None
+
+
+@dataclass(frozen=True)
+class Contrast:
+    """The parts of a question that the term matcher does not compare (``contrast``)."""
+
+    numbers: frozenset        # digit tokens, ordinal words, ordinal and roman numerals, as numbers
+    order: frozenset          # ORDER_WORDS present
+    degree: frozenset         # DEGREE_WORDS present
+    relation: frozenset       # RELATION_WORDS present
+    negations: int            # negation words and n't clitics ("cannot or should not": 2)
+    names: frozenset | None   # content terms of capitalised words (None: the text has no case)
+    terms: frozenset          # every content term (``bes.library.terms.terms``)
+
+
+def contrast(question: str) -> Contrast:
+    """Number, order, degree, relation and polarity words and the capitalised names of a
+    question. Names are the content terms of words written with a capital letter that do not
+    start a sentence (an acronym of two or more capitals counts anywhere); a text without
+    both upper- and lower-case letters carries no case information."""
+    toks = tokens(question)
+    nums, order, degree, rel = set(), set(), set(), set()
+    neg = 0
+    for i, t in enumerate(toks):
+        n = _number(t)
+        if n is not None:
+            nums.add(n)
+        if t in ORDER_WORDS:
+            order.add(t)
+        if t in DEGREE_WORDS:
+            degree.add(t)
+        if t in RELATION_WORDS:
+            rel.add(t)
+        if t in NEGATION_WORDS or (t == "t" and i > 0 and toks[i - 1] in _NEG_CLITIC):
+            neg += 1
+    names: set | None = None
+    if re.search(r"[a-z]", question) and re.search(r"[A-Z]", question):
+        names = set()
+        initial = True
+        for w in _WORD_RX.findall(question):
+            if w in ".!?;:":
+                initial = True
+                continue
+            w = w.strip("'’-")
+            if not w or w in "\"“”(":
+                continue
+            acronym = len(w) > 1 and w.isupper()
+            if acronym or (w[:1].isupper() and not initial):
+                names.update(t for t in terms(w) if _number(t) is None)   # numbers: own class
+            initial = False
+    return Contrast(frozenset(nums), frozenset(order), frozenset(degree), frozenset(rel), neg,
+                    None if names is None else frozenset(names), frozenset(terms(question)))
+
+
+def contrast_mismatch(user: Contrast, stored: Contrast) -> str | None:
+    """Why a stored question asks for a different fact than the user's, or None.
+
+    ``numbers`` (every digit token, ordinal and roman numeral), ``order``, ``degree``,
+    ``relation`` and the number of negations must be equal; every name of each side must occur among
+    the other side's terms ("names" when the user's names are missing from the stored
+    question, "stored_names" for the other direction). The classes are compared separately
+    because the stopword list hides most of them and the idf weights make the rest light."""
+    for k in ("numbers", "order", "degree", "relation"):
+        if getattr(user, k) != getattr(stored, k):
+            return k
+    if user.negations != stored.negations:
+        return "negation"
+    if user.names is not None and not user.names <= stored.terms:
+        return "names"
+    if stored.names is not None and not stored.names <= user.terms:
+        return "stored_names"
     return None
 
 

@@ -267,11 +267,20 @@ class LibraryView:
 
     # ------------------------------------------------------------------ retrieval
     def retrieve(self, query: str, exclude_pids: Sequence[int] = (), exclude_titles: Sequence[int] = (),
-                 kinds: Sequence[str] | None = None) -> Any:
-        """Gated retrieval (``Library.retrieve``) or ``None``."""
+                 kinds: Sequence[str] | None = None, context: Sequence[str] | None = None) -> Any:
+        """Gated retrieval (``Library.retrieve``) or ``None``. ``context``: the earlier user
+        turns of the conversation, passed on exactly as the responder passes them."""
         if not self._kinds_ok(kinds):
             return None
         kw = {"kinds": tuple(kinds)} if self.native and kinds is not None else {}
+        if context and self.native:
+            try:
+                p = self.lib.retrieve(query, exclude_pids=tuple(exclude_pids),
+                                      exclude_titles=tuple(exclude_titles),
+                                      context=list(context), **kw)
+                return None if p is None else self._wrap(p)
+            except TypeError:                       # a library object without the context argument
+                pass
         p = self.lib.retrieve(query, exclude_pids=tuple(exclude_pids),
                               exclude_titles=tuple(exclude_titles), **kw)
         return None if p is None else self._wrap(p)
@@ -462,7 +471,9 @@ def insert_retrieval(sample: Sample, lib: Any, tok, rng: np.random.Generator,
         return sample
     _count(stats, "retrieval:question_like")
     ex_p, ex_t = tuple(sample.exclude_pids), tuple(sample.exclude_titles)
-    gated = view.retrieve(query, ex_p, ex_t)
+    earlier = [tok.decode(sample.ids[a + 1:b - 1].tolist()) for u in users if u < k
+               for _, a, b in (spans[u],)]
+    gated = view.retrieve(query, ex_p, ex_t, context=earlier)
     if gated is None:
         _count(stats, "retrieval:gate_closed")
         return sample

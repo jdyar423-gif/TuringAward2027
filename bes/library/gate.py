@@ -5,9 +5,10 @@ transforms of the raw features computed by ``bes.library.retrieve.Library``):
 
 wiki (``WIKI_FEATURES``)
     log1p(s1), margin (s1 - s2) / s1 against the best passage of another article, title
-    match (share of title terms in the query), coverage s1 / s_max, exact title (the query's
-    content terms equal the title's), ambiguous title key, lead passage, lookup query,
-    log1p(distinct query terms), qa answer found in the passage
+    match (share of title terms in the query), coverage s1 / s_max, exact title (an identity
+    request whose key has a primary topic, ``bes.library.titles``), that topic is a variant
+    title (not the plain title of the key), it is a person article, lead passage, lookup
+    query, log1p(distinct query terms), qa answer found in the passage
 qa (``QA_FEATURES``)
     sym = min(cov_q, cov_e), cov_q, cov_e, question type match, query without wh-word,
     sym1 - sym2, top-2 entries agree on the answer (sym2 >= 0.5), disagree, log1p(Wq),
@@ -27,7 +28,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
-WIKI_FEATURES = ("log_s1", "margin", "title_match", "coverage", "exact_title", "ambiguous",
+WIKI_FEATURES = ("log_s1", "margin", "title_match", "coverage", "exact_title", "variant", "person",
                  "lead", "lookup", "log_terms", "cross")
 QA_FEATURES = ("sym", "cov_q", "cov_e", "type_match", "no_wh", "sym_margin", "agree", "disagree",
                "log_wq", "log_terms", "cross")
@@ -37,7 +38,7 @@ KINDS = ("wiki", "qa")
 def wiki_vector(f: dict) -> np.ndarray:
     """float64 [len(WIKI_FEATURES)] from the raw wiki features of one candidate."""
     return np.array([np.log1p(max(f["s1"], 0.0)), f["margin"], f["title_match"], f["coverage"],
-                     float(f["exact_title"]), float(f["ambiguous"]), float(f["lead"]),
+                     float(f["exact_title"]), float(f["variant"]), float(f["person"]), float(f["lead"]),
                      float(f["qtype"] == "lookup"), np.log1p(f["n_terms"]), float(f["cross"])])
 
 
@@ -124,16 +125,21 @@ def choose_threshold(p: np.ndarray, y: np.ndarray, w: np.ndarray | None = None,
 
 
 def choose_threshold_sets(p: np.ndarray, y: np.ndarray, groups, target: float = 0.5,
-                          min_t: float = 0.0) -> tuple[float, dict]:
+                          min_t: float = 0.0, negative=(), max_negative_rate: float = 0.0
+                          ) -> tuple[float, dict]:
     """Smallest threshold ``t >= min_t`` at which *every* group (dev set) whose firing set is
     non-empty has precision of ``p >= t`` at least ``target``: the largest coverage subject
     to the precision floor on each dev set separately (a pooled floor would let an easy set
-    hide a hard one). Returns ``(t, {"coverage": pooled with equal set weights, "per_set":
-    {group: (coverage, precision)}})``; ``t = inf`` when no threshold qualifies."""
+    hide a hard one). A group in ``negative`` has no right answers (its precision is 0 as
+    soon as it fires): it qualifies when at most ``max_negative_rate`` of its rows fire.
+    Returns ``(t, {"coverage": pooled with equal set weights over the other groups,
+    "per_set": {group: (coverage, precision)}})``; ``t = inf`` when no threshold qualifies."""
     p = np.asarray(p, dtype=np.float64)
     y = np.asarray(y, dtype=np.float64)
     g = np.asarray(list(groups))
     names = sorted(set(g.tolist()))
+    neg = set(negative)
+    size = {s: int((g == s).sum()) for s in names}
     cand = sorted({float(v) for v in p[np.isfinite(p)] if v >= min_t})
     best_t = float("inf")
     for t in reversed(cand):           # descending; keep the smallest qualifying threshold
@@ -141,7 +147,11 @@ def choose_threshold_sets(p: np.ndarray, y: np.ndarray, groups, target: float = 
         ok = True
         for s in names:
             m = sel & (g == s)
-            if m.any() and y[m].mean() < target:
+            if s in neg:
+                if m.sum() > max_negative_rate * size[s] + 1e-12:
+                    ok = False
+                    break
+            elif m.any() and y[m].mean() < target:
                 ok = False
                 break
         if ok:
@@ -152,7 +162,8 @@ def choose_threshold_sets(p: np.ndarray, y: np.ndarray, groups, target: float = 
         m = g == s
         f = m & (p >= best_t)
         per[s] = (float(f.sum() / max(1, m.sum())), float(y[f].mean()) if f.any() else 0.0)
-        covs.append(per[s][0])
+        if s not in neg:
+            covs.append(per[s][0])
     return best_t, {"t": best_t, "coverage": float(np.mean(covs)) if covs else 0.0, "per_set": per}
 
 
@@ -193,6 +204,15 @@ class GateModel:
 
     @classmethod
     def load(cls, out_dir: str) -> "GateModel":
+        """The saved model; a model fitted on other features (an older library) is refused."""
+        meta_path = os.path.join(out_dir, "gate.json")
+        if os.path.exists(meta_path):
+            meta = json.loads(open(meta_path).read())
+            for kd, names in FEATURES.items():
+                got = tuple(meta.get(f"{kd}_features", names))
+                if got != tuple(names):
+                    raise ValueError(f"the library's gate was fitted on the {kd} features {got}, this code "
+                                     f"computes {tuple(names)}: rebuild the library")
         return cls.from_array(np.load(os.path.join(out_dir, "gate_coef.npy")))
 
     @classmethod

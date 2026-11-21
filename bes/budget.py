@@ -62,9 +62,9 @@ PLAN_ASSETS = Assets(library_numbers=60_000_000, index_numbers=4_000_000,
 #: The library actually built by ``scripts/build_library.py`` with the default ``LibraryCfg``
 #: (docs/E1_COVERAGE.md): every stored table, and the analytical worst case of one retrieval
 #: (``Library.read_bound``: index lists 132,628 + question-answer index 58,900 + blocks,
-#: directory and title tables 41,290). Use ``assets_of(library)`` for a library on disk.
-V2_ASSETS = Assets(library_numbers=40_220_179, index_numbers=23_499_999,
-                   library_read=41_290, index_read=191_528)
+#: directory and title tables 53,695). Use ``assets_of(library)`` for a library on disk.
+V2_ASSETS = Assets(library_numbers=40_268_392, index_numbers=23_499_999,
+                   library_read=53_695, index_read=191_528)
 
 
 def assets_of(library: Any) -> Assets:
