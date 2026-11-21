@@ -341,3 +341,40 @@ class CriticCfg:
     min_rho: float = 0.3           # the critic is used only if the held-out rho reaches this
     seq_len: int = 1024            # row length when collecting hidden states
     batch_rows: int = 32           # rows per forward pass when collecting hidden states
+
+
+# ---------------------------------------------------------------------- data mixture
+@dataclass(frozen=True)
+class MixCfg:
+    """Sample transforms, library tasks and the data mixture (``bes/data/samples.py``,
+    ``bes/data/rag_format.py``, ``bes/data/mixture.py``).
+
+    Appended by the data-mixture track; not (yet) a field of ``Cfg``. Sub-kind weights are token
+    shares of the conversations in chat rows, renormalised over the sub-kinds that have data on
+    disk; library tasks also fill ``DataCfg.library_frac_base`` of the base rows. Variant
+    fractions are per built sample and are renormalised over the variants that are possible.
+    """
+
+    chat_weight: float = 0.62        # chat sources (SmolTalk family, Tulu 3, UltraChat, SYNTH)
+    rag_weight: float = 0.15         # sources that bring their own passages (SQuAD v2, SYNTH RAG, ...)
+    math_weight: float = 0.13        # math sources (GSM8K with calculator spans, Orca-Math)
+    library_weight: float = 0.10     # library tasks built from the written library
+    max_epochs: float = 8.0          # no source and no library entry is read more often than this
+    read_weight: float = 0.6         # library tasks: reading tasks from "wiki" passages ...
+    qa_weight: float = 0.4           # ... and question-answer tasks from "qa" entries
+    read_open: float = 0.45          # reading task with its own passage as the LIBRARY turn
+    read_closed: float = 0.35        # ... closed book (no LIBRARY turn)
+    read_distractor: float = 0.20    # ... with a passage of another article as the LIBRARY turn
+    read_one: float = 0.35           # reading-task answer: P(1 sentence) ...
+    read_two: float = 0.40           # ... P(2 sentences) ...
+    read_three: float = 0.25         # ... P(3 sentences) (renormalised over what the passage has)
+    section_tasks: bool = True       # also ask about known section headings ("the history of X")
+    qa_copy: float = 0.35            # question-answer task with the entry itself as LIBRARY turn
+    qa_neighbour: float = 0.35       # ... with the nearest other stored question (leave-one-out)
+    qa_closed: float = 0.30          # ... closed book
+    distractor_random: float = 0.5   # share of distractors drawn uniformly (else a ranked neighbour)
+    distractor_topk: int = 4         # ranks searched for a ranked distractor
+    read_task_tokens: float = 66.0   # mean tokens per reading-task draw, declined draws count 0
+                                     # (measured on lib_60M: 51% of draws usable, 131 tokens each)
+    qa_task_tokens: float = 44.0     # mean tokens per question-answer task (measured on NQ-open
+                                     # train pairs with a BM25 stand-in for the qa index)
