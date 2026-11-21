@@ -103,6 +103,8 @@ class ModelCfg:
     attn_impl: str = "xla"       # "xla" (dense, any backend) | "splash" (TPU)
     act_dtype: str = "float32"   # "bfloat16" on TPU
     remat: bool = False
+    table_grad: str = "onehot"   # vocabulary-table gradients: "onehot" (chunked matmul) | "take" (scatter-add)
+    loss_chunk: int = 8192       # rows of float32 [rows, V] logits per cross-entropy chunk
 
     @property
     def d_ffn(self) -> int:
@@ -131,6 +133,14 @@ class OptimCfg:
     tokens_per_step: int = 262144
     micro_seqs: int = 32         # sequences per micro-batch at seq_len 1024
     grad_clip: float = 0.0       # 0 disables
+    muon_beta2: float = 0.9      # "muon" only: EMA of the NorMuon second moment
+    ns_dtype: str = "auto"       # Polar Express dtype: "auto" (= model.act_dtype) | "float32" | "bfloat16"
+    width_scale_matrix: bool = False  # False: width factor on the Adam groups only (reference)
+    matrix_layout: str = "in_out"     # matrices stored [..., d_in, d_out] (y = x @ W) | "out_in"
+    muon_momentum_peak: float = 0.97      # "muon" only (nanochat schedule): momentum after warm-up
+    muon_momentum_start: float = 0.85     # "muon" only: momentum of the first update
+    muon_momentum_warmup_steps: int = 400  # "muon" only: linear start -> peak over these updates
+    muon_momentum_end: float = 0.90       # "muon" only: linear peak -> end over the LR warm-down
 
 
 # ------------------------------------------------------------------------------- data
@@ -165,6 +175,16 @@ class RunCfg:
     out_dir: str = "runs/final"
     data_dir: str = "data_cache"
     use_external_models: bool = True  # reward / judge models for scoring only
+    keep_ckpts: int = 3               # checkpoints kept on disk (newest first)
+    log_every: int = 50               # optimiser steps between log records
+    guard_spike: float = 1.3          # a loss above guard_spike * moving average is a spike
+    guard_patience: int = 3           # consecutive bad steps (spike or non-finite) -> rollback
+    guard_nonfinite_patience: int = 3  # consecutive non-finite steps -> rollback (1 = at once)
+    guard_ema: float = 0.99           # decay of the loss moving average (good steps only)
+    guard_warmup: int = 100           # good steps folded in before spikes are judged
+    guard_skip_steps: int = 200       # data steps skipped after a rollback
+    guard_lr_factor: float = 0.7      # learning-rate multiplier applied at every rollback
+    guard_max_rollbacks: int = 3
 
 
 # ----------------------------------------------------------------------------- decode
