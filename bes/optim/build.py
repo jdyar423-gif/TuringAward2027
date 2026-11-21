@@ -27,7 +27,10 @@ scalar    Adam                        ``lr_scalar * w``
 frozen    none (never moves)          --
 ========  ==========================  ========================================================
 
-with ``w = (d_model / lr_width_ref) ** -0.5``. Adam: betas ``(adam_b1, adam_b2)``, eps
+with ``w = (d_model / lr_width_ref) ** -0.5``. On top of the table, :func:`group_lrs` applies the
+reference's transfer rule: every group x ``(tokens_per_step / batch_ref_tokens) ** batch_exponent``
+and the matrix group x ``(horizon_tokens / data_ref_tokens) ** data_exponent`` (no data correction
+while ``horizon_tokens`` is 0). Adam: betas ``(adam_b1, adam_b2)``, eps
 ``adam_eps``, no weight decay. If ``grad_clip > 0`` the gradients of all non-frozen leaves are
 clipped jointly to that global norm inside :meth:`Optimizer.update` (the training step must not
 clip again).
@@ -106,16 +109,38 @@ def width_factor(cfg: Cfg) -> float:
     return (cfg.model.d_model / cfg.optim.lr_width_ref) ** -0.5
 
 
+def batch_factor(cfg: Cfg) -> float:
+    """``(tokens_per_step / batch_ref_tokens) ** batch_exponent`` (1 at the reference batch)."""
+    o = cfg.optim
+    if o.batch_exponent == 0 or o.tokens_per_step == o.batch_ref_tokens:
+        return 1.0
+    return (o.tokens_per_step / o.batch_ref_tokens) ** o.batch_exponent
+
+
+def data_factor(cfg: Cfg) -> float:
+    """``(horizon_tokens / data_ref_tokens) ** data_exponent``; 1 when no horizon is set."""
+    o = cfg.optim
+    if o.horizon_tokens <= 0 or o.data_exponent == 0:
+        return 1.0
+    return (o.horizon_tokens / o.data_ref_tokens) ** o.data_exponent
+
+
 def group_lrs(cfg: Cfg) -> dict[str, float]:
-    """Learning rate of every group before ``lr_scale`` (see the module table)."""
+    """Learning rate of every group before ``lr_scale`` (see the module table).
+
+    The transfer rule of the reference training script (``scripts/base_train.py`` lines 341-367
+    of ``kschwethelm/looped-lm-scaling``, MIT licence) is applied here: every group is multiplied
+    by :func:`batch_factor`, the matrix group additionally by :func:`data_factor`.
+    """
     o, w = cfg.optim, width_factor(cfg)
+    b = batch_factor(cfg)
     return {
-        "matrix": o.lr_matrix * (w if o.width_scale_matrix else 1.0),
-        "embed": o.lr_embed * w,
-        "unembed": o.lr_unembed * w,
-        "feature": o.lr_feature * w,
-        "norm": o.lr_norm * w,
-        "scalar": o.lr_scalar * w,
+        "matrix": o.lr_matrix * b * data_factor(cfg) * (w if o.width_scale_matrix else 1.0),
+        "embed": o.lr_embed * w * b,
+        "unembed": o.lr_unembed * w * b,
+        "feature": o.lr_feature * w * b,
+        "norm": o.lr_norm * w * b,
+        "scalar": o.lr_scalar * w * b,
         "frozen": 0.0,
     }
 

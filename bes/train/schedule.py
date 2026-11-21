@@ -29,11 +29,11 @@ file (``get_muon_momentum`` and ``get_weight_decay``, lines 371-386). In all thr
 fraction of iterations is replaced by ``p``.
 ``"muonh"`` keeps a constant momentum and has no weight decay, as in
 ``kschwethelm/looped-lm-scaling`` (``nanochat/gpt.py`` ``setup_optimizer``, MIT licence).
-The HyperP learning-rate corrections of ``kschwethelm/looped-lm-scaling``
-``scripts/base_train.py`` (lines 341-367) are not applied: the batch factor
-``(tokens_per_step / 2**18) ** 0.558`` is exactly 1 for the final 262,144 tokens per step, and the
-data factor ``(tokens / tokens_ref) ** -0.32`` on the matrix group needs a token horizon that a
-wall-clock schedule only knows approximately; ``optim.lr_matrix`` is set in the configuration.
+The learning-rate transfer rule of ``kschwethelm/looped-lm-scaling`` ``scripts/base_train.py``
+(lines 341-367: batch factor ``(tokens_per_step / 2**18) ** 0.558`` on every group, data factor
+``(tokens / tokens_ref) ** -0.32`` on the matrix group) is applied in ``bes.optim.build.group_lrs``
+from ``OptimCfg``; the expected token horizon of a wall-clock run is estimated by the supervisor
+from the start-up benchmark (:func:`estimate_horizon_tokens`) and fixed for the whole run.
 """
 from __future__ import annotations
 
@@ -95,6 +95,20 @@ def _clip01(p: float) -> float:
 
 
 # -------------------------------------------------------------- learning rate
+def estimate_horizon_tokens(tokens_per_second: float, train_seconds: float) -> float:
+    """Expected training tokens of a wall-clock run: measured throughput x planned training time."""
+    return max(0.0, float(tokens_per_second)) * max(0.0, float(train_seconds))
+
+
+def with_horizon(cfg: Cfg, horizon_tokens: float) -> Cfg:
+    """``cfg`` with ``optim.horizon_tokens`` set (the data factor of the matrix learning rate).
+
+    Call it once, before the optimiser is built, and keep the value for the whole run (resumes
+    included): the optimiser's learning rates are fixed at build time."""
+    from dataclasses import replace
+    return replace(cfg, optim=replace(cfg.optim, horizon_tokens=float(horizon_tokens)))
+
+
 def lr_factor(p: float, o: OptimCfg) -> float:
     """Learning-rate factor: linear warm-up from 0 over ``[0, warmup_frac]``, 1, then linear
     warm-down over the last ``warmdown_frac`` of progress to ``final_lr_frac`` at ``p = 1``.

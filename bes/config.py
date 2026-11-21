@@ -127,15 +127,15 @@ class OptimCfg:
     lr_unembed: float = 0.004
     lr_norm: float = 0.005
     lr_scalar: float = 0.01
-    lr_width_ref: int = 512      # all learning rates are multiplied by (d_model/ref)^-0.5
+    lr_width_ref: int = 640      # Adam learning rates are multiplied by (d_model/ref)^-0.5 (reference: 640)
     adam_b1: float = 0.8
     adam_b2: float = 0.95
     adam_eps: float = 1e-10
     momentum: float = 0.95
     ns_steps: int = 5
     weight_decay: float = 0.0    # used by "muon" only (cautious weight decay)
-    warmup_frac: float = 0.01
-    warmdown_frac: float = 0.65  # linear decay over the last fraction of progress
+    warmup_frac: float = 0.002
+    warmdown_frac: float = 1.0   # linear decay over the last fraction of progress (reference: all of it)
     final_lr_frac: float = 0.1
     tokens_per_step: int = 262144
     micro_seqs: int = 32         # sequences per micro-batch at seq_len 1024
@@ -149,6 +149,15 @@ class OptimCfg:
     muon_momentum_warmup_steps: int = 400  # "muon" only: linear start -> peak over these updates
     muon_momentum_end: float = 0.90       # "muon" only: linear peak -> end over the LR warm-down
     lr_feature: float = 0.01     # Adam "feature" group: register, candidate-input and trust-bias tables
+    # Learning-rate transfer rule of the reference implementation (kschwethelm/looped-lm-scaling
+    # scripts/base_train.py): the rates above are for batch_ref_tokens per step and a horizon of
+    # data_ref_tokens; other settings are corrected by power laws.
+    batch_ref_tokens: int = 262144   # tokens per step the learning rates above refer to
+    batch_exponent: float = 0.558    # every group: lr x (tokens_per_step / batch_ref_tokens) ** exponent
+    data_ref_tokens: float = 9.83e8  # training tokens lr_matrix refers to (10 x the reference model's
+                                     # effective non-embedding parameters)
+    data_exponent: float = -0.32     # matrix group: lr x (horizon_tokens / data_ref_tokens) ** exponent
+    horizon_tokens: float = 0.0      # expected training tokens of this run; 0 = no data correction
 
 
 # ------------------------------------------------------------------------------- data

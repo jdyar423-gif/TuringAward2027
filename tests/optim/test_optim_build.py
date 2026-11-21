@@ -45,7 +45,7 @@ def test_path_str():
 
 
 def test_group_learning_rates():
-    w = 1.0 / np.sqrt(768 / 512)
+    w = 1.0 / np.sqrt(768 / 640)
     lrs = group_lrs(make_cfg())
     assert lrs["matrix"] == pytest.approx(0.014)  # no width factor on the matrix group by default
     assert lrs["embed"] == pytest.approx(0.3 * w)
@@ -55,8 +55,34 @@ def test_group_learning_rates():
     assert lrs["feature"] == pytest.approx(0.01 * w)             # 30x below the embedding rate
     assert set(lrs) == set(GROUPS) and set(ADAM_GROUPS) < set(lrs)
     assert group_lrs(make_cfg(width_scale_matrix=True))["matrix"] == pytest.approx(0.014 * w)
-    assert group_lrs(make_cfg(d_model=128))["embed"] == pytest.approx(0.3 * 2.0)
-    assert group_lrs(make_cfg(d_model=128, lr_feature=0.02))["feature"] == pytest.approx(0.02 * 2.0)
+    assert group_lrs(make_cfg(d_model=128, lr_width_ref=512))["embed"] == pytest.approx(0.3 * 2.0)
+    assert group_lrs(make_cfg(d_model=128, lr_width_ref=512, lr_feature=0.02))["feature"] == \
+        pytest.approx(0.02 * 2.0)
+
+
+def test_learning_rate_transfer_rule():
+    """Reference rule: every group x (B / B_ref) ** 0.558, matrix group x (T / T_ref) ** -0.32."""
+    base = group_lrs(make_cfg())
+    assert group_lrs(make_cfg(horizon_tokens=0.0)) == base            # no horizon: no correction
+    at_ref = group_lrs(make_cfg(horizon_tokens=9.83e8))
+    assert at_ref == pytest.approx(base)                               # exactly 1 at the reference
+    long = group_lrs(make_cfg(horizon_tokens=2.0e10))
+    factor = (2.0e10 / 9.83e8) ** -0.32                                # independent arithmetic
+    assert factor == pytest.approx(0.3814, abs=2e-4)
+    assert long["matrix"] == pytest.approx(0.014 * factor)
+    for g in ADAM_GROUPS:                                              # Adam groups: untouched
+        assert long[g] == pytest.approx(base[g])
+    small = group_lrs(make_cfg(tokens_per_step=16384))
+    bf = (16384 / 262144) ** 0.558
+    assert bf == pytest.approx(0.2128, abs=2e-4)
+    for g in ("matrix",) + ADAM_GROUPS:                                # every group scales with the batch
+        assert small[g] == pytest.approx(base[g] * bf)
+    both = group_lrs(make_cfg(tokens_per_step=16384, horizon_tokens=4.0e6))
+    assert both["matrix"] == pytest.approx(0.014 * bf * (4.0e6 / 9.83e8) ** -0.32)
+    off = group_lrs(make_cfg(tokens_per_step=16384, horizon_tokens=4.0e6, batch_exponent=0.0,
+                             data_exponent=0.0))
+    assert off == pytest.approx(base)
+    assert group_lrs(make_cfg())["frozen"] == 0.0
 
 
 @pytest.mark.parametrize("kind", ["muonh", "muon"])

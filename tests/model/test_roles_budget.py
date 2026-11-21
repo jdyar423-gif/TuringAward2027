@@ -73,7 +73,8 @@ def test_optimiser_groups_of_the_model_leaves(name):
     from bes.optim.build import GROUPS
     cfg = load_config(os.path.join(ROOT, "configs", f"{name}.py"))
     opt = build(cfg, _shapes(cfg.model))
-    lrs, w = group_lrs(cfg), width_factor(cfg)
+    from bes.optim.build import batch_factor
+    lrs, w = group_lrs(cfg), width_factor(cfg) * batch_factor(cfg)
     assert set(GROUPS) == set(roles.GROUPS)
     assert lrs["feature"] == pytest.approx(cfg.optim.lr_feature * w)
     assert lrs["unembed"] == pytest.approx(cfg.optim.lr_unembed * w)

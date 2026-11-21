@@ -158,12 +158,13 @@ def test_lr_factor_shape(warmup, warmdown, final):
 
 
 def test_lr_factor_final_config_landmarks():
-    o = FINAL.optim
+    o = FINAL.optim                      # reference shape: short warm-up, linear decay throughout
+    assert (o.warmup_frac, o.warmdown_frac, o.final_lr_frac) == (0.002, 1.0, 0.1)
     assert S.lr_factor(0.0, o) == 0.0
-    assert S.lr_factor(0.005, o) == pytest.approx(0.5)
-    assert S.lr_factor(0.2, o) == 1.0 and S.lr_factor(0.35, o) == 1.0
+    assert S.lr_factor(0.001, o) == pytest.approx(0.5)
+    assert S.lr_factor(0.002, o) == pytest.approx(1.0 - 0.9 * 0.002)
+    assert S.lr_factor(0.5, o) == pytest.approx(0.55)
     assert S.lr_factor(1.0, o) == pytest.approx(0.1)
-    assert S.lr_factor(0.675, o) == pytest.approx(0.55)
 
 
 def test_data_curves():
@@ -198,7 +199,7 @@ def ref_nanochat_momentum(it, num_iterations, warmdown_ratio=0.65):
 
 def test_momentum_schedule_matches_reference():
     n = 10_000
-    cfg = Cfg(optim=OptimCfg(optimizer="muon"))
+    cfg = Cfg(optim=OptimCfg(optimizer="muon", warmdown_frac=0.65))   # the nanochat ratio
     for it in list(range(0, 800, 7)) + list(range(3000, n, 37)):
         assert S.momentum_at(it, it / n, cfg) == pytest.approx(ref_nanochat_momentum(it, n), abs=1e-12)
     muonh = Cfg(optim=OptimCfg(optimizer="muonh", momentum=0.95))
@@ -249,3 +250,16 @@ def test_fake_clock():
         c.advance(-1.0)
     with pytest.raises(ValueError):
         c.set(1.0)
+
+
+def test_horizon_estimate_feeds_the_matrix_learning_rate():
+    from bes.optim.build import group_lrs
+    cfg = Cfg()
+    tokens = S.estimate_horizon_tokens(300_000.0, 19.5 * 3600.0)
+    assert tokens == pytest.approx(2.106e10)
+    assert S.estimate_horizon_tokens(-1.0, 10.0) == 0.0
+    with_h = S.with_horizon(cfg, tokens)
+    assert with_h.optim.horizon_tokens == tokens and cfg.optim.horizon_tokens == 0.0
+    base, scaled = group_lrs(cfg), group_lrs(with_h)
+    assert scaled["matrix"] == pytest.approx(base["matrix"] * (tokens / 9.83e8) ** -0.32)
+    assert scaled["embed"] == base["embed"]

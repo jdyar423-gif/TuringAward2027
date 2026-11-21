@@ -57,8 +57,11 @@ def tiny_cfg(optimizer: str = "muonh", *, seq_len: int = 16, seq_len_late: int =
                 guard_warmup=5)
     base.update(run)
     return Cfg(model=ModelCfg(d_model=D, act_dtype="float32"),
+               # pinned optimiser settings: these tests exercise the trainer's control flow on a
+               # stand-in whose dynamics were calibrated with them (no transfer rule at 256 tokens)
                optim=OptimCfg(optimizer=optimizer, tokens_per_step=tokens_per_step,
-                              micro_seqs=micro_seqs),
+                              micro_seqs=micro_seqs, lr_width_ref=512, warmup_frac=0.01,
+                              warmdown_frac=0.65, batch_exponent=0.0, data_exponent=0.0),
                data=DataCfg(seq_len=seq_len, seq_len_late=seq_len_late),
                run=RunCfg(**base))
 
