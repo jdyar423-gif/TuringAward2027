@@ -9,8 +9,9 @@ import pytest
 
 import train_standin as M
 from bes.config import CAND_SLOTS, N_CAND_FEAT, N_CLOCKS, N_REG
+from bes.optim.build import lr_inputs
 from bes.train.train import (BATCH_KEYS, TrainState, abstract, accumulate, batch_spec,
-                             init_state, make_train_step)
+                             init_state, lower_step, make_train_step, program_fingerprint)
 
 
 def make_batch(a=4, b=3, t=8, seed=0):
@@ -132,6 +133,37 @@ def test_lr_scale_momentum_and_weight_decay_reach_the_optimiser():
     c, _ = step_m(s, batch, 1.0, np.float32(0.95), np.float32(0.0))
     assert not np.allclose(a.params["w1"], b.params["w1"])
     assert not np.allclose(b.params["w1"], c.params["w1"])
+
+
+def test_group_rates_as_inputs_equal_the_built_in_rates():
+    """The step with ``group_lr = lr_inputs(cfg)`` is bit-identical to the step without it."""
+    cfg, state, opt = setup(horizon_tokens=5e8, data_exponent=-0.32)
+    step = make_train_step(M.loss_fn, opt, cfg, donate=False)
+    for k in range(2):
+        batch = make_batch(seed=k)
+        a, ma = step(state, batch, np.float32(0.7), np.float32(0.9), np.float32(1.0))
+        b, mb = step(state, batch, np.float32(0.7), np.float32(0.9), np.float32(1.0),
+                     lr_inputs(cfg))
+        for x, y in zip(jax.tree.leaves((a, ma)), jax.tree.leaves((b, mb))):
+            assert np.array_equal(np.asarray(x), np.asarray(y))
+        state = a
+
+
+def test_program_fingerprint_ignores_the_rates_and_tells_programs_apart():
+    cfg, state, opt = setup()
+    fps = {}
+    for name, extra in (("base", {}), ("horizon", dict(horizon_tokens=1e6, data_exponent=-0.32)),
+                        ("muon", dict(optimizer="muon"))):
+        c, s, o = setup(**extra)
+        step = make_train_step(M.loss_fn, o, c)
+        fps[name] = program_fingerprint(lower_step(step, s, (4, 3, 8), ("tokens", "w"),
+                                                   lr_inputs(c)))
+        fps[name + "/builtin"] = program_fingerprint(lower_step(step, s, (4, 3, 8), ("tokens", "w")))
+    assert fps["base"] == fps["horizon"] != fps["muon"]
+    assert fps["base/builtin"] != fps["horizon/builtin"]      # rates baked in: another program
+    step = make_train_step(M.loss_fn, opt, cfg)
+    assert program_fingerprint(lower_step(step, state, (2, 6, 8), ("tokens", "w"),
+                                          lr_inputs(cfg))) != fps["base"]     # another shape
 
 
 def test_same_shape_does_not_retrace():

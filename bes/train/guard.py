@@ -20,7 +20,10 @@ last re-baseline and an exponential moving average afterwards (so a fresh baseli
 on a single sample). Bad losses never enter it, so a slow upward drift cannot hide a spike. The train
 step skips updates whose loss or gradient is non-finite, so a single bad batch leaves the state
 intact; therefore the default ``nonfinite_patience`` equals ``patience`` (set it to 1 for an
-immediate rollback on any non-finite loss).
+immediate rollback on any non-finite loss). A skipped update is a non-finite event whatever its
+loss (``observe(..., skipped=True)``, reason ``"nonfinite_grad"`` when the loss itself is
+finite): the same patience, rollback and halt apply, so a step whose gradient alone is not finite
+cannot drop every update silently.
 
 Step convention: the loss of step ``k`` is computed with the parameters after update ``k - 1``.
 A checkpoint taken after update ``s`` is trusted once the loss of step ``s + 1`` was good, so the
@@ -109,7 +112,8 @@ class Action(str, enum.Enum):
 
 @dataclass(frozen=True)
 class Decision:
-    """action; reason (``""``, ``"spike"`` or ``"nonfinite"``); first_bad: first step of the streak
+    """action; reason (``""``, ``"spike"``, ``"nonfinite"`` or ``"nonfinite_grad"``: the update
+    was skipped although the loss was finite); first_bad: first step of the streak
     (for ROLLBACK / IGNORE / HALT, else -1); skip: data steps to skip (ROLLBACK); lr_mult: the
     learning-rate multiplier from now on; threshold: ``spike * ema`` used for the judgement
     (``inf`` while warming up)."""
@@ -130,18 +134,20 @@ def _fold(state: GuardState, loss: float, cfg: GuardCfg) -> GuardState:
     return replace(state, ema=ema, count=state.count + 1, streak=0, first_bad=-1)
 
 
-def observe(state: GuardState, step: int, loss: float,
-            cfg: GuardCfg) -> tuple[GuardState, Decision]:
+def observe(state: GuardState, step: int, loss: float, cfg: GuardCfg, *,
+            skipped: bool = False) -> tuple[GuardState, Decision]:
     """Judge the training loss of ``step`` (a positive loss such as a cross-entropy); returns the
-    new state and what to do. A streak triggers when its length reaches the patience of the
-    current loss's kind (``patience`` if finite, ``nonfinite_patience`` if not)."""
+    new state and what to do. ``skipped``: the train step skipped this update (its loss or its
+    gradient was not finite); it counts as a non-finite event and its loss never enters the
+    average. A streak triggers when its length reaches the patience of the current event's kind
+    (``patience`` if finite, ``nonfinite_patience`` if not)."""
     loss = float(loss)
-    finite = math.isfinite(loss)
+    finite = math.isfinite(loss) and not skipped
     threshold = cfg.spike * state.ema if state.count >= cfg.warmup else math.inf
     if finite and loss <= threshold:
         new = _fold(state, loss, cfg)
         return new, Decision(Action.OK, lr_mult=new.lr_mult, threshold=threshold)
-    reason = "spike" if finite else "nonfinite"
+    reason = "spike" if finite else ("nonfinite" if not math.isfinite(loss) else "nonfinite_grad")
     first_bad = step if state.streak == 0 else state.first_bad
     streak = state.streak + 1
     limit = cfg.patience if finite else cfg.nonfinite_patience

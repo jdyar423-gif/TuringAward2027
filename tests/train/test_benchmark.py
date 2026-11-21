@@ -237,12 +237,22 @@ def test_real_measurement_and_canary_on_a_tiny_model(monkeypatch):
     # a plan the model refuses fails with its reason instead of stopping the benchmark
     bad = measure(B.Plan("xla", False, 4, "bogus"), lens[0])
     assert not bad.ok and "table_grad" in bad.reason
-    # the canary: determinism, parity (dense itself), safe and full both learn the motif
-    can = B.canary(cfg, B.Plan.of(cfg), motif_batches(cfg, 8, lens[0], seed=1), steps=8,
-                   min_drop=0.02)
+    programs = B.plan_programs(measure.programs, B.Plan.of(cfg))
+    assert list(programs) == [(4, 4, 16)]                   # kept for the canary and the trainer
+    # the canary: determinism, parity (dense itself), safe and full both learn the motif at the
+    # base length and run at the long one; the measured program is reused, not compiled again
+    canary_batches = {lens[0]: motif_batches(cfg, 8, lens[0], seed=1),
+                      lens[1]: motif_batches(cfg, 2, lens[1], seed=2)}
+    can = B.canary(cfg, B.Plan.of(cfg), canary_batches, steps=8, min_drop=0.02, programs=programs)
+    assert can["compiled_reused"] == {"4x4x16": True, "4x2x32": False}
     assert can["determinism"]["ok"] and can["parity"]["ok"]
     assert can["safe"]["ok"] and can["full"]["ok"], (can["safe"], can["full"])
+    for run in (can["safe"], can["full"]):
+        assert run["skipped"] == 0 and run["shapes"]["4x2x32"]["ok"]
+        assert len(run["shapes"]["4x2x32"]["losses"]) == 2
     assert can["ladder"] == {"rung": 0, "groups": [], "switches": None, "overrides": []}
+    with pytest.raises(ValueError, match="every compiled shape"):    # the long length is missing
+        B.canary(cfg, B.Plan.of(cfg), canary_batches[lens[0]], steps=8)
     # the full configuration fails, the safe one passes: the first passing rung is chosen
     real = B.loss_drops
     seen = []
@@ -252,6 +262,41 @@ def test_real_measurement_and_canary_on_a_tiny_model(monkeypatch):
         return len(seen) != 2 and real(losses, min_drop, tail)     # call 2 is the full run
 
     monkeypatch.setattr(B, "loss_drops", fake)
-    can = B.canary(cfg, B.Plan.of(cfg), motif_batches(cfg, 8, lens[0], seed=1), steps=8)
+    can = B.canary(cfg, B.Plan.of(cfg), canary_batches, steps=8)
     assert can["ladder"]["rung"] == 1 and can["ladder"]["groups"] == ["sink"]
     assert can["ladder"]["switches"] == "sink:0" and can["rungs"]["1"]["ok"]
+
+
+def test_canary_runs_every_shape_and_fails_on_skipped_updates(monkeypatch):
+    """A backward-only fault of the long program (finite loss, NaN gradient) while the sink is
+    on: the canary executes the T=32 program, the full configuration fails on its skipped
+    updates and the ladder switches the sink off (before: the canary ran the base length only and
+    passed). The same fault in every configuration stops the run with CanaryError."""
+    import jax.numpy as jnp
+
+    from bes.model import model as MM
+
+    cfg = tiny_cfg()
+    lens = B.seq_lens(cfg)
+    real = MM.loss_fn
+
+    def faulty(params, consts, batch, model_cfg, every=False):
+        loss, m = real(params, consts, batch, model_cfg)
+        if batch["tokens"].shape[-1] == lens[1] + 1:          # static: the long program only
+            on = 1.0 if every else consts["enable"]["sink"]
+            # value + 0; gradient sqrt'(0) * 0 = NaN when on == 1, 0 otherwise
+            loss = loss + 0.0 * jnp.sqrt(0.0 * jnp.sum(params["head"]["g"]) + (1.0 - on))
+        return loss, m
+
+    monkeypatch.setattr(MM, "loss_fn", faulty)
+    batches = {lens[0]: motif_batches(cfg, 8, lens[0], seed=1),
+               lens[1]: motif_batches(cfg, 2, lens[1], seed=2)}
+    can = B.canary(cfg, B.Plan.of(cfg), batches, steps=8)
+    full, safe = can["full"], can["safe"]
+    assert not full["ok"] and full["skipped"] == 2 and full["shapes"]["4x2x32"]["skipped"] == 2
+    assert all(isinstance(x, float) for x in full["losses"])     # the base length is fine
+    assert safe["ok"] and safe["skipped"] == 0
+    assert can["ladder"]["rung"] == 1 and can["ladder"]["switches"] == "sink:0"
+    monkeypatch.setattr(MM, "loss_fn", lambda *a: faulty(*a, every=True))
+    with pytest.raises(B.CanaryError, match="safe configuration"):
+        B.canary(cfg, B.Plan.of(cfg), batches, steps=8)

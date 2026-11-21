@@ -4,7 +4,8 @@ Step
 ----
 :func:`make_train_step` returns one jit-compiled function
 
-    train_step(state, batch, lr_scale, momentum=None, wd_scale=None) -> (state, metrics)
+    train_step(state, batch, lr_scale, momentum=None, wd_scale=None, group_lr=None)
+        -> (state, metrics)
 
 ``batch`` is a dict of SPEC section 3 arrays with a leading micro-batch axis ``A``. The step scans
 (``lax.scan``) over the ``A`` micro-batches, accumulating in float32 the gradient of each
@@ -13,6 +14,11 @@ gradient of the weighted mean over the whole step, ``sum_i W_i grad L_i / sum_i 
 one big batch). One optimiser update follows (``bes.optim``; it clips if ``grad_clip > 0``).
 If the loss or the gradient norm is not finite the update is skipped in-graph: parameters and
 optimiser state are returned unchanged and ``metrics["skipped"] = 1``. The state is donated.
+``group_lr`` (``{group: float32 []}``, :func:`bes.optim.build.lr_inputs`) makes every group's
+learning rate a run-time input; the trainer always passes it, so its compiled program does not
+depend on the learning rates (the horizon estimate changes the matrix rate, not the program) and
+the start-up benchmark's compiled step serves the trainer. Without it the rates fixed when the
+optimiser was built are used (compile-time constants).
 Metrics are device arrays (the caller reads them one step late):
 
 ``loss``       float32 [], weighted mean loss of the step
@@ -21,6 +27,11 @@ Metrics are device arrays (the caller reads them one step late):
 ``skipped``    int32 [], 1 if the update was skipped
 ``lr_scale``   float32 []
 ``micro``      the loss function's metrics stacked over the micro-batches (leading axis ``A``)
+
+Compilation: :func:`compile_step` lowers the step for one shape, fingerprints the lowered program
+(:func:`program_fingerprint`: its text without debug information, the argument structure and
+types, the donated arguments) and compiles it, or reuses an executable handed over with the same
+fingerprint (the benchmark's, in the same process).
 
 Interfaces taken from the model track (SPEC 4.3/4.4): ``init_fn(model_cfg, key) -> params``,
 ``loss_fn(params, consts, micro_batch, model_cfg) -> (loss, metrics)``, ``role_fn(path)`` for the
@@ -34,12 +45,29 @@ optimiser, compiles the step for every shape of the schedule before the first st
 newest checkpoint if there is one (otherwise saves the initial state), then loops: progress ``p``
 from the ledger and the clock, the :class:`~bes.train.schedule.Stage` at ``p``, the batch for the
 current data index, one asynchronous step, then the previous step's metrics (one step late) go
-to the guard and the log. Checkpoints are written on a wall-clock interval (only while the guard
-is healthy; the pending metrics are read first so that the stored guard state matches the
-stored step). The loop stops when the next step would end after the training window, at
-``max_steps``, on request, or when the guard halts. A rollback restores the newest trusted
-checkpoint, moves the data index past everything seen since plus ``guard_skip_steps``, lowers
-the learning rate and re-saves the restored state so the decision survives a crash.
+to the guard and the log: its loss, and a skipped update (non-finite loss or gradient) as a
+non-finite event (``skipped_update`` in the log), so a step whose loss is finite but whose
+gradient is not cannot be dropped silently. The loop stops when the next step would end after the
+training window, at ``max_steps``, on request, or when the guard halts.
+
+Checkpoints are written on a wall-clock interval (only while the guard is healthy; the pending
+metrics are read first so that the stored guard state matches the stored step). The initial,
+final and rollback saves are blocking and checked (the checkpoint is complete on disk before the
+trainer goes on; a failed initial save stops the set-up); interval saves may run in the
+background (``async_ckpt``) and count as saved (``ckpt`` event, ``_saved``) only once their write
+has succeeded. Every save protects the checkpoint a rollback would restore from the room-making of
+:class:`~bes.train.checkpoint.Checkpointer` (a full disk costs old checkpoints, not the trusted
+one). A final save that fails is retried once; then the parameters alone are saved under
+``<out_dir>/ckpt_params/``; if that fails too, :meth:`Trainer.run` raises
+:class:`~bes.train.checkpoint.CheckpointError`: training never ends normally without its final
+state on disk.
+
+A rollback restores the newest trusted checkpoint, moves the data index past everything seen
+since plus ``guard_skip_steps``, lowers the learning rate and re-saves the restored state so the
+decision survives a crash. When there is no checkpoint to restore, or the trusted one is more than
+``guard_max_rollback_intervals`` checkpoint intervals of training behind, the current state is
+kept instead: the learning-rate cut and the data skip apply, the guard's average is re-based on
+the state kept, and an ``alarm`` is logged (hours of training are not thrown away for a spike).
 
 Data: ``data(index, stage) -> batch`` (or an object with ``get(index, stage)``), a pure function of
 the data index for a given stage so that restarts reproduce the same batches. The trainer keeps
@@ -47,6 +75,7 @@ the index (the data cursor) and checkpoints it; :class:`IteratorData` adapts an 
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import sys
@@ -62,6 +91,7 @@ import numpy as np
 from bes.config import CAND_SLOTS, N_CAND_FEAT, N_CLOCKS, N_REG, Cfg, config_hash
 from bes.optim import build as build_optimizer
 from bes.optim import global_norm
+from bes.optim.build import lr_inputs
 from bes.train import guard as guard_lib
 from bes.train import schedule
 from bes.train.checkpoint import CheckpointError, Checkpointer, CkptInfo, read_manifest
@@ -80,6 +110,10 @@ BATCH_FIELDS: dict[str, tuple[Any, tuple[int, ...]]] = {
     "cand_feat": (np.int8, (CAND_SLOTS, N_CAND_FEAT)),
 }
 BATCH_KEYS: tuple[str, ...] = tuple(BATCH_FIELDS)
+#: Saves that are written synchronously and checked before the trainer goes on.
+BLOCKING_SAVES = frozenset({"init", "final", "rollback"})
+#: Directory (inside the trainer's ``out_dir``) of a parameters-only final checkpoint.
+PARAMS_DIR = "ckpt_params"
 
 
 def batch_spec(shape: tuple[int, int, int],
@@ -154,7 +188,7 @@ def make_train_step(loss_fn: Callable, optimizer: Any, cfg: Cfg, *, donate: bool
     model_cfg = cfg.model
 
     def train_step(state: TrainState, batch: Mapping[str, Any], lr_scale: Any,
-                   momentum: Any = None, wd_scale: Any = None):
+                   momentum: Any = None, wd_scale: Any = None, group_lr: Any = None):
         grads, loss, weight, micro = accumulate(loss_fn, state.params, state.consts, batch,
                                                 model_cfg)
         gnorm = global_norm(grads)
@@ -163,6 +197,8 @@ def make_train_step(loss_fn: Callable, optimizer: Any, cfg: Cfg, *, donate: bool
             kw["momentum"] = momentum
         if wd_scale is not None:
             kw["wd_scale"] = wd_scale
+        if group_lr is not None:
+            kw["group_lr"] = group_lr
         lr_scale = jnp.asarray(lr_scale, F32)
         params, opt_state = optimizer.update(grads, state.opt_state, state.params, lr_scale, **kw)
         ok = jnp.isfinite(loss) & jnp.isfinite(gnorm)
@@ -178,6 +214,51 @@ def make_train_step(loss_fn: Callable, optimizer: Any, cfg: Cfg, *, donate: bool
         return new_state, metrics
 
     return jax.jit(train_step, donate_argnums=(0,) if donate else ())
+
+
+# ------------------------------------------------------------------------ compilation
+def lower_step(step_fn: Callable, state: Any, shape: tuple[int, int, int],
+               batch_keys: tuple[str, ...] = BATCH_KEYS, group_lr: Any = None):
+    """``step_fn.lower`` for batches of ``shape``: the abstract state, the SPEC batch, three
+    float32 scalars (``lr_scale``, ``momentum``, ``wd_scale``) and, if given, the group rates."""
+    scalar = jax.ShapeDtypeStruct((), jnp.float32)
+    args = [abstract(state), batch_spec(shape, batch_keys), scalar, scalar, scalar]
+    if group_lr is not None:
+        args.append(abstract(group_lr))
+    return step_fn.lower(*args)
+
+
+def program_fingerprint(lowered: Any) -> str:
+    """Hex digest identifying a lowered program: its StableHLO text without debug information
+    (no source locations), the argument tree, every argument's shape, dtype and weak type, and
+    the donated arguments. Two lowerings with the same fingerprint compile to the same function
+    of the same arguments, so one's executable serves the other."""
+    h = hashlib.sha256(lowered.as_text().encode())
+    h.update(str(lowered.in_tree).encode())
+    avals = [(tuple(a.shape), str(a.dtype), bool(getattr(a, "weak_type", False)))
+             for a in jax.tree.leaves(lowered.in_avals)]
+    h.update(repr(avals).encode())
+    h.update(repr(tuple(lowered.donate_argnums)).encode())
+    return h.hexdigest()
+
+
+def compile_step(step_fn: Callable, state: Any, shape: tuple[int, int, int],
+                 batch_keys: tuple[str, ...] = BATCH_KEYS, group_lr: Any = None,
+                 reuse: tuple[str, Any] | None = None) -> tuple[Any, dict[str, Any]]:
+    """``(executable, info)`` of ``step_fn`` at ``shape`` (see :func:`lower_step`).
+
+    reuse: ``(fingerprint, executable)`` compiled elsewhere (the start-up benchmark); it is
+    returned instead of compiling when its fingerprint equals this lowering's. ``info``:
+    ``fingerprint``, ``reused``, ``seconds`` (lowering plus compilation)."""
+    t0 = time.perf_counter()
+    lowered = lower_step(step_fn, state, shape, batch_keys, group_lr)
+    fp = program_fingerprint(lowered)
+    if reuse is not None and reuse[0] == fp:
+        return reuse[1], {"fingerprint": fp, "reused": True,
+                          "seconds": round(time.perf_counter() - t0, 3)}
+    compiled = lowered.compile()
+    return compiled, {"fingerprint": fp, "reused": False,
+                      "seconds": round(time.perf_counter() - t0, 3)}
 
 
 # ------------------------------------------------------------------------------ data
@@ -271,12 +352,14 @@ class Trainer:
     batch_keys: SPEC section 3 keys the data provides and the loss function reads.
     eval_fn: ``eval_fn(state, step) -> dict | None`` called every ``eval_every_min``.
     log_fn: ``log_fn(record)``; default :class:`JsonlLog` to ``train_log.jsonl``.
-    async_ckpt: write checkpoints from a background thread. resume: restore the newest
+    async_ckpt: write interval checkpoints from a background thread. resume: restore the newest
     checkpoint of ``out_dir`` if there is one. force: load checkpoints written under another
-    configuration hash.
+    configuration hash. programs: ``{shape: (fingerprint, executable)}`` compiled steps to reuse
+    when the trainer's own lowering has the same fingerprint (:func:`compile_step`).
 
     After :meth:`run`: ``history`` holds ``(step, p, lr, loss, seq_len)`` for every step whose
-    loss was read, ``events`` the non-step log records.
+    loss was read, ``events`` the non-step log records, ``compile_info`` per shape whether its
+    executable was reused, ``programs`` the compiled steps with their fingerprints.
     """
 
     def __init__(self, cfg: Cfg, *, loss_fn: Callable, init_fn: Callable, data: Any,
@@ -285,7 +368,8 @@ class Trainer:
                  deadline: float | None = None, max_steps: int | None = None,
                  batch_keys: tuple[str, ...] = BATCH_KEYS, eval_fn: Callable | None = None,
                  log_fn: Callable[[dict], None] | None = None, verbose: bool = False,
-                 async_ckpt: bool = False, resume: bool = True, force: bool = False) -> None:
+                 async_ckpt: bool = False, resume: bool = True, force: bool = False,
+                 programs: Mapping[tuple[int, int, int], tuple[str, Any]] | None = None) -> None:
         self.cfg = cfg
         self.loss_fn, self.init_fn = loss_fn, init_fn
         self.role_fn, self.consts_fn = role_fn, consts_fn
@@ -299,13 +383,26 @@ class Trainer:
         self.log = log_fn if log_fn is not None else JsonlLog(self.out_dir / "train_log.jsonl",
                                                               verbose)
         self.async_ckpt, self.resume, self.force = async_ckpt, resume, force
+        self._programs = dict(programs or {})
         self.guard_cfg = guard_lib.GuardCfg.from_run(cfg.run)
         self.config_hash = config_hash(cfg)
         self.shapes = schedule.shapes(cfg)
         self.history: list[tuple[int, float, float, float, int]] = []
         self.events: list[dict] = []
+        self.skipped_updates = 0
         self.ready = False
         self._stop_requested = False
+        self._bg: tuple[CkptInfo, tuple[int, int], str] | None = None
+
+    @property
+    def params_root(self) -> Path:
+        """Root of a parameters-only final checkpoint (written only when the full one fails)."""
+        return self.out_dir / PARAMS_DIR
+
+    @property
+    def programs(self) -> dict[tuple[int, int, int], tuple[str, Any]]:
+        """``{shape: (fingerprint, executable)}`` of the compiled steps (after :meth:`setup`)."""
+        return {s: (self.compile_info[s]["fingerprint"], self.compiled[s]) for s in self.compiled}
 
     # ------------------------------------------------------------------ setup
     def _run_info(self, now: float) -> tuple[float, float]:
@@ -338,28 +435,32 @@ class Trainer:
         self.step = 0
         self.cursor = 0
         self.guard = guard_lib.GuardState()
+        self.skipped_updates = 0
         self._observed_regime: str | None = None
         self._dispatched_regime: str | None = None
+        self._bg = None
+        self._saved: tuple[int, int] | None = None
+        self._saved_info: CkptInfo | None = None
+        self._halt_restored = False
         k_init, self.rng = jax.random.split(jax.random.key(self.cfg.run.seed))
         consts = self.consts_fn(self.cfg.model) if self.consts_fn is not None else {}
         self._consts_host = jax.device_get(consts)  # the state's copy is donated every step
         self.state, self.optimizer = init_state(self.cfg, self.init_fn, self.role_fn, k_init,
                                                 consts)
         self.step_fn = make_train_step(self.loss_fn, self.optimizer, self.cfg)
-        spec = abstract(self.state)
-        scalar = jax.ShapeDtypeStruct((), jnp.float32)
-        self.compiled = {}
+        self.group_lr = lr_inputs(self.cfg)
+        self.compiled, self.compile_info = {}, {}
         for shape in self.shapes:
-            lowered = self.step_fn.lower(spec, batch_spec(shape, self.batch_keys), scalar, scalar,
-                                         scalar)
-            self.compiled[shape] = lowered.compile()
+            self.compiled[shape], self.compile_info[shape] = compile_step(
+                self.step_fn, self.state, shape, self.batch_keys, self.group_lr,
+                reuse=self._programs.get(shape))
         self.ckpt = Checkpointer(self.out_dir / "ckpt", self.config_hash,
                                  keep=self.cfg.run.keep_ckpts, async_write=self.async_ckpt)
         restored = self.ckpt.restore(self._ckpt_tree(), force=self.force) if self.resume else None
         if restored is not None:
             tree, man, info = restored
             meta = man["meta"]
-            self._install(tree, man)
+            self._install(tree, man, info)
             self.guard = guard_lib.GuardState.from_dict(meta["guard"])
             self._observed_regime = meta.get("regime")
             # [snapshot, start of this process) is lost; this process's set-up is set-up.
@@ -373,18 +474,21 @@ class Trainer:
         self._last_eval = now
         self._step_est = 0.0
         self.ready = True
+        compiled = {"x".join(map(str, s)): {k: v for k, v in c.items() if k != "fingerprint"}
+                    for s, c in self.compile_info.items()}
         self._event("setup", shapes=[list(s) for s in self.shapes], deadline=self.deadline,
-                    train_end=self.train_end, ledger=self.ledger.summary(now))
+                    train_end=self.train_end, ledger=self.ledger.summary(now), compile=compiled)
 
     def _ckpt_tree(self) -> dict:
         return {"state": self.state, "rng": self.rng}
 
-    def _install(self, tree: dict, man: dict) -> None:
+    def _install(self, tree: dict, man: dict, info: CkptInfo | None = None) -> None:
         """Adopt a restored checkpoint; the current consts (switches) replace the stored ones."""
         state, self.rng = tree["state"], tree["rng"]
         self.step = int(man["step"])
         self.cursor = int(man["meta"]["cursor"])
         self._saved = (self.step, self.cursor)
+        self._saved_info = info
         stored = jax.device_get(state.consts)
         same = jax.tree.structure(stored) == jax.tree.structure(self._consts_host) and all(
             np.array_equal(a, b) for a, b in zip(jax.tree.leaves(stored),
@@ -410,38 +514,114 @@ class Trainer:
         self._event("consts", note="set_consts")
 
     # --------------------------------------------------------------- checkpoints
-    def _flush_writer(self) -> None:
-        """Wait for a background checkpoint write; a failure is logged, not raised."""
+    def _collect_writer(self, block: bool = True) -> None:
+        """Record the background save once its write has finished: success counts the state as
+        saved (``_saved``, ``ckpt`` event), a failure is logged (``ckpt_error``). With
+        ``block=False`` it returns at once while the write is still running."""
+        if self._bg is None:
+            return
+        if not block and not self.ckpt.idle():
+            return
+        info, saved, reason = self._bg
+        self._bg = None
         try:
             self.ckpt.wait()
+            read_manifest(info.path)          # complete on disk
         except CheckpointError as e:
-            self._event("ckpt_error", reason=str(e))
+            self._event("ckpt_error", step=saved[0], reason=f"{reason}: {e}")
+            return
+        self._record_save(info, saved, reason)
+
+    def _record_save(self, info: CkptInfo, saved: tuple[int, int], reason: str) -> None:
+        self._saved, self._saved_info = saved, info
+        self._write_ledger(self.clock())
+        job = self.ckpt.last_job
+        extra = {k: job[k] for k in ("pruned", "retried") if job.get(k)}
+        self._event("ckpt", step=saved[0], reason=reason, path=info.name, **extra)
+
+    def _protect(self) -> list[int]:
+        """Sequence numbers a save must not delete to make room: the checkpoint a rollback would
+        restore now (for the current bad streak, or for one starting after this step)."""
+        first_bad = self.guard.first_bad if not self.guard.healthy else self.step + 2
+        target = self._trusted(first_bad)
+        return [] if target is None else [target.seq]
 
     def _save(self, reason: str, *, fatal: bool = False) -> CkptInfo | None:
-        """Checkpoint the current state (the caller has read its step's metrics). A failed write
-        is logged and retried at the next interval unless ``fatal``; returns ``None`` then."""
-        self._flush_writer()
+        """Checkpoint the current state (the caller has read its step's metrics).
+
+        ``init``, ``final`` and ``rollback`` saves (and every save without ``async_ckpt``) are
+        blocking and checked: the returned checkpoint is complete on disk. Other saves go to the
+        background writer and are recorded when their write has succeeded
+        (:meth:`_collect_writer`); ``None`` is returned for them. A failed write is logged
+        (``ckpt_error``) and returns ``None``, or raises :class:`CheckpointError` if ``fatal``."""
+        self._collect_writer()
+        blocking = reason in BLOCKING_SAVES or not self.async_ckpt
+        saved = (self.step, self.cursor)
         phase = self.ledger.phase
         now = self.clock()
         self.ledger.switch("ckpt", now)
+        info, error = None, None
         try:
             meta = {"cursor": self.cursor, "ledger": self.ledger.snapshot(now).to_dict(),
                     "guard": self.guard.to_dict(), "regime": self._observed_regime,
                     "reason": reason, "deadline": self.deadline, "train_end": self.train_end}
-            info = self.ckpt.save(self._ckpt_tree(), step=self.step, meta=meta)
+            info = self.ckpt.save(self._ckpt_tree(), step=self.step, meta=meta, blocking=blocking,
+                                  protect=self._protect())
+            if blocking:
+                read_manifest(info.path)      # checked: complete on disk
         except (CheckpointError, OSError, ValueError, TypeError) as e:
-            if fatal:
-                raise
-            info = None
-            self._event("ckpt_error", reason=f"{reason}: {e!r}")
+            info, error = None, e
         now = self.clock()
         self.ledger.switch(phase, now)
         self._last_ckpt = now
-        if info is not None:
-            self._saved = (self.step, self.cursor)
-            self._write_ledger(now)
-            self._event("ckpt", reason=reason, path=info.name)
+        if error is not None:
+            self._event("ckpt_error", reason=f"{reason}: {error!r}")
+            if fatal:
+                raise CheckpointError(f"the {reason} checkpoint could not be written: "
+                                      f"{error!r}") from error
+            return None
+        if not blocking:
+            self._bg = (info, saved, reason)
+            return None
+        self._record_save(info, saved, reason)
         return info
+
+    def _save_params_only(self) -> CkptInfo | None:
+        """Blocking save of the parameters and consts alone (``{"state": {"params", "consts"}}``,
+        readable by ``bes.decode.respond.load_checkpoint``) under :attr:`params_root`."""
+        now = self.clock()
+        meta = {"kind": "params", "reason": "final", "cursor": self.cursor,
+                "ledger": self.ledger.snapshot(now).to_dict(), "guard": self.guard.to_dict(),
+                "deadline": self.deadline, "train_end": self.train_end}
+        tree = {"state": {"params": self.state.params, "consts": self.state.consts}}
+        try:
+            mgr = Checkpointer(self.params_root, self.config_hash, keep=1)
+            info = mgr.save(tree, step=self.step, meta=meta, blocking=True, protect=())
+            read_manifest(info.path)
+        except (CheckpointError, OSError, ValueError, TypeError) as e:
+            self._event("ckpt_error", reason=f"final (parameters only): {e!r}")
+            return None
+        self._event("ckpt", reason="final_params", path=f"{PARAMS_DIR}/{info.name}")
+        return info
+
+    def _final_save(self) -> tuple[CkptInfo, str]:
+        """The final checkpoint, blocking and checked: the full state, retried once, then the
+        parameters alone. Returns ``(info, kind)`` with kind ``"full"`` or ``"params"``; raises
+        :class:`CheckpointError` when nothing could be written."""
+        for attempt in (1, 2):
+            info = self._save("final")
+            if info is not None:
+                return info, "full"
+            self._event("alarm", reason=f"final checkpoint attempt {attempt} of 2 failed")
+        info = self._save_params_only()
+        if info is not None:
+            self._event("alarm", reason=f"only the parameters of the final state were saved "
+                                        f"({info.path}); the optimiser state is lost")
+            return info, "params"
+        self._event("alarm", reason="the final state could not be written at all")
+        raise CheckpointError(f"training ended at step {self.step} but neither the final state nor "
+                              f"its parameters could be written under {self.out_dir} (see the "
+                              "ckpt_error events)")
 
     def _write_ledger(self, now: float) -> None:
         try:
@@ -449,11 +629,11 @@ class Trainer:
         except OSError as e:  # monitoring only; never fatal
             self._event("warning", reason=f"ledger.json not written: {e}")
 
-    def _restore_trusted(self, first_bad: int, *, count: bool, skip: int = 0) -> CkptInfo | None:
-        """Restore the newest trusted checkpoint for a bad streak starting at ``first_bad``,
-        move the data cursor ``skip`` past the current one and fix the ledger; ``None`` if there
-        is no checkpoint to restore. The live guard state is kept."""
-        self._flush_writer()
+    def _trusted(self, first_bad: int) -> CkptInfo | None:
+        """The checkpoint a rollback for a bad streak starting at ``first_bad`` restores
+        (:func:`bes.train.guard.rollback_target` over the checkpoints on disk), ``None`` if there
+        is none."""
+        self._collect_writer()
         ckpts = self.ckpt.list()
         verified = []
         for c in ckpts:
@@ -465,13 +645,43 @@ class Trainer:
         target = guard_lib.rollback_target([c.step for c in ckpts], first_bad, verified)
         if target is None:
             return None
-        seq = max(c.seq for c in ckpts if c.step == target)
-        restored = self.ckpt.restore(self._ckpt_tree(), force=self.force, max_seq=seq)
+        return max((c for c in ckpts if c.step == target), key=lambda c: c.seq)
+
+    def _rollback_veto(self, target: CkptInfo | None) -> str | None:
+        """Why a rollback to ``target`` keeps the current state instead, or ``None``: there is
+        no checkpoint, or it holds more than ``guard_max_rollback_intervals`` checkpoint
+        intervals of training less than now."""
+        if target is None:
+            return "there is no checkpoint to restore"
+        run = self.cfg.run
+        limit = run.guard_max_rollback_intervals * run.ckpt_every_min * 60.0
+        if limit <= 0:
+            return None
+        try:
+            kept = Ledger.from_dict(read_manifest(target.path)["meta"]["ledger"])
+        except (CheckpointError, KeyError, TypeError, ValueError):
+            return None                      # unreadable: restore() decides
+        behind = self.ledger.train_seconds(self.clock()) - kept.train_seconds()
+        if behind <= limit:
+            return None
+        return (f"the newest trusted checkpoint {target.name} is {behind:.0f} s of training "
+                f"behind, more than {run.guard_max_rollback_intervals:g} checkpoint intervals "
+                f"({limit:.0f} s)")
+
+    def _restore_trusted(self, target: CkptInfo, *, count: bool, skip: int = 0) -> CkptInfo | None:
+        """Restore ``target`` (or the newest loadable checkpoint before it), move the data cursor
+        ``skip`` past the current one and fix the ledger; ``None`` if nothing could be
+        restored. The live guard state is kept."""
+        try:
+            restored = self.ckpt.restore(self._ckpt_tree(), force=self.force, max_seq=target.seq)
+        except CheckpointError as e:
+            self._event("ckpt_error", reason=f"restore for the guard: {e}")
+            return None
         if restored is None:
             return None
         tree, man, info = restored
         cursor_before = self.cursor
-        self._install(tree, man)
+        self._install(tree, man, info)
         new_cursor = max(self.cursor, cursor_before + skip)
         skipped = new_cursor - self.cursor
         self.cursor = new_cursor
@@ -490,16 +700,36 @@ class Trainer:
         if action not in (guard_lib.Action.ROLLBACK, guard_lib.Action.HALT):
             return None
         self.ledger.switch("setup", self.clock())
+        target = self._trusted(decision.first_bad)
         if action is guard_lib.Action.ROLLBACK:
-            info = self._restore_trusted(decision.first_bad, count=True, skip=decision.skip)
-            if info is not None:
-                self._event("rollback", reason=decision.reason, first_bad=decision.first_bad,
-                            path=info.name, ckpt_step=info.step, cursor=self.cursor,
-                            lr_mult=self.guard.lr_mult, rollbacks=self.guard.rollbacks)
-                self._save("rollback")  # makes the new guard state and cursor durable
-                self.ledger.switch("train", self.clock())
-                return "rollback"
-        info = self._restore_trusted(decision.first_bad, count=False)
+            veto = self._rollback_veto(target)
+            if veto is None:
+                info = self._restore_trusted(target, count=True, skip=decision.skip)
+                if info is not None:
+                    self._event("rollback", reason=decision.reason, first_bad=decision.first_bad,
+                                path=info.name, ckpt_step=info.step, cursor=self.cursor,
+                                lr_mult=self.guard.lr_mult, rollbacks=self.guard.rollbacks)
+                    if self._save("rollback") is None:  # makes the guard state and cursor durable
+                        self._event("alarm", reason="the restored state could not be re-saved: "
+                                                    "a crash now would replay the skipped data")
+                    self.ledger.switch("train", self.clock())
+                    return "rollback"
+                veto = "no checkpoint could be restored"
+            # keep the current state: the guard's learning-rate cut and the data skip apply, and
+            # its average is re-based on the state kept (as when its rollbacks are exhausted)
+            self.guard = guard_lib.rebase(self.guard)
+            self.cursor += decision.skip
+            self.ledger.data_skipped += int(decision.skip)
+            self._event("alarm", kind="rollback_not_done", reason=(
+                f"rollback for the {decision.reason} streak from step {decision.first_bad} not "
+                f"done: {veto}; training goes on from the current state with the learning rate "
+                f"x {self.guard.lr_mult:.4g} and {decision.skip} data steps skipped"),
+                first_bad=decision.first_bad, lr_mult=self.guard.lr_mult,
+                rollbacks=self.guard.rollbacks, cursor=self.cursor)
+            self.ledger.switch("train", self.clock())
+            return None
+        info = None if target is None else self._restore_trusted(target, count=False)
+        self._halt_restored = info is not None
         self._event("halt", reason=decision.reason, first_bad=decision.first_bad,
                     path=None if info is None else info.name,
                     ckpt_step=None if info is None else info.step)
@@ -526,17 +756,26 @@ class Trainer:
         return jax.device_put(out)
 
     def _consume(self, info: StepInfo, metrics: Any) -> guard_lib.Decision:
-        """Read a step's metrics (blocks until it is done) and pass its loss to the guard."""
+        """Read a step's metrics (blocks until it is done) and pass its loss, and whether its
+        update was skipped, to the guard."""
         m = jax.device_get(metrics)
         loss = float(m["loss"])
+        skipped = int(m["skipped"]) != 0
         if info.regime != self._observed_regime:
             if self._observed_regime is not None:
                 self.guard = guard_lib.rebase(self.guard)
             self._observed_regime = info.regime
-        self.guard, decision = guard_lib.observe(self.guard, info.step, loss, self.guard_cfg)
+        self.guard, decision = guard_lib.observe(self.guard, info.step, loss, self.guard_cfg,
+                                                 skipped=skipped)
         self.history.append((info.step, info.p, info.lr, loss, info.stage.seq_len))
+        if skipped:
+            self.skipped_updates += 1
+            self._event("skipped_update", step=info.step, loss=loss,
+                        grad_norm=float(m["grad_norm"]), seq_len=info.stage.seq_len,
+                        action=decision.action.value, reason=decision.reason,
+                        total=self.skipped_updates)
         every = max(1, self.cfg.run.log_every)
-        notable = decision.action is not guard_lib.Action.OK or int(m["skipped"]) != 0
+        notable = decision.action is not guard_lib.Action.OK or skipped
         if info.step % every == 0 or notable:
             est = self._step_est
             self.log({"event": "step", "step": info.step, "p": info.p, "lr": info.lr,
@@ -579,7 +818,8 @@ class Trainer:
 
     def run(self) -> dict:
         """Train until the window closes (or ``max_steps`` / a stop request / a guard halt), save
-        the final state and return a summary."""
+        the final state and return a summary. Raises :class:`CheckpointError` when the final
+        state could not be written (see :meth:`_final_save`)."""
         if not self.ready:
             self.setup()
         clock = self.clock
@@ -608,7 +848,7 @@ class Trainer:
             dt, last_train = train_now - last_train, train_now
             self._step_est = dt if self._step_est == 0.0 else 0.8 * self._step_est + 0.2 * dt
             self.state, metrics = self.compiled[stage.shape](
-                self.state, batch, np.float32(lr), np.float32(mom), np.float32(wd))
+                self.state, batch, np.float32(lr), np.float32(mom), np.float32(wd), self.group_lr)
             self.step += 1
             self.ledger.add_step(stage.tokens_per_step)
             info = StepInfo(self.step, p, lr, stage, regime, t)
@@ -630,8 +870,9 @@ class Trainer:
                 self._dispatched_regime = None
                 last_train = self.ledger.train_seconds(clock())
                 continue
+            self._collect_writer(block=False)
             self._maybe_eval()
-        final = None
+        final, final_kind = None, None
         if pending is not None:  # the last step's loss decides whether its state is kept
             outcome = self._act(self._consume(*pending))
             pending = None
@@ -639,15 +880,20 @@ class Trainer:
                 reason = "halt"
             elif outcome == "rollback":  # no time left to continue: keep the restored state
                 self._event("final_rollback", ckpt_step=self.step)
-        if reason != "halt" and self._saved != (self.step, self.cursor):
-            final = self._save("final")
-        self._flush_writer()
+        self._collect_writer()
+        kept_by_halt = reason == "halt" and self._halt_restored
+        if not kept_by_halt and self._saved != (self.step, self.cursor):
+            final, final_kind = self._final_save()      # raises when nothing could be written
+        holder = final if final is not None else self._saved_info
         now = clock()
         self.ledger.switch("done", now)
         self._write_ledger(now)
         p_end = schedule.progress_of(self.ledger, now, self.train_end)
         summary = {"reason": reason, "step": self.step, "cursor": self.cursor, "p_end": p_end,
                    "time": now, "train_end": self.train_end, "ledger": self.ledger.to_dict(),
-                   "guard": self.guard.to_dict(), "final": None if final is None else final.name}
-        self._event("end", reason=reason, p=p_end)
+                   "guard": self.guard.to_dict(), "final": None if final is None else final.name,
+                   "final_kind": final_kind,
+                   "checkpoint": None if holder is None else str(holder.path),
+                   "skipped_updates": self.skipped_updates}
+        self._event("end", reason=reason, p=p_end, checkpoint=summary["checkpoint"])
         return summary

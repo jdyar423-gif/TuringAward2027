@@ -51,6 +51,8 @@ from bes.train import supervisor as SV  # noqa: E402
 from bes.train.ledger import atomic_write_json  # noqa: E402
 
 EXIT_OK, EXIT_FAILED, EXIT_INTERRUPTED = 0, 1, 3
+#: Share of the preference-optimisation slice for the health samples (start and candidates).
+HEALTH_TIME_FRAC = 0.25
 
 
 def _say(msg: str) -> None:
@@ -73,6 +75,8 @@ class Run:
         self._sidecar_ckpt: str | None = None
         self._sidecar_started = 0.0
         self._sidecar_last_s = 0.0
+        #: (plan key, {shape: (fingerprint, executable)}) compiled by the benchmark of this process
+        self._programs: tuple[str, dict] | None = None
 
     # ------------------------------------------------------------------ helpers
     def log(self, msg: str) -> None:
@@ -147,16 +151,31 @@ class Run:
         if self.bg is not None:
             self.bg.stop()
 
+    def train_checkpoint(self) -> Path:
+        """The trainer's final weights: its newest checkpoint, or the parameters-only one it
+        wrote when the full final save failed (``train/ckpt_params``) if that holds a later
+        step (on a tie the full checkpoint wins)."""
+        from bes.decode import respond
+        from bes.train import checkpoint as CK
+        from bes.train.train import PARAMS_DIR
+
+        best = None
+        for rank, root in ((1, self.paths.train / "ckpt"), (0, self.paths.train / PARAMS_DIR)):
+            info = CK.latest(root)
+            if info is not None and (best is None or (info.step, rank) > best[0]):
+                best = ((info.step, rank), info.path)
+        return best[1] if best is not None else respond.find_checkpoint(self.paths.train)
+
     def latest_params(self, ecfg, prefer_post: bool = True):
         """``(params, consts, info, ckpt dir, source)``: the post-DPO checkpoint when accepted,
-        else the trainer's newest one."""
+        else the trainer's final weights (:meth:`train_checkpoint`)."""
         from bes.decode import respond
 
         post = self.paths.post / "ckpt"
         if prefer_post and (self.man.get("prefopt") or {}).get("accepted") and post.exists():
             path, source = respond.find_checkpoint(post), "prefopt"
         else:
-            path, source = respond.find_checkpoint(self.paths.train), "train"
+            path, source = self.train_checkpoint(), "train"
         params, consts, info = respond.load_checkpoint(path, ecfg.model)
         return params, consts, info, Path(path), source
 
@@ -165,17 +184,19 @@ class Run:
         host = SV.host_report(self.paths.out)
         dev = SV.device_report()
         warnings = SV.check_devices(dev, self.args.allow_cpu)
-        need = SV.disk_need_gb(self.cfg)
+        cp = SV.core_plan()
+        self.cp = cp
+        estimate = SV.disk_need(self.cfg, tokenize_workers=len(cp.tokenize))
+        need = estimate["total_gb"]
         if host["disk_free_gb"] < need:
             msg = (f"free disk {host['disk_free_gb']:.1f} GB under {self.paths.out} is below the "
-                   f"estimated need of {need:.1f} GB (downloads at the registry caps plus shards)")
+                   f"estimated need of {need:.1f} GB ({estimate['rule']}; raw files deleted after "
+                   f"tokenisation: {estimate['delete_raw_after_tokenize']})")
             if dev.get("backend") == "tpu":
                 raise SV.PreflightError(msg + "; lower the caps (run.download_sources) or free disk")
             warnings.append(msg)
         if dev.get("backend") == "tpu" and host["ram_gb"] and host["ram_gb"] < 32:
             warnings.append(f"only {host['ram_gb']:.0f} GB of host memory")
-        cp = SV.core_plan()
-        self.cp = cp
         for w in warnings:
             self.log(f"preflight WARNING: {w}")
         self.log(f"preflight: jax {dev['jax']} backend {dev['backend']} devices "
@@ -184,7 +205,7 @@ class Run:
                  f"HF_TOKEN {'set' if host['hf_token'] else 'not set'}")
         self.man = SV.update_manifest(self.paths.out, host=host, devices=dev,
                                       core_plan=cp.to_dict(), preflight_warnings=warnings,
-                                      disk_need_gb=round(need, 1))
+                                      disk_need_gb=round(need, 1), disk_need=estimate)
         return {"backend": dev["backend"], "devices": [d["kind"] for d in dev["devices"]],
                 "cores": host["cores"], "warnings": warnings}
 
@@ -285,15 +306,28 @@ class Run:
         sel = B.select_plan(ms, lens, B.time_shares(cfg))
         plan = sel["plan"]
         self.log(f"benchmark: chosen plan {plan.key} ({sel['expected_tps']:,.0f} tok/s expected)")
+        programs = real_measure.programs         # the measured plans' compiled steps
+        canary_batches = {t: batches[t] for t in lens}
+
+        def run_canary(p):
+            # every compiled shape of the run; the measurement's executables are reused
+            return B.canary(cfg, p, canary_batches, steps=cfg.run.canary_steps, seed=cfg.run.seed,
+                            log=self.log, programs=B.plan_programs(programs, p))
+
         # the canary always runs to the end: a correctness check is not cut for time
-        can = B.canary(cfg, plan, batches[lens[0]], steps=cfg.run.canary_steps, seed=cfg.run.seed,
-                       log=self.log)
         warnings = []
-        if not can["parity"]["ok"]:
-            # the flash kernel and the dense attention disagree: train with the dense attention
-            self.log(f"benchmark: PARITY FAILED for {plan.key} ({can['parity']}); falling back to "
-                     "the dense attention")
-            warnings.append(f"parity failed for {plan.key}: {can['parity']}")
+        try:
+            can = run_canary(plan)
+            problem = None if can["parity"]["ok"] else f"parity failed for {plan.key}: {can['parity']}"
+        except B.CanaryError as e:
+            if plan.attn_impl != "splash":
+                raise
+            can, problem = None, f"canary failed for {plan.key}: {e}"
+        if problem is not None:
+            # the flash kernel and the dense attention disagree, or the flash plan does not train
+            # at some shape: train with the dense attention
+            self.log(f"benchmark: WARNING {problem}; falling back to the dense attention")
+            warnings.append(problem)
             dense = next((c["plan"] for c in sel["candidates"] if c["plan"].startswith("xla-")), None)
             if dense is not None:
                 plan = next(m.plan for m in ms if m.plan.key == dense)
@@ -307,8 +341,10 @@ class Run:
                     raise B.BenchmarkError(f"the dense fallback {plan.key} does not run: "
                                            f"{[m.reason for m in extra]}")
             sel = B.select_plan([m for m in ms if m.plan == plan], lens, B.time_shares(cfg))
-            can = B.canary(cfg, plan, batches[lens[0]], steps=cfg.run.canary_steps,
-                           seed=cfg.run.seed, log=self.log)
+            can = run_canary(plan)            # a CanaryError here: the run cannot train
+        # the chosen plan's compiled steps go to the trainer of this process; the rest is freed
+        self._programs = (plan.key, B.plan_programs(programs, plan))
+        programs.clear()
         if not can["determinism"]["ok"]:
             self.log(f"benchmark: WARNING the same batch gave two losses ({can['determinism']}): "
                      "restarts will not reproduce the trajectory bit for bit")
@@ -438,44 +474,98 @@ class Run:
                     f"{k}={rec[k]}" for k in ("step", "reason", "path", "p", "result") if k in rec))
             base_log(rec)
 
+        # the benchmark's compiled steps of the chosen plan (same process): used when the
+        # trainer's own lowering is the same program (Trainer checks the fingerprints)
+        programs = None
+        if self._programs is not None and self._programs[0] == bench.get("plan_key"):
+            programs = self._programs[1]
         trainer = Trainer(ecfg, loss_fn=M.loss_fn, init_fn=M.init_params, data=gate,
                           role_fn=role_of, consts_fn=SV.make_consts_fn(ecfg.run.switches),
                           out_dir=self.paths.train, deadline=self.sup.deadline,
-                          eval_fn=self._sidecar_hook, log_fn=log_fn, async_ckpt=True, resume=True)
+                          eval_fn=self._sidecar_hook, log_fn=log_fn, async_ckpt=True, resume=True,
+                          programs=programs)
         remove = self.sup.on_stop(trainer.request_stop)
         try:
             if self.sup.stop_requested:
                 raise SV.Interrupted("stop requested before training started")
             t0 = time.time()
             trainer.setup()
-            self.log(f"train: set-up (compile {len(trainer.shapes)} shapes, restore) took "
-                     f"{time.time() - t0:.1f} s; step {trainer.step}")
-            summary = trainer.run()
+            self._programs = None             # the trainer holds what it uses
+            reused = sum(1 for c in trainer.compile_info.values() if c["reused"])
+            self.log(f"train: set-up (compile {len(trainer.shapes)} shapes, {reused} reused from "
+                     f"the benchmark, restore) took {time.time() - t0:.1f} s; step {trainer.step}")
+            summary = trainer.run()           # CheckpointError: no final state on disk -> fails
         finally:
             remove()
             loader.close()
         if summary["reason"] == "requested":
             raise SV.Interrupted(f"training stopped at step {summary['step']} on request "
-                                 f"(final checkpoint {summary['final']})")
-        last = CK.latest(self.paths.train / "ckpt")
+                                 f"(final checkpoint {summary['checkpoint']})")
+        if summary["final_kind"] == "params":
+            self.log(f"train: WARNING only the parameters of the final state were saved "
+                     f"({summary['checkpoint']}); the later stages use them")
+        last = summary["checkpoint"]          # the checkpoint holding the final state
+        if last is None:
+            info = CK.latest(self.paths.train / "ckpt")
+            last = None if info is None else str(info.path)
         return {"reason": summary["reason"], "step": summary["step"], "p_end": summary["p_end"],
                 "tokens": summary["ledger"]["tokens"], "library_active": gate.active,
                 "library_at_index": gate.activated_at_index,
-                "checkpoint": None if last is None else last.name,
-                "ledger_seconds": summary["ledger"]["seconds"]}
+                "checkpoint": None if last is None else Path(last).name,
+                "final_kind": summary["final_kind"], "skipped_updates": summary["skipped_updates"],
+                "compile_reused": reused, "ledger_seconds": summary["ledger"]["seconds"]}
 
     # ================================================================= stage 4
-    def _sample_prompts(self, limit: int) -> list[dict]:
-        """Prompts for preference sampling from the downloaded chat sources: explicit-constraint
-        prompts, GSM8K prompts with their reference answers, chat prompts (half of them given a
-        verified hindsight constraint). Rows are taken from the start of each source's newest
-        downloaded file (they are also in the training universe: the loader has no held-out
-        split)."""
-        import numpy as np
-
-        from bes.data import download, hindsight, sources
+    def _prompt_item(self, name: str, msgs: list, rng, item_id: str, heldout: bool) -> dict | None:
+        """A sampling prompt from one conversation (its first user turn answered by the
+        assistant): ``kind`` math (GSM8K, with its reference answer), constraint (explicit, or a
+        verified hindsight constraint for half of the plain chat prompts) or chat; ``None`` when
+        the conversation does not serve."""
+        from bes.data import hindsight
         from bes.eval import exact_score
         from bes.exact import constraints as C
+
+        idx = next((j for j, m in enumerate(msgs) if m["role"] == "assistant"), None)
+        if idx is None or idx == 0 or msgs[idx - 1]["role"] != "user":
+            return None
+        head = [m for m in msgs[:idx] if m["role"] in ("system", "user")]
+        if not isinstance(head[-1]["content"], str):
+            return None
+        reply = hindsight.response_text(msgs[idx]["content"], self.tok()) or ""
+        item = {"id": item_id, "source": name, "heldout": bool(heldout),
+                "messages": [{"role": m["role"], "content": str(m["content"])} for m in head],
+                "reference": None, "kind": "chat", "reply": msgs[idx]["content"]}
+        user = head[-1]["content"]
+        if name == "gsm8k":
+            got = exact_score.extract_answer(reply)
+            if got["value"] is None:
+                return None
+            v = got["value"]
+            item["reference"] = str(v.numerator) if v.denominator == 1 else repr(float(v))
+            item["kind"] = "math"
+        elif not C.compile(user).empty:
+            item["kind"] = "constraint"
+        elif rng.random() < 0.5:
+            res = hindsight.relabel(head + [msgs[idx]], rng, self.tok())
+            if res is not None:
+                item["messages"][-1] = {"role": "user", "content": res[-2]["content"]}
+                item["kind"] = "constraint"
+        return item
+
+    def _sample_prompts(self, limit: int) -> list[dict]:
+        """Prompts for preference sampling from the downloaded chat and math sources (see
+        :meth:`_prompt_item`). They come first from the loader's held-out split
+        (``bes.data.loader.heldout_samples``: conversations the training stream never reads);
+        a source whose held-out conversations do not fill its share is topped up from the start
+        of its newest downloaded file, rows that are in the training universe (``heldout`` tells
+        which is which)."""
+        import hashlib
+
+        import numpy as np
+
+        from bes.data import download, sources
+        from bes.data.loader import heldout_samples
+        from bes.data.samples import tokens_to_messages
 
         names = [n for n, _, _ in SV.download_plan(self.cfg)
                  if sources.get(n).kind in ("chat", "math") and sources.get(n).fmt == "messages"]
@@ -483,55 +573,52 @@ class Run:
         per = max(4, limit // max(1, len(names)))
         pools: list[list[dict]] = []
         rng = np.random.default_rng(self.cfg.run.seed + 17)
+        root = SV.tok_root(self.cfg, self.paths.out)
         for name in names:
             src = sources.get(name)
-            try:
-                files = download.completed_files(name, self.cfg.run.data_dir)
-            except Exception:  # noqa: BLE001 - nothing downloaded
-                continue
-            if not files:
-                continue
             out: list[dict] = []
-            for batch in download.iter_records(files[-1].local, list(src.columns), batch_rows=256):
-                for i, rec in enumerate(batch):
-                    try:
-                        msgs = sources.adapt(src, rec)
-                    except Exception:  # noqa: BLE001 - a bad row
-                        continue
-                    if not msgs:
-                        continue
-                    idx = next((j for j, m in enumerate(msgs) if m["role"] == "assistant"), None)
-                    if idx is None or idx == 0 or msgs[idx - 1]["role"] != "user":
-                        continue
-                    head = [m for m in msgs[:idx] if m["role"] in ("system", "user")]
-                    if not isinstance(head[-1]["content"], str):
-                        continue
-                    reply = hindsight.response_text(msgs[idx]["content"], self.tok()) or ""
-                    item = {"id": f"{name}/{files[-1].index}/{len(out)}", "source": name,
-                            "messages": [{"role": m["role"], "content": str(m["content"])} for m in head],
-                            "reference": None, "kind": "chat",
-                            "reply": msgs[idx]["content"]}
-                    user = head[-1]["content"]
-                    if name == "gsm8k":
-                        got = exact_score.extract_answer(reply)
-                        if got["value"] is None:
-                            continue
-                        v = got["value"]
-                        item["reference"] = str(v.numerator) if v.denominator == 1 else repr(float(v))
-                        item["kind"] = "math"
-                    elif not C.compile(user).empty:
-                        item["kind"] = "constraint"
-                    elif rng.random() < 0.5:
-                        res = hindsight.relabel(head + [msgs[idx]], rng, self.tok())
-                        if res is not None:
-                            item["messages"][-1] = {"role": "user", "content": res[-2]["content"]}
-                            item["kind"] = "constraint"
+            try:
+                held = heldout_samples(root, name, per, seed=self.cfg.run.seed + 17,
+                                       data=self.cfg.data)
+            except Exception as e:  # noqa: BLE001 - no shards yet: the raw rows only
+                self.log(f"sample: no held-out conversations of {name}: {type(e).__name__}: {e}")
+                held = []
+            for smp in held:
+                try:
+                    msgs = tokens_to_messages(smp.ids, self.tok())
+                except ValueError:
+                    continue
+                key = hashlib.sha1(np.asarray(smp.ids, np.int32).tobytes()).hexdigest()[:16]
+                item = self._prompt_item(name, msgs, rng, f"{name}/heldout/{key}", heldout=True)
+                if item is not None:
                     out.append(item)
+            n_held = len(out)
+            try:
+                files = download.completed_files(name, self.cfg.run.data_dir) if len(out) < per else []
+            except Exception:  # noqa: BLE001 - nothing downloaded
+                files = []
+            if files:
+                for batch in download.iter_records(files[-1].local, list(src.columns), batch_rows=256):
+                    for rec in batch:
+                        try:
+                            msgs = sources.adapt(src, rec)
+                        except Exception:  # noqa: BLE001 - a bad row
+                            continue
+                        if not msgs:
+                            continue
+                        item = self._prompt_item(name, msgs, rng,
+                                                 f"{name}/{files[-1].index}/{len(out) - n_held}",
+                                                 heldout=False)
+                        if item is not None:
+                            out.append(item)
+                        if len(out) >= per:
+                            break
                     if len(out) >= per:
                         break
-                if len(out) >= per:
-                    break
-            pools.append(out)
+            if out:
+                self.log(f"sample: {name}: {n_held} held-out prompts, {len(out) - n_held} from the "
+                         "training rows")
+                pools.append(out)
         mixed = []
         for i in range(max((len(p) for p in pools), default=0)):
             mixed += [p[i] for p in pools if i < len(p)]
@@ -589,7 +676,10 @@ class Run:
                     program = resp.program(spec, r)
                 except Exception:  # noqa: BLE001 - structural potentials only
                     program = resp.program(None, r)
-                lm = OurLM(params, consts, ecfg.model, tok, max_steps=4 * d.max_new_tokens, decoder=dec)
+                # the run's decode settings, explicitly: the self-evidence weight here, the
+                # temperature through the settings (smc.decode hands it to the model)
+                lm = OurLM(params, consts, ecfg.model, tok, max_steps=4 * d.max_new_tokens, decoder=dec,
+                           self_evidence_weight=d.self_evidence_weight)
                 res = smc.decode(lm, prompt, n_particles=d.particles, max_new_tokens=d.max_new_tokens,
                                  seed=1000 + k, settings=SMP.SamplingSettings.from_cfg(d),
                                  program=program, tok=tok, ess_frac=d.ess_frac,
@@ -610,6 +700,7 @@ class Run:
                 n_pairs += min(sum(1 for s in scores if s > min(scores)),
                                sum(1 for s in scores if s < max(scores)))
                 rec = {"id": item["id"], "source": item["source"], "kind": item["kind"],
+                       "heldout": item["heldout"],
                        "user": user, "reference": item["reference"], "seed": 1000 + k,
                        "prompt": [int(x) for x in prompt], "particles": parts,
                        "library": None if passage is None else passage.title}
@@ -667,9 +758,13 @@ class Run:
                  "(the decoder has no critic path; recorded only)")
         return keep
 
-    def _sample_stats_fn(self, ecfg, consts, prompts: list[list[int]], max_new: int):
-        """``fn(params) -> {"mean_len", "rep4"}``: one plain sample (the run's temperature and
-        top-p, no potentials) per held-out prompt."""
+    def _sample_stats_fn(self, ecfg, consts, prompts: list[list[int]], max_new: int,
+                         budget_s: float | None = None, min_prompts: int = 8):
+        """``fn(params) -> prefopt.response_stats``: one plain sample (the run's temperature and
+        top-p, no potentials) per held-out prompt, prompt ``i`` with seed ``7 + i`` for every
+        parameter set, so the start's and each candidate's statistics are paired prompt by
+        prompt. The first call (the start) samples the prompts in order until ``budget_s``
+        seconds are used (at least ``min_prompts``); every later call samples exactly those."""
         from bes.decode import sampling as SMP
         from bes.decode import smc
         from bes.decode.lm import OurLM
@@ -679,15 +774,26 @@ class Run:
         dec = G.jitted(ecfg.model)
         tok = self.tok()
         settings = SMP.SamplingSettings.from_cfg(ecfg.decode)
+        fixed: dict[str, int | None] = {"n": None}
 
         def fn(params) -> dict:
             outs = []
-            for i, pr in enumerate(prompts):
-                lm = OurLM(params, consts, ecfg.model, tok, max_steps=4 * max_new, decoder=dec)
+            t0 = time.time()
+            n = len(prompts) if fixed["n"] is None else fixed["n"]
+            for i, pr in enumerate(prompts[:n]):
+                if (fixed["n"] is None and budget_s is not None and i >= min(min_prompts, n)
+                        and time.time() - t0 > budget_s):
+                    break
+                lm = OurLM(params, consts, ecfg.model, tok, max_steps=4 * max_new, decoder=dec,
+                           self_evidence_weight=ecfg.decode.self_evidence_weight)
                 res = smc.decode(lm, pr, n_particles=1, max_new_tokens=max_new, seed=7 + i,
                                  settings=settings, tok=tok)
                 outs.append(res.particles[0].tokens)
-            return response_stats(outs)
+            if fixed["n"] is None:
+                fixed["n"] = len(outs)
+            st = response_stats(outs, max_new=max_new)
+            st["seconds"] = round(time.time() - t0, 1)
+            return st
 
         return fn
 
@@ -750,8 +856,16 @@ class Run:
             b.update(exact_features(b["tokens"][:, :t], b["seg"], tok))
             batches.append(b)
         heldout_loss = prefopt.make_heldout_loss_fn(batches, consts, ecfg.model)
-        prompts = [list(map(int, p.prompt)) + [_assistant()] for p in split.heldout[:8]]
-        stats_fn = self._sample_stats_fn(ecfg, consts, prompts, min(ecfg.decode.max_new_tokens, 128))
+        # health samples: up to health_prompts distinct held-out prompts at the run's own reply
+        # limit (a shorter limit cuts most chat replies and hides a length change); the start's
+        # sampling may take HEALTH_TIME_FRAC of the slice shared by the start and every candidate
+        prompts, seen = [], set()
+        for p in split.heldout:
+            if bytes(p.prompt) not in seen and len(prompts) < pref.health_prompts:
+                seen.add(bytes(p.prompt))
+                prompts.append(list(map(int, p.prompt)) + [_assistant()])
+        stats_fn = self._sample_stats_fn(ecfg, consts, prompts, ecfg.decode.max_new_tokens,
+                                         budget_s=HEALTH_TIME_FRAC * ctx.left() / (1 + len(lrs)))
         new_params, rep = prefopt.run_prefopt(params, split, ecfg, lrs=lrs, heldout_loss_fn=heldout_loss,
                                               sample_stats_fn=stats_fn, pref=pref, consts=consts,
                                               tok=tok, log=self.log)
@@ -1073,12 +1187,39 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     return ap.parse_args(argv)
 
 
-def configure_jax(paths: SV.RunPaths) -> None:
-    import jax
+def configure_jax(paths: SV.RunPaths, log=_say) -> dict:
+    """Enable JAX's persistent compilation cache under ``<run>/jax_cache``: a restarted
+    supervisor (and the trainer after the benchmark, whose program it is) loads the compiled
+    training steps instead of compiling them again. Guarded: when an option is unknown to this
+    JAX or the backend cannot use the cache, that is logged and the run goes on without it.
+    Returns ``{"dir", "enabled", "reason"}`` (``enabled`` is None when it could not be checked)."""
+    out: dict[str, Any] = {"dir": str(paths.jax_cache), "enabled": False, "reason": ""}
+    try:
+        import jax
 
-    paths.jax_cache.mkdir(parents=True, exist_ok=True)
-    jax.config.update("jax_compilation_cache_dir", str(paths.jax_cache))
-    jax.config.update("jax_persistent_cache_min_compile_time_secs", 1.0)
+        paths.jax_cache.mkdir(parents=True, exist_ok=True)
+        jax.config.update("jax_compilation_cache_dir", str(paths.jax_cache))
+        jax.config.update("jax_persistent_cache_min_compile_time_secs", 1.0)
+    except Exception as e:  # noqa: BLE001 - an unknown option or an unwritable directory
+        out["reason"] = f"{type(e).__name__}: {e}"
+        log(f"run_24h: the persistent compilation cache is not enabled ({out['reason']}); "
+            "going on without it")
+        try:
+            jax.config.update("jax_compilation_cache_dir", None)
+        except Exception:  # noqa: BLE001
+            pass
+        return out
+    try:
+        from jax._src import compilation_cache as cc      # the backend check JAX itself uses
+
+        out["enabled"] = bool(cc.is_cache_used(jax.devices()[0].client))
+        if not out["enabled"]:
+            out["reason"] = f"backend {jax.default_backend()} does not use the persistent cache"
+            log(f"run_24h: {out['reason']}; going on without it")
+    except Exception as e:  # noqa: BLE001 - the check is internal API: report, keep the setting
+        out.update(enabled=None, reason=f"could not check the cache: {type(e).__name__}: {e}")
+        log(f"run_24h: persistent compilation cache set to {paths.jax_cache}; {out['reason']}")
+    return out
 
 
 def new_manifest(args: argparse.Namespace, out: Path) -> dict:
@@ -1131,7 +1272,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 raise SystemExit("--resume: overrides are fixed when the run starts")
             man.setdefault("resumes", []).append(time.time())
             SV.write_manifest(out, man)
-        configure_jax(paths)
+        man = SV.update_manifest(out, jax_cache=configure_jax(paths))
         run = Run(args, paths, man)
         cfg = run.cfg
         budget = man["budget"]

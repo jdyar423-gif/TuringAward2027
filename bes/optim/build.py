@@ -37,6 +37,12 @@ clip again).
 
 All per-leaf decisions (group, learning rate, shapes) are made once in :func:`build`; ``init`` and
 ``update`` are pure functions of arrays and can be jit-compiled, differentiated and donated.
+
+Run-time group rates: :meth:`Optimizer.update` with ``group_lr`` (``{group: float32 []}``, e.g.
+:func:`lr_inputs`) takes every group's rate from that input instead of the value fixed at build
+time, so a compiled step does not depend on the learning rates (the horizon of the transfer
+rule changes the matrix rate, not the program). With ``group_lr = lr_inputs(cfg)`` the update is
+bit-identical to the default one.
 """
 from __future__ import annotations
 
@@ -145,6 +151,12 @@ def group_lrs(cfg: Cfg) -> dict[str, float]:
     }
 
 
+def lr_inputs(cfg: Cfg) -> dict[str, np.float32]:
+    """:func:`group_lrs` of every group but ``frozen`` as float32 scalars: the ``group_lr`` input
+    of :meth:`Optimizer.update` (same float32 values as the rates fixed at build time)."""
+    return {g: np.float32(v) for g, v in group_lrs(cfg).items() if g != "frozen"}
+
+
 def global_norm(tree: Any) -> jax.Array:
     """float32 ``[]``: square root of the sum of squares of every leaf (accumulated in float32)."""
     leaves = jax.tree_util.tree_leaves(tree)
@@ -211,19 +223,29 @@ class Optimizer:
 
     def update(self, grads: Any, state: OptState, params: Any, lr_scale: jax.Array | float = 1.0,
                *, momentum: jax.Array | float | None = None,
-               wd_scale: jax.Array | float = 1.0) -> tuple[Any, OptState]:
+               wd_scale: jax.Array | float = 1.0,
+               group_lr: Any = None) -> tuple[Any, OptState]:
         """One step for the whole tree.
 
         grads, params: trees of the structure given to :func:`build`. lr_scale: schedule factor
         multiplying every group's learning rate (scalar, may be traced). momentum: optional
         override of ``OptimCfg.momentum`` for the matrix group (e.g. a momentum warm-up); wd_scale:
-        multiplies ``OptimCfg.weight_decay`` (``"muon"`` only, e.g. a decay schedule).
+        multiplies ``OptimCfg.weight_decay`` (``"muon"`` only, e.g. a decay schedule). group_lr:
+        optional ``{group: scalar}`` (may be traced; :func:`lr_inputs`) replacing the rates fixed at
+        build time, for every group that has a leaf except ``frozen``.
         Returns ``(new_params, new_state)``; parameter dtypes are preserved.
         """
         o = self.cfg
         p_leaves = self._flatten(params, "params")
         g_leaves = self._flatten(grads, "grads")
         lr_scale = jnp.asarray(lr_scale, jnp.float32)
+        rates = None
+        if group_lr is not None:
+            need = sorted({lp.group for lp in self.plan if lp.group != "frozen"})
+            missing = [g for g in need if g not in group_lr]
+            if missing:
+                raise KeyError(f"group_lr has no rate for the groups {missing}")
+            rates = {g: jnp.asarray(group_lr[g], jnp.float32) for g in need}
         mu = jnp.asarray(o.momentum if momentum is None else momentum, jnp.float32)
         count = state.count + 1
         if o.grad_clip > 0:
@@ -233,7 +255,10 @@ class Optimizer:
         new_params, slots = [], {}
         for lp, p, g in zip(self.plan, p_leaves, g_leaves):
             slot = state.slots[lp.path]
-            lr = lp.base_lr * lr_scale
+            if rates is None or lp.group == "frozen":
+                lr = lp.base_lr * lr_scale
+            else:
+                lr = rates[lp.group] * lr_scale
             if lp.group == "frozen":
                 new_p, new_slot = p, slot
             elif lp.group == "matrix" and self.kind == "muonh":

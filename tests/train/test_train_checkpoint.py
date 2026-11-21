@@ -1,5 +1,6 @@
 """Checkpoints: bitwise round trip, key-path npz, atomicity under a crash, corruption fallback,
 configuration hash, pruning, background writes, no pickles."""
+import errno
 import json
 import os
 import struct
@@ -268,6 +269,80 @@ def test_background_write_errors_are_reraised(tmp_path, monkeypatch):
     mgr.wait()  # the error is reported once
     monkeypatch.setattr(C, "_rename", os.rename)
     assert mgr.save({"a": jnp.ones(2)}, step=2, blocking=True).seq == 1
+
+
+def _arrays(n=4096, value=0.0):
+    return {"a": jnp.full(n, value, jnp.float32)}
+
+
+def test_checkpointer_makes_room_from_the_oldest_and_keeps_the_protected(tmp_path, monkeypatch):
+    """The free space covers less than one more checkpoint: the oldest unprotected ones are
+    deleted before the write, never a protected one (default: the newest existing)."""
+    mgr = C.Checkpointer(tmp_path, "h", keep=10)
+    for step in range(4):
+        mgr.save(_arrays(value=step), step=step)
+    arrays, records, _ = C.to_host(_arrays())
+    need = C.checkpoint_bytes(arrays, records)
+    assert need > sum(a.nbytes for a in arrays.values())
+    removed = []
+    budget = {"free": need - 1}                   # one byte short; each deletion frees enough
+    monkeypatch.setattr(C, "free_bytes", lambda path: budget["free"] + need * len(removed))
+    real_remove = C._remove
+    monkeypatch.setattr(C, "_remove", lambda info: (removed.append(info.step), real_remove(info)))
+    mgr.save(_arrays(value=9), step=4, protect=[1])               # seq 1 = step 0 is protected
+    assert removed == [1]                                          # the oldest unprotected one
+    assert [c.step for c in C.list_checkpoints(tmp_path)] == [0, 2, 3, 4]
+    assert mgr.last_job["pruned"] == ["ckpt-000002-step-000000001"] and not mgr.last_job["retried"]
+    removed.clear()
+    budget["free"] = -10 * need                   # far too little: everything unprotected goes
+    mgr.save(_arrays(value=10), step=5)                            # default: the newest is kept
+    assert removed == [0, 2, 3] and C.latest(tmp_path).step == 5
+    assert [c.step for c in C.list_checkpoints(tmp_path)] == [4, 5]
+    # with every other checkpoint protected nothing is deleted (the write may then fail)
+    removed.clear()
+    mgr.save(_arrays(value=11), step=6, protect=[c.seq for c in C.list_checkpoints(tmp_path)])
+    assert removed == []
+
+
+def test_checkpointer_retries_once_after_enospc(tmp_path, monkeypatch):
+    mgr = C.Checkpointer(tmp_path, "h", keep=5)
+    for step in range(3):
+        mgr.save(_arrays(value=step), step=step)
+    real_write = C._write_npz
+    calls = []
+
+    def flaky(path, arrays):
+        calls.append(1)
+        if len(calls) == 1:
+            raise OSError(errno.ENOSPC, "No space left on device")
+        return real_write(path, arrays)
+
+    monkeypatch.setattr(C, "_write_npz", flaky)
+    info = mgr.save(_arrays(value=7), step=3)
+    assert len(calls) == 2 and mgr.last_job["retried"] and mgr.last_job["pruned"] == [
+        "ckpt-000001-step-000000000"]                              # one oldest checkpoint freed
+    back, _ = C.load(info, _arrays(), device=False)
+    assert float(back["a"][0]) == 7.0
+    assert not [p for p in tmp_path.iterdir() if p.name.startswith((".tmp-", ".trash-"))]
+    # a second ENOSPC is not retried again; another error is never retried
+    monkeypatch.setattr(C, "_write_npz", lambda path, arrays: (_ for _ in ()).throw(
+        OSError(errno.ENOSPC, "still full")))
+    with pytest.raises(C.CheckpointError, match="still full"):
+        mgr.save(_arrays(), step=4)
+    monkeypatch.setattr(C, "_write_npz", lambda path, arrays: (_ for _ in ()).throw(
+        OSError(errno.EIO, "broken")))
+    before = [c.name for c in C.list_checkpoints(tmp_path)]
+    with pytest.raises(C.CheckpointError, match="broken"):
+        mgr.save(_arrays(), step=5)
+    assert [c.name for c in C.list_checkpoints(tmp_path)] == before
+
+
+def test_prune_never_deletes_protected(tmp_path):
+    for step in range(5):
+        C.save(tmp_path, _arrays(value=step), step=step, config_hash="h", keep=0)
+    gone = C.prune(tmp_path, 2, protect=[1, 2])
+    assert [c.seq for c in gone] == [3]
+    assert [c.seq for c in C.list_checkpoints(tmp_path)] == [1, 2, 4, 5]
 
 
 def test_no_pickles(tmp_path):

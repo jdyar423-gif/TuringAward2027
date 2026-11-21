@@ -11,7 +11,7 @@ import pytest
 from bes.config import Cfg, ModelCfg, OptimCfg, load_config
 from bes.optim import build, global_norm, group_lrs
 from bes.optim import adam, muon_normuon, muonh
-from bes.optim.build import ADAM_GROUPS, GROUPS, OptState, default_role_fn, path_str
+from bes.optim.build import ADAM_GROUPS, GROUPS, OptState, default_role_fn, lr_inputs, path_str
 
 ROLES = {"core/attn/wq": "matrix", "core/mlp/w_up": "matrix", "core/norm/g1": "norm",
          "emb/tok": "embed", "head/out": "unembed", "lanes/beta": "scalar", "fz/table": "frozen",
@@ -83,6 +83,51 @@ def test_learning_rate_transfer_rule():
                              data_exponent=0.0))
     assert off == pytest.approx(base)
     assert group_lrs(make_cfg())["frozen"] == 0.0
+
+
+@pytest.mark.parametrize("kind", ["muonh", "muon"])
+def test_runtime_group_rates_equal_the_built_ones_bitwise(kind):
+    """``update(..., group_lr=lr_inputs(cfg))`` gives exactly the default update, eager and
+    jitted; the rates act (a doubled Adam rate doubles Adam's first step); a missing group is
+    refused."""
+    cfg = make_cfg(kind, weight_decay=0.1, grad_clip=1.0, horizon_tokens=3e9)
+    params = make_params()
+    opt = build(cfg, params, ROLES.__getitem__)
+    st = opt.init(params)
+    grads = rand_like(params, 4)
+    rates = lr_inputs(cfg)
+    assert set(rates) == set(GROUPS) - {"frozen"}
+    assert all(isinstance(v, np.float32) and v == np.float32(group_lrs(cfg)[g]) for g, v in rates.items())
+    for fn in (opt.update, jax.jit(opt.update)):
+        a = fn(grads, st, params, 0.7)
+        b = fn(grads, st, params, 0.7, group_lr=rates)
+        for x, y in zip(jax.tree.leaves(a), jax.tree.leaves(b)):
+            assert np.array_equal(np.asarray(x), np.asarray(y))
+    doubled = dict(rates, embed=np.float32(2 * rates["embed"]))
+    new, _ = opt.update(grads, st, params, 0.5, group_lr=doubled)
+    np.testing.assert_allclose(np.abs(np.asarray(new["emb"]["tok"] - params["emb"]["tok"])),
+                               2 * rates["embed"] * 0.5, rtol=1e-4)
+    with pytest.raises(KeyError, match="matrix"):
+        opt.update(grads, st, params, 0.7, group_lr={k: v for k, v in rates.items() if k != "matrix"})
+
+
+def test_runtime_rates_make_the_program_independent_of_the_horizon():
+    """With the rates as inputs, optimisers built for different horizons lower to one program;
+    with the built-in rates the horizon is a constant of the program (a recompilation)."""
+    params = make_params()
+    spec = jax.tree.map(lambda x: jax.ShapeDtypeStruct(x.shape, x.dtype), params)
+    texts = {}
+    for h in (0.0, 2e10):
+        cfg = make_cfg(horizon_tokens=h)
+        opt = build(cfg, params, ROLES.__getitem__)
+        state = jax.eval_shape(opt.init, spec)
+        rates = jax.tree.map(lambda v: jax.ShapeDtypeStruct((), jnp.float32), lr_inputs(cfg))
+        runtime = jax.jit(lambda g, s, p, r, o=opt: o.update(g, s, p, 1.0, group_lr=r))
+        builtin = jax.jit(lambda g, s, p, o=opt: o.update(g, s, p, 1.0))
+        texts[h] = (runtime.lower(spec, state, spec, rates).as_text(),
+                    builtin.lower(spec, state, spec).as_text())
+    assert texts[0.0][0] == texts[2e10][0]
+    assert texts[0.0][1] != texts[2e10][1]
 
 
 @pytest.mark.parametrize("kind", ["muonh", "muon"])

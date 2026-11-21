@@ -38,15 +38,24 @@ Health checks and selection (:func:`run_prefopt`). Every candidate learning rate
 same parameters, with a fresh optimiser state and the same data order, and is accepted only if
 
 (a) the held-out preference accuracy improved: the share of held-out pairs whose margin is
-    positive (ties count one half) exceeds the start value plus ``min_acc_gain``. At the start
+    positive (ties count one half) exceeds the start value by more than ``min_acc_gain`` plus
+    ``acc_se_mult`` times the standard error of the gain (over the held-out pairs). At the start
     the policy is the reference, every margin is 0 and the value is exactly 0.5, so the check
-    asks that the trained policy ranks unseen pairs better than chance in the labelled direction;
+    asks that the trained policy ranks unseen pairs better than chance in the labelled direction
+    by more than sampling noise (a useless candidate is at 0.5 plus noise);
 (b) the held-out assistant-token loss from ``heldout_loss_fn(params) -> float`` rose by at most
     ``max_loss_rise`` (3 %) over the start value;
-(c) the sampling statistics from ``sample_stats_fn(params) -> {"mean_len", "rep4"}`` stay in
-    range: ``len_ratio_min <= mean_len / start <= len_ratio_max`` (0.7..1.6) and
-    ``rep4 <= rep_ratio_max * start`` (1.2); :func:`response_stats` computes both from sampled
-    token lists.
+(c) the sampling statistics from ``sample_stats_fn(params)`` (:func:`response_stats` of the
+    sampled token lists: per-response lengths and repeated 4-gram rates, their means and
+    standard errors) are not beyond their bands by more than ``stats_z`` standard errors:
+    the mean length above ``len_ratio_max`` (1.6) or below ``len_ratio_min`` (0.7) times the
+    start's, the repetition rate above ``rep_ratio_max`` (1.2) times the start's plus
+    ``rep_abs_margin`` (so a start of 0 can be passed). When both measurements hold one value
+    per prompt for the same prompts (the run samples the same held-out prompts with the same
+    seeds for every parameter set) the test is paired prompt by prompt, and a start response cut
+    at the sampling limit ``max_new`` bounds the candidate's at the limit (it cannot be longer);
+    with means only the bands apply exactly. A statistic measured on few prompts is noisy, so it
+    rejects only a clear change.
 
 Checks run in this order and stop at the first failure unless ``evaluate_all`` (sampling is the
 expensive one). The accepted candidate with the best held-out preference accuracy is returned
@@ -301,7 +310,8 @@ def preference_metrics(logp: np.ndarray, ref: np.ndarray, counts: np.ndarray | N
     """Held-out metrics of policy log-probabilities against the stored reference.
 
     logp, ref: ``[n, 2]`` (chosen, rejected); counts: ``[n, 2]`` weighted targets per row.
-    ``acc``: share of positive margins (ties 1/2; the selection metric); ``loss``: mean DPO
+    ``acc``: share of positive margins (ties 1/2; the selection metric) and ``acc_se`` its
+    standard error over the pairs; ``loss``: mean DPO
     loss; ``margin``: mean margin; ``policy_acc``: share of pairs whose chosen row has the
     higher policy log-probability (ties 1/2); ``policy_acc_per_token``: the same per target
     token (with ``counts``); ``n``: pairs.
@@ -315,7 +325,9 @@ def preference_metrics(logp: np.ndarray, ref: np.ndarray, counts: np.ndarray | N
         return {**out, "acc": float("nan"), "loss": float("nan"), "margin": float("nan"),
                 "policy_acc": float("nan"), "policy_acc_per_token": float("nan")}
     margin = (lp[:, 0] - rf[:, 0]) - (lp[:, 1] - rf[:, 1])
-    out["acc"] = float(np.mean(_won(margin)))
+    won = _won(margin)
+    out["acc"] = float(np.mean(won))
+    out["acc_se"] = float(np.std(won, ddof=1) / math.sqrt(n)) if n > 1 else 0.0
     out["loss"] = float(np.mean(np.logaddexp(0.0, -beta * margin)))
     out["margin"] = float(np.mean(margin))
     out["policy_acc"] = float(np.mean(_won(lp[:, 0] - lp[:, 1])))
@@ -381,33 +393,54 @@ def train_epoch(params: dict, consts: dict, data: PairBatches, cfg: Cfg, lr: flo
 
 
 # ----------------------------------------------------------------------- health checks
-def response_stats(responses: Sequence[Sequence[int]]) -> dict[str, float]:
-    """Sampling statistics of token-id responses: ``mean_len`` (mean number of tokens) and
-    ``rep4`` (repeated 4-gram rate: among all 4-gram occurrences, the share that repeats a
-    4-gram seen earlier in the same response; 0 when no response has 4 tokens)."""
-    lengths, repeated, total = [], 0, 0
-    for r in responses:
-        ids = [int(t) for t in r]
-        lengths.append(len(ids))
-        seen: set[tuple[int, ...]] = set()
-        for i in range(len(ids) - 3):
-            g = tuple(ids[i:i + 4])
-            total += 1
-            if g in seen:
-                repeated += 1
-            else:
-                seen.add(g)
-    return {STAT_LEN: float(np.mean(lengths)) if lengths else 0.0,
-            STAT_REP: repeated / total if total else 0.0}
+def repeat_rate(ids: Sequence[int]) -> float:
+    """Repeated 4-gram rate of one response: among its 4-gram occurrences, the share that repeats
+    a 4-gram seen earlier in it (0 below 4 tokens)."""
+    ids = [int(t) for t in ids]
+    seen: set[tuple[int, ...]] = set()
+    repeated = 0
+    for i in range(len(ids) - 3):
+        g = tuple(ids[i:i + 4])
+        if g in seen:
+            repeated += 1
+        else:
+            seen.add(g)
+    return repeated / (len(ids) - 3) if len(ids) > 3 else 0.0
+
+
+def _se(x: np.ndarray) -> float:
+    return float(np.std(x, ddof=1) / math.sqrt(len(x))) if len(x) > 1 else 0.0
+
+
+def response_stats(responses: Sequence[Sequence[int]],
+                   max_new: int | None = None) -> dict[str, Any]:
+    """Sampling statistics of token-id responses, per response and pooled: ``len`` (tokens) and
+    ``rep`` (:func:`repeat_rate`) of every response in order, their means ``mean_len`` and
+    ``rep4`` (0 without responses) with standard errors ``mean_len_se`` and ``rep4_se``, ``n``,
+    and ``max_new`` (the sampling limit, when given: a response of that length was cut)."""
+    lengths = np.asarray([len(r) for r in responses], np.float64)
+    rates = np.asarray([repeat_rate(r) for r in responses], np.float64)
+    out: dict[str, Any] = {STAT_LEN: float(lengths.mean()) if len(lengths) else 0.0,
+                           STAT_REP: float(rates.mean()) if len(rates) else 0.0,
+                           "mean_len_se": _se(lengths), "rep4_se": _se(rates),
+                           "n": int(len(lengths)), "len": lengths.tolist(), "rep": rates.tolist()}
+    if max_new is not None:
+        out["max_new"] = int(max_new)
+    return out
 
 
 def check_accuracy(start: Mapping[str, Any], cand: Mapping[str, Any],
                    pref: PrefCfg) -> list[tuple[str, str]]:
+    """The held-out accuracy gain must exceed ``min_acc_gain`` plus ``acc_se_mult`` times its
+    standard error (``acc_se`` of both measurements; 0 when absent)."""
     a0, a1 = float(start["pref"]["acc"]), float(cand["pref"]["acc"])
-    if a1 > a0 + pref.min_acc_gain:
+    se = math.hypot(float(start["pref"].get("acc_se", 0.0)), float(cand["pref"].get("acc_se", 0.0)))
+    need = pref.min_acc_gain + pref.acc_se_mult * se
+    if a1 - a0 > need:
         return []
-    return [("accuracy", f"held-out preference accuracy {a1:.4f} does not exceed the start "
-                         f"value {a0:.4f} + {pref.min_acc_gain:g}")]
+    return [("accuracy", f"held-out preference accuracy {a1:.4f} does not exceed the start value "
+                         f"{a0:.4f} by more than {need:.4f} ({pref.min_acc_gain:g} + "
+                         f"{pref.acc_se_mult:g} x its standard error {se:.4f})")]
 
 
 def check_loss(start: Mapping[str, Any], cand: Mapping[str, Any],
@@ -419,18 +452,55 @@ def check_loss(start: Mapping[str, Any], cand: Mapping[str, Any],
                      f"{100 * pref.max_loss_rise:g}% above the start value {l0:.5f}")]
 
 
+def _values(stats: Mapping[str, Any], per_item: str, mean: str) -> np.ndarray:
+    """The per-response values of a statistic, else its mean as one value."""
+    v = stats.get(per_item)
+    if v is not None and len(v):
+        return np.asarray(v, np.float64)
+    return np.asarray([float(stats[mean])], np.float64)
+
+
+def band_excess(a: np.ndarray, b: np.ndarray, margin: float = 0.0) -> tuple[float, float]:
+    """``(mean, standard error)`` of ``a - b - margin``: per prompt (paired) when ``a`` and ``b``
+    hold one value per prompt for the same prompts (equal lengths), else as the difference of two
+    independent means (a single value has no spread)."""
+    if len(a) == len(b):
+        d = a - b - margin
+        return float(d.mean()), _se(d)
+    var = [float(np.var(x, ddof=1)) / len(x) if len(x) > 1 else 0.0 for x in (a, b)]
+    return float(a.mean() - b.mean() - margin), math.sqrt(sum(var))
+
+
 def check_stats(start: Mapping[str, Any], cand: Mapping[str, Any],
                 pref: PrefCfg) -> list[tuple[str, str]]:
+    """The sampling checks of the module docstring, item (c): one-sided tests that the candidate's
+    mean length or repetition rate is beyond its band by more than ``stats_z`` standard errors."""
     s0, s1 = start["stats"], cand["stats"]
+    z = pref.stats_z
+    cap = s0.get("max_new") if s0.get("max_new") == s1.get("max_new") else None
+    l0, l1 = _values(s0, "len", STAT_LEN), _values(s1, "len", STAT_LEN)
+    r0, r1 = _values(s0, "rep", STAT_REP), _values(s1, "rep", STAT_REP)
+    m0, m1 = float(s0[STAT_LEN]), float(s1[STAT_LEN])
     out = []
-    n0, n1 = float(s0[STAT_LEN]), float(s1[STAT_LEN])
-    if not pref.len_ratio_min * n0 <= n1 <= pref.len_ratio_max * n0:
-        out.append(("length", f"mean response length {n1:.2f} outside "
-                              f"[{pref.len_ratio_min:g}, {pref.len_ratio_max:g}] x {n0:.2f}"))
-    r0, r1 = float(s0[STAT_REP]), float(s1[STAT_REP])
-    if not r1 <= pref.rep_ratio_max * r0:
-        out.append(("repetition", f"repeated 4-gram rate {r1:.4f} above "
-                                  f"{pref.rep_ratio_max:g} x {r0:.4f}"))
+    upper = pref.len_ratio_max * l0
+    if cap is not None:                   # a start reply cut at the limit: the candidate's cannot
+        upper = np.minimum(float(cap), upper)      # be longer than the limit either
+    e, se = band_excess(l1, upper)
+    if e > z * se:
+        out.append(("length", f"mean response length {m1:.2f} is above {pref.len_ratio_max:g} x the "
+                              f"start's {m0:.2f}{'' if cap is None else f' (cut at {cap})'} by "
+                              f"{e:.2f}, more than {z:g} standard errors ({se:.2f})"))
+    e, se = band_excess(pref.len_ratio_min * l0, l1)
+    if e > z * se:
+        out.append(("length", f"mean response length {m1:.2f} is below {pref.len_ratio_min:g} x the "
+                              f"start's {m0:.2f} by {e:.2f}, more than {z:g} standard errors "
+                              f"({se:.2f})"))
+    e, se = band_excess(r1, pref.rep_ratio_max * r0, pref.rep_abs_margin)
+    if e > z * se:
+        out.append(("repetition", f"repeated 4-gram rate {float(s1[STAT_REP]):.4f} is above "
+                                  f"{pref.rep_ratio_max:g} x the start's {float(s0[STAT_REP]):.4f} + "
+                                  f"{pref.rep_abs_margin:g} by {e:.4f}, more than {z:g} standard "
+                                  f"errors ({se:.4f})"))
     return out
 
 
@@ -487,14 +557,25 @@ def _as_split(pairs: Any):
     return list(train), list(heldout)
 
 
-def _stats(values: Mapping[str, Any]) -> dict[str, float]:
-    """Sampling statistics as floats; ``mean_len`` and ``rep4`` are required."""
+def _stats(values: Mapping[str, Any]) -> dict[str, Any]:
+    """Sampling statistics as floats (scalars) and lists of floats (per-response values, e.g.
+    ``len`` and ``rep`` of :func:`response_stats`); ``mean_len`` and ``rep4`` are required."""
     values = dict(values)
     missing = [k for k in (STAT_LEN, STAT_REP) if k not in values]
     if missing:
         raise KeyError(f"sample_stats_fn must return {STAT_LEN!r} and {STAT_REP!r}; missing {missing}")
-    return {k: float(v) for k, v in values.items() if isinstance(v, (int, float, np.number))
-            or np.ndim(v) == 0}
+    out: dict[str, Any] = {}
+    for k, v in values.items():
+        if isinstance(v, (str, bytes, Mapping)) or v is None:
+            continue
+        try:
+            if np.ndim(v) == 0:
+                out[k] = float(v)
+            elif np.ndim(v) == 1:
+                out[k] = [float(x) for x in np.asarray(v)]
+        except (TypeError, ValueError):
+            continue
+    return out
 
 
 def run_prefopt(params: dict, pairs: Any, cfg: Cfg, *, lrs: Sequence[float] = (1e-6, 3e-6),

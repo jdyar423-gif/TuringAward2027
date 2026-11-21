@@ -316,7 +316,7 @@ def test_check_candidate_accepts_a_healthy_candidate():
     (dict(loss=float("nan")), "loss"),
     (dict(mean_len=69.9), "length"),                 # below 0.7 x
     (dict(mean_len=160.1), "length"),                # above 1.6 x
-    (dict(rep=0.0601), "repetition"),                # above 1.2 x
+    (dict(rep=0.0701), "repetition"),                # above 1.2 x + the 0.01 absolute margin
 ])
 def test_check_candidate_rejects_each_reason(change, code):
     cand = start_metrics(acc=0.6, loss=2.0, mean_len=100.0, rep=0.05)
@@ -349,11 +349,117 @@ def test_select_candidate_prefers_the_best_accepted_accuracy():
 def test_response_stats_against_a_direct_count():
     responses = [[1, 2, 3, 4, 1, 2, 3, 4, 5], [7, 7, 7, 7, 7], [9, 9]]
     # response 0: 4-grams 1234 2341 3412 4123 1234* 2345 -> 1 repeat of 6
-    # response 1: 7777 7777* -> 1 repeat of 2; response 2: none
-    s = D.response_stats(responses)
+    # response 1: 7777 7777* -> 1 repeat of 2; response 2: no 4-gram -> rate 0
+    s = D.response_stats(responses, max_new=9)
+    assert s["len"] == [9.0, 5.0, 2.0] and s["rep"] == pytest.approx([1 / 6, 1 / 2, 0.0])
     assert s[D.STAT_LEN] == pytest.approx((9 + 5 + 2) / 3)
-    assert s[D.STAT_REP] == pytest.approx(2 / 8)
-    assert D.response_stats([]) == {D.STAT_LEN: 0.0, D.STAT_REP: 0.0}
+    assert s[D.STAT_REP] == pytest.approx((1 / 6 + 1 / 2) / 3)        # mean of per-response rates
+    assert s["mean_len_se"] == pytest.approx(np.std([9, 5, 2], ddof=1) / np.sqrt(3))
+    assert s["rep4_se"] == pytest.approx(np.std([1 / 6, 1 / 2, 0], ddof=1) / np.sqrt(3))
+    assert s["n"] == 3 and s["max_new"] == 9
+    empty = D.response_stats([])
+    assert (empty[D.STAT_LEN], empty[D.STAT_REP], empty["n"]) == (0.0, 0.0, 0)
+
+
+# ------------------------------------------------- noise-aware checks, simulated statistics
+def draw_replies(rng, n):
+    """Per-response statistics of ``n`` replies: lengths ~ Gamma(3, 40) tokens (mean 120), repeated
+    4-gram rates 0 for 40 % of the replies and Beta(1.2, 18) otherwise (mean ~0.04)."""
+    lengths = np.maximum(1.0, np.round(rng.gamma(3.0, 40.0, n)))
+    rates = np.where(rng.random(n) < 0.4, 0.0, rng.beta(1.2, 18.0, n))
+    return lengths, rates
+
+
+def sim(lengths, rates, max_new=None):
+    s = {D.STAT_LEN: float(np.mean(lengths)), D.STAT_REP: float(np.mean(rates)),
+         "len": [float(x) for x in lengths], "rep": [float(x) for x in rates]}
+    if max_new is not None:
+        s["max_new"] = max_new
+    return {"stats": s}
+
+
+@pytest.mark.parametrize("n", [8, 64])
+def test_an_unchanged_policy_passes_the_sampling_checks(n):
+    """Two independent samples of the same policy: rejected in about 1 % of 2000 trials with 8
+    prompts and never with 64 (before, the ratio rules rejected 49 % and 22 %)."""
+    rng = np.random.default_rng(n)
+    pref = PrefCfg()
+    rejected = sum(bool(D.check_stats(sim(*draw_replies(rng, n)), sim(*draw_replies(rng, n)), pref))
+                   for _ in range(2000))
+    assert rejected / 2000 <= (0.03 if n == 8 else 0.002)
+
+
+def test_clearly_degraded_candidates_are_still_rejected():
+    """Paired samples (the same prompts and seeds, as the run draws them) of 64 prompts: twice as
+    long, repetition doubled, half as long: each rejected for its reason in at least 99 % of the
+    trials; a candidate within the bands passes; a held-out loss 10 % higher is rejected."""
+    rng = np.random.default_rng(1)
+    pref = PrefCfg()
+    hits = {"longer": 0, "repeats": 0, "shorter": 0, "within": 0}
+    for _ in range(500):
+        lengths, rates = draw_replies(rng, 64)
+        start = sim(lengths, rates)
+        cases = {"longer": sim(2 * lengths, rates), "repeats": sim(lengths, 2 * rates),
+                 "shorter": sim(np.maximum(1.0, lengths // 2), rates),
+                 "within": sim(1.2 * lengths, 1.05 * rates)}
+        want = {"longer": ["length"], "repeats": ["repetition"], "shorter": ["length"], "within": []}
+        for name, cand in cases.items():
+            hits[name] += [c for c, _ in D.check_stats(start, cand, pref)] == want[name]
+    assert all(v >= 0.99 * 500 for v in hits.values()), hits
+    base = start_metrics()
+    assert [c for c, _ in D.check_loss(base, dict(base, heldout_loss=1.1 * base["heldout_loss"]),
+                                       pref)] == ["loss"]
+
+
+def test_a_reply_cut_at_the_limit_bounds_the_candidate():
+    """Replies cut at ``max_new`` (most of them at a short limit): a twice-as-long candidate can
+    only be seen on the replies that were not cut; with the limit known it is rejected, without
+    it the bound 1.6 x (cut length) is never reached."""
+    rng = np.random.default_rng(2)
+    pref = PrefCfg()
+    cap, seen, blind = 128, 0, 0
+    for _ in range(300):
+        lengths = np.maximum(1.0, np.round(rng.gamma(3.0, 40.0, 64)))
+        r = np.zeros(64)
+        l0, l1 = np.minimum(cap, lengths), np.minimum(cap, 2 * lengths)
+        seen += bool(D.check_stats(sim(l0, r, cap), sim(l1, r, cap), pref))
+        blind += bool(D.check_stats(sim(l0, r), sim(l1, r), pref))
+    assert seen == 300 and blind == 0
+
+
+def test_a_zero_repetition_start_can_be_passed():
+    pref = PrefCfg()
+    start = sim([100.0] * 16, [0.0] * 16)
+    assert D.check_stats(start, sim([100.0] * 16, [0.0] * 15 + [0.02]), pref) == []
+    means_only = {"stats": {D.STAT_LEN: 60.0, D.STAT_REP: 0.0}}
+    assert D.check_stats(means_only, {"stats": {D.STAT_LEN: 60.0, D.STAT_REP: 0.001}}, pref) == []
+    assert [c for c, _ in D.check_stats(means_only, {"stats": {D.STAT_LEN: 60.0, D.STAT_REP: 0.05}},
+                                        pref)] == ["repetition"]
+
+
+def test_the_accuracy_gain_must_exceed_its_standard_error():
+    """64 held-out pairs. A useless candidate (each margin positive with probability 1/2) passed
+    in 44 % of the trials before (any accuracy above 0.5); now in about 13 %. A real gain (3 of 4
+    pairs ranked right) passes."""
+    rng = np.random.default_rng(3)
+    pref = PrefCfg()
+    n = 64
+    start = {"pref": D.preference_metrics(np.zeros((n, 2)), np.zeros((n, 2)))}
+    assert start["pref"]["acc"] == 0.5 and start["pref"]["acc_se"] == 0.0
+
+    def cand(p_right):
+        margin = np.where(rng.random(n) < p_right, 1.0, -1.0) * rng.uniform(0.1, 1.0, n)
+        return {"pref": D.preference_metrics(np.stack([margin, np.zeros(n)], 1), np.zeros((n, 2)))}
+
+    useless = sum(not D.check_accuracy(start, cand(0.5), pref) for _ in range(2000)) / 2000
+    good = sum(not D.check_accuracy(start, cand(0.75), pref) for _ in range(500)) / 500
+    assert useless <= 0.2 and good >= 0.99
+    # acc_se against a direct computation: 5 wins, 2 losses, 1 tie
+    margins = np.asarray([1.0, 2.0, 0.5, 3.0, 0.1, -1.0, -0.2, 0.0])
+    m = D.preference_metrics(np.stack([margins, np.zeros(8)], 1), np.zeros((8, 2)))
+    won = np.asarray([1, 1, 1, 1, 1, 0, 0, 0.5])
+    assert m["acc"] == pytest.approx(won.mean())
+    assert m["acc_se"] == pytest.approx(np.sqrt(np.sum((won - won.mean()) ** 2) / 7 / 8))
 
 
 def test_heldout_loss_helper_matches_the_loss_function(params, consts, cfg, tok, pairs):

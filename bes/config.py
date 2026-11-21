@@ -233,6 +233,14 @@ class RunCfg:
     eval_judge: str = "qwen3-4b-2507"  # judge of the proxy comparison (registry name, gguf:PATH, standin-<rule>)
     eval_limit: int = 0               # prompts per split in the proxy evaluation (0 = all)
     sidecar: bool = True              # CPU side-car health reports during training
+    # -- appended by the training-robustness track (bes/train/{train,checkpoint}.py,
+    #    bes/train/supervisor.py)
+    guard_max_rollback_intervals: float = 3.0  # a rollback whose newest trusted checkpoint holds
+                                      # more than this many checkpoint intervals of training less
+                                      # than now keeps the current state (learning-rate cut, data
+                                      # skip, guard re-based, alarm); 0 = no bound
+    delete_raw_after_tokenize: bool = True  # delete a raw download this run fetched once its whole
+                                      # token shard is committed (tests turn it off)
 
 
 # ----------------------------------------------------------------------------- decode
@@ -378,6 +386,15 @@ class PrefCfg:
     rep_ratio_max: float = 1.2     # health: repeated 4-gram rate at most 1.2 x the start value
     min_acc_gain: float = 0.0      # health: held-out preference accuracy must exceed start + this
     cache_gb: float = 8.0          # host memory for feature batches kept between passes (0 = none)
+    # -- appended by the training-robustness track: noise-aware health checks (bes/train/prefopt.py)
+    acc_se_mult: float = 1.0       # health: the accuracy gain must also exceed this x its
+                                   # standard error
+    stats_z: float = 2.0           # health: a sampling statistic fails only when it is beyond its
+                                   # band by more than this many standard errors
+    rep_abs_margin: float = 0.01   # health: absolute allowance on the repeated 4-gram rate (so a
+                                   # start value of 0 can be passed)
+    health_prompts: int = 64       # health: held-out prompts sampled for the statistics (fewer only
+                                   # when the time slice does not allow them)
 
 
 @dataclass(frozen=True)

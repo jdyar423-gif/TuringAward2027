@@ -107,6 +107,29 @@ def test_exhaustion_spikes_are_ignored_and_nan_halts():
     assert acts_nan[-1].action is Action.HALT and acts_nan[-1].first_bad == 1000
 
 
+def test_skipped_updates_are_nonfinite_events():
+    """A skipped update (non-finite gradient, finite loss) is judged like a non-finite loss: it
+    never enters the average, three in a row roll back, after the last rollback they halt."""
+    state, _ = run(warm(20))
+    s1, d1 = observe(state, 21, 3.0, CFG, skipped=True)
+    assert d1.action is Action.SUSPECT and d1.reason == "nonfinite_grad"
+    assert (s1.ema, s1.count) == (state.ema, state.count) and s1.streak == 1
+    s2, acts = run([3.0, 3.0, 3.0], state=state, start=21)
+    assert all(d.action is Action.OK for d in acts)      # the same losses, not skipped: fine
+    st = state
+    for i in range(3):
+        st, d = observe(st, 21 + i, 3.0, CFG, skipped=True)
+    assert d.action is Action.ROLLBACK and d.reason == "nonfinite_grad" and d.first_bad == 21
+    # a mixed streak (skipped, NaN, skipped) uses the non-finite patience as well
+    cfg1 = GuardCfg(**{**CFG.__dict__, "nonfinite_patience": 1, "patience": 5})
+    _, d = observe(state, 21, 3.0, cfg1, skipped=True)
+    assert d.action is Action.ROLLBACK
+    exhausted = GuardState(ema=3.0, count=50, rollbacks=3, lr_mult=0.343)
+    for i in range(3):
+        exhausted, d = observe(exhausted, 100 + i, 3.0, CFG, skipped=True)
+    assert d.action is Action.HALT and d.first_bad == 100
+
+
 def test_rebase_forgets_the_level_but_keeps_counters():
     state, _ = run(warm(20) + [5.0, 5.0, 5.0])
     state = rebase(state)

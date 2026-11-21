@@ -15,11 +15,14 @@ plan after a reshape of the two leading axes (row ``m`` of a step stays row ``m`
 
 Measurement (:func:`make_measure`): build the train state and the step of
 ``bes.train.train.make_train_step`` for the plan, lower and compile it for the step shape (compile
-time), read ``memory_analysis()`` (the compiler's peak; a plan above ``memory_limit`` is skipped),
-run ``warmup`` steps and then ``steps`` timed steps on real batches from the loader (step time,
-tokens per second). Any exception (compile failure, out of memory at run time) skips the plan
-with its reason. Measurements are appended to ``results.jsonl`` so that a restarted benchmark
-does not measure a plan twice.
+time; the group learning rates are run-time inputs, as in the trainer, so the program is the
+trainer's), read ``memory_analysis()`` (the compiler's peak; a plan above ``memory_limit`` is
+skipped), run ``warmup`` steps and then ``steps`` timed steps on real batches from the loader
+(step time, tokens per second). Any exception (compile failure, out of memory at run time) skips
+the plan with its reason. Measurements are appended to ``results.jsonl`` so that a restarted
+benchmark does not measure a plan twice. The compiled steps of the plans that ran are kept in
+``measure.programs`` (``{(plan key, shape): (fingerprint, executable)}``) for the canary and the
+trainer, which use them instead of compiling the same program again.
 
 Search (:func:`search`), within the benchmark's time budget (no new candidate after the soft
 deadline, except the configured plan, and nothing after the hard deadline):
@@ -46,7 +49,11 @@ Canary (:func:`canary`) on the chosen plan, with real batches:
 - ``steps`` steps of the safe configuration (every feature switch off) and of the full one
   (the run's switches), each from the same initial parameters on the same distinct batches,
   must stay finite and lower the loss (:func:`loss_drops`: the mean of the last fifth at most
-  ``1 - min_drop`` times the mean of the first fifth). Switches are runtime inputs of the compiled step, so every run reuses one program.
+  ``1 - min_drop`` times the mean of the first fifth), and then continue for a few steps (the
+  batches given for that length) at every other compiled shape of the run: every program of
+  the run is executed, forward and backward, before training. A run with a non-finite loss or
+  a skipped update at any shape fails. Switches are runtime inputs of the compiled step, so
+  every run reuses one program per shape.
   If the full configuration fails and the safe one passes, the rungs of
   ``bes.train.supervisor.LADDER`` (feature groups off one at a time, cumulatively, in the order
   of plan section 6) are tried until one passes; that rung is used for the run. If the safe
@@ -347,14 +354,15 @@ def make_measure(cfg: Cfg, batches: Mapping[int, Sequence[Mapping[str, np.ndarra
     batches: ``{seq_len: [batch, ...]}`` real loader batches of ``cfg``'s own shape at that
     length (reshaped for every plan; they are cycled)."""
     import jax
-    import jax.numpy as jnp
 
     from bes.model import model as M
+    from bes.optim.build import lr_inputs
     from bes.roles import role_of
     from bes.train import train as TR
     from bes.train.aot import memory_stats
 
     sw = dict(consts_switches or {})
+    programs: dict[tuple[str, tuple[int, int, int]], tuple[str, Any]] = {}
 
     def measure(plan: Plan, t: int) -> Measurement:
         pcfg = plan.apply(cfg)
@@ -365,11 +373,9 @@ def make_measure(cfg: Cfg, batches: Mapping[int, Sequence[Mapping[str, np.ndarra
             consts = M.make_consts(pcfg.model, **sw)
             state, opt = TR.init_state(pcfg, M.init_params, role_of, jax.random.key(seed), consts)
             step = TR.make_train_step(M.loss_fn, opt, pcfg)
-            scalar = jax.ShapeDtypeStruct((), jnp.float32)
-            t0 = time.perf_counter()
-            compiled = step.lower(TR.abstract(state), TR.batch_spec(shape), scalar, scalar,
-                                  scalar).compile()
-            m.compile_s = time.perf_counter() - t0
+            group_lr = lr_inputs(pcfg)
+            compiled, cinfo = TR.compile_step(step, state, shape, TR.BATCH_KEYS, group_lr)
+            m.compile_s = cinfo["seconds"]
             m.peak_bytes, m.memory = memory_stats(compiled)
             if memory_limit is not None and m.peak_bytes > memory_limit:
                 m.reason = (f"compiled peak {m.peak_bytes / GIB:.2f} GiB above the limit "
@@ -378,12 +384,12 @@ def make_measure(cfg: Cfg, batches: Mapping[int, Sequence[Mapping[str, np.ndarra
             dev = [jax.device_put(reshape_batch(b, shape)) for b in batches[t]]
             lr, mom, wd = np.float32(1e-3), np.float32(0.95), np.float32(1.0)
             for i in range(max(1, warmup)):
-                state, met = compiled(state, dev[i % len(dev)], lr, mom, wd)
+                state, met = compiled(state, dev[i % len(dev)], lr, mom, wd, group_lr)
             jax.block_until_ready(met["loss"])
             losses = []
             t1 = time.perf_counter()
             for i in range(steps):
-                state, met = compiled(state, dev[i % len(dev)], lr, mom, wd)
+                state, met = compiled(state, dev[i % len(dev)], lr, mom, wd, group_lr)
                 losses.append(met["loss"])
             jax.block_until_ready(state.params)
             dt = time.perf_counter() - t1
@@ -395,6 +401,7 @@ def make_measure(cfg: Cfg, batches: Mapping[int, Sequence[Mapping[str, np.ndarra
                 m.reason = "non-finite loss in the timed steps"
                 return m
             m.ok = True
+            programs[(plan.key, shape)] = (cinfo["fingerprint"], compiled)
         except Exception as e:  # noqa: BLE001 - every failure skips the plan with its reason
             text = str(e).strip().splitlines()
             m.reason = f"{type(e).__name__}: {text[0][:300] if text else ''}"
@@ -403,7 +410,14 @@ def make_measure(cfg: Cfg, batches: Mapping[int, Sequence[Mapping[str, np.ndarra
             gc.collect()
         return m
 
+    measure.programs = programs
     return measure
+
+
+def plan_programs(programs: Mapping[tuple[str, tuple[int, int, int]], tuple[str, Any]],
+                  plan: Plan) -> dict[tuple[int, int, int], tuple[str, Any]]:
+    """``{shape: (fingerprint, executable)}`` of ``plan`` from ``measure.programs``."""
+    return {shape: v for (key, shape), v in programs.items() if key == plan.key}
 
 
 def load_results(path: str | Path) -> dict[tuple[str, int], Measurement]:
@@ -471,18 +485,28 @@ def choose_rung(full_ok: bool, safe_ok: bool, try_rung: Callable[[int], bool],
     return "safe", tried
 
 
-def canary(cfg: Cfg, plan: Plan, batches: Sequence[Mapping[str, np.ndarray]], *, steps: int = 30,
-           min_drop: float = 0.02, seed: int = 0, log: Callable[[str], None] | None = None,
-           clock: Callable[[], float] = time.time, deadline: float | None = None) -> dict[str, Any]:
-    """The correctness canary of the module docstring on ``batches`` (real loader batches of the
-    configured shape at the base length; at least ``steps`` of them, cycled otherwise).
+def canary(cfg: Cfg, plan: Plan,
+           batches: Mapping[int, Sequence[Mapping[str, np.ndarray]]] | Sequence[Mapping[str, np.ndarray]],
+           *, steps: int = 30, min_drop: float = 0.02, seed: int = 0,
+           log: Callable[[str], None] | None = None, clock: Callable[[], float] = time.time,
+           deadline: float | None = None,
+           programs: Mapping[tuple[int, int, int], tuple[str, Any]] | None = None) -> dict[str, Any]:
+    """The correctness canary of the module docstring.
+
+    batches: ``{seq_len: [batch, ...]}`` real loader batches of the configured shape for every
+    sequence length of the run (a plain list serves a run with one length): at the base length at
+    least ``steps`` of them (cycled otherwise), at every other length the batches given (each run
+    takes one step per batch there). programs: compiled steps of the plan by shape
+    (:func:`plan_programs`), used when their fingerprint matches.
 
     Returns ``{"parity", "determinism", "full", "safe", "ladder", "ok"}``; ``ladder`` holds the
     chosen ``rung`` (0 = full configuration, ``k``, or ``"safe"``), its ``groups``, ``switches``
-    (``RunCfg.switches`` text) and config ``overrides``."""
+    (``RunCfg.switches`` text) and config ``overrides``; every run reports its losses, its
+    ``skipped`` updates and the steps at the other shapes (``shapes``)."""
     import jax
 
     from bes.model import model as M
+    from bes.optim.build import lr_inputs
     from bes.roles import role_of
     from bes.train import train as TR
     from bes.train.supervisor import LADDER, format_switches, ladder_rung, parse_switches
@@ -492,13 +516,21 @@ def canary(cfg: Cfg, plan: Plan, batches: Sequence[Mapping[str, np.ndarray]], *,
     mcfg = pcfg.model
     t = pcfg.data.seq_len
     shape = schedule.micro_shape(pcfg, t)
+    shapes = schedule.shapes(pcfg)
+    by_len = ({int(k): list(v) for k, v in batches.items()} if isinstance(batches, Mapping)
+              else {t: list(batches)})
+    missing = [s[2] for s in shapes if not by_len.get(s[2])]
+    if missing:
+        raise ValueError(f"the canary runs every compiled shape {[list(s) for s in shapes]}: no "
+                         f"batches for the sequence lengths {missing}")
     run_sw = parse_switches(cfg.run.switches)
     key = jax.random.key(seed)
     params = M.init_params(mcfg, key)
     full_consts = M.make_consts(mcfg, **run_sw)
-    b0 = reshape_batch(batches[0], shape)
+    b0 = reshape_batch(by_len[t][0], shape)
     mb = {k: v[0] for k, v in b0.items()}
-    out: dict[str, Any] = {"plan": plan.key, "shape": list(shape), "steps": steps}
+    out: dict[str, Any] = {"plan": plan.key, "shape": list(shape), "steps": steps,
+                           "shapes": [list(s) for s in shapes]}
 
     # parity and determinism on one micro-batch
     def loss_of(model_cfg):
@@ -517,37 +549,75 @@ def canary(cfg: Cfg, plan: Plan, batches: Sequence[Mapping[str, np.ndarray]], *,
         out["parity"] = {"ok": bool(rel <= tol), "loss": l1, "dense": ld, "rel": rel, "tol": tol}
     say(f"canary: determinism {out['determinism']['ok']}, parity {out['parity']}")
 
-    # safe / full / ladder runs: one compiled step (the program the measurement compiled, so a
-    # persistent compilation cache serves it), switches are runtime inputs; every run starts
-    # from the same initial parameters and a fresh optimiser state
+    # safe / full / ladder runs: one compiled step per shape (the programs the measurement
+    # compiled: reused here, or served by a persistent compilation cache), switches are runtime
+    # inputs; every run starts from the same initial parameters and a fresh optimiser state, then
+    # continues at every other shape of the run
     import jax.numpy as jnp
 
-    _, opt = TR.init_state(pcfg, M.init_params, role_of, key, full_consts)
+    state0, opt = TR.init_state(pcfg, M.init_params, role_of, key, full_consts)
     step = TR.make_train_step(M.loss_fn, opt, pcfg)
-    dev = [jax.device_put(reshape_batch(b, shape)) for b in batches[:max(1, steps)]]
+    group_lr = lr_inputs(pcfg)
+    exe, reused = {}, {}
+    for s in shapes:
+        exe[s], cinfo = TR.compile_step(step, state0, s, TR.BATCH_KEYS, group_lr,
+                                        reuse=(programs or {}).get(s))
+        reused["x".join(map(str, s))] = cinfo["reused"]
+    out["compiled_reused"] = reused
+    del state0
+    others = [s for s in shapes if s != shape]
+    dev = {shape: [jax.device_put(reshape_batch(b, shape)) for b in by_len[t][:max(1, steps)]]}
+    for s in others:
+        dev[s] = [jax.device_put(reshape_batch(b, s)) for b in by_len[s[2]][:max(1, steps)]]
+
+    def fmt(xs: Sequence[float]) -> list:
+        return [round(x, 5) if math.isfinite(x) else str(x) for x in xs]
 
     def run_steps(switches: Mapping[str, float], label: str) -> dict[str, Any]:
         p0 = M.init_params(mcfg, key)
         state = TR.TrainState(step=jnp.zeros((), jnp.int32), params=p0, opt_state=opt.init(p0),
                               consts=M.make_consts(mcfg, **switches))
-        losses = []
+        losses, skipped = [], 0
         t0 = time.perf_counter()
         warm = canary_warmup(steps)
+        late = False
         for i in range(steps):
             if deadline is not None and clock() > deadline:
+                late = True
                 break
-            state, met = step(state, dev[i % len(dev)], np.float32(canary_lr(i, warm)),
-                              np.float32(0.95), np.float32(1.0))
+            state, met = exe[shape](state, dev[shape][i % len(dev[shape])],
+                                    np.float32(canary_lr(i, warm)), np.float32(0.95),
+                                    np.float32(1.0), group_lr)
             losses.append(float(met["loss"]))     # blocks: the deadline check sees real time
+            skipped += int(met["skipped"])
         vals = losses
+        extra, extra_ok = {}, True
+        for s in others:                           # the same trajectory at every other shape
+            ls, sk = [], 0
+            for b in dev[s]:
+                if deadline is not None and clock() > deadline:
+                    late = True
+                    break
+                state, met = exe[s](state, b, np.float32(1.0), np.float32(0.95), np.float32(1.0),
+                                    group_lr)
+                ls.append(float(met["loss"]))
+                sk += int(met["skipped"])
+            ok_s = len(ls) == len(dev[s]) and sk == 0 and all(math.isfinite(x) for x in ls)
+            extra["x".join(map(str, s))] = {"losses": fmt(ls), "skipped": sk, "ok": ok_s}
+            extra_ok = extra_ok and ok_s
+            skipped += sk
         del state
-        res = {"losses": [round(x, 5) if math.isfinite(x) else str(x) for x in vals],
-               "ok": loss_drops(vals, min_drop) and len(vals) == steps,
+        res = {"losses": fmt(vals), "skipped": skipped, "shapes": extra,
+               "ok": loss_drops(vals, min_drop) and len(vals) == steps and skipped == 0 and extra_ok,
                "seconds": round(time.perf_counter() - t0, 2), "switches": dict(switches)}
-        if len(vals) < steps:
+        if late:
             res["note"] = f"stopped after {len(vals)} steps at the benchmark's hard cap"
+        elif skipped:
+            res["note"] = f"{skipped} updates skipped (non-finite loss or gradient)"
+        at_other = " ".join(f"{k}:{'ok' if v['ok'] else 'FAILED'}" for k, v in extra.items())
         say(f"canary: {label}: first {vals[0] if vals else float('nan'):.4f} last "
-            f"{vals[-1] if vals else float('nan'):.4f} ok={res['ok']}")
+            f"{vals[-1] if vals else float('nan'):.4f} skipped {skipped} {at_other} "
+            f"ok={res['ok']}")
         return res
 
     safe_sw = dict(M.switches_off())
@@ -616,5 +686,5 @@ def horizon(expected_tps: float, loader_tps: float | None, train_seconds: float)
 
 __all__ = ["Plan", "Measurement", "BenchmarkError", "CanaryError", "seq_lens", "time_shares",
            "plan_valid", "search", "select_plan", "reshape_batch", "memory_limit_bytes",
-           "make_measure", "load_results", "append_result", "loss_drops", "canary_lr",
-           "choose_rung", "canary", "host_rate", "loader_workers_needed", "horizon"]
+           "make_measure", "plan_programs", "load_results", "append_result", "loss_drops",
+           "canary_lr", "choose_rung", "canary", "host_rate", "loader_workers_needed", "horizon"]

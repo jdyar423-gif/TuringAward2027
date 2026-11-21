@@ -380,22 +380,154 @@ def check_devices(rep: Mapping[str, Any], allow_cpu: bool) -> list[str]:
     return warnings
 
 
-def disk_need_gb(cfg: Cfg) -> float:
-    """Rough disk need of the downloads plus their token shards: the shards take about 1.4
-    bytes per parquet byte (2 bytes per token; a ClimbMix shard of 92 MB holds 63.8 M tokens),
-    so ``2.4 x`` the download caps, plus 6 GB for the library, the checkpoints (three of the
-    parameters and both Adam moments) and the compilation cache."""
+SHARD_BYTES_PER_RAW_BYTE = 1.4   # 2 bytes per token; a ClimbMix parquet of 92 MB holds 63.8 M tokens
+DISK_OTHER_GB = 6.0              # library, checkpoints (three of the parameters and both moments),
+                                 # compilation cache, post-training outputs
+
+
+def disk_need(cfg: Cfg, tokenize_workers: int = 4) -> dict[str, Any]:
+    """The run's disk estimate, stated in the manifest by the preflight (GB = 1e9 bytes).
+
+    Downloads ``D`` at the registry caps; token shards ``1.4 D``; raw files left on disk: all of
+    them, or with ``run.delete_raw_after_tokenize`` (a raw file this run downloaded is deleted
+    once its whole shard is committed, :func:`prune_raw`) only the newest file of each source
+    the sampling stage reads. With deletion the disk holds ``downloaded + 0.4 x tokenised`` raw
+    and shard bytes at any time, so the peak is ``1.4 D`` plus the kept files, however far the
+    tokenisation lags behind the downloads. Plus the shard temporaries of the tokenisation
+    workers (one largest file each) and :data:`DISK_OTHER_GB` for everything else."""
     from bes.data import sources
 
     sizes: dict[str, float] = {}
+    largest = 0.0
+    kept = 0.0
     for src, max_files, _ in download_plan(cfg):
         s = sources.get(src)
         cap = sources.download_cap(s, cfg.data.permissive_only)
         size = float(s.approx_bytes if cap is None else min(cap, s.approx_bytes or cap))
         if max_files is not None and s.n_files:
             size = min(size, s.approx_bytes / s.n_files * max_files)
+        per_file = size if not s.n_files else min(size, s.approx_bytes / s.n_files)
+        largest = max(largest, per_file)
+        if src not in sizes and s.kind in ("chat", "math") and s.fmt == "messages":
+            kept += per_file                  # the newest file stays for the sampling prompts
         sizes[src] = max(sizes.get(src, 0.0), size)      # a source can appear in both phases
-    return 2.4 * sum(sizes.values()) / GB + 6.0
+    total = sum(sizes.values())
+    delete = bool(cfg.run.delete_raw_after_tokenize)
+    raw_left = min(total, kept) if delete else total
+    temp = SHARD_BYTES_PER_RAW_BYTE * largest * max(1, int(tokenize_workers))
+    need = SHARD_BYTES_PER_RAW_BYTE * total + raw_left + temp
+    return {"downloads_gb": round(total / GB, 3),
+            "shards_gb": round(SHARD_BYTES_PER_RAW_BYTE * total / GB, 3),
+            "raw_left_gb": round(raw_left / GB, 3), "tokenize_temp_gb": round(temp / GB, 3),
+            "other_gb": DISK_OTHER_GB, "total_gb": round(need / GB + DISK_OTHER_GB, 3),
+            "delete_raw_after_tokenize": delete,
+            "rule": ("1.4 x downloads (shards) + raw files left (all of them without deletion, the "
+                     "newest file of each sampled chat/math source with it) + one largest file per "
+                     "tokenisation worker + 6 GB (library, checkpoints, compilation cache)")}
+
+
+def disk_need_gb(cfg: Cfg, tokenize_workers: int = 4) -> float:
+    """``disk_need(cfg)["total_gb"]``."""
+    return float(disk_need(cfg, tokenize_workers)["total_gb"])
+
+
+def _committed_whole(entry: Mapping[str, Any] | None, path: str, size: int) -> bool:
+    """The committed shard ``entry`` was made from the whole raw file ``path`` of ``size`` bytes
+    (not cut at ``run.tokenize_max_records``)."""
+    if not entry or entry.get("max_records") is not None:
+        return False
+    inp = entry.get("input") or {}
+    return inp.get("path") == path and int(inp.get("size", -1)) == int(size)
+
+
+def _fetched_since(raw_dir: Path, t0: float) -> set[str]:
+    """Paths the download manifest of ``raw_dir`` recorded at or after ``t0`` (fetched by this
+    run); an entry whose time cannot be read counts as older."""
+    from bes.data import download
+
+    out: set[str] = set()
+    p = raw_dir / download.MANIFEST
+    if not p.exists():
+        return out
+    for line in p.read_text().splitlines():
+        try:
+            e = json.loads(line)
+            when = time.mktime(time.strptime(e["time"], "%Y-%m-%dT%H:%M:%S"))
+        except (ValueError, KeyError, TypeError, OverflowError):
+            continue
+        if isinstance(e.get("path"), str) and when >= t0 - 1.0:
+            out.add(e["path"])
+    return out
+
+
+def prune_raw(paths: RunPaths, cfg: Cfg, name: str, log: Callable[[str], None]) -> list[str]:
+    """With ``run.delete_raw_after_tokenize``: delete the raw downloads of source ``name`` whose
+    whole token shard is committed. Kept: a file this run did not download (its download record
+    is older than the run: a shared cache), a file whose shard was cut at
+    ``run.tokenize_max_records``, and the newest downloaded file of a chat or math source with
+    messages (the sampling stage reads its rows). Returns the deleted paths."""
+    if not cfg.run.delete_raw_after_tokenize:
+        return []
+    from bes.data import download, shards, sources, tokenize_worker
+
+    t0 = ((read_manifest(paths.out) or {}).get("budget") or {}).get("t0")
+    if t0 is None:
+        return []
+    src = sources.get(name)
+    try:
+        files = download.completed_files(name, cfg.run.data_dir)
+    except Exception:  # noqa: BLE001 - no listing yet
+        return []
+    done = shards.read_manifest(tokenize_worker.tok_dir(name, tok_root(cfg, paths.out)))
+    keep = {max(f.index for f in files)} if files and src.kind in ("chat", "math") \
+        and src.fmt == "messages" else set()
+    owned = _fetched_since(download.repo_dir(src, cfg.run.data_dir), float(t0))
+    deleted = []
+    for f in files:
+        if f.index in keep or f.path not in owned or not _committed_whole(done.get(f.index), f.path,
+                                                                           f.size):
+            continue
+        try:
+            os.unlink(f.local)
+            deleted.append(f.path)
+        except FileNotFoundError:
+            pass
+        except OSError as e:
+            log(f"tokenize: {name}: could not delete {f.local}: {e}")
+    if deleted:
+        log(f"tokenize: {name}: deleted {len(deleted)} raw files whose shards are committed")
+    return deleted
+
+
+def _download_source(paths: RunPaths, cfg: Cfg, name: str, max_files: int | None,
+                     log: Callable[[str], None]) -> int:
+    """``download.download_source`` (4 threads, the registry cap) that, with
+    ``run.delete_raw_after_tokenize``, does not fetch again a file whose whole shard is committed
+    and whose raw file is gone (:func:`prune_raw`). Returns the number of selected files."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from bes.data import download, shards, sources, tokenize_worker
+
+    cap = sources.download_cap(name, cfg.data.permissive_only)
+    if not cfg.run.delete_raw_after_tokenize:
+        return len(download.download_source(name, cfg.run.data_dir, max_files=max_files,
+                                            max_bytes=cap, threads=4, log=log))
+    src = sources.get(name)
+    rdir = download.repo_dir(src, cfg.run.data_dir)
+    commit, files = download.source_listing(src, cfg.run.data_dir, log=log)
+    chosen = download.select_files(files, max_files, cap)
+    index = {f.path: i for i, f in enumerate(files)}
+    tdir = tokenize_worker.tok_dir(name, tok_root(cfg, paths.out))
+
+    def one(rf) -> None:
+        if not (rdir / rf.path).exists() and _committed_whole(
+                shards.read_manifest(tdir).get(index[rf.path]), rf.path, rf.size):
+            return                            # tokenised whole, raw file deleted on purpose
+        download.download_file(src.repo, commit, rf, rdir, log=log)
+
+    with ThreadPoolExecutor(max_workers=4) as ex:
+        list(ex.map(one, chosen))
+    return len(chosen)
 
 
 # ================================================================================ core plan
@@ -1225,17 +1357,12 @@ def download_plan(cfg: Cfg) -> list[tuple[str, int | None, int]]:
 
 
 def task_downloads(paths: RunPaths, cfg: Cfg, cp: CorePlan, log: Callable[[str], None]) -> int:
-    from bes.data import download, sources
-
     failures = []
     done: dict[str, int] = {}
     for name, max_files, phase in download_plan(cfg):
         try:
-            got = download.download_source(name, cfg.run.data_dir, max_files=max_files,
-                                           max_bytes=sources.download_cap(name, cfg.data.permissive_only),
-                                           threads=4, log=log)
-            done[name] = len(got)
-            log(f"downloads: {name} phase {phase}: {len(got)} files")
+            done[name] = _download_source(paths, cfg, name, max_files, log)
+            log(f"downloads: {name} phase {phase}: {done[name]} files")
         except Exception as e:  # noqa: BLE001 - the other sources go on
             failures.append(f"{name}: {type(e).__name__}: {e}")
             log(f"downloads: {name} FAILED: {e!r}")
@@ -1290,6 +1417,7 @@ def task_tokenize(paths: RunPaths, cfg: Cfg, cp: CorePlan, log: Callable[[str], 
                 new += stats.committed
                 if stats.failed:
                     errors.append(f"{name}: {len(stats.failed)} files failed")
+                prune_raw(paths, cfg, name, log)    # raw files whose whole shard is committed
             except Exception as e:  # noqa: BLE001
                 errors.append(f"{name}: {type(e).__name__}: {e}")
                 log(f"tokenize: {name} FAILED: {e!r}")
@@ -1421,21 +1549,29 @@ SIDECAR_NEW = 64          # new tokens of each sample generation
 def task_sidecar(paths: RunPaths, cfg: Cfg, cp: CorePlan, log: Callable[[str], None],
                  ckpt: str) -> int:
     """Health report of one checkpoint on the CPU (``health/health-<step>.json`` and
-    ``health/latest.json``): probe loss by source on the first ``SIDECAR_ROWS`` segments of
-    each source's newest shard (these are not held out: the loader has no held-out split, so
-    read the numbers as a trend) and two fixed sample generations on dev proxy prompts (one
-    math, one with explicit constraints) with exact scores. It runs at the lowest priority on
-    its own core; the trainer skips it when late and kills it when it outlives the interval."""
+    ``health/latest.json``): probe loss by source on ``SIDECAR_ROWS`` segments of each source:
+    for chat, rag and math sources conversations of the loader's held-out split
+    (``bes.data.loader.heldout_samples``, never trained on), for the other sources the first
+    segments of the newest shard (in the training universe: read those numbers as a trend;
+    ``probe_heldout`` says which is which), and two fixed sample generations on dev proxy
+    prompts (one math, one with explicit constraints) with exact scores. It runs at the lowest
+    priority on its own core; the trainer skips it when late and kills it when it outlives the
+    interval."""
     os.environ["JAX_PLATFORMS"] = "cpu"
     import jax
     import numpy as np
 
     jax.config.update("jax_platforms", "cpu")
-    paths.jax_cache.mkdir(parents=True, exist_ok=True)
-    jax.config.update("jax_compilation_cache_dir", str(paths.jax_cache))
+    try:                                 # a cache is a speed-up only: never fail the report on it
+        paths.jax_cache.mkdir(parents=True, exist_ok=True)
+        jax.config.update("jax_compilation_cache_dir", str(paths.jax_cache))
+    except Exception as e:  # noqa: BLE001
+        log(f"sidecar: no persistent compilation cache ({type(e).__name__}: {e})")
     from bes.config import END, PAD, apply_overrides
-    from bes.data import shards
+    from bes.data import shards, sources
+    from bes.data.loader import HELDOUT_KINDS, heldout_samples
     from bes.decode import respond, smc
+    from bes.decode import sampling as SMP
     from bes.decode.lm import OurLM
     from bes.eval import exact_score
     from bes.eval.proxy import prompts as prompt_set
@@ -1451,7 +1587,8 @@ def task_sidecar(paths: RunPaths, cfg: Cfg, cp: CorePlan, log: Callable[[str], N
     tok = load_tokenizer()
     T = min(ecfg.data.seq_len, SIDECAR_LEN)
     loss = jax.jit(lambda p, c, b: M.loss_fn(p, c, b, ecfg.model)[1])
-    report: dict[str, Any] = {"checkpoint": info, "probe_loss": {}, "samples": []}
+    report: dict[str, Any] = {"checkpoint": info, "probe_loss": {}, "probe_heldout": {},
+                              "samples": []}
     troot = tok_root(cfg, paths.out) / "tok"
     for d in sorted(troot.iterdir()) if troot.exists() else []:
         man_s = shards.read_manifest(d)
@@ -1460,10 +1597,21 @@ def task_sidecar(paths: RunPaths, cfg: Cfg, cp: CorePlan, log: Callable[[str], N
         entry = man_s[max(man_s)]
         if entry.get("pairs"):
             continue
-        sh = shards.open_shard(d, entry)
+        segs = []
+        try:
+            if sources.get(d.name).kind in HELDOUT_KINDS:
+                segs = [np.asarray(s.ids, np.int32)
+                        for s in heldout_samples(troot.parent, d.name, SIDECAR_ROWS, seed=0,
+                                                 data=cfg.data)]
+        except (KeyError, ValueError):     # not a registry source: its first segments
+            segs = []
+        report["probe_heldout"][d.name] = bool(segs)
+        if not segs:
+            sh = shards.open_shard(d, entry)
+            segs = [np.asarray(sh.segment(i), np.int32) for i in range(min(SIDECAR_ROWS, len(sh)))]
         rows = []
-        for i in range(min(SIDECAR_ROWS, len(sh))):
-            seg = np.asarray(sh.segment(i), np.int32)[:T + 1]
+        for seg in segs:
+            seg = seg[:T + 1]
             row = np.full(T + 1, PAD, np.int32)
             row[:len(seg)] = seg
             rows.append((row, len(seg)))
@@ -1482,10 +1630,15 @@ def task_sidecar(paths: RunPaths, cfg: Cfg, cp: CorePlan, log: Callable[[str], N
     ps = [p for p in prompt_set.select(prompt_set.load(), "dev") if not p.multi_turn]
     picks = [next((p for p in ps if p.category == c), None) for c in ("math", "instruct")]
     chat = respond.OurChat(tok)
+    # the run's decode settings, explicitly: temperature and truncation through the settings
+    # (smc.decode hands the temperature to the model), the self-evidence weight to the model
+    settings = SMP.SamplingSettings.from_cfg(ecfg.decode)
     for p in [q for q in picks if q is not None]:
         prompt = chat.render([{"role": "user", "content": p.turns[0]}])
-        lm = OurLM(params, consts, ecfg.model, tok, max_steps=4 * SIDECAR_NEW)
-        res = smc.decode(lm, prompt, n_particles=1, max_new_tokens=SIDECAR_NEW, seed=0, tok=tok)
+        lm = OurLM(params, consts, ecfg.model, tok, max_steps=4 * SIDECAR_NEW,
+                   self_evidence_weight=ecfg.decode.self_evidence_weight)
+        res = smc.decode(lm, prompt, n_particles=1, max_new_tokens=SIDECAR_NEW, seed=0, tok=tok,
+                         settings=settings)
         part = res.particles[0]
         text = chat.display([t for t in part.tokens if t != END]).strip()
         sc = exact_score.score_conversation(p, [text], [part.finish])
@@ -1561,9 +1714,9 @@ __all__ = ["RunPaths", "RunLock", "RunLocked", "PreflightError", "StageSkipped",
            "safe_switches", "make_consts_fn", "run_overrides", "horizon_of", "base_config",
            "effective_config",
            "generator_overrides", "CorePlan", "core_plan", "host_report", "device_report",
-           "check_devices", "disk_need_gb", "code_commit", "read_manifest", "write_manifest",
-           "update_manifest", "write_marker", "read_marker", "library_self_check", "LibraryGate",
-           "label_sample", "TaskSpec", "ProcessSupervisor", "child_setup", "StageContext",
+           "check_devices", "disk_need", "disk_need_gb", "prune_raw", "code_commit",
+           "read_manifest", "write_manifest", "update_manifest", "write_marker", "read_marker",
+           "library_self_check", "LibraryGate", "label_sample", "TaskSpec", "ProcessSupervisor", "child_setup", "StageContext",
            "Supervisor", "download_plan", "task_argv", "tok_root", "proxy_root", "main"]
 
 

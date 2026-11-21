@@ -345,6 +345,80 @@ def test_download_plan():
     assert SV.disk_need_gb(cfg) > SV.disk_need_gb(smoke) > 0
 
 
+def test_disk_estimate_is_stated_and_counts_the_raw_deletion():
+    cfg = Cfg()
+    on = SV.disk_need(cfg)
+    off = SV.disk_need(dataclasses.replace(cfg, run=dataclasses.replace(cfg.run,
+                                                                       delete_raw_after_tokenize=False)))
+    for est in (on, off):
+        parts = est["shards_gb"] + est["raw_left_gb"] + est["tokenize_temp_gb"] + est["other_gb"]
+        assert est["total_gb"] == pytest.approx(parts, abs=0.01) and est["rule"]
+        assert est["shards_gb"] == pytest.approx(1.4 * est["downloads_gb"], abs=0.01)
+    assert off["raw_left_gb"] == off["downloads_gb"] and not off["delete_raw_after_tokenize"]
+    assert on["delete_raw_after_tokenize"] and 0 < on["raw_left_gb"] < 0.1 * on["downloads_gb"]
+    assert on["total_gb"] < off["total_gb"] and SV.disk_need_gb(cfg) == on["total_gb"]
+
+
+def _fake_source(data_dir, name, n_files, t_files, t0, sizes=None):
+    """Raw files of ``name`` under ``data_dir`` as ``bes.data.download`` leaves them: a cached
+    listing, the files, a download manifest recording file ``i`` at time ``t_files[i]``."""
+    from bes.data import download, sources
+
+    src = sources.get(name)
+    prefix = download.static_prefix(src.files[0])
+    stem = src.files[0].replace("*", "{:05d}")
+    files = [download.RemoteFile(stem.format(i), (sizes or [100 + i] * n_files)[i]) for i in range(n_files)]
+    download.source_listing(src, data_dir, lister=lambda repo, rev, pre: ("c0", files))
+    rdir = download.repo_dir(src, data_dir)
+    for f, t in zip(files, t_files):
+        (rdir / f.path).parent.mkdir(parents=True, exist_ok=True)
+        (rdir / f.path).write_bytes(b"x" * f.size)
+        with open(rdir / download.MANIFEST, "a") as fh:
+            fh.write(json.dumps({"repo": src.repo, "commit": "c0", "path": f.path, "size": f.size,
+                                 "sha256": None, "time": time.strftime("%Y-%m-%dT%H:%M:%S",
+                                                                       time.localtime(t))}) + "\n")
+    return rdir, files
+
+
+def test_raw_files_are_deleted_once_their_whole_shard_is_committed(tmp_path, monkeypatch):
+    from bes.data import download, shards, tokenize_worker
+
+    out, data = tmp_path / "run", tmp_path / "data_cache"
+    t0 = time.time() - 100.0
+    SV.write_manifest(out, {"budget": {"t0": t0}})
+    paths = SV.RunPaths(out)
+    cfg = dataclasses.replace(Cfg(), run=dataclasses.replace(Cfg().run, data_dir=str(data),
+                                                             tok_root="run"))
+    root = SV.tok_root(cfg, out)
+    # web text: 0 owned and whole, 1 owned but cut at max_records, 2 from before the run, 3 owned
+    # without a shard yet
+    rdir, files = _fake_source(data, "climbmix", 4, [t0 + 5, t0 + 6, t0 - 500, t0 + 7], t0)
+    tdir = tokenize_worker.tok_dir("climbmix", root)
+    for i, mr in ((0, None), (1, 3000), (2, None)):
+        shards.append_manifest(tdir, {"shard": i, "max_records": mr,
+                                      "input": {"path": files[i].path, "size": files[i].size}})
+    # chat with messages: every file owned and whole; the newest stays for the sampling prompts
+    cdir, cfiles = _fake_source(data, "smoltalk_constraints", 3, [t0 + 1] * 3, t0)
+    for i, f in enumerate(cfiles):
+        shards.append_manifest(tokenize_worker.tok_dir("smoltalk_constraints", root),
+                               {"shard": i, "max_records": None,
+                                "input": {"path": f.path, "size": f.size}})
+    off = dataclasses.replace(cfg, run=dataclasses.replace(cfg.run, delete_raw_after_tokenize=False))
+    assert SV.prune_raw(paths, off, "climbmix", print) == []
+    assert SV.prune_raw(paths, cfg, "climbmix", print) == [files[0].path]
+    assert [(rdir / f.path).exists() for f in files] == [False, True, True, True]
+    assert SV.prune_raw(paths, cfg, "smoltalk_constraints", print) == [f.path for f in cfiles[:2]]
+    assert [(cdir / f.path).exists() for f in cfiles] == [False, False, True]
+    # the downloads do not fetch a deleted file whose whole shard is committed again
+    fetched = []
+    monkeypatch.setattr(download, "download_file", lambda repo, commit, rf, d, **kw: fetched.append(rf.path))
+    assert SV._download_source(paths, cfg, "climbmix", None, print) == 4
+    assert sorted(fetched) == [f.path for f in files[1:]]
+    called = []
+    monkeypatch.setattr(download, "download_source", lambda *a, **kw: called.append(a) or [1, 2])
+    assert SV._download_source(paths, off, "climbmix", None, print) == 2 and called
+
+
 def test_check_devices():
     cpu = {"backend": "cpu", "jax": SV.PINNED_JAX, "devices": [{"kind": "cpu"}]}
     with pytest.raises(SV.PreflightError, match="no TPU"):
@@ -396,7 +470,9 @@ def test_cpu_rehearsal_with_kill_and_resume(tmp_path):
     pin = ["taskset", "-c", cores] if subprocess.run(["which", "taskset"], capture_output=True).returncode == 0 else []
     script = [PY, str(ROOT / "scripts" / "run_24h.py")]
     cmd = pin + script + ["--config", str(ROOT / "configs" / "smoke.py"), "--allow-cpu",
-                          "--budget-minutes", "12", "--out", str(out)]
+                          "--budget-minutes", "12", "--out", str(out),
+                          # the raw samples in data_cache are shared: never delete them in a test
+                          "--override", "run.delete_raw_after_tokenize=false"]
     log1 = open(tmp_path / "first.log", "w")
     proc = subprocess.Popen(cmd, cwd=str(ROOT), env=env, stdout=log1, stderr=subprocess.STDOUT)
 
@@ -466,6 +542,128 @@ def test_run_24h_refuses_a_second_run_and_a_resume_without_a_run(tmp_path):
             R.main(["--out", str(out), "--resume", "--allow-cpu"])
     finally:
         lock.release()
+
+
+def test_run_24h_persistent_compilation_cache_is_guarded(tmp_path, monkeypatch):
+    """The cache is enabled under <run>/jax_cache; an option this JAX does not know is logged and
+    the run goes on without the cache (before: the exception stopped the supervisor)."""
+    import jax
+    from jax._src import compilation_cache as cc
+
+    R = _run24()
+    old = (jax.config.jax_compilation_cache_dir, jax.config.jax_persistent_cache_min_compile_time_secs)
+    said = []
+    try:
+        info = R.configure_jax(SV.RunPaths(tmp_path / "a"), log=said.append)
+        assert info["enabled"] is True and (tmp_path / "a" / "jax_cache").is_dir()
+        assert jax.config.jax_compilation_cache_dir == str(tmp_path / "a" / "jax_cache")
+        real = jax.config.update
+
+        def update(name, value):
+            if name == "jax_persistent_cache_min_compile_time_secs":
+                raise AttributeError("unrecognized config option")
+            return real(name, value)
+
+        monkeypatch.setattr(jax.config, "update", update)
+        info = R.configure_jax(SV.RunPaths(tmp_path / "b"), log=said.append)
+        assert info["enabled"] is False and "unrecognized" in info["reason"]
+        assert jax.config.jax_compilation_cache_dir is None
+        assert any("going on without it" in m for m in said)
+    finally:
+        monkeypatch.undo()
+        jax.config.update("jax_compilation_cache_dir", old[0])
+        jax.config.update("jax_persistent_cache_min_compile_time_secs", old[1])
+        cc.reset_cache()
+
+
+def test_run_24h_finds_a_parameters_only_final_checkpoint(tmp_path):
+    import numpy as np
+
+    from bes.train import checkpoint as CK
+
+    R = _run24()
+    run = R.Run.__new__(R.Run)
+    run.paths = SV.RunPaths(tmp_path)
+    tree = {"state": {"params": {"a": np.zeros(2, np.float32)}}}
+    CK.save(tmp_path / "train" / "ckpt", tree, step=30, config_hash="h")
+    assert run.train_checkpoint().name == "ckpt-000001-step-000000030"
+    CK.save(tmp_path / "train" / "ckpt_params", tree, step=40, config_hash="h")
+    assert run.train_checkpoint().parent.name == "ckpt_params"     # the later final state
+    CK.save(tmp_path / "train" / "ckpt", tree, step=40, config_hash="h")
+    assert run.train_checkpoint().parent.name == "ckpt"            # a tie: the full one
+
+
+def test_run_24h_health_samples_are_paired_budgeted_and_use_the_decode_settings(monkeypatch):
+    """The DPO health sampler: the start's call stops at its time budget (at least min_prompts),
+    every later call samples exactly those prompts with the same seeds (paired statistics), at
+    the run's own reply limit, with the run's temperature and self-evidence weight."""
+    import types
+
+    from bes.decode import lm as LM
+    from bes.decode import smc
+    from bes.model import generate as G
+
+    R = _run24()
+    cfg = load_config(str(ROOT / "configs" / "smoke.py"))
+    made, calls = [], []
+
+    class FakeLM:
+        def __init__(self, params, consts, model_cfg, tok, **kw):
+            made.append(kw)
+
+    def fake_decode(lm, prompt, **kw):
+        calls.append((tuple(prompt), kw["seed"], kw["settings"].temperature, kw["max_new_tokens"]))
+        n = 3 + len(prompt) % 5
+        return types.SimpleNamespace(particles=[types.SimpleNamespace(tokens=list(range(n)))])
+
+    monkeypatch.setattr(LM, "OurLM", FakeLM)
+    monkeypatch.setattr(smc, "decode", fake_decode)
+    monkeypatch.setattr(G, "jitted", lambda model_cfg: "decoder")
+    run = R.Run.__new__(R.Run)
+    run._tok = object()
+    prompts = [[1] * (i + 1) for i in range(10)]
+    fn = run._sample_stats_fn(cfg, {}, prompts, cfg.decode.max_new_tokens, budget_s=0.0,
+                              min_prompts=3)
+    start, cand = fn("p0"), fn("p1")
+    assert start["n"] == cand["n"] == 3 and start["max_new"] == cfg.decode.max_new_tokens
+    assert [c[:2] for c in calls[:3]] == [c[:2] for c in calls[3:]] == \
+        [(tuple(prompts[i]), 7 + i) for i in range(3)]
+    assert all(c[2] == cfg.decode.temperature and c[3] == cfg.decode.max_new_tokens for c in calls)
+    assert all(kw["self_evidence_weight"] == cfg.decode.self_evidence_weight for kw in made)
+    assert start["len"] == cand["len"]
+
+
+def test_run_24h_sampling_prompts_come_from_the_held_out_split_first(tmp_path, monkeypatch):
+    """The preference-sampling prompts are the loader's held-out conversations (never trained
+    on); a source with too few of them is topped up from its raw rows, marked heldout=False
+    (before: every prompt came from the training universe)."""
+    from bes.data import download, loader as L, samples as SM
+    from bes.tokenizer import load as load_tokenizer
+
+    R = _run24()
+    cfg = load_config(str(ROOT / "configs" / "smoke.py"))     # one chat source with messages
+    cfg = dataclasses.replace(cfg, run=dataclasses.replace(cfg.run, data_dir=str(tmp_path / "dc")))
+    tok = load_tokenizer()
+    held = [SM.conversation_sample([{"role": "user", "content": f"Tell me about cats, part {k}."},
+                                    {"role": "assistant", "content": "Cats purr."}], tok)
+            for k in range(3)]
+    asked = []
+    monkeypatch.setattr(L, "heldout_samples",
+                        lambda root, name, n, seed=0, **kw: asked.append((Path(root), name, n)) or held)
+    raw = [{"messages": [{"role": "user", "content": f"What is {k} plus {k}?"},
+                         {"role": "assistant", "content": f"It is {2 * k}."}]} for k in range(9)]
+    monkeypatch.setattr(download, "completed_files", lambda name, root: [download.LocalFile(
+        name, 0, "r", "c", "f.parquet", str(tmp_path / "f.parquet"), 1)])
+    monkeypatch.setattr(download, "iter_records", lambda path, cols, batch_rows=256: iter([raw]))
+    run = R.Run.__new__(R.Run)
+    run.cfg, run.paths, run._tok, run.sup = cfg, SV.RunPaths(tmp_path / "run"), tok, None
+    items = run._sample_prompts(8)
+    assert asked == [(SV.tok_root(cfg, tmp_path / "run"), "smoltalk_constraints", 8)]
+    assert [it["heldout"] for it in items] == [True] * 3 + [False] * 5
+    assert len({it["id"] for it in items}) == 8 and items[0]["id"].startswith("smoltalk_constraints/heldout/")
+    assert items[0]["messages"][-1]["content"].startswith("Tell me about cats") or \
+        items[0]["kind"] == "constraint"
+    assert items[3]["id"] == "smoltalk_constraints/0/0" and "plus" in items[3]["messages"][-1]["content"]
 
 
 def test_run_24h_helpers(tmp_path):

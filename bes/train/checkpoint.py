@@ -22,10 +22,18 @@ removed by the next :class:`Checkpointer`. Sequence numbers only grow, so names 
 "latest" means the highest sequence number. Old checkpoints are pruned to the newest ``keep`` by
 first renaming them to a hidden trash name.
 
+Disk space (:class:`Checkpointer`): before a write the free space under the root is compared with
+the size of the new checkpoint (arrays plus a small allowance); when it is short, the oldest
+checkpoints are deleted first until it fits, never the protected ones (the caller's trusted
+checkpoint; by default the newest existing one). A write that still fails with ``ENOSPC`` /
+``EDQUOT`` prunes once more and is retried once. So a full disk costs old checkpoints, not every
+later save.
+
 A checkpoint written under another configuration hash is refused unless ``force=True``.
 """
 from __future__ import annotations
 
+import errno
 import json
 import os
 import re
@@ -56,6 +64,21 @@ _ROOT_PATH = "__root__"
 
 #: Rename used for the final, atomic step of a save (a hook for crash tests).
 _rename = os.rename
+#: Errors of a write that ran out of space.
+_NO_SPACE = (errno.ENOSPC, errno.EDQUOT)
+
+
+def free_bytes(path: str | os.PathLike) -> int:
+    """Free bytes of the file system holding ``path`` (a hook for disk-full tests)."""
+    return int(shutil.disk_usage(path).free)
+
+
+def checkpoint_bytes(arrays: dict[str, np.ndarray], records: list[dict]) -> int:
+    """Disk bytes a checkpoint of these host arrays needs, with a small allowance: the array
+    bytes plus 1 KiB per member (zip and ``.npy`` headers, its manifest record), plus 2 % and
+    1 MiB."""
+    payload = sum(int(a.nbytes) for a in arrays.values())
+    return payload + payload // 50 + 1024 * (len(arrays) + len(records)) + (1 << 20)
 
 
 class CheckpointError(RuntimeError):
@@ -217,10 +240,12 @@ def _remove(info: CkptInfo) -> None:
     shutil.rmtree(trash, ignore_errors=True)
 
 
-def prune(root: str | os.PathLike, keep: int) -> list[CkptInfo]:
-    """Delete all but the newest ``keep`` checkpoints; returns the deleted ones."""
+def prune(root: str | os.PathLike, keep: int, protect: Iterable[int] = ()) -> list[CkptInfo]:
+    """Delete all but the newest ``keep`` checkpoints, never those whose sequence number is in
+    ``protect``; returns the deleted ones."""
     ckpts = list_checkpoints(root)
-    doomed = ckpts[:-keep] if keep > 0 else ckpts
+    keep_seqs = set(int(s) for s in protect)
+    doomed = [c for c in (ckpts[:-keep] if keep > 0 else ckpts) if c.seq not in keep_seqs]
     for info in doomed:
         _remove(info)
     return doomed
@@ -411,7 +436,13 @@ class Checkpointer:
     With ``async_write`` the arrays are copied to host memory synchronously (so the device buffers
     may be donated right after :meth:`save` returns) and written by one background thread; the
     next save, :meth:`wait`, :meth:`list` and :meth:`restore` wait for it. A failed background
-    write is re-raised (as :class:`CheckpointError`) by the next of these calls.
+    write is re-raised (as :class:`CheckpointError`) by the next of these calls; :meth:`idle` tells
+    without blocking whether the write has finished.
+
+    Every write first makes room (module docstring): the oldest checkpoints are deleted while the
+    free space is below :func:`checkpoint_bytes`, except the protected ones (``save(protect=...)``,
+    default the newest existing checkpoint); after an ``ENOSPC`` it prunes once more and retries
+    once. ``last_job`` describes the latest finished write (``pruned`` names, ``retried``).
     """
 
     def __init__(self, root: str | os.PathLike, config_hash: str, *, keep: int = 3,
@@ -424,13 +455,45 @@ class Checkpointer:
         self.async_write = bool(async_write)
         self._thread: threading.Thread | None = None
         self._error: BaseException | None = None
+        self.last_job: dict[str, Any] = {}
 
-    def _job(self, arrays, records, treedef, seq, step, meta) -> None:
+    def _make_room(self, need: int, protect: frozenset[int],
+                   at_least_one: bool = False) -> list[str]:
+        """Delete the oldest unprotected checkpoints until ``need`` bytes are free (and at least
+        one when ``at_least_one``); returns their names."""
+        removed: list[str] = []
+        cleanup_stale(self.root)                 # single writer: leftovers of crashed writes
+        for info in list_checkpoints(self.root):
+            if info.seq in protect:
+                continue
+            if free_bytes(self.root) >= need and (removed or not at_least_one):
+                break
+            _remove(info)
+            removed.append(info.name)
+        return removed
+
+    def _job(self, arrays, records, treedef, seq, step, meta, protect=None) -> None:
         try:
-            write(self.root, arrays, records, treedef, seq=seq, step=step,
-                  config_hash=self.config_hash, meta=meta)
+            if protect is None:                  # default: the newest existing checkpoint
+                newest = list_checkpoints(self.root)[-1:]
+                protect = [c.seq for c in newest]
+            keep = frozenset(int(s) for s in protect)
+            need = checkpoint_bytes(arrays, records)
+            job: dict[str, Any] = {"need_bytes": need, "pruned": [], "retried": False}
+            if free_bytes(self.root) < need:
+                job["pruned"] += self._make_room(need, keep)
+            kw = dict(seq=seq, step=step, config_hash=self.config_hash, meta=meta)
+            try:
+                write(self.root, arrays, records, treedef, **kw)
+            except OSError as e:
+                if e.errno not in _NO_SPACE:
+                    raise
+                job["pruned"] += self._make_room(need, keep, at_least_one=True)
+                job["retried"] = True
+                write(self.root, arrays, records, treedef, **kw)
+            self.last_job = job
             if self.keep > 0:
-                prune(self.root, self.keep)
+                prune(self.root, self.keep, keep)
         except BaseException as e:  # re-raised in the caller's thread by wait()
             self._error = e
 
@@ -443,19 +506,30 @@ class Checkpointer:
             err, self._error = self._error, None
             raise CheckpointError(f"background checkpoint write failed: {err!r}") from err
 
+    def idle(self) -> bool:
+        """No background write is running (a finished one may still have to be collected by
+        :meth:`wait`)."""
+        return self._thread is None or not self._thread.is_alive()
+
     def save(self, tree: Any, *, step: int, meta: dict | None = None,
-             blocking: bool | None = None) -> CkptInfo:
-        """Save ``tree`` with JSON ``meta`` as the newest checkpoint; returns its (future) info."""
+             blocking: bool | None = None, protect: Iterable[int] | None = None) -> CkptInfo:
+        """Save ``tree`` with JSON ``meta`` as the newest checkpoint; returns its (future) info.
+
+        protect: sequence numbers that making room and pruning never delete (default: the newest
+        existing checkpoint). A blocking save raises :class:`CheckpointError` (or the ``OSError``)
+        when the write failed; a background one reports it through :meth:`wait`."""
         self.wait()
         blocking = (not self.async_write) if blocking is None else blocking
         seq = next_seq(self.root)
         arrays, records, treedef = to_host(tree, copy=not blocking)
+        protect = None if protect is None else tuple(int(s) for s in protect)
         if blocking:
-            self._job(arrays, records, treedef, seq, step, meta)
+            self._job(arrays, records, treedef, seq, step, meta, protect)
             self.wait()
         else:
             self._thread = threading.Thread(target=self._job, name="checkpoint-writer",
-                                            args=(arrays, records, treedef, seq, step, meta),
+                                            args=(arrays, records, treedef, seq, step, meta,
+                                                  protect),
                                             daemon=False)
             self._thread.start()
         return CkptInfo(seq, int(step), self.root / ckpt_name(seq, step))
