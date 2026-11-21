@@ -9,7 +9,10 @@ the rater answers
 
 Every rating is appended (with fsync) to ``ratings/<name>/human-<rater>.jsonl`` at once, so
 quitting or a crash loses nothing; a later session continues with the unrated pairs. Undo
-appends a ``retracted`` record. Each rater gets a different, fixed order of the pairs.
+appends a ``retracted`` record. Each rater gets a different, fixed order of the pairs. Every
+record carries the pair set's published commitment and the rated pair's digest
+(``bes.eval.proxy.make_ab``); a session refuses to start when stored records do not belong to
+the published pair set.
 """
 from __future__ import annotations
 
@@ -21,6 +24,7 @@ from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+from bes.eval.proxy import make_ab
 from bes.eval.proxy.common import append_jsonl, stable_hash
 from bes.eval.proxy.judge import load_verdicts, ratings_path
 
@@ -62,7 +66,15 @@ def rate_session(pairs: Sequence[Mapping[str, Any]], pairset: str, rater: str, r
     width = width or max(40, min(110, shutil.get_terminal_size((100, 30)).columns - 2))
     source = f"human-{rater}"
     path = ratings_path(root, pairset, source)
-    done = load_verdicts(root, pairset, source)
+    pub = make_ab.published(root, pairset)
+    done = load_verdicts(root, pairset, source, pub=pub)
+    for p in pairs:
+        if pub["digests"].get(p["pair_id"]) != make_ab.pair_digest(p):
+            raise ValueError(f"pair {p['pair_id']} is not a published pair of {pairset!r}")
+
+    def stamp(pair_id: str) -> dict[str, str]:
+        return {"commitment": pub["commitment"], "pair_digest": pub["digests"][pair_id]}
+
     todo = [p for p in pairs if p["pair_id"] not in done]
     random.Random(stable_hash(["rater-order", rater, pairset])).shuffle(todo)
     stats = {"rated": 0, "skipped": 0, "undone": 0}
@@ -94,7 +106,7 @@ def rate_session(pairs: Sequence[Mapping[str, Any]], pairset: str, rater: str, r
             if history:
                 last = history.pop()
                 append_jsonl(path, [{"pair_id": last, "verdict": "retracted", "rater": rater,
-                                     "time": round(time.time(), 1)}])
+                                     "time": round(time.time(), 1), **stamp(last)}])
                 queue.insert(0, next(p for p in pairs if p["pair_id"] == last))
                 stats["undone"] += 1
                 print_fn("last rating undone")
@@ -102,7 +114,8 @@ def rate_session(pairs: Sequence[Mapping[str, Any]], pairset: str, rater: str, r
                 print_fn("nothing to undo in this session")
             continue
         append_jsonl(path, [{"pair_id": pair["pair_id"], "verdict": KEYS[answer], "rater": rater,
-                             "seconds": round(time.time() - t0, 1), "time": round(time.time(), 1)}])
+                             "seconds": round(time.time() - t0, 1), "time": round(time.time(), 1),
+                             **stamp(pair["pair_id"])}])
         history.append(pair["pair_id"])
         queue.pop(0)
         stats["rated"] += 1

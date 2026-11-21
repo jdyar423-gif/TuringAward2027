@@ -170,6 +170,47 @@ def test_split_stable_under_additions_elsewhere():
     assert set(changed) <= multi_math
 
 
+def test_every_prefix_of_a_split_covers_every_category_in_proportion(prompts):
+    """A run that stops at a deadline answers a prefix of `select` (review eval-6: in file order
+    the first 86 held-out prompts were chat, math and code only). Every prefix holds each
+    category, and inside it each number of turns, within one prompt of its share."""
+    for split in ("dev", "test", "all"):
+        order = P.select(prompts, split)
+        assert sorted(p.id for p in order) == sorted(p.id for p in prompts if split == "all" or p.split == split)
+        assert [p.id for p in P.select(prompts, split)] == [p.id for p in order]          # deterministic
+        size = Counter(p.category for p in order)
+        turns = Counter((p.category, len(p.turns)) for p in order)
+        seen, seen_turns = Counter(), Counter()
+        for n, p in enumerate(order, 1):
+            seen[p.category] += 1
+            seen_turns[(p.category, len(p.turns))] += 1
+            for c in size:
+                assert abs(seen[c] - n * size[c] / len(order)) < 1, (split, n, c)
+            m = seen[p.category]
+            for (c, t), k in turns.items():
+                if c == p.category:
+                    assert abs(seen_turns[(c, t)] - m * k / size[c]) < 1, (split, n, c, t)
+        for limit in (5, 17, 60):
+            assert [p.id for p in P.select(prompts, split, limit=limit)] == [p.id for p in order[:limit]]
+    head = P.select(prompts, "test", limit=10)
+    assert {p.category for p in head} == set(P.CATEGORIES)
+
+
+def test_interleave_is_proportional_for_any_sizes():
+    import itertools
+
+    for k in range(1, 4):
+        for sizes in itertools.product(range(7), repeat=k):
+            groups = [[(g, i) for i in range(s)] for g, s in enumerate(sizes)]
+            out = P.interleave(groups)
+            assert sorted(out) == sorted(x for g in groups for x in g)
+            taken = [0] * k
+            for n, (g, i) in enumerate(out, 1):
+                assert i == taken[g]                       # each group keeps its own order
+                taken[g] += 1
+                assert all(abs(taken[h] - n * sizes[h] / sum(sizes)) < 1 for h in range(k))
+
+
 def test_select_and_hash(prompts):
     dev = P.select(prompts, "dev")
     test = P.select(prompts, "test")

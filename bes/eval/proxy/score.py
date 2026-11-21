@@ -74,6 +74,29 @@ def n_required(delta: float, alpha: float = 0.05, power: float = 0.8, tie_rate: 
     return math.ceil(n_dec / (1 - tie_rate))
 
 
+def resolution(n: int, tie_rate: float = 0.0, confidence: float = 0.95) -> dict[str, Any]:
+    """What ``n`` comparisons can resolve: ``half_width``, half the width of the Wilson interval
+    of a score near one half (``wilson(n / 2, n)``; ties make a score's interval a little
+    narrower, so this is the conservative width), and ``needed``: the comparisons
+    :func:`n_required` asks for to detect a difference of 3, 5 and 10 points at ``tie_rate``."""
+    lo, hi = wilson(n / 2, n, confidence) if n > 0 else (0.0, 1.0)
+    t = min(max(float(tie_rate), 0.0), 0.95)
+    return {"n": int(n), "half_width": round((hi - lo) / 2, 4), "tie_rate": round(t, 4),
+            "needed": {f"{d:.2f}": n_required(d, tie_rate=t) for d in (0.03, 0.05, 0.10)}}
+
+
+def resolution_note(n: int, tie_rate: float = 0.0) -> str:
+    """One sentence for a report under a table of ``n`` comparisons (per row), e.g. the
+    held-out half (at most 200 per opponent arm): the interval half-width in points and the
+    comparisons a 5- and a 10-point difference need at the given tie rate."""
+    r = resolution(n, tie_rate)
+    return (f"With n = {r['n']} comparisons the 95% interval of a score is about "
+            f"±{100 * r['half_width']:.0f} points; at a tie rate of {r['tie_rate']:.0%}, detecting a "
+            f"difference of 10 points needs {r['needed']['0.10']} comparisons and 5 points "
+            f"{r['needed']['0.05']} (two-sided 5% test, 80% power), so a smaller lead on n = {r['n']} "
+            "is no evidence either way.")
+
+
 def tally(outcomes: Iterable[str]) -> dict[str, Any]:
     """Counts, score, decisive win rate, intervals and the sign test of a list of outcomes."""
     c = Counter(outcomes)
@@ -203,6 +226,9 @@ def to_markdown(summary: Mapping[str, Any], source: str = "") -> str:
         lines.append(_row(name, t))
     lines += ["", "Comparisons needed (power 0.8, alpha 0.05, at the observed tie rate): "
               + ", ".join(f"{k.replace('delta_', '+')}: {v}" for k, v in summary["power"].items())]
+    o = summary["overall"]
+    if o.get("n"):
+        lines += ["", resolution_note(o["n"], (o["ties"] + o["both_bad"]) / o["n"])]
     if "judge" in summary:
         j = summary["judge"]
         lines += ["", f"Judge diagnostics: both orders agree on {j['orders_agree']:.1%} of pairs; mean "

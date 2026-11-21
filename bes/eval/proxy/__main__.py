@@ -16,6 +16,7 @@ Commands (every step is resumable; see ``docs/EVAL_PROTOCOL.md``):
     compare --a N1 --b N2 --source S   paired sign test between two arms of ours
     power --delta D [--tie-rate T]  comparisons needed to detect a difference
     all --ours ... --opponent ...   the whole protocol end to end
+    factual --generator M:F ...     factual questions with the library on and off (library decision)
 """
 from __future__ import annotations
 
@@ -28,7 +29,8 @@ from typing import Any
 from bes.config import DecodeCfg
 from bes.eval import exact_score
 from bes.eval.proxy import make_ab, opponents, prompts as prompt_set, runner, score
-from bes.eval.proxy.common import GenSettings, default_root, models_dir, write_json_atomic, write_text_atomic
+from bes.eval.proxy.common import (SELECT_RULES, GenSettings, default_root, models_dir, write_json_atomic,
+                                   write_text_atomic)
 from bes.eval.proxy.judge import GGUFJudge, load_verdicts, ratings_path, run_judge, standin_judge
 from bes.eval.proxy.run_gguf import gguf_spec
 
@@ -123,9 +125,14 @@ def exact_report(root: Path, run_id: str, split: str = "all") -> dict[str, Any]:
 
 
 def score_report(root: Path, pairset: str, source: str) -> dict[str, Any]:
+    """Unblinded summary of one rating source (``bes.eval.proxy.score.summarize``), written to
+    ``reports/ab/``. Refuses (``ValueError``) when the key does not match its published
+    commitment chain, when ``pairs.jsonl`` differs from what the key commits to, or when any
+    record of the source was not made under this key (``make_ab.invalid_records``)."""
     pairs, _meta = make_ab.load_pairs(root, pairset)
     key = make_ab.load_key(root, pairset)
-    verdicts = load_verdicts(root, pairset, source)
+    make_ab.check_pairs(pairs, key, pairset)
+    verdicts = load_verdicts(root, pairset, source, key=key)
     from bes.eval.proxy.common import read_jsonl
     judge_records = read_jsonl(ratings_path(root, pairset, source)) if source.startswith("judge-") else None
     summary = score.summarize(pairs, key, verdicts, judge_records)
@@ -185,7 +192,8 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--set", action="append", default=[], help="settings override key=value")
     p.add_argument("--label", default=None)
     p.add_argument("--samples", type=int, default=None)
-    p.add_argument("--select", default=None, choices=["first", "logprob_mean", "filtered_logprob_mean"])
+    p.add_argument("--select", default=None, choices=list(SELECT_RULES),
+                   help="how one of --samples K candidates is kept (bes.eval.proxy.common.select_candidate)")
     p.add_argument("--generator", default=None, help="module:factory of our generator")
     p.add_argument("--generator-arg", action="append", default=[])
     p.add_argument("--key", default=None, help="cache key of our generator (checkpoint + code)")
@@ -242,6 +250,24 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--judge-minutes", type=float, default=None)
     _add_run_args(p)
 
+    p = sub.add_parser("factual", help="factual questions answered with the library on and off")
+    p.add_argument("--generator", required=True, help="module:factory of our generator")
+    p.add_argument("--generator-arg", action="append", default=[])
+    p.add_argument("--key", default=None, help="cache key of our generator (default: its 'key' attribute)")
+    p.add_argument("--set", action="append", default=[], help="settings override key=value (both arms)")
+    p.add_argument("--per-set", type=int, default=100, help="questions per evaluation split")
+    p.add_argument("--probes", type=int, default=100, help="head-entity probes (evaluation half)")
+    p.add_argument("--sets", default="nq,tqa,popqa,wq,probe")
+    p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--minutes", type=float, default=None, help="wall-clock budget for new generations")
+    p.add_argument("--chunk", type=int, default=25, help="questions per alternation of the two arms")
+    p.add_argument("--limit", type=int, default=None, help="first N questions (sets interleaved)")
+    p.add_argument("--name", default=None, help="report name (default factual-<question set tag>)")
+    p.add_argument("--cache-dir", default=None, help="directory holding the library track's raw/ "
+                                                     "(default data_cache/library)")
+    p.add_argument("--library", default=None, help="built library (probes, stored-question check)")
+    p.add_argument("--questions", default=None, help="a question file to use instead of building one")
+
     args = ap.parse_args(argv)
     root = Path(args.root) if args.root else default_root()
     base = Path(args.models_dir) if args.models_dir else models_dir()
@@ -295,6 +321,41 @@ def main(argv: list[str] | None = None) -> int:
         print(score.n_required(args.delta, args.alpha, args.power, args.tie_rate))
     elif args.cmd == "all":
         return run_all(args, root, base)
+    elif args.cmd == "factual":
+        return run_factual_cli(args, root)
+    return 0
+
+
+def run_factual_cli(args: argparse.Namespace, root: Path) -> int:
+    """``factual``: the fixed question set (built once), both arms of our generator (presets
+    ``default`` and ``nolib``, one loaded generator), the paired report."""
+    from bes.eval.proxy import factual
+    from bes.eval.proxy.common import resolve_callable
+    from bes.eval.proxy.run_ours import CallableBackend
+
+    sets = [s.strip() for s in args.sets.split(",") if s.strip()]
+    unknown = sorted(set(sets) - set(factual.SETS))
+    if unknown:
+        raise SystemExit(f"unknown question sets {unknown}; choose from {list(factual.SETS)}")
+    if any(o.split("=", 1)[0].strip() == "extra.use_library" for o in args.set):
+        raise SystemExit("the arms differ exactly in extra.use_library; do not override it")
+    path, questions = factual.prepare(root, per_set=args.per_set, n_probes=args.probes, seed=args.seed,
+                                      sets=sets, cache_dir=args.cache_dir, library_dir=args.library,
+                                      questions=args.questions)
+    if args.limit is not None:
+        keep = {p.id for p in factual.as_prompts(questions)[:args.limit]}
+        questions = [q for q in questions if q.id in keep]
+    gen = resolve_callable(args.generator)(**_kv(args.generator_arg))
+    key = args.key or getattr(gen, "key", None)
+    if not key:
+        raise SystemExit("our generator has no 'key' attribute; pass --key")
+    specs = [build_spec("ours", preset, args.set, f"factual-{arm}", args.seed, None, None, 1, None,
+                        args.generator, _kv(args.generator_arg), key)
+             for preset, arm in (("default", "lib"), ("nolib", "nolib"))]
+    name = args.name or "factual-" + path.stem.replace("questions-", "")
+    summary = factual.run_factual(questions, specs[0], specs[1], root, backend=CallableBackend(gen, key=key),
+                                  minutes=args.minutes, chunk=args.chunk, name=name)
+    print(factual.to_markdown(summary, f"(`{name}`)"))
     return 0
 
 

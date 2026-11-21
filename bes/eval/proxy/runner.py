@@ -25,6 +25,7 @@ import multiprocessing as mp
 import os
 import sys
 import time
+from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -121,7 +122,8 @@ def converse(prompt: Prompt, settings: GenSettings, seed: int, backend_key: str,
                         "prompt_hash": prompt.content_hash, "turn": t, "sample": k, "seed": s,
                         "settings_hash": stable_hash(settings.core_dict(), 10),
                         "reply": reply.to_dict(), "time": round(time.time(), 1)})
-        idx = select_candidate(cands, settings.select, _is_degenerate)
+        idx = select_candidate(cands, settings.select, _is_degenerate, user=user,
+                               history=list(prompt.turns[:t]))
         chosen = cands[idx]
         turns.append({"user": user, "reply": chosen.text, "finish_reason": chosen.finish_reason,
                       "selected": idx, "n_candidates": len(cands),
@@ -172,6 +174,10 @@ def _prompt_task(prompt: Prompt) -> dict[str, Any]:
 # ------------------------------------------------------------------------------------ run
 @dataclass
 class RunResult:
+    """What one call of :func:`run` did. ``done_by_category`` / ``of_by_category``: complete
+    prompts and asked prompts per category (a run stopped by its deadline covers the categories
+    in proportion, ``bes.eval.proxy.prompts.select``; report these next to partial results)."""
+
     run_id: str
     outputs: Path
     done: int = 0
@@ -180,6 +186,8 @@ class RunResult:
     failed: dict[str, str] = field(default_factory=dict)
     out_of_time: int = 0
     seconds: float = 0.0
+    done_by_category: dict[str, int] = field(default_factory=dict)
+    of_by_category: dict[str, int] = field(default_factory=dict)
 
 
 def run(prompts: Sequence[Prompt], spec: RunSpec, root: Path | None = None, workers: int = 0,
@@ -253,6 +261,8 @@ def run(prompts: Sequence[Prompt], spec: RunSpec, root: Path | None = None, work
                     fut.cancel()
                 raise
     result.seconds = time.time() - t0
+    result.done_by_category = dict(sorted(Counter(r["category"] for r in records.values()).items()))
+    result.of_by_category = dict(sorted(Counter(p.category for p in prompts).items()))
     assemble(spec, root, all_prompts if all_prompts is not None else prompts, cached)
     log(f"[{spec.run_id}] finished: {result.done} complete ({result.reused} from cache), "
         f"{result.new_generations} new generations, {result.out_of_time} not started before the "

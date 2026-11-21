@@ -32,6 +32,22 @@ def test_all_end_to_end_and_resumable(tmp_path, capsys):
     assert data["summary"]["n_prompts"] == 14 and data["summary"]["math"]["n"] > 0
 
 
+def test_rerunning_all_on_a_grown_run_keeps_the_verdicts_right(tmp_path, capsys):
+    """`all` rerun after more prompts were answered (EVAL_PROTOCOL section 9: every command can
+    be interrupted and rerun) rebuilds each pair set under the same name: the verdicts stored for
+    the first prompts must still unblind to the same model. Ours is the verbose stand-in, always
+    the longer reply, and the judge prefers the longer reply: every pair is a win."""
+    base = ["--root", str(tmp_path), "all", "--ours", "standin-verbose", "--opponent", "standin-plain",
+            "--judge", "standin-longer", "--split", "dev"]
+    report = tmp_path / "reports" / "ab" / "ours-vs-standin-plain-common-dev--judge-standin-longer.json"
+    assert main(base + ["--limit", "12"]) == 0
+    assert json.loads(report.read_text())["overall"]["wins"] == 12
+    assert main(base + ["--limit", "24"]) == 0
+    overall = json.loads(report.read_text())["overall"]
+    assert (overall["n"], overall["wins"], overall["losses"]) == (24, 24, 0)
+    capsys.readouterr()
+
+
 def test_individual_commands(tmp_path, capsys):
     root = ["--root", str(tmp_path)]
     assert main(root + ["run", "--model", "standin-plain", "--label", "a", "--split", "test", "--limit", "6"]) == 0

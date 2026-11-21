@@ -76,7 +76,7 @@ def file_sha256(path: str | os.PathLike, chunk: int = 1 << 20) -> str:
 
 
 # ------------------------------------------------------------------------------- settings
-SELECT_RULES = ("first", "logprob_mean", "filtered_logprob_mean")
+SELECT_RULES = ("first", "logprob_mean", "filtered_logprob_mean", "decoder_select")
 
 
 @dataclass(frozen=True)
@@ -267,15 +267,24 @@ def strip_think(text: str) -> tuple[str, dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------- candidate selection
-def select_candidate(cands: Sequence[Reply], rule: str, is_degenerate=None) -> int:
+def select_candidate(cands: Sequence[Reply], rule: str, is_degenerate=None, *, user: str = "",
+                     history: Sequence[str] = ()) -> int:
     """Index of the candidate to keep.
 
     - ``first``: candidate 0 (single-sample arms).
     - ``logprob_mean``: highest mean log-probability per generated token; candidates cut by
       ``max_tokens`` rank after finished ones; candidates without log-probabilities rank last.
+      With ``--samples K`` this is the plan's K-matched control arm (each opponent keeps its
+      best candidate by its own log-probability).
     - ``filtered_logprob_mean``: as ``logprob_mean`` after dropping candidates that
-      ``is_degenerate(reply) -> bool`` flags (empty, looping, truncated, unclosed fence), unless
-      all are flagged. This is the control arm that mirrors our own failure filter.
+      ``is_degenerate(reply) -> bool`` flags (``bes.eval.exact_score.degenerate_stats``: empty,
+      cut at the token limit, looping tail, repeated lines, unclosed code fence, leaked role
+      markers), unless all are flagged. Only that filter: no constraint check, no length band,
+      no majority vote, no consensus.
+    - ``decoder_select``: the selector our decoder uses (:func:`decoder_select`): the
+      constraints compiled from the user message ``user``, the failure filter, the length band,
+      the math majority vote and the consensus, over the candidates as independent samples of
+      equal weight. The selector-matched control arm.
     Ties break towards the lower index, so the rule is deterministic.
     """
     if not cands:
@@ -284,6 +293,8 @@ def select_candidate(cands: Sequence[Reply], rule: str, is_degenerate=None) -> i
         return 0
     if rule not in SELECT_RULES:
         raise ValueError(f"unknown select rule {rule!r}")
+    if rule == "decoder_select":
+        return decoder_select(cands, user, history)
     pool = list(range(len(cands)))
     if rule == "filtered_logprob_mean" and is_degenerate is not None:
         kept = [i for i in pool if not is_degenerate(cands[i])]
@@ -295,6 +306,26 @@ def select_candidate(cands: Sequence[Reply], rule: str, is_degenerate=None) -> i
         return (r.finish_reason == "stop", mean is not None, mean if mean is not None else 0.0, -i)
 
     return max(pool, key=rank)
+
+
+def decoder_select(cands: Sequence[Reply], user: str, history: Sequence[str] = ()) -> int:
+    """Our decoder's selection (``bes.decode.select.select``, as ``bes.decode.respond`` calls it)
+    over K independent candidates of any model: the spec ``bes.exact.constraints.compile(user)``,
+    the failure checks (unfinished = finish reason other than ``"stop"``, constraint
+    violations, degenerate output, length band of the prompt type), the math majority vote with
+    the scorer's answer extraction (context: ``history`` and ``user``) and the lexical consensus.
+    Every candidate has weight 1 (independent samples from the model, as in E9's ``filter``
+    arm); there is no ``at_budget`` check (no budget-aware potentials end these candidates)."""
+    from bes.decode import select as S
+    from bes.exact import constraints as C
+
+    try:
+        spec = C.compile(user)
+    except Exception:          # a compiler bug must not kill the run (as in bes.decode.respond)
+        spec = C.ConstraintSpec()
+    pool = [S.Candidate(text=r.text, weight=1.0, finish="stop" if r.finish_reason == "stop" else "length",
+                        n_tokens=int(r.completion_tokens), logp=r.logprob_sum) for r in cands]
+    return int(S.select(pool, spec, user, history=list(history)).index)
 
 
 # ------------------------------------------------------------------------------- backends

@@ -184,7 +184,12 @@ _CONCLUSION = re.compile(
     r"(?i)\b(?:so|therefore|thus|hence|in total|altogether|overall|in summary|in conclusion|finally|"
     r"that means|this means|which means|confirms|indeed|the result|the total|that gives|which gives|"
     r"this gives|comes to|we get|you get)\b")
-_SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+|\n+")
+#: A sentence that checks an earlier result ("Check: 12 x 80 = 960.", "To verify, ...").
+_CHECK = re.compile(
+    r"(?i)^\W*(?:(?:let'?s|let us|we can|now|and)\s+)?(?:check|checking|verify|verifying|verification|"
+    r"double[- ]check|sanity check|confirm|confirming|to (?:check|verify|confirm)|plugging|substituting)\b")
+#: Sentence ends: whitespace after a run of ``.?!``, except after a factorial (``7! = 5040``).
+_SENTENCE_SPLIT = re.compile(r"(?<=[.!?])(?<!\d!)\s+|\n+")
 
 
 def context_values(texts: Sequence[str]) -> set[Fraction]:
@@ -207,15 +212,27 @@ def extract_answer(text: str, context: set[Fraction] | None = None) -> dict[str,
     2. ``answer_key``: the first number within 40 characters after the last "answer is",
        "answer:" or "answer =";
     3. ``bold``: the last number of the last bold span holding one (step headings skipped);
-    4. ``conclusion``: the last sentence that has a concluding word (so, therefore, thus, in
-       total, ...) and a number; 5. ``last``: else the last sentence with a number. In both,
-       numbers that are labels (``Step 2``, list markers) are ignored; with ``context`` the
-       candidate ``values`` are the sentence's numbers that are *not* in the context (all of them
-       if none is new), otherwise only the sentence's last number;
+    4. / 5. one sentence (sentences end at whitespace after ``.!?``, never after a factorial
+       such as ``7!``, and at line breaks; numbers that are labels, ``Step 2`` or list markers,
+       are ignored). A sentence states a *new* number when it holds one that is not in the
+       context (without ``context`` every number is new). Among the sentences that state a new
+       number: the last one (``last``), except that a later sentence that only checks a result
+       (it opens with check, verify, to confirm, plugging in, ...) never overrides the last
+       sentence with a concluding word (so, therefore, thus, in total, ...), which is then taken
+       (``conclusion``). So a setup sentence ("So the train travels 3 hours at 60 km/h.") is not
+       an answer, and neither is a conclusion followed by the final computation ("Therefore 3
+       people eat 6 slices. Slices left: 8 - 6 = 2."); "So 15% of 80 is 12. Check: 12 x 80 =
+       960." still reads 12. When no sentence states a new number, the last concluding
+       sentence, else the last sentence. In the chosen sentence the candidate ``values`` are,
+       with ``context``, its new numbers (all of them if none is new), otherwise its last number;
+       when it holds an equation the number after its last ``=`` is the stated result: the only
+       candidate of a ``last`` sentence, an added candidate of a ``conclusion`` (whose main
+       clause may come first: "the total is $43, which includes 180 x 0.10 = 18");
     6. ``words``: number words, when the reply has no digits.
 
-    ``value`` is the last candidate; a reply counts as correct if any candidate of the decisive
-    location matches (one location, so listing many numbers elsewhere does not help).
+    ``value`` is the stated result (after ``=``) when there is one, else the last candidate; a
+    reply counts as correct if any candidate of the decisive location matches (one location, so
+    listing many numbers elsewhere does not help).
     """
     t = _normalise(text)
 
@@ -242,14 +259,28 @@ def extract_answer(text: str, context: set[Fraction] | None = None) -> dict[str,
         if nums:
             sentences.append((s, nums))
     if sentences:
-        cues = [x for x in sentences if _CONCLUSION.search(x[0])]
-        method = "conclusion" if cues else "last"
-        _, nums = (cues or sentences)[-1]
-        if context is None:
-            return one(nums[-1][0], method, nums[-1][3])
-        fresh = [n for n in nums if n[0] not in context] or nums
-        return {"value": fresh[-1][0], "values": [n[0] for n in fresh], "method": method,
-                "percent": fresh[-1][3]}
+        new = [i for i, (_, nums) in enumerate(sentences)
+               if context is None or any(n[0] not in context for n in nums)]
+        if new:
+            cues = [i for i in new if _CONCLUSION.search(sentences[i][0])]
+            if not cues:
+                idx, method = new[-1], "last"
+            else:
+                later = [i for i in new if i > cues[-1] and not _CHECK.match(sentences[i][0])]
+                idx, method = (later[-1], "last") if later else (cues[-1], "conclusion")
+        else:
+            cues = [i for i, (s, _) in enumerate(sentences) if _CONCLUSION.search(s)]
+            idx, method = (cues[-1], "conclusion") if cues else (len(sentences) - 1, "last")
+        s, nums = sentences[idx]
+        eq = s.rfind("=")
+        stated = next((n for n in nums if n[1] > eq), None) if eq >= 0 else None
+        if stated is not None and method == "last":
+            return one(stated[0], method, stated[3])
+        cands = nums[-1:] if context is None else ([n for n in nums if n[0] not in context] or nums)
+        if stated is not None and all(n[0] != stated[0] for n in cands):
+            cands = cands + [stated]
+        top = stated if stated is not None else cands[-1]
+        return {"value": top[0], "values": [n[0] for n in cands], "method": method, "percent": top[3]}
     v = parse_number_words(t)
     if v is not None:
         return one(v, "words", False)

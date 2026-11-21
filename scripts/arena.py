@@ -12,7 +12,11 @@ order under the labels A, B, C, once all are ready. Vote ``a`` / ``b`` / ``c`` (
 (tie), ``x`` (all bad), ``s`` (skip), ``u`` (undo), ``q`` (quit). Votes and tallies with 95%
 Wilson intervals are saved after every vote in ``data_cache/arena/<name>/``; running the same
 command again continues the arena. ``--reveal`` shows which model wrote which reply after each
-vote (votes are then final).
+vote (votes are then final); such sessions always go to their own arena,
+``data_cache/arena/<name>-revealed/``, whose tallies say they are not blind, so revealed votes
+never join a blind arena's tallies. An arena also refuses a session whose contestants run with
+other settings (``--particles``, ``--temperature``, ``--no-library``, other opponents): give such
+a session another ``--name``.
 
 In a Colab cell (``input()`` works there)::
 
@@ -52,9 +56,11 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
                     help="prompt file (.txt one per line, .jsonl with 'turns' or 'prompt') or "
                          "proxy:dev / proxy:test / proxy:all; default: type them")
     ap.add_argument("--limit", type=int, default=None, help="first N prompts of the file")
-    ap.add_argument("--name", default="default", help="arena name (directory under --root)")
+    ap.add_argument("--name", default="default",
+                    help="arena name (directory under --root); with --reveal the directory is <name>-revealed")
     ap.add_argument("--root", default=None, help="default data_cache/arena")
-    ap.add_argument("--reveal", action="store_true", help="show which model wrote which reply after each vote")
+    ap.add_argument("--reveal", action="store_true",
+                    help="show which model wrote which reply after each vote (an arena of its own, not blind)")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--particles", type=int, default=None, help="our particles K (default: the run's choice)")
     ap.add_argument("--no-library", action="store_true", help="our model without the library")
@@ -75,18 +81,18 @@ def build_contestants(args: argparse.Namespace):
     opponents = list(args.opponent or DEFAULT_OPPONENTS)
     threads = args.threads or max(1, min(8, (os.cpu_count() or 2) // max(1, len(opponents))))
     out = []
+    over = []                     # our settings (applied to --export and to a --ours stand-in)
+    if args.particles is not None:
+        over.append(f"extra.particles={int(args.particles)}")
+    if args.no_library:
+        over.append("extra.use_library=false")
+    if args.temperature is not None:
+        over.append(f"temperature={float(args.temperature)!r}")
     if args.export:
-        over = []
-        if args.particles is not None:
-            over.append(f"extra.particles={int(args.particles)}")
-        if args.no_library:
-            over.append("extra.use_library=false")
-        if args.temperature is not None:
-            over.append(f"temperature={float(args.temperature)!r}")
         out.append(A.ours_contestant(args.export, over, library=None if args.no_library else "auto"))
     elif args.ours:
         c = A.opponent_contestant(args.ours, n_threads=threads, seed=args.seed,
-                                  download=not args.no_download)
+                                  download=not args.no_download, overrides=over)
         c.name = f"ours ({c.name})"
         out.append(c)
     else:
@@ -97,6 +103,18 @@ def build_contestants(args: argparse.Namespace):
     return out
 
 
+REVEALED_SUFFIX = "-revealed"
+
+
+def arena_name(name: str, reveal: bool) -> str:
+    """The directory name of an arena: a revealed session never shares a blind arena's name."""
+    if reveal:
+        return name if name.endswith(REVEALED_SUFFIX) else name + REVEALED_SUFFIX
+    if name.endswith(REVEALED_SUFFIX):
+        raise SystemExit(f"--name {name!r} is the name of a revealed arena; a blind session needs another name")
+    return name
+
+
 def main(argv: Sequence[str] | None = None, *, input_fn: Callable[[str], str] = input,
          print_fn: Callable[[str], None] = print) -> int:
     args = parse_args(argv)
@@ -105,8 +123,9 @@ def main(argv: Sequence[str] | None = None, *, input_fn: Callable[[str], str] = 
     from bes.eval import arena as A
 
     root = Path(args.root) if args.root else REPO / "data_cache" / "arena"
+    name = arena_name(args.name, args.reveal)
     contestants = build_contestants(args)
-    arena = A.Arena(contestants, root / args.name, seed=args.seed, reveal=args.reveal,
+    arena = A.Arena(contestants, root / name, seed=args.seed, reveal=args.reveal,
                     parallel=not args.sequential, print_fn=print_fn, input_fn=input_fn)
     prompts = None
     if args.prompts:
@@ -116,7 +135,7 @@ def main(argv: Sequence[str] | None = None, *, input_fn: Callable[[str], str] = 
     arena.run(prompts)
     t = arena.save_tallies()
     if args.show_tallies or args.reveal:
-        print_fn(A.tallies_markdown(t, f"({args.name})"))
+        print_fn(A.tallies_markdown(t, f"({name})"))
     return 0
 
 

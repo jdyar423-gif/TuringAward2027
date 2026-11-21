@@ -10,8 +10,10 @@ Modules:
 - ``run_gguf``: any GGUF chat model through llama.cpp; ``opponents``: pinned opponent and judge
   files, presets, download and the MobileLLM conversion; ``gguf_file``: GGUF reader / writer;
 - ``run_ours``: the callable contract for our generator, stand-ins;
-- ``make_ab``: blinded pairs and hidden key; ``rate``: human rater; ``judge``: automatic judge;
-- ``score``: statistics and reports; ``__main__``: ``python -m bes.eval.proxy``.
+- ``make_ab``: blinded pairs (append-only) and hidden key with its commitment chain; ``rate``:
+  human rater; ``judge``: automatic judge;
+- ``score``: statistics and reports; ``factual``: factual questions with the library on and
+  off (the library decision); ``__main__``: ``python -m bes.eval.proxy``.
 
 Objective scoring lives in ``bes.eval.exact_score``.
 """

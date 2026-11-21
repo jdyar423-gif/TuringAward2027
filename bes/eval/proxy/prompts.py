@@ -17,6 +17,12 @@ One JSON object per line:
 The split is not stored: within every stratum (category x number of turns) prompts are ordered
 by a SHA-256 of their id and alternately assigned to ``dev`` and ``test`` (held out), so the
 halves are balanced and stable under additions to other strata.
+
+Order: :func:`select` does not return prompts in file order (which is by category) but
+interleaved in proportion: categories are merged so that every prefix holds each category in
+proportion to its size (within one prompt), and inside a category its one- and two-turn prompts
+likewise, each stratum in split-hash order. A run that stops at a deadline, or ``--limit N``,
+therefore covers every category in proportion instead of the first categories of the file.
 """
 from __future__ import annotations
 
@@ -182,15 +188,47 @@ def load(path: str | Path = PROMPTS_FILE) -> list[Prompt]:
                    notes=r.get("notes", ""), split=splits[r["id"]]) for r in records]
 
 
+def interleave(groups: Sequence[Sequence[Any]]) -> list[Any]:
+    """Merge ``groups`` so that every prefix holds each group in proportion to its size: step
+    ``L`` takes the next item of the group with the largest deficit ``L * n_g / N - taken_g``
+    (exact integer arithmetic; ties: the group given first)."""
+    sizes = [len(g) for g in groups]
+    total = sum(sizes)
+    taken = [0] * len(groups)
+    out = []
+    for step in range(1, total + 1):
+        best = max((i for i in range(len(groups)) if taken[i] < sizes[i]),
+                   key=lambda i: (step * sizes[i] - taken[i] * total, -i))
+        out.append(groups[best][taken[best]])
+        taken[best] += 1
+    return out
+
+
+def ordered(prompts: Sequence[Prompt]) -> list[Prompt]:
+    """``prompts`` interleaved in proportion (module docstring): categories in
+    :data:`CATEGORIES` order, inside each its turn strata, each stratum by split hash."""
+    by_cat: dict[str, dict[int, list[Prompt]]] = defaultdict(lambda: defaultdict(list))
+    for p in prompts:
+        by_cat[p.category][len(p.turns)].append(p)
+    cats = [c for c in CATEGORIES if c in by_cat] + sorted(c for c in by_cat if c not in CATEGORIES)
+    per_cat = []
+    for c in cats:
+        strata = [sorted(by_cat[c][n], key=lambda p: _split_rank(p.id)) for n in sorted(by_cat[c])]
+        per_cat.append(interleave(strata))
+    return interleave(per_cat)
+
+
 def select(prompts: Sequence[Prompt], split: str = "dev", categories: Sequence[str] | None = None,
            limit: int | None = None) -> list[Prompt]:
-    """Prompts of one split (``"dev"``, ``"test"`` or ``"all"``), optionally of some categories;
-    ``limit`` keeps the first ``limit`` in file order."""
+    """Prompts of one split (``"dev"``, ``"test"`` or ``"all"``), optionally of some categories,
+    in the proportional interleaved order of :func:`ordered`; ``limit`` keeps the first
+    ``limit`` of that order (every category in proportion)."""
     if split not in (*SPLITS, "all"):
         raise ValueError(f"unknown split {split!r}")
     out = [p for p in prompts if split == "all" or p.split == split]
     if categories:
         out = [p for p in out if p.category in set(categories)]
+    out = ordered(out)
     return out[:limit] if limit is not None else out
 
 

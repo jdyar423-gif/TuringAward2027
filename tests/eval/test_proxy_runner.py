@@ -138,6 +138,117 @@ def test_filtered_selection_skips_degenerate(tmp_path):
         GenSettings(select="best")
 
 
+CONTROL_CASES = [
+    # (user message, candidates with their mean log-probability; candidate 0 is the most likely,
+    #  the index a reader must keep under our selector)
+    ("Answer in exactly one sentence: why do birds migrate?",
+     [("Birds migrate to find food. They also look for safe places to breed.", -0.30),
+      ("Birds migrate to reach places with more food and better weather for raising their young.", -0.55)], 1),
+    ('Describe your ideal weekend without using the word "very".',
+     [("My ideal weekend is very relaxing: a long walk, a good book and dinner with friends.", -0.35),
+      ("My ideal weekend is calm: a long walk, a good book and dinner with friends.", -0.60)], 1),
+    ("A pack has 6 cans. How many cans are in 4 packs?",
+     [("4 packs have 6 + 4 = 10 cans.", -0.20),
+      ("Each pack has 6 cans, so 4 packs have 6 x 4 = 24 cans.", -0.40),
+      ("There are 6 x 4 = 24 cans in 4 packs.", -0.45)], 1),
+]
+
+
+@pytest.mark.parametrize("user, cands, want", CONTROL_CASES, ids=["one-sentence", "forbidden-word", "math-vote"])
+def test_the_selector_matched_control_selects_as_our_decoder_does(user, cands, want):
+    """`decoder_select` keeps what our selector keeps: the compliant candidate (exactly one
+    sentence; no forbidden word) and the majority answer; `filtered_logprob_mean` drops only
+    degenerate candidates, so it keeps the more likely candidate 0 (review eval-4)."""
+    from bes.decode import select as S
+    from bes.eval.proxy.runner import _is_degenerate
+    from bes.exact import constraints as C
+
+    replies = [Reply(text=t, finish_reason="stop", completion_tokens=20, logprob_sum=lp * 20, logprob_count=20)
+               for t, lp in cands]
+    assert select_candidate(replies, "filtered_logprob_mean", _is_degenerate) == 0
+    assert select_candidate(replies, "decoder_select", _is_degenerate, user=user) == want
+    direct = S.select([S.Candidate(t, 1.0, "stop", 20) for t, _ in cands], C.compile(user), user)
+    assert direct.index == want
+
+
+class Scripted:
+    """K scripted candidates per user message, in sampling order (candidate k = k-th call)."""
+
+    key = "scripted"
+
+    def __init__(self, script):
+        self.script, self.calls = script, {}
+
+    def generate(self, messages, settings, seed):
+        user = messages[-1]["content"]
+        k = self.calls.get(user, 0)
+        self.calls[user] = k + 1
+        text, lp = self.script[user][k % len(self.script[user])]
+        return Reply(text=text, finish_reason="stop", completion_tokens=10, logprob_sum=lp * 10, logprob_count=10)
+
+
+def test_decoder_select_arm_shares_the_candidates_and_is_part_of_the_run_id(tmp_path):
+    ps = [Prompt(id=f"instruct-{i:03d}", category="instruct", turns=(user,), split="dev")
+          for i, (user, _, _) in enumerate(CONTROL_CASES)]
+    script = {user: cands for user, cands, _ in CONTROL_CASES}
+    k = max(len(c) for c in script.values())
+    lp_run = runner.run(ps, spec(GenSettings(samples=k, select="logprob_mean"), label="ctl"), tmp_path,
+                        backend=Scripted(script), log=None)
+    again = Scripted(script)
+    sel_run = runner.run(ps, spec(GenSettings(samples=k, select="decoder_select"), label="ctl"), tmp_path,
+                         backend=again, log=None)
+    assert again.calls == {} and sel_run.run_id != lp_run.run_id      # same cached candidates
+    lp_out = runner.load_outputs(tmp_path, lp_run.run_id)[0]
+    sel_out = runner.load_outputs(tmp_path, sel_run.run_id)[0]
+    for p, (_, _, want) in zip(ps, CONTROL_CASES):
+        assert lp_out[p.id]["turns"][0]["selected"] == 0
+        assert sel_out[p.id]["turns"][0]["selected"] == want
+
+
+class FakeClock:
+    """``time`` for the runner module: a clock that moves only when the backend generates."""
+
+    def __init__(self):
+        import time as real
+        self.real, self.now = real, 1_000_000.0
+
+    def time(self):
+        return self.now
+
+    def __getattr__(self, name):
+        return getattr(self.real, name)
+
+
+def test_a_run_stopped_by_its_deadline_covers_every_category(tmp_path, monkeypatch):
+    """The 24-hour run's select and judge stages answer the prompts of `select` until their
+    deadline (review eval-6: before, a sliced held-out run answered chat, math and a little code
+    only). Each generation takes one second of a fake clock; 60 seconds cover about a quarter of
+    the held-out half, every category in proportion (within one prompt)."""
+    from collections import Counter
+
+    from bes.eval.proxy import prompts as P
+
+    clock = FakeClock()
+    monkeypatch.setattr(runner, "time", clock)
+
+    class OneSecond(Recorder):
+        def generate(self, messages, settings, seed):
+            clock.now += 1.0
+            return super().generate(messages, settings, seed)
+
+    ps = P.load()
+    todo = P.select(ps, "test")
+    r = runner.run(todo, spec(label="sliced"), tmp_path, backend=OneSecond(), minutes=1.0, all_prompts=ps, log=None)
+    assert 40 <= r.done < len(todo) and r.out_of_time > 0
+    done = runner.load_outputs(tmp_path, r.run_id)[0]
+    assert set(done) == {p.id for p in todo[:r.done]}                 # a prefix of the order
+    size = Counter(p.category for p in todo)
+    got = Counter(rec["category"] for rec in done.values())
+    assert r.done_by_category == dict(sorted(got.items())) and r.of_by_category == dict(sorted(size.items()))
+    for c in size:
+        assert abs(got[c] - r.done * size[c] / len(todo)) < 1, (c, got)
+
+
 def test_settings_hashing_and_overrides():
     s = GenSettings(extra={"particles": 6, "use_library": True})
     assert s.extra == (("particles", 6), ("use_library", True))

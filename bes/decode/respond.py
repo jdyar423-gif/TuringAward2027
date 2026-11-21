@@ -37,6 +37,14 @@
    particle died, or the reply would be empty because particles died, the decoder runs again
    with the structural potentials only (``extra["rerun"]``), so the reply is never empty for
    that reason.
+8. **Finish reason**: ``"stop"`` only when the chosen particle ended on its own. A particle
+   that did not finish (``"length"`` or ``"dead"``) and a particle that finished with its whole
+   budget used (``END`` as its ``max_new_tokens``-th token: the budget-aware potentials leave
+   nothing else in the last slot, so such a reply ends because the budget ran out, often inside
+   a list or a sentence) are reported as ``"length"``, the way every other backend of the
+   harness reports a reply cut at its token limit; ``extra["at_budget"]`` marks the second case
+   (the same rule as the selector's ``at_budget`` check) and ``extra["finish"]`` keeps the
+   particle's own finish.
 
 Deterministic given ``(messages, settings, seed)``: the decoder's random numbers are
 counter based on ``seed``, retrieval and selection are deterministic.
@@ -80,7 +88,8 @@ REPO = Path(__file__).resolve().parents[2]
 #: Bump when a change alters replies for the same checkpoint and settings.
 #: 2: temperature on the network only, self-evidence weight applied, feasibility check and
 #: structural rerun, copy cap on LIBRARY passages only, token-local potentials, smooth mass cap.
-RESPOND_VERSION = "2"
+#: 3: a reply that used its whole token budget is reported with finish reason "length".
+RESPOND_VERSION = "3"
 #: count constraints the feasibility check may drop (``bes.exact.constraints.COUNT_UNITS``)
 COUNT_FIELDS = ("words", "sentences", "items", "paragraphs", "lines")
 _DECODE_FIELDS = {f.name: f for f in dataclasses.fields(DecodeCfg)}
@@ -425,13 +434,15 @@ class Responder:
             res = run(self.program(None, r))
             choice = choose(res, spec_used, band)
         p = res.particles[choice.index]
+        # finished with the whole budget used: END was the last token the budget allowed (step 8)
+        at_budget = p.finish == "stop" and len(p.tokens) >= d.max_new_tokens
         free = [lp for lp, f in zip(p.token_logp, p.forced) if not f]
         extra = {
             "particles": d.particles, "potentials": r.potentials, "rule": choice.rule,
             "n_survivors": choice.n_survivors,
             "n_finished": sum(1 for q in res.particles if q.finish == "stop"),
             "finishes": dict(Counter(q.finish for q in res.particles)),
-            "finish": p.finish, "prompt_type": choice.prompt_type,
+            "finish": p.finish, "at_budget": at_budget, "prompt_type": choice.prompt_type,
             "band": None if choice.band is None else str(choice.band), "answer": choice.answer,
             "constraints": list(spec.constraints),
             "enforced": enforced(spec_used) if program is not None and rerun is None else [],
@@ -460,7 +471,8 @@ class Responder:
         for name, err in (("spec_error", spec_error), ("program_error", prog_error)):
             if err:
                 extra[name] = err
-        return {"text": choice.text, "finish_reason": "stop" if p.finish == "stop" else "length",
+        return {"text": choice.text,
+                "finish_reason": "stop" if p.finish == "stop" and not at_budget else "length",
                 "prompt_tokens": len(prompt), "completion_tokens": len(p.tokens),
                 "logprob_sum": float(np.sum(p.token_logp)), "logprob_count": len(p.token_logp),
                 "extra": extra}

@@ -407,7 +407,9 @@ def test_an_infeasible_count_is_dropped_and_the_reply_is_never_empty():
     ex = out["extra"]
     assert ex["infeasible"] == ["words: at least 60"]
     assert ex["enforced"] == ["sentences: exactly 2"]
-    assert out["text"] and out["finish_reason"] == "stop" and ex["finishes"].get("dead", 0) == 0
+    assert out["text"] and ex["finish"] == "stop" and ex["finishes"].get("dead", 0) == 0
+    # this one ends in its last token slot: finished, but cut by the budget (reported as such)
+    assert out["finish_reason"] == ("length" if ex["at_budget"] else "stop")
     assert C.measure(out["text"])["sentences"] == 2
     # a feasible request is left alone
     ok = resp.reply(USER, {"particles": 2}, seed=0)
@@ -439,6 +441,49 @@ def test_dead_particles_trigger_a_structural_rerun():
     assert ex["rerun"]["reason"] == "all particles died" and ex["rerun"]["finishes"] == {"dead": 2}
     # "1-2" EQ "-1" CALC_END (TinyChat shows the ordinary tokens only: no " = " for EQ)
     assert out["finish_reason"] == "stop" and out["text"] == "1-2-1"
+
+
+# ----------------------------------------------------- a reply cut by its budget (review eval-2)
+def test_a_reply_that_used_its_whole_budget_is_reported_as_cut():
+    """A model that almost never ends: the budget-aware potentials make every particle end in
+    its last token slot, so the reply stops because the budget ran out. It must be reported the
+    way every harness backend reports a reply at its token limit (before: finish reason "stop",
+    and the exact scorer counted no truncation and no degenerate reply for our arm)."""
+    from bes.eval.exact_score import degenerate_stats
+    from bes.eval.proxy.common import GenSettings
+    from bes.eval.proxy.run_ours import CallableBackend
+
+    tok = TinyTokenizer(PIECES)
+    sp = tok.special_tokens
+    lm = TableLM.random(tok.vocab_size, order=2, seed=3, boost={sp["<|end|>"]: -12.0, PIECES.index(" "): 1.5})
+    budget = 24
+    resp = R.Responder(lambda n: lm, tok, DecodeCfg(particles=3, max_new_tokens=budget, temperature=1.0,
+                                                    top_p=1.0), chat=TinyChat(tok), context=1024)
+    msgs = [{"role": "user", "content": "Tell me about the moon"}]
+    out = resp.reply(msgs, {"potentials": True}, seed=7)
+    assert out["completion_tokens"] == budget and out["extra"]["finish"] == "stop"   # END in the last slot
+    assert out["finish_reason"] == "length" and out["extra"]["at_budget"] is True
+    resp.key = "test-at-budget"
+    reply = CallableBackend(resp).generate(msgs, GenSettings(temperature=1.0, top_p=1.0, max_tokens=budget,
+                                                             extra={"particles": 3}), 7)
+    d = degenerate_stats(reply.text, reply.finish_reason)
+    assert reply.completion_tokens == budget and d["truncated"] is True and d["degenerate"] is True
+    # without potentials the particles are cut by the limit itself, reported as before
+    off = resp.reply(msgs, {"potentials": False}, seed=7)
+    assert off["finish_reason"] == "length" and off["extra"]["finish"] == "length"
+    assert off["extra"]["at_budget"] is False
+
+
+def test_a_reply_that_ended_on_its_own_is_reported_as_stopped():
+    tok, lm, resp = setup(seed=4)
+    seen = set()
+    for seed in range(6):
+        out = resp.reply([{"role": "user", "content": "Say something."}], {"particles": 2}, seed=seed)
+        own = out["extra"]["finish"] == "stop" and out["completion_tokens"] < 40
+        assert (out["finish_reason"] == "stop") == own and out["extra"]["at_budget"] == (
+            out["extra"]["finish"] == "stop" and out["completion_tokens"] >= 40)
+        seen.add(out["finish_reason"])
+    assert "stop" in seen
 
 
 # ------------------------------------------------------------------- copy cap

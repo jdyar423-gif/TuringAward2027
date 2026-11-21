@@ -348,9 +348,90 @@ def test_the_command_line_with_stand_ins(tmp_path):
                   input_fn=scripted(["a", "b"]), print_fn=out.append)
     assert rc == 0
     text = "\n".join(out)
-    assert text.count("revealed:") == 2 and "# Blind arena tallies" in text
-    t = json.loads((tmp_path / "root" / "default" / "tallies.json").read_text())
-    assert t["votes"] == 2 and set(t["contestants"]) == {"ours (standin-plain)", "standin-verbose", "standin-loop"}
+    assert text.count("revealed:") == 2 and "# Arena tallies of revealed sessions (NOT blind" in text
+    assert "# Blind arena tallies" not in text
+    # a revealed session has an arena of its own, never the blind one's
+    assert not (tmp_path / "root" / "default").exists()
+    t = json.loads((tmp_path / "root" / "default-revealed" / "tallies_revealed.json").read_text())
+    assert t["votes"] == 2 and t["blind"] is False
+    assert set(t["contestants"]) == {"ours (standin-plain)", "standin-verbose", "standin-loop"}
     with pytest.raises(SystemExit):
         cli.main(["--prompts", str(pf), "--root", str(tmp_path / "r2")], input_fn=scripted([]),
                  print_fn=out.append)
+
+
+# ============================================ blind and revealed sessions (review eval-3)
+def _votes(d: Path) -> list[dict]:
+    return [json.loads(l) for l in (d / "votes.jsonl").read_text().splitlines()]
+
+
+def test_a_revealed_session_never_joins_a_blind_arena(tmp_path):
+    """A blind session, then a revealed one and one with ours at another temperature, in the same
+    directory (before: all five votes were pooled into the 'Blind arena tallies', no vote said
+    whether it was revealed, and arena.json kept the first session's settings)."""
+    d = tmp_path / "default"
+    prompts = [A.typed_prompt(i, f"Question {i}?") for i in range(1, 6)]
+    blind = A.Arena(contestants(n=2), d, print_fn=lambda m: None, input_fn=scripted(["a", "b"]))
+    blind.run(prompts[:2])
+    with pytest.raises(A.ArenaError, match="reveal"):
+        A.Arena(contestants(n=2), d, reveal=True, print_fn=lambda m: None, input_fn=scripted(["a"]))
+    hot = contestants(n=2)
+    hot[0].settings = hot[0].settings.replace(temperature=1.5)          # same cache key, other settings
+    with pytest.raises(A.ArenaError, match="contestants"):
+        A.Arena(hot, d, print_fn=lambda m: None, input_fn=scripted(["b"]))
+    recs = _votes(d)
+    assert len(recs) == 2 and all(r["reveal"] is False for r in recs)
+    assert json.loads((d / "tallies.json").read_text())["votes"] == 2
+    setup = json.loads((d / "arena.json").read_text())
+    assert setup["reveal"] is False and all(c["settings_hash"] for c in setup["contestants"])
+    # the same session again is welcome
+    A.Arena(contestants(n=2), d, print_fn=lambda m: None, input_fn=scripted(["t"])).run(prompts[2:3])
+    assert json.loads((d / "tallies.json").read_text())["votes"] == 3
+
+
+def test_blind_tallies_count_blind_votes_only(tmp_path):
+    d = tmp_path / "ar"
+    prompts = A.file_prompts(prompts_file(tmp_path, 3))
+    A.Arena(contestants(), d, print_fn=lambda m: None, input_fn=scripted(["a", "b"])).run(prompts[:2])
+    # a vote that says it was made with identities revealed, or that does not say, is never blind
+    from bes.eval.proxy.common import append_jsonl
+    append_jsonl(d / "votes.jsonl", [{"prompt_id": prompts[2].id, "vote": "C", "labels": ["A", "B", "C"],
+                                      "reveal": True},
+                                     {"prompt_id": "typed-0009-x", "vote": "A", "labels": ["A", "B", "C"]}])
+    arena = A.Arena(contestants(), d, print_fn=lambda m: None, input_fn=scripted([]))
+    t = arena.save_tallies()
+    assert t["votes"] == 2 and t["blind"] is True
+    assert sum(r["best"] for r in t["contestants"].values()) == 2
+    votes = A.effective_votes(_votes(d))
+    assert set(A.blind_votes(votes)) == {prompts[0].id, prompts[1].id}
+    assert set(A.blind_votes(votes, reveal=True)) == {prompts[2].id}
+
+
+def test_an_arena_of_the_first_format_is_refused(tmp_path):
+    d = tmp_path / "old"
+    d.mkdir()
+    (d / "arena.json").write_text(json.dumps({"format": 1, "seed": 0, "contestants": [
+        {"name": c.name, "key": c.key} for c in contestants(n=2)]}))
+    with pytest.raises(A.ArenaError, match="revealed"):
+        A.Arena(contestants(n=2), d, print_fn=lambda m: None, input_fn=scripted([]))
+
+
+def test_the_command_line_keeps_blind_and_revealed_sessions_apart(tmp_path):
+    spec = importlib.util.spec_from_file_location("arena_cli2", REPO / "scripts" / "arena.py")
+    cli = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cli)
+    pf = prompts_file(tmp_path, 4)
+    common = ["--ours", "standin-plain", "--opponent", "standin-verbose", "--prompts", str(pf),
+              "--root", str(tmp_path / "root"), "--name", "final"]
+    assert cli.main(common, input_fn=scripted(["a", "b", "q"]), print_fn=lambda m: None) == 0
+    assert cli.main(common + ["--reveal"], input_fn=scripted(["a", "a", "a", "a"]), print_fn=lambda m: None) == 0
+    blind = json.loads((tmp_path / "root" / "final" / "tallies.json").read_text())
+    revealed = json.loads((tmp_path / "root" / "final-revealed" / "tallies_revealed.json").read_text())
+    assert (blind["votes"], blind["blind"]) == (2, True) and (revealed["votes"], revealed["blind"]) == (4, False)
+    assert all(not r["reveal"] for r in _votes(tmp_path / "root" / "final"))
+    assert all(r["reveal"] for r in _votes(tmp_path / "root" / "final-revealed"))
+    # another setting for ours in the blind arena is refused instead of pooled
+    with pytest.raises(A.ArenaError):
+        cli.main(common + ["--temperature", "1.5"], input_fn=scripted(["a"]), print_fn=lambda m: None)
+    with pytest.raises(SystemExit):
+        cli.main(common[:-1] + ["final-revealed"], input_fn=scripted([]), print_fn=lambda m: None)

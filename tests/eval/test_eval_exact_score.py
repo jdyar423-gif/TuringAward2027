@@ -80,9 +80,38 @@ def test_math_any_match_and_methods():
     # a bold label is not an answer; the conclusion is
     ("1. **Multiply the result by 10:** 4 x 10 = 40\n\nTherefore, 2^{10} = 1024.", "1024",
      ["What is 2 to the power of 10?"], True),
+    # review eval-8: what a reader takes as the final answer
+    # a setup sentence with a concluding word states no new number: the final line answers
+    ("So the train travels for 3 hours at 60 km per hour.\n\n60 * 3 = 180\n\nIt goes 180 km.", "180",
+     ["A train travels 60 km per hour for 3 hours. How far does it go?"], True),
+    # a conclusion followed by the final computation line: the computation's result
+    ("Therefore 3 people eat 3 x 2 = 6 slices.\nSlices left: 8 - 6 = 2.", "2",
+     ["A pizza is cut into 8 slices and 3 people eat 2 slices each. How many slices are left?"], True),
+    # "7!" does not end the sentence
+    ("Therefore, 7! = 5040.", "5040", ["What is 7 factorial (7!)?"], True),
+    # the stated final answer is 5, so the earlier sentence holding the reference does not count
+    ("The discount is 25% of $20, so the discount is $15. The sale price is $5.", "15",
+     ["A shirt costs $20 and is 25% off. What is the sale price?"], False),
+    ("So Tom has 3 x 8 = 24 apples. After eating 2 he has 24 - 2 = 23 apples left.", "23",
+     ["Tom has 3 boxes with 8 apples each. He eats 2. How many apples are left?"], True),
+    ("So Tom has 3 x 8 = 24 apples. After eating 2 he has 24 - 2 = 23 apples left.", "24",
+     ["Tom has 3 boxes with 8 apples each. He eats 2. How many apples are left?"], False),
+    ("So we multiply the cans per pack by the number of packs. 6 x 4 = 24 cans.", "24",
+     ["A pack has 6 cans. How many cans are in 4 packs?"], True),
+    # a check after the conclusion still does not override it; a conclusion whose result follows "="
+    ("So, 15% of 80 is 12. Let's check: 12 / 80 = 0.15, which is 15%.", "12", ["What is 15% of 80?"], True),
+    ("So 8 - 6 = 2 slices are left.", "2", ["A pizza has 8 slices; 3 people eat 2 each. How many are left?"], True),
 ])
 def test_math_correct_with_context(reply, ref, context, ok):
     assert E.math_correct(reply, ref, context=context)["correct"] is ok
+
+
+def test_factorial_does_not_split_a_sentence_and_the_result_follows_the_equals_sign():
+    got = E.extract_answer("Therefore, 7! = 5040.")
+    assert got["value"] == 5040 and got["method"] == "conclusion"
+    assert E.extract_answer("Slices left: 8 - 6 = 2.")["values"] == [2]
+    assert E.extract_answer("Wow! It is 3. Then 4!")["value"] == 4          # "!" after a word still ends one
+    assert E.extract_answer("So 15% of 80 is 12. Check: 12 x 80 = 960.")["value"] == 12
 
 
 def test_context_values_reads_digits_and_number_words():

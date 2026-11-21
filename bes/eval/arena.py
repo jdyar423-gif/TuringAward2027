@@ -13,6 +13,14 @@ fresh random order under neutral labels ``A``, ``B``, ``C``, ... The person vote
     u  undo the last vote (that prompt is shown again at once)           q  quit    ?  help
 
 With ``reveal`` the labels are unmasked after the vote (and the vote can no longer be undone).
+An arena directory is either blind or revealed, for good: the setup it was created with
+(``arena.json``: format, seed, ``reveal`` and every contestant's name, cache key and settings
+hash) must match every later session, else :class:`ArenaError`. So a revealed session, or a
+contestant run with other settings (``--particles``, ``--temperature``, ...), can never add
+votes to a blind arena; ``scripts/arena.py`` gives revealed sessions their own directory
+(``<name>-revealed``). Every vote records ``reveal``; the blind tallies count only votes made
+blind (``reveal`` false), and a revealed arena's tallies are written as ``tallies_revealed.*``
+under a heading that says they are not blind.
 
 Contestants run exactly as the proxy harness runs them (``docs/EVAL_PROTOCOL.md`` section 2):
 opponents are the registry GGUF files with the settings of ``bes.eval.proxy.opponents.presets``
@@ -25,11 +33,13 @@ Only the visible answer is shown: hidden reasoning is removed by the arm's setti
 
 Files (``<root>/<name>/``; the root defaults to ``data_cache/arena``)::
 
-    arena.json          contestants (names, cache keys, settings)  - identities
+    arena.json          setup: seed, reveal, contestants (names, cache keys, settings and
+                        their hashes) - identities
     key.jsonl           per prompt: the order of the contestants behind A, B, C - identities
-    votes.jsonl         per vote: prompt id, label voted, labels shown - no identities
-    tallies.json / .md  per contestant and per pair, with 95% Wilson intervals - identities,
-                        rewritten after every vote
+    votes.jsonl         per vote: prompt id, label voted, labels shown, reveal - no identities
+    tallies.json / .md  blind votes, per contestant and per pair, with 95% Wilson intervals -
+                        identities, rewritten after every vote (``tallies_revealed.*`` in a
+                        revealed arena)
     cache/<key>.jsonl   every generation (resume without generating again)
     errors.log          generation failures (shown as "(no reply)" before the vote)
 
@@ -62,7 +72,8 @@ from bes.eval.proxy.common import (GenSettings, Reply, append_jsonl, read_jsonl,
                                    stable_hash, strip_think, write_json_atomic, write_text_atomic)
 from bes.eval.proxy.prompts import Prompt
 
-FORMAT = 1
+#: 2: the setup holds ``reveal`` and the contestants' settings hashes; votes record ``reveal``.
+FORMAT = 2
 LABELS = "ABCDEF"
 MAX_CONTESTANTS = len(LABELS)
 TIE, ALL_BAD = "tie", "all_bad"
@@ -260,8 +271,16 @@ def tallies(votes: Mapping[str, Mapping[str, Any]], key: Mapping[str, Sequence[s
                     "the pair; intervals are 95% Wilson"}
 
 
+def blind_votes(votes: Mapping[str, Mapping[str, Any]], reveal: bool = False) -> dict[str, Mapping[str, Any]]:
+    """The votes made blind (``reveal`` false), or with ``reveal`` the votes made with the
+    identities revealed after each vote. A vote that does not record ``reveal`` is in neither."""
+    return {pid: v for pid, v in votes.items() if v.get("reveal") is bool(reveal)}
+
+
 def tallies_markdown(t: Mapping[str, Any], title: str = "") -> str:
-    lines = [f"# Blind arena tallies{(' ' + title) if title else ''}", "",
+    head = ("Blind arena tallies" if t.get("blind", True)
+            else "Arena tallies of revealed sessions (NOT blind: identities were shown after each vote)")
+    lines = [f"# {head}{(' ' + title) if title else ''}", "",
              f"{t['votes']} votes.", "",
              "| contestant | shown | chosen best | best rate | 95% interval | ties | all bad |",
              "|---|---|---|---|---|---|---|"]
@@ -360,18 +379,31 @@ class Arena:
         self.key = load_key(read_jsonl(self.dir / "key.jsonl"))
 
     # -------------------------------------------------------------- files
+    def setup(self) -> dict[str, Any]:
+        """What every session of this arena must share: format, seed, ``reveal`` and each
+        contestant's name, cache key and settings hash."""
+        return {"format": FORMAT, "seed": self.seed, "reveal": self.reveal,
+                "contestants": [{"name": c.name, "key": c.key, "settings_hash": c.settings.hash()}
+                                for c in self.contestants]}
+
     def _check_setup(self) -> None:
         path = self.dir / "arena.json"
-        want = {"format": FORMAT, "seed": self.seed,
-                "contestants": [{"name": c.name, "key": c.key} for c in self.contestants]}
+        want = self.setup()
         if path.exists():
             have = json.loads(path.read_text())
-            got = {"format": have.get("format"), "seed": have.get("seed"),
-                   "contestants": [{"name": c["name"], "key": c["key"]} for c in have.get("contestants", [])]}
+            if have.get("format") != FORMAT:
+                raise ArenaError(f"{self.dir} holds an arena written before sessions recorded whether the "
+                                 "identities were revealed and with which settings each contestant ran, so "
+                                 "its votes cannot be told apart; choose another --name to start a new one")
+            got = {"format": have.get("format"), "seed": have.get("seed"), "reveal": have.get("reveal"),
+                   "contestants": [{k: c.get(k) for k in ("name", "key", "settings_hash")}
+                                   for c in have.get("contestants", [])]}
             if got != want:
-                raise ArenaError(f"{self.dir} holds an arena with other contestants or another seed "
-                                 f"({[c['name'] for c in got['contestants']]}, seed {got['seed']}); "
-                                 "choose another --name to start a new one")
+                diff = [k for k in ("seed", "reveal", "contestants") if got[k] != want[k]]
+                raise ArenaError(f"{self.dir} holds an arena with another {' / '.join(diff)} "
+                                 f"({[c['name'] for c in got['contestants']]}, seed {got['seed']}, "
+                                 f"reveal {got['reveal']}); a session with other contestants, settings or "
+                                 "reveal mode would pool its votes with this arena's: choose another --name")
             return
         write_json_atomic(path, {**want, "contestants": [c.describe() for c in self.contestants],
                                  "created": time.strftime("%Y-%m-%d %H:%M:%S")})
@@ -384,9 +416,13 @@ class Arena:
         return self._caches[c.key]
 
     def save_tallies(self) -> dict[str, Any]:
-        t = tallies(self.votes, self.key, [c.name for c in self.contestants])
-        write_json_atomic(self.dir / "tallies.json", t)
-        write_text_atomic(self.dir / "tallies.md", tallies_markdown(t, f"({self.dir.name})"))
+        """Tallies of this arena's votes: the blind ones (``tallies.*``), or in a revealed arena
+        the revealed ones (``tallies_revealed.*``, marked not blind)."""
+        t = {**tallies(blind_votes(self.votes, self.reveal), self.key, [c.name for c in self.contestants]),
+             "blind": not self.reveal}
+        stem = "tallies_revealed" if self.reveal else "tallies"
+        write_json_atomic(self.dir / f"{stem}.json", t)
+        write_text_atomic(self.dir / f"{stem}.md", tallies_markdown(t, f"({self.dir.name})"))
         return t
 
     # -------------------------------------------------------------- one prompt
@@ -468,8 +504,8 @@ class Arena:
         """Record a vote (``a``.. / ``t`` / ``x``) and rewrite the tallies."""
         vote = TIE if answer == "t" else ALL_BAD if answer == "x" else answer.upper()
         rec = {"prompt_id": item.prompt.id, "vote": vote, "labels": item.labels,
-               "prompt_hash": item.prompt.content_hash, "seconds": round(seconds, 1),
-               "time": round(self.clock(), 1)}
+               "prompt_hash": item.prompt.content_hash, "reveal": self.reveal,
+               "seconds": round(seconds, 1), "time": round(self.clock(), 1)}
         append_jsonl(self.dir / "votes.jsonl", [rec])
         self.votes[item.prompt.id] = rec
         self.save_tallies()
@@ -542,9 +578,10 @@ class Arena:
             last.append(item)
             if self.reveal:
                 self.say(self.reveal_text(item))
+        stem = "tallies_revealed" if self.reveal else "tallies"
         self.say(f"session done: {stats['voted']} votes, {stats['skipped']} skipped, "
                  f"{stats['undone']} undone; {len(self.votes)} votes in {self.dir} "
-                 f"(tallies in {self.dir / 'tallies.md'}; open it when you have finished voting)")
+                 f"(tallies in {self.dir / (stem + '.md')}; open it when you have finished voting)")
         return stats
 
     def _typed(self) -> Iterator[Prompt]:
@@ -574,4 +611,5 @@ class Arena:
 
 __all__ = ["Arena", "ArenaError", "Contestant", "Item", "ours_contestant", "opponent_contestant",
            "generator_contestant", "file_prompts", "typed_prompt", "tallies", "tallies_markdown",
-           "effective_votes", "load_key", "visible", "render_item", "LABELS", "TIE", "ALL_BAD"]
+           "blind_votes", "effective_votes", "load_key", "visible", "render_item", "LABELS", "TIE",
+           "ALL_BAD", "FORMAT"]

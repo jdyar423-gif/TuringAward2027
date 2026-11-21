@@ -14,6 +14,10 @@ request needs. Known biases of this kind of judge are listed in ``docs/EVAL_PROT
 
 Judges are objects with a ``key`` and ``probs(messages) -> {"A": p, "B": p, "C": p,
 "mass": p}``; :class:`GGUFJudge` is the real one, :class:`StandInJudge` the test double.
+
+Every verdict record carries the pair set's current ``commitment`` and the ``pair_digest`` of
+the pair it judged (``bes.eval.proxy.make_ab``); records that do not belong to the published
+pair set make :func:`run_judge` and :func:`load_verdicts` refuse.
 """
 from __future__ import annotations
 
@@ -26,6 +30,7 @@ from typing import Any, Protocol
 
 import numpy as np
 
+from bes.eval.proxy import make_ab
 from bes.eval.proxy.common import HARNESS_VERSION, append_jsonl, default_root, read_jsonl, safe_name
 
 JUDGE_SYSTEM = "You are a careful, impartial judge of replies written by chat assistants."
@@ -244,19 +249,31 @@ def judge_pair(judge: Judge, pair: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def ratings_path(root: Path, pairset: str, source: str) -> Path:
-    return Path(root) / "ratings" / safe_name(pairset) / f"{safe_name(source)}.jsonl"
+    return make_ab.ratings_dir(root, pairset) / f"{safe_name(source)}.jsonl"
 
 
 def run_judge(pairs: Sequence[Mapping[str, Any]], judge: Judge, pairset: str, root: Path | None = None,
               minutes: float | None = None, limit: int | None = None,
               log: Callable[[str], None] | None = print) -> dict[str, Any]:
     """Judge every pair not yet judged by this judge (resumable); appends to
-    ``ratings/<pairset>/judge-<key>.jsonl``."""
+    ``ratings/<pairset>/judge-<key>.jsonl``, each record with the pair set's current commitment
+    and the judged pair's digest. Refuses (``ValueError``) a pair set without a commitment
+    chain, stored records that do not belong to the published pair set, and pairs that are not
+    the published ones."""
     root = Path(root) if root is not None else default_root()
     log = log or (lambda _m: None)
-    path = ratings_path(root, pairset, f"judge-{judge.key}")
-    done = {r["pair_id"] for r in read_jsonl(path)}
+    pub = make_ab.published(root, pairset)
+    source = f"judge-{judge.key}"
+    path = ratings_path(root, pairset, source)
+    records = read_jsonl(path)
+    bad = make_ab.foreign_records(records, pub)
+    if bad:
+        raise ValueError(make_ab.refusal(pairset, source, bad, len(records)))
+    done = {r["pair_id"] for r in records if r.get("verdict") in make_ab.VERDICTS}
     pending = [p for p in pairs if p["pair_id"] not in done]
+    for p in pending:
+        if pub["digests"].get(p["pair_id"]) != make_ab.pair_digest(p):
+            raise ValueError(f"pair {p['pair_id']} is not a published pair of {pairset!r}")
     todo = pending[:limit] if limit is not None else pending
     deadline = time.time() + 60 * minutes if minutes else None
     n = 0
@@ -264,18 +281,35 @@ def run_judge(pairs: Sequence[Mapping[str, Any]], judge: Judge, pairset: str, ro
     for pair in todo:
         if deadline is not None and time.time() > deadline:
             break
-        append_jsonl(path, [judge_pair(judge, pair)])
+        rec = judge_pair(judge, pair)
+        rec.update(commitment=pub["commitment"], pair_digest=pub["digests"][pair["pair_id"]])
+        append_jsonl(path, [rec])
         n += 1
         if n % 10 == 0:
             log(f"[judge {judge.key}] {n}/{len(todo)} pairs, {(time.time() - t0) / 60:.1f} min")
     return {"path": str(path), "judged_now": n, "already": len(done), "remaining": len(pending) - n}
 
 
-def load_verdicts(root: Path, pairset: str, source: str) -> dict[str, str]:
+def load_verdicts(root: Path, pairset: str, source: str, key: Mapping[str, Any] | None = None,
+                  pub: Mapping[str, Any] | None = None) -> dict[str, str]:
     """``pair_id -> verdict`` of a rating source (``judge-<key>`` or ``human-<rater>``); the
-    last record of a pair wins and ``retracted`` removes it."""
+    last record of a pair wins and ``retracted`` removes it.
+
+    With ``key`` (``make_ab.load_key``) every record must have been made under that key
+    (``make_ab.invalid_records``), with ``pub`` (``make_ab.published``, no key needed) under
+    the published pair set; otherwise ``ValueError`` (the score is refused). Without either the
+    records are read unchecked."""
+    records = read_jsonl(ratings_path(root, pairset, source))
+    if key is not None:
+        bad = make_ab.invalid_records(records, key)
+    elif pub is not None:
+        bad = make_ab.foreign_records(records, pub)
+    else:
+        bad = []
+    if bad:
+        raise ValueError(make_ab.refusal(pairset, source, bad, len(records)))
     out: dict[str, str] = {}
-    for r in read_jsonl(ratings_path(root, pairset, source)):
+    for r in records:
         v = r.get("verdict")
         if v == "retracted":
             out.pop(r["pair_id"], None)

@@ -25,10 +25,18 @@ conversation); statistics of length, finishing, degeneracy, fluency and cost use
 turns an arm decoded itself.
 
 Output (resumable, one JSON line per (arm, prompt), per worker): ``data_cache/e9_standin/
-records.w<k>.jsonl``; ``report`` aggregates them with ``bes.eval.exact_score`` and writes the
-table between the ``<!-- e9:table -->`` markers of ``docs/E9_DECODING.md``. Limits: at most two
-worker processes, one llama.cpp thread and one numpy thread each, and a wall-clock deadline
-after which no new prompt starts.
+records.w<k>.jsonl``; ``report`` scores the saved replies again with the current
+``bes.eval.exact_score`` and writes the table between the ``<!-- e9:table -->`` markers of
+``docs/E9_DECODING.md``. A reply that used its whole token budget counts as cut by the budget
+(as ``bes.decode.respond`` now reports it, finish reason ``"length"``), also in records written
+before that change, whose finish reason said ``"stop"`` when the budget-aware potentials had
+forced ``END`` into the last token slot. Limits: at most two worker processes, one llama.cpp
+thread and one numpy thread each, and a wall-clock deadline after which no new prompt starts.
+
+The report also states how much of the annotated constraints the constraint compiler reads
+(:func:`compiler_coverage`): per prompt on the dev half (the 47 constrained prompts measured
+here were also the compiler's development set, ``docs/CHANGES.md`` section 7) and, as an
+aggregate count only, on the held-out half; no held-out prompt or miss is ever printed.
 """
 from __future__ import annotations
 
@@ -255,12 +263,86 @@ def _mean_se(xs: list[float]) -> str:
     return f"{m:.3f} ± {sd / math.sqrt(len(xs)):.3f}"
 
 
+#: annotated constraint type (``bes.eval.exact_score.CONSTRAINT_TYPES``) -> the
+#: ``bes.exact.constraints.ConstraintSpec`` fields that read it (any one set counts)
+SPEC_FIELDS = {
+    "words": ("words",), "sentences": ("sentences",), "paragraphs": ("paragraphs",), "lines": ("lines",),
+    "bullets": ("items", "list_style"), "numbered": ("items", "list_style"), "items": ("items",),
+    "sections": ("sections",), "separated_parts": ("responses", "divider"), "include": ("keywords",),
+    "exclude": ("forbidden",), "frequency": ("frequencies",), "case": ("case",), "json": ("json_output",),
+    "json_keys": ("json_output",), "starts_with": ("starts_with", "first_word"), "ends_with": ("end_phrase",),
+    "no_commas": ("no_commas",), "quoted": ("quoted",), "title": ("title",), "postscript": ("postscript",),
+    "one_of": ("one_of",), "placeholders": ("placeholders",), "ends_with_question": ("end_question",),
+    "code_block": ("code_block",), "highlights": ("highlights",),
+}
+
+
+def compiler_coverage(prompts) -> dict:
+    """How many annotated constraints ``bes.exact.constraints.compile`` reads from the turns
+    that carry them: ``{"prompts", "prompts_all_read", "constraints", "read", "missed_types"}``
+    (``missed_types``: counts by annotated type). A constraint is read when the compiled spec
+    of its turn sets one of the :data:`SPEC_FIELDS` of its type. Callers print only the counts
+    for the held-out half."""
+    from bes.exact import constraints as C
+
+    out = {"prompts": 0, "prompts_all_read": 0, "constraints": 0, "read": 0, "missed_types": Counter()}
+    for p in prompts:
+        if not p.constraints:
+            continue
+        every = True
+        for t in range(len(p.turns)):
+            cons = p.constraints_for_turn(t)
+            if not cons:
+                continue
+            spec = C.compile(p.turns[t])
+            for c in cons:
+                ok = any(getattr(spec, f, None) not in (None, False, (), "") for f in SPEC_FIELDS[c["type"]])
+                out["constraints"] += 1
+                out["read"] += ok
+                if not ok:
+                    out["missed_types"][c["type"]] += 1
+                    every = False
+        out["prompts"] += 1
+        out["prompts_all_read"] += every
+    out["missed_types"] = dict(sorted(out["missed_types"].items()))
+    return out
+
+
+def cut_by_budget(turn: dict, budget: int) -> bool:
+    """The reply did not end on its own: finish reason other than ``"stop"``, or every token of
+    the budget used (an ``END`` forced into the last slot by the budget-aware potentials)."""
+    return turn["finish_reason"] != "stop" or int(turn["completion_tokens"]) >= int(budget)
+
+
+def _rescore(recs: dict[str, dict[str, dict]]) -> dict[str, dict[str, dict]]:
+    """Copies of the records with ``score`` recomputed by the current exact scorer, a reply cut
+    by its budget scored as cut (:func:`cut_by_budget`)."""
+    from bes.eval.exact_score import score_conversation
+    from bes.eval.proxy import prompts as P
+
+    prompts = {p.id: p for p in P.load()}
+    out: dict[str, dict[str, dict]] = {}
+    for arm, rows in recs.items():
+        out[arm] = {}
+        for pid, r in rows.items():
+            budget = int(r["settings"]["max_new_tokens"])
+            fins = ["length" if cut_by_budget(t, budget) else "stop" for t in r["turns"]]
+            out[arm][pid] = {**r, "score": score_conversation(prompts[pid], [t["reply"] for t in r["turns"]], fins)}
+    return out
+
+
 def summarize(recs: dict[str, dict[str, dict]]) -> dict:
     from bes.decode.select import cut_off, prompt_type
     from bes.eval.exact_score import degenerate_stats
+    from bes.eval.proxy import prompts as P
     from bes.eval.proxy.score import sign_test
 
+    recs = _rescore(recs)
     out: dict = {"arms": {}, "n_prompts": len(next(iter(recs.values()))) if recs else 0}
+    all_prompts = P.load()
+    out["compiler"] = {"dev": compiler_coverage(P.select(all_prompts, "dev")),
+                       "test": {k: v for k, v in compiler_coverage(P.select(all_prompts, "test")).items()
+                                if k != "missed_types"}}
     # per-turn statistics use the turns every arm decoded itself (the plain arm also decodes
     # the shared first turns of two-turn prompts; those are left out for every arm)
     shared = {pid: [t for t in range(len(recs[ARM_ORDER[0]][pid]["turns"]))
@@ -273,8 +355,10 @@ def summarize(recs: dict[str, dict[str, dict]]) -> dict:
         ok = [bool(r["score"]["constraints_ok"]) for r in cons]
         own = [r["turns"][t] for r in rows for t in shared[r["prompt_id"]]]
         own_c = [r["turns"][t] for r in cons for t in shared[r["prompt_id"]]]
-        unfinished = [t["finish_reason"] != "stop" for t in own]
-        degen = [degenerate_stats(t["reply"], t["finish_reason"])["degenerate"] for t in own]
+        budget = int(rows[0]["settings"]["max_new_tokens"]) if rows else 0
+        unfinished = [cut_by_budget(t, budget) for t in own]
+        degen = [degenerate_stats(t["reply"], "length" if c else "stop")["degenerate"]
+                 for t, c in zip(own, unfinished)]
         degen_nt = [degenerate_stats(t["reply"], None)["degenerate"] for t in own]
         words = [degenerate_stats(t["reply"], None)["words"] for t in own]
         lp = [t["logprob_sum"] / t["logprob_count"] for t in own if t["logprob_count"]]
@@ -290,7 +374,6 @@ def summarize(recs: dict[str, dict[str, dict]]) -> dict:
         p_all = sum(t["extra"]["particles"] for t in own)
         resampled = [t["extra"]["resampled"] for t in own]
         survivors = sum(t["extra"]["n_survivors"] for t in own)
-        budget = int(rows[0]["settings"]["max_new_tokens"]) if rows else 0
         at_budget = [t["completion_tokens"] >= budget for t in own]
         at_budget_fin = [t["completion_tokens"] >= budget and t["finish_reason"] == "stop"
                          for t in own]
@@ -358,9 +441,9 @@ def table(summary: dict) -> str:
     rows = [
         ("prompts with every constraint satisfied", "constraints_ci",
          lambda a: f"{a['constraints_ok']}/{a['n_constrained']} = {a['constraints_ci']}"),
-        ("replies unable to finish (cut at the token limit or dead)", "unfinished_ci",
-         lambda a: f"{a['unfinished']}/{a['n_turns']} = {a['unfinished_ci']}"),
-        ("degenerate replies (exact_score; truncation counted)", "degenerate_ci",
+        ("replies cut by the token budget or dead (an END forced into the last slot counts as cut)",
+         "unfinished_ci", lambda a: f"{a['unfinished']}/{a['n_turns']} = {a['unfinished_ci']}"),
+        ("degenerate replies (exact_score; cut replies counted)", "degenerate_ci",
          lambda a: f"{a['degenerate']}/{a['n_turns']} = {a['degenerate_ci']}"),
         ("degenerate replies, truncation not counted", "degenerate_no_trunc_ci",
          lambda a: f"{a['degenerate_no_trunc']}/{a['n_turns']} = {a['degenerate_no_trunc_ci']}"),
@@ -402,7 +485,17 @@ def table(summary: dict) -> str:
     pairs = "\n| paired (constrained prompts) | better | worse | sign test p |\n|---|---|---|---|\n" + \
         "".join(f"| {k} | {v['better']} | {v['worse']} | {v['p']} |\n"
                 for k, v in summary["paired"].items())
-    return head + body + body2 + pairs
+    comp = ""
+    if "compiler" in summary:
+        d, t = summary["compiler"]["dev"], summary["compiler"]["test"]
+        comp = ("\nConstraint compiler coverage (prompts whose every annotated constraint "
+                "`bes.exact.constraints.compile` reads; constraints read): dev, the prompts above and the "
+                f"compiler's development set, {d['prompts_all_read']}/{d['prompts']} = "
+                f"{d['prompts_all_read'] / max(1, d['prompts']):.0%}, {d['read']}/{d['constraints']} "
+                f"(not read: {', '.join(f'{k} {v}' for k, v in d['missed_types'].items()) or 'none'}); "
+                f"held-out half, counted in aggregate only, {t['prompts_all_read']}/{t['prompts']} = "
+                f"{t['prompts_all_read'] / max(1, t['prompts']):.0%}, {t['read']}/{t['constraints']}.\n")
+    return head + body + body2 + pairs + comp
 
 
 def cmd_report(args) -> None:

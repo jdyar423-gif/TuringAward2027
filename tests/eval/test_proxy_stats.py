@@ -133,3 +133,22 @@ def test_summarize_unblinds_and_slices():
     assert s["per_prompt_score"]["q0"] == 1.0 and s["per_prompt_score"]["q1"] == 0.0
     md = S.to_markdown(s, "judge-test")
     assert "| overall | 16 | 8/2/6 |" in md and "Length control" in md
+
+
+def test_the_resolution_note_states_what_n_comparisons_can_resolve():
+    """The held-out half gives at most 200 comparisons per opponent arm: about +/-7 points by
+    hand (1.96 * 0.5 / sqrt(200) = 0.0693), and even a 10-point difference needs more than 200
+    comparisons at a 30% tie rate (review eval-7: the model card and the runbook quoted 'about
+    5 points on 400 prompts' under the 200-prompt table)."""
+    r = S.resolution(200, tie_rate=0.3)
+    assert r["half_width"] == pytest.approx(1.959964 * 0.5 / math.sqrt(200), abs=2e-3)
+    assert r["needed"] == {"0.03": S.n_required(0.03, tie_rate=0.3), "0.05": S.n_required(0.05, tie_rate=0.3),
+                           "0.10": S.n_required(0.10, tie_rate=0.3)} and r["needed"]["0.10"] > 200
+    note = S.resolution_note(200, 0.3)
+    assert "n = 200" in note and "±7 points" in note and "277" in note and "400" not in note
+    assert "±5 points" in S.resolution_note(400) and "±10 points" in S.resolution_note(100)
+    # the comparison report carries the note for its own n and tie rate
+    summary = {"pairset": "p", "x": "x", "y": "y", "n_rated": 200, "n_pairs": 200,
+               "overall": S.tally(["win"] * 80 + ["loss"] * 60 + ["tie"] * 60), "by_category": {},
+               "by_turns": {}, "by_length": {}, "power": {"delta_0.05": 1}}
+    assert S.resolution_note(200, 0.3) in S.to_markdown(summary)
