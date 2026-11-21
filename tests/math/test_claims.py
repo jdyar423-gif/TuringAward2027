@@ -114,6 +114,59 @@ def test_t1_value_of_candidates_is_a_coarsened_kl():
         assert abs(gain(np.zeros(m))) < 1e-12
 
 
+def test_t1b_additive_mass_law_is_the_pitman_yor_predictive_with_the_network_as_base():
+    """p(v) = (q(v) + sum_k m_k [c_k = v]) / (1 + sum_k m_k).
+
+    (i) normalised with a closed-form normaliser; (ii) equal to the Pitman-Yor posterior
+    predictive with base measure q when m_v = (n_v - d t_v) / (theta + d T); (iii) equal to the
+    additive logit tilt g_k = log(1 + m_k / q(c_k)); (iv) the loss can rise by at most
+    log(1 + sum m); (v) for one candidate with true probability p > q the best mass is
+    (p - q) / (1 - p) and it reaches the coarsened-KL optimum of T1.
+    """
+    rng = np.random.default_rng(11)
+    v = 40
+    for _ in range(50):
+        q = rng.dirichlet(0.5 * np.ones(v))
+        k = int(rng.integers(1, 6))
+        cand = rng.choice(v, size=k, replace=False)
+        m = rng.gamma(1.0, 1.0, size=k)
+        p = q.copy()
+        p[cand] += m
+        p /= 1.0 + m.sum()
+        assert abs(p.sum() - 1.0) < 1e-12                                    # (i)
+        z = np.log(q).copy()                                                 # (iii)
+        z[cand] += np.log1p(m / q[cand])
+        assert np.allclose(np.exp(z - lse(z)), p, atol=1e-12)
+        for y in range(v):                                                   # (iv)
+            assert -math.log(p[y]) <= -math.log(q[y]) + math.log1p(m.sum()) + 1e-12
+    for _ in range(50):                                                      # (ii)
+        base = rng.dirichlet(np.ones(v))
+        theta, d = float(rng.uniform(0.1, 5.0)), float(rng.uniform(0.0, 0.9))
+        n_v = np.zeros(v)
+        seen = rng.choice(v, size=int(rng.integers(1, 8)), replace=False)
+        n_v[seen] = rng.integers(1, 9, size=seen.size)
+        t_v = (n_v > 0).astype(float)                # one table per type (the tape's counts)
+        n, tt = n_v.sum(), t_v.sum()
+        py = (n_v - d * t_v) / (theta + n) + (theta + d * tt) / (theta + n) * base
+        mass = (n_v - d * t_v) / (theta + d * tt)
+        assert np.allclose((base + mass) / (1.0 + mass.sum()), py, atol=1e-12)
+        assert abs(py.sum() - 1.0) < 1e-12
+    for _ in range(200):                                                     # (v)
+        qj, pj = sorted(rng.uniform(0.01, 0.95, size=2))
+        if pj - qj < 1e-3:
+            continue
+        m_star = (pj - qj) / (1.0 - pj)
+
+        def nll(mm):
+            return -(pj * math.log((qj + mm) / (1 + mm)) + (1 - pj) * math.log((1 - qj) / (1 + mm)))
+
+        assert abs((qj + m_star) / (1 + m_star) - pj) < 1e-12
+        for eps in (-0.5, -0.1, 0.1, 0.5):
+            assert nll(max(0.0, m_star * (1 + eps))) >= nll(m_star) - 1e-12
+        kl_bin = pj * math.log(pj / qj) + (1 - pj) * math.log((1 - pj) / (1 - qj))
+        assert abs((nll(0.0) - nll(m_star)) - kl_bin) < 1e-10
+
+
 def test_t2_copy_pointer_cost_telescopes_to_log_m_over_occ():
     rng = np.random.default_rng(4)
     lib = rng.integers(6, size=4000)
