@@ -1,0 +1,112 @@
+{
+  "sha256": "15d5b99b37e14203b3ec314dd4d5f0b397bfde71402bf6b5592d9f4afd7cac59",
+  "vocab_size": 8192,
+  "n_bytes": 256,
+  "n_merges": 7920,
+  "n_special": 16,
+  "split_pattern": "cl100k_base pattern with numbers in groups of at most 2 digits",
+  "training": {
+    "doc_cap_chars": 10000,
+    "total_bytes": 430002581,
+    "domains": {
+      "web": {
+        "repo_id": "karpathy/climbmix-400b-shuffle",
+        "revision": "915333b4f8b8684f39aeaafea600fea6f43fb703",
+        "files": [
+          "shard_00000.parquet",
+          "shard_00001.parquet"
+        ],
+        "texts": 98704,
+        "bytes": 260002041,
+        "share": 0.6047
+      },
+      "chat": {
+        "repo_id": "HuggingFaceTB/smol-smoltalk",
+        "revision": "f73fe857d519ff6ac5af2ea67c4d3834da7b8bcc",
+        "files": [
+          "data/train-00000-of-00004.parquet"
+        ],
+        "texts": 153520,
+        "bytes": 120000345,
+        "share": 0.2791
+      },
+      "wiki": {
+        "repo_id": "wikimedia/wikipedia",
+        "revision": "b04c8d1ceb2f5cd4588862100d08de323dccfbaa",
+        "files": [
+          "20231101.simple/train-00000-of-00001.parquet"
+        ],
+        "texts": 26007,
+        "bytes": 50000195,
+        "share": 0.1163
+      }
+    },
+    "wiki_rows": "row index % 50 != 0",
+    "seconds": 38.9,
+    "peak_rss_mb": 496,
+    "threads": 2,
+    "cpu": "x86_64",
+    "versions": {
+      "python": "3.13.18",
+      "rustbpe": "0.1.0",
+      "tiktoken": "0.14.0"
+    }
+  },
+  "heldout": {
+    "selection": {
+      "web": [
+        "shard_00997.parquet"
+      ],
+      "chat": [
+        "data/test-00000-of-00001.parquet"
+      ],
+      "wiki": "row index % 50 == 0 of the same file",
+      "wiki_without_tables": "the wiki rows without wiki-table markup lines"
+    },
+    "max_bytes_per_domain": 8000000,
+    "web": {
+      "texts": 2687,
+      "bytes": 8000606,
+      "chars": 7987528,
+      "tokens": 2019146,
+      "bytes_per_token": 3.9624,
+      "encode_mb_per_s": 11.4,
+      "roundtrip_failures": 0,
+      "special_ids_emitted": 0,
+      "rustbpe_mismatches": 0
+    },
+    "chat": {
+      "texts": 9495,
+      "bytes": 8001673,
+      "chars": 7995299,
+      "tokens": 2011099,
+      "bytes_per_token": 3.9788,
+      "encode_mb_per_s": 11.6,
+      "roundtrip_failures": 0,
+      "special_ids_emitted": 0,
+      "rustbpe_mismatches": 0
+    },
+    "wiki": {
+      "texts": 4836,
+      "bytes": 6000256,
+      "chars": 5959112,
+      "tokens": 2070044,
+      "bytes_per_token": 2.8986,
+      "encode_mb_per_s": 10.8,
+      "roundtrip_failures": 0,
+      "special_ids_emitted": 0,
+      "rustbpe_mismatches": 0
+    },
+    "wiki_without_tables": {
+      "texts": 4724,
+      "bytes": 4999393,
+      "chars": 4980716,
+      "tokens": 1534338,
+      "bytes_per_token": 3.2583,
+      "encode_mb_per_s": 8.5,
+      "roundtrip_failures": 0,
+      "special_ids_emitted": 0,
+      "rustbpe_mismatches": 0
+    }
+  }
+}
