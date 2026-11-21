@@ -205,6 +205,14 @@ class DecodeCfg:
     self_evidence_weight: float = 0.25
     use_library: bool = True
     use_critic: bool = False
+    # appended by the decoding track (bes/decode): see bes.decode.sampling / potentials / smc
+    top_k: int = 0                    # 0 = off
+    min_p: float = 0.0                # 0 = off
+    truncate_after_mask: bool = True  # truncation inside the allowed set (weights untruncated)
+    max_depth: int = 8                # bracket depth bound outside code (structural potential)
+    budget_aware: bool = True         # masks keep every particle able to finish in max_new_tokens
+    resample_at: str = "sentence"     # "sentence" (wait at sentence boundaries) | "token"
+    unit_max_tokens: int = 32         # a resampling unit ends after this many tokens at most
 
 
 @dataclass(frozen=True)
