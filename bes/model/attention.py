@@ -13,7 +13,7 @@ per-head gain (logit = ``gain * cos``); the reserved dims carry exact per-key bi
 
 Implementations (``cfg.attn_impl``):
 * ``"xla"``: dense masked softmax, any backend (CPU tests);
-* ``"splash"``: provided by the TPU track in ``bes.model.splash`` as
+* ``"splash"``: provided by ``bes.model.attention_splash`` as
   ``attend(q, k, v, seg, cfg) -> y`` with ``q, k, v, y: [B, T, H, head_dim]`` and the same
   semantics (static causal mask + per-example segment ids). Imported lazily so CPU runs never
   touch it.
@@ -107,7 +107,7 @@ def self_attend(q: jax.Array, k: jax.Array, v: jax.Array, ctx: Ctx, sink: jax.Ar
         y, mass = attend_xla(q, k, v, ctx.seg, ctx.seg, ctx.pos, ctx.pos, sink)
         return y, (jnp.zeros((), F32) if mass is None else jnp.mean(mass))
     if cfg.attn_impl == "splash":
-        from bes.model import splash  # TPU-only path, provided by the TPU attention track
+        from bes.model import attention_splash as splash  # TPU path, imported lazily
         y = splash.attend(q, k, v, ctx.seg, cfg).astype(hi(q.dtype))
         if sink is None or ctx.conf is None:
             return y, jnp.zeros((), F32)
