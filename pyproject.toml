@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bes"
+version = "0.1.0"
+description = "BES-100M-A20M: a looped language model with exact host-side machinery, trained in 24h on one TPU v6e"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=2.0",
+  "jax==0.11.1",
+  "jaxlib==0.11.1",
+  "optax==0.2.9",
+  "tiktoken>=0.9",
+  "rustbpe>=0.1.0",
+  "regex",
+  "pyarrow>=17",
+  "huggingface_hub>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools.packages.find]
+include = ["bes*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -p no:cacheprovider"
+markers = ["slow: long-running tests (AOT compile, end-to-end)", "net: needs network access"]
