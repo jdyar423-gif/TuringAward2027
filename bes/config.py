@@ -203,6 +203,27 @@ class RunCfg:
     guard_skip_steps: int = 200       # data steps skipped after a rollback
     guard_lr_factor: float = 0.7      # learning-rate multiplier applied at every rollback
     guard_max_rollbacks: int = 3
+    # -- appended by the supervisor track (scripts/run_24h.py, bes/train/{supervisor,stages,
+    #    benchmark}.py); "run" in a path field means a directory inside out_dir
+    switches: str = ""                # runtime feature switches, "sink:0 conf:0" (make_consts names;
+                                      # "" = the static ModelCfg flags); set by the canary's ladder
+    tok_root: str = ""                # root of tok/<source>/ shards: "" = data_dir, "run" = out_dir/data
+    proxy_root: str = ""              # proxy-evaluation root: "" = data_dir/proxy, "run" = out_dir/proxy
+    download_sources: str = ""        # "name[:max_files] ..." to download ("" = the mixture's sources
+                                      # and the preference data at the registry caps; the library
+                                      # build fetches its own sources)
+    tokenize_max_records: int = 0     # records per input file when tokenising (0 = all)
+    preflight_min: float = 3.0        # planned minutes of stage 0
+    benchmark_min: float = 15.0       # planned minutes of the start-up benchmark and canary ...
+    benchmark_cap_min: float = 25.0   # ... and its hard cap
+    bench_plans: str = "full"         # "full" | "reduced" (CPU rehearsals: fewer candidate plans)
+    bench_steps: int = 20             # timed steps per candidate plan after warm-up
+    canary_steps: int = 30            # steps of the safe and of the full configuration in the canary
+    loader_workers: int = 0           # loader worker processes (0 = from the host core plan)
+    eval_opponents: str = "falcon=recommended mobilellm=recommended mobilellm=neutral"
+    eval_judge: str = "qwen3-4b-2507"  # judge of the proxy comparison (registry name, gguf:PATH, standin-<rule>)
+    eval_limit: int = 0               # prompts per split in the proxy evaluation (0 = all)
+    sidecar: bool = True              # CPU side-car health reports during training
 
 
 # ----------------------------------------------------------------------------- decode
