@@ -1,5 +1,6 @@
 """Constraints: exact response properties, a conservative compiler for explicit requests,
-verifiers, natural instructions and countdown targets (``docs/SPEC.md`` section 2.2).
+verifiers, natural instructions, countdown targets and token-local enforcement data
+(``docs/SPEC.md`` section 2.2).
 
 Everything is a deterministic function of text (or of token ids, through
 ``bes.data.chat_format.display_text``). Counts of words, sentences and list items are those of
@@ -14,14 +15,18 @@ Properties (:func:`measure`)
 - ``words``, ``sentences``, ``items`` (list items): the transducer's counts, the end of the text
   closing the turn. ``bullet_items`` / ``numbered_items`` split ``items`` by the line's marker.
 - ``newlines``: number of ``\\n`` (the register's line count). ``lines``: lines with at least one
-  byte that is not ASCII whitespace.
+  byte that is not ASCII whitespace (a title or a postscript line counts like any other).
 - ``paragraphs``: maximal runs of lines that are not separators; a separator is a blank line
   or a thematic break (``***``, ``---``, ``___``, spaces allowed) outside a code fence. A fenced
   block, blank lines included, belongs to the paragraph around it. **Divider mode**: when the
   text uses the markdown divider ``***`` outside fences (a line made of three or more ``*`` and
   spaces, or a run of three or more ``*`` with whitespace or the line edge on both sides),
-  paragraphs are the non-empty chunks between dividers and blank lines do not separate (the
-  convention of "paragraphs are separated with the markdown divider ***" requests).
+  paragraphs are the non-empty chunks between dividers and blank lines do not separate.
+  :func:`paragraph_texts` returns the paragraphs themselves; ``dividers`` counts the dividers,
+  ``blank_paragraphs`` the paragraphs of blank-line mode, ``paragraph_first_words`` the first
+  word of each paragraph and ``first_word`` that of the text (:func:`first_word`: after
+  leading whitespace and ``# * _ > " ' ( [ “ ‘ «``, the first run of letters and digits,
+  lowercased).
 - ``code_fences``: fence lines (a line that starts, after spaces or tabs, with three backticks:
   the transducer's fence toggle); ``code_blocks = code_fences // 2``; ``has_code_fence``.
 - ``headings``: lines outside fences of the form ``#``..``######``, a space or tab, text (at most
@@ -39,17 +44,66 @@ Properties (:func:`measure`)
 - ``keywords``: ``{keyword: occurrences}`` for the given keywords: case-insensitive matches
   that start at a word start (not after a letter or digit), so inflected forms count
   (``"dress"`` in ``"dressing"``); ``keywords_whole``: the same with a word end required too.
-  Inner spaces of a keyword match any whitespace. A required keyword must have
-  ``keywords >= 1``; a forbidden one must have ``keywords_whole == 0`` (both lenient towards
-  the response).
+  Inner spaces of a keyword match any whitespace.
+- ``highlights`` (:func:`count_highlights`): ``*text*`` / ``**text**`` spans on one line whose
+  text has no ``*`` and does not start or end with whitespace (a ``* item`` bullet is not one).
+  ``placeholders``: ``[text]`` spans on one line with non-blank text. ``capital_words``: words
+  (letters and digits, inner apostrophes allowed) that are :meth:`str.isupper` (``"I"``
+  counts). ``has_title``: a ``<<title>>`` on one line. ``quoted``: the stripped text starts and
+  ends with ``"``.
+
+Checkers used by :func:`verify` (all case-insensitive): :func:`letter_count` (an ASCII letter
+in either case); :func:`starts_with_phrase` (after leading whitespace and markup, and after a
+leading ``<<title>>`` or heading line, the phrase follows, not continued by a letter or digit);
+:func:`ends_with_phrase` (the end, ignoring trailing whitespace, quotes and ``*`` / ``_``, is
+the phrase, not preceded by a letter or digit; nothing else may follow); :func:`matches_option`
+(the whole text equals an option once punctuation is removed and whitespace collapsed);
+:func:`has_postscript` (the marker starts a line or a sentence; a space may follow each inner
+``.``: ``P.S.`` matches ``P. S.``); :func:`count_sections` (lines starting with ``<marker> <n>``,
+optionally after a heading ``#`` run or emphasis); :func:`split_responses` (non-blank parts
+between separators; blank parts only at the ends); :func:`repeats_request` (the text starts with
+the request, whitespace collapsed).
 
 Specification (:class:`ConstraintSpec`)
 ---------------------------------------
 Counts are intervals ``Interval(lo, hi)`` (``hi = None``: no upper bound) on ``words,
-sentences, items, paragraphs, lines``; ``keywords`` must each appear, ``forbidden`` must not;
+sentences, items, paragraphs, lines``; ``keywords`` must each appear (word-start match),
+``forbidden`` must not (whole-word match: lenient towards the response in both cases);
 ``json_output`` (``json_valid``), ``code_block`` (at least one closed fenced block), ``case``
 (``"lower"``: ``all_lower``, ``"upper"``: ``all_upper``), ``end_question``
 (``ends_with_question``), ``no_commas`` (no ``,``). ``items = Interval(0, 0)`` means "no list".
+Further instruction families:
+
+==================  ===========================================================================
+field               satisfied when
+==================  ===========================================================================
+``list_style``      ``"bullet"`` / ``"numbered"``: there is a list item and every one has that
+                    marker (``- * + •`` or ``N.`` / ``N)``)
+``frequencies``     ``((word, Interval), ...)``: whole-word occurrences in the interval (the
+                    project's eval scorer counts the same way); "at least once" is a keyword
+``letters``         ``((letter, Interval), ...)``: occurrences of the letter in either case
+                    (``Interval(0, 0)``: "without the letter e")
+``highlights``,     ``Interval`` on ``measure()`` of the same name
+``placeholders``,
+``capital_words``
+``sections``        ``(marker, Interval)``: lines starting with ``<marker> <number>``
+``first_word``      ``(n, word)``: paragraph ``n`` starts with ``word`` (lowercase)
+``divider``         paragraph breaks are ``***`` dividers (a text of several blank-line
+                    paragraphs without a divider fails)
+``title``           a ``<<title>>``
+``postscript``      a postscript marker, e.g. ``"P.S."``, at a line or sentence start
+``quoted``          the whole response is in double quotes
+``starts_with``     options; the response starts with one of them
+``end_phrase``      the response ends with the phrase exactly (case and markup aside)
+``one_of``          options; the whole response is one of them (punctuation and case aside)
+``responses``       ``(separator, n)``: exactly ``n`` different non-blank parts between
+                    separators
+``repeat``          the request (the rest of the user message); the response starts with it
+==================  ===========================================================================
+
+Word and letter pairs are kept sorted by word (canonical order), start options carry no final
+sentence punctuation, and every phrase is one line without double quotes. :func:`merge`
+intersects counts and options; conflicting markers, phrases or styles make it return ``None``.
 
 Compiler (:func:`compile`)
 --------------------------
@@ -68,57 +122,140 @@ clauses (at ``, ``, ``: ``, `` - ``, parentheses and "but / however / unless ...
   and B``, ``A to B``, ``A-B``, ``A or B`` -> ``[A, B]`` (``up to A or B`` -> ``[0, B]``). A
   negation that governs the phrase flips it (``do not use more than 3 sentences``,
   ``should not exceed 100 words`` -> ``[0, N]``); any other negation within two words, a negated
-  "exactly" or a negated bare count gives nothing. ``about / around / roughly / or so`` give
-  nothing.
+  "exactly" or a negated bare count gives nothing. ``about / around / roughly / or so /
+  hopefully / if necessary`` give nothing.
 - Bare counts (no relation word) are exact for sentences, items, paragraphs and lines (``in
   three sentences``, ``a one-sentence answer``, ``a single paragraph``, ``your response must
-  have 2 paragraphs``, ``write 4 lines``) and an upper bound for words (``in 50 words``, ``a
-  100-word summary`` -> ``[0, N]``): word counts are budgets. Bare word counts need ``in /
-  within / using / as`` or the adjectival form (``give me 10 words that rhyme`` is not a
-  length).
+  have 2 paragraphs``, ``write 4 lines``). For words, a bare count up to ``BARE_EXACT_WORDS``
+  (5) is exact (``a single word``, ``in three words``, ``answer with one word``) and a larger
+  one is a budget (``in 50 words``, ``a 100-word summary`` -> ``[0, N]``). Bare word counts
+  need ``in / within / using / as``, ``answer / reply / respond with`` (small counts) or the
+  adjectival form (``give me 10 words that rhyme`` is not a length).
+- Steps are list items (``explain it in 4 steps``, ``in exactly three numbered steps``, ``give
+  me 5 steps``) in a request with ``in / into / using / with`` or a relation. A list style is
+  read from the count's noun (``bullet points`` -> bullet, ``numbered items / steps`` ->
+  numbered) and from format phrases (``as a numbered list``, ``in bullet points``, ``use the
+  markdown bullet points``); both styles, or a style alternative, give none.
 - Licensing. A count is read in a *request*: a clause that starts with a request verb
   (possibly after "please", "can you", "make sure to", ...), or contains "should / must /
   needs to / is required", or starts with "I want / I need / I'd like", or is a predicate of a
   requirement list ("- contains at least 5 sentences"), or belongs to a request sentence. A
   relation or a bare count after ``in / into / using / within / as`` and a fragment that opens
-  its clause (``Max 3 sentences.``) are also read. Weak introducers (``with / of / contain /
-  have / be / write / give / use ...``) need a request; ``with`` and ``of`` also need a text
-  noun before them (``a poem of 4 lines``, not ``the intersection of two lines``). Adjectival
-  forms need a production verb before and a text noun after (``write a 3-sentence summary``,
-  not ``describe a 5-paragraph essay structure``).
-- Not requests: statements (a clause or sentence that starts with a subject, "here is", or a
-  quoted span, without a request: ``I wrote a 300-word essay``, ``you edited it into 3
-  sentences``); informational, hypothetical and conditional questions (``how do you ...``,
-  ``is it possible ...``, ``what if ...``, ``if / when ...``); counts in sentences about code
-  (``a function that takes a single word``, ``each row in a single line``); per-part counts
-  (``each``, ``per``, ``every``); counts of an edit (``by removing at most three words``);
-  comparisons (``one item shorter``); counts after a determiner (``in this one sentence``);
-  counts in multi-step sentences (``then``, ``followed by``, ``first``, ``and explain``).
-- ``list|name|give me|suggest|provide|... N <things>`` opening a request sentence gives ``items =
-  [N, N]`` for ``N >= 2``, unless the message asks for an inline form (comma-separated, one
-  sentence, one line), another quantity follows in the sentence (``three pros and three
-  cons``) or the count is per part. The same count inside a question ("what are three reasons
-  ...?") is a soft request and gives nothing.
+  its clause (``Max 3 sentences.``, ``One word.``) are also read. Weak introducers (``with / of
+  / contain / have / be / write / give / use ...``) need a request; ``with`` and ``of`` also need
+  a text noun before them (``a poem of 4 lines``, not ``the intersection of two lines``).
+  Adjectival forms need a production verb before and a text noun after (``write a 3-sentence
+  summary``, not ``describe a 5-paragraph essay structure``). "I should / we need to" are the
+  user's own deliberation, not modals about the reply.
+- Not requests: statements (a clause or sentence that starts with a subject, "here is", "I have
+  ...", "I need to ...", or a quoted span, without a request: ``I wrote a 300-word essay``);
+  informational, hypothetical and conditional questions (``how do you ...``, ``do you have
+  ...``, ``what if ...``, ``if / when ...``) and examples (``for example ...``); counts in
+  sentences about code and all counts and formats except code blocks in a message that asks
+  for code (``write a function ... provide 2 solutions``); per-part counts (``each``, ``per``,
+  ``every``, ``for each``, ``sentences must have fewer than 10 words``); counts of an edit or of
+  a text being worked on (``by removing at most three words``, ``while editing this paragraph
+  into 3 sentences``, ``help on improving a single sentence``, ``with at most 4 words added``,
+  ``replace X with a single word``); counts of a part of the reply (``begin your answer with a
+  1 sentence summary``, ``the revised passage``, ``an ending sentence``, ``the second
+  sentence``, ``a 5-word title``); comparisons (``one item shorter``); counts after a
+  determiner (``in this one sentence``); counts inside an embedded question (``decide if ...
+  in one paragraph``); counts in multi-step sentences (``then``, ``followed by``, ``first``,
+  ``and explain``), which also block that unit for the whole message, as do additive counts
+  (``in 120 more words``) and two bare counts of one unit in a sentence (``4 clear sentences
+  and four unclear sentences``); a conditional clause with its own count drops the sentence's
+  counts.
+- ``list|name|give me|suggest|provide|... N <things>`` (2 <= N <= ``MAX_LIST_N``) opening a
+  request sentence gives ``items = [N, N]``; so do ``a list of N <things>`` and, with a list
+  format in the sentence, ``pick / choose / select N (of them)``. Not when the message asks
+  for an inline form (comma-separated, one sentence, one line), another quantity follows in the
+  sentence (``three pros and three cons``), the count is per part or the noun is a measure or a
+  count of responses (``give two different responses``). The same count inside a question
+  ("what are three reasons ...?") is a soft request and gives nothing.
 - Keywords must be delimited by quotes, ``[...]`` or ``*...*`` after a trigger (``include /
   use / mention ... the word(s) / keyword(s) / phrase(s) / term(s)``, ``include "x"``, ``the
-  word X should appear``) in a request sentence, or be single plain words in the template
-  ``include (the) keyword(s) A, B and C (in the response).``. ``[a, b]`` and ``*a, b*`` are
-  lists; a bracketed template variable defined in the message (``[keywords] are "a", "b"``) is
-  replaced by its quoted values, and generic names (``[keyword]``, names with ``_`` or digits)
-  are dropped. ``X or Y`` lists are not required keywords. Negated triggers (``do not include /
-  avoid / without using / should not appear``) give ``forbidden``. Frequency requests keep only
-  the implied inclusion (``at least 3 times`` -> required; ``less than 2 times`` -> nothing).
-  Nothing is read in sentences about code.
-- Formats: ``answer / respond / format ... in|as JSON``, ``your response must be in JSON``;
-  ``in a code block`` / ``use a code block`` / ``wrap ... in triple backticks`` (in a request);
-  ``all lowercase / in lowercase letters / no capital letters``; ``all caps / in capital
-  letters`` (not "convert to lowercase", not "words in all caps should appear 2 times");
-  ``end (your response) with a question``; ``do not use any commas / no commas``. Nothing in a
-  conditional sentence.
+  word X should appear``, ``the words "a" and "b" should not appear``) in a request sentence,
+  or be plain words or comma-separated phrases of up to three words in the template ``include
+  (the) keyword(s) A, B and C (in the response).``. ``[a, b]`` and ``*a, b*`` are lists; a
+  bracketed template variable defined in the message (``[keywords] are "a", "b"`` or ``[name]
+  are: a, b, c``) is replaced by its values, and generic names (``[keyword]``, names with
+  ``_`` or digits) are dropped. ``X or Y`` lists are not required keywords. Negated triggers
+  (``do not include / avoid / without using / never say / should not appear``) give
+  ``forbidden`` (``or`` lists included). ``the use of the word X`` and ``you used the word X``
+  are not triggers. Nothing is read in sentences about code.
+- Formats: ``answer / respond / format ... in|as JSON``, ``your response must be in JSON``,
+  ``give me a JSON object ...``, ``output only the JSON``, ``JSON only``; ``in a code block`` /
+  ``use a code block`` / ``wrap ... in triple backticks`` (in a request); ``all lowercase / in
+  lowercase letters / no capital letters``; ``all caps / in capital letters`` (not "convert to
+  lowercase", not "named in all caps", not a short statement such as "this is all lower
+  case"); ``end (your response) with a question``, ``close by asking me a question``, ``make
+  sure the last sentence is a question``; ``do not use any commas / no commas / must not
+  contain commas / comma-free`` (not in talk about comma rules). Nothing in a conditional
+  sentence.
+- Further families (claimed spans are masked before the count, keyword and format rules read
+  the sentence, so "highlight at least 2 words" is not a word count): ``the word X should
+  appear / use the word X / mention "X" <relation> N times | once | twice`` (a negation flips
+  the relation; ``less than once`` is ``forbidden``); ``the letter X should appear ... N
+  times``, ``use the letter X ...``, ``without the letter X``; ``highlight <relation> N
+  sections ... (with markdown)``, ``N highlighted sections``, ``N highlights using markdown``
+  (a bare count is a lower bound; ``highlight X using markdown`` is at least one); ``<relation>
+  N placeholders`` with square brackets mentioned; ``words with all capital letters should
+  appear ... N times``, ``use N words in all caps`` (bare: at least); ``must have N sections``
+  together with ``mark the beginning of each section with <Marker> X``; ``Paragraph N must
+  start with word W``, ``the second paragraph should start with the word "W"``; ``paragraphs
+  are separated with the markdown divider: ***``; ``title ... double angular brackets / <<``;
+  ``postscript (starting with M / should be "...")``, ``add a P.S.`` (default marker
+  ``P.S.``); ``wrap your entire response in double quotation marks`` and other forms with the
+  response (or a text noun) as object or subject; ``start / begin your response with "X" (or
+  "Y")``, ``it must start with the word "X"``, ``start with yes or no`` (not "let's start
+  with", not "sentences that start with", not in a multi-step sentence unless the response is
+  named); ``finish your response with this exact phrase X`` (quoted, bracketed or a final
+  ``?`` / ``!`` phrase), ``end your answer with the phrase "X"``; ``answer with one of the
+  following options: ...`` (quoted, bracketed, parenthesised, ``- a - b`` or plain lists, a
+  template variable resolved), ``answer with yes or no only``, ``a one-word answer: yes, no,
+  or maybe`` (a restriction word is required); ``give two different responses ... separated
+  by ******``; ``first repeat the request word for word without change, then give your answer
+  (...)`` (the request is the message without that instruction). Template phrases that are
+  undefined variables (``[ender]``) or contain placeholders give nothing.
 - Several constraints on one count are intersected (``at least 3 and at most 5 sentences``);
   an empty intersection drops that count. Two count requests joined by ``or``, or a count
   followed by an ``or`` alternative (``a single sentence, a paragraph, or an essay``), are
-  dropped.
+  dropped. Inconsistent families are dropped newest first.
+
+Rendering (:func:`render`)
+--------------------------
+One sentence (two for a "between" frequency or count of a feature) per constraint, from several
+templates, shuffled; ``compile(render(spec)) == spec`` (property-tested). Item nouns follow
+``spec.list_style`` ("bullet points", "numbered items"; "list items" without a style). A spec
+with ``repeat`` renders as its request followed by the repeat instruction, so its other
+constraints must be the request's own.
+
+Token-local enforcement (:meth:`ConstraintSpec.token_local`)
+------------------------------------------------------------
+``spec.token_local()`` returns a :class:`TokenLocal`: what a decoder can enforce at every token
+and what only the complete text can show.
+
+- ``counts``: ``(counter, lo, hi)`` for ``words``, ``sentences`` and ``items``: the raw counters
+  of ``bes.exact.registers.Incremental`` (``raw()[counter]``), the very counts ``verify`` uses.
+  They never decrease inside a turn, so a candidate token whose increment
+  (``table.inc[tok, s, INC_WORDS | INC_SENT | INC_ITEMS]`` with ``s = raw()["state"]``) takes the
+  counter above ``hi`` can be masked; ``END`` is allowed only when ``lo <= count <= hi`` after
+  its flush (``END`` adds one sentence when ``table.components[s, 5] == 1``). Exact counts are
+  both.
+- ``lines``: ``(lo, hi)`` on non-blank lines: not a register (the register counts ``\\n``) but
+  a byte count with one bit of state, :func:`nonblank_line_step`, tabulable per token and
+  entry bit.
+- ``banned_bytes`` (``b","`` for no commas) and ``case`` (``"lower"`` bans tokens with an ASCII
+  capital, ``"upper"`` tokens with an ASCII lowercase letter): static token masks; non-ASCII
+  letters and "at least one cased letter" are checked at the end.
+- ``forbidden``: lowercase UTF-8 forms of the forbidden words; :func:`has_forbidden_bytes`
+  finds a complete occurrence (ASCII-case-insensitive, no word byte before or after: exact for
+  ASCII neighbours). ``letters``: ``(letter bytes, lo, hi)``, a per-token byte count.
+- ``complete``: the descriptions (``ConstraintSpec.constraints``) of everything else:
+  paragraphs, keywords, frequencies, list style, JSON, code blocks, questions, highlights,
+  placeholders, capital words, sections, first words, dividers, titles, postscripts, quotes,
+  start and end phrases, options, separated responses, repetition. Start phrases, options and
+  the repeated request are prefixes a decoder may also check early on the decoded text.
 
 Targets (:func:`targets_for_tokens`)
 ------------------------------------
@@ -131,6 +268,7 @@ gives none, because the register's overshoot value would misdescribe it.
 """
 from __future__ import annotations
 
+import dataclasses
 import functools
 import json
 import re
@@ -197,13 +335,18 @@ _STAR_RULE_LINE = re.compile(r"[ \t]*(?:\*[ \t]*){3,}\Z")
 _STAR_DIVIDER = re.compile(r"(?:(?<=[ \t])|^)\*{3,}(?=[ \t]|\Z)")
 
 
-def _line_stats(text: str) -> dict[str, int]:
+def _line_stats(text: str) -> dict:
+    """Line-level properties; ``par_texts`` lists the paragraphs (``paragraphs`` of them) in
+    the mode the text uses (blank lines, or ``***`` dividers when there is one), ``dividers``
+    counts the dividers and ``blank_paragraphs`` the paragraphs of blank-line mode."""
     lines = text.split("\n")
     fence = False
-    stats = dict(lines=0, paragraphs=0, headings=0, code_fences=0, bullet_items=0,
-                 numbered_items=0)
+    stats: dict = dict(lines=0, paragraphs=0, headings=0, code_fences=0, bullet_items=0,
+                       numbered_items=0)
     in_par = False
-    chunks, in_chunk, dividers = 0, False, 0      # "***"-divided chunks (divider mode)
+    pars: list[list[str]] = []                    # blank-line mode
+    chunks: list[list[str]] = []                  # "***"-divided chunks (divider mode)
+    in_chunk, dividers = False, 0
     for line in lines:
         body = line.rstrip("\r")
         blank = not line.strip(_LINE_WS)
@@ -211,9 +354,11 @@ def _line_stats(text: str) -> dict[str, int]:
             stats["lines"] += 1
         if not fence and (blank or _BREAK_LINE.match(body)):
             in_par = False
-        elif not in_par:
-            stats["paragraphs"] += 1
-            in_par = True
+        else:
+            if not in_par:
+                pars.append([])
+                in_par = True
+            pars[-1].append(body)
         if not fence:
             if _HEADING_LINE.match(line):
                 stats["headings"] += 1
@@ -232,14 +377,181 @@ def _line_stats(text: str) -> dict[str, int]:
                     dividers += 1
                     in_chunk = False
                 if piece.strip(_LINE_WS) and not in_chunk:
-                    chunks += 1
+                    chunks.append([])
                     in_chunk = True
+                if in_chunk:
+                    chunks[-1].append(piece)
         if _FENCE_LINE.match(line):
             stats["code_fences"] += 1
             fence = not fence
-    if dividers:
-        stats["paragraphs"] = chunks
+    stats["blank_paragraphs"] = len(pars)
+    stats["dividers"] = dividers
+    stats["par_texts"] = ["\n".join(p) for p in (chunks if dividers else pars)]
+    stats["paragraphs"] = len(stats["par_texts"])
     return stats
+
+
+def paragraph_texts(text: str) -> list[str]:
+    """The paragraphs counted by ``measure(text)["paragraphs"]``, in order (blank-line mode,
+    or divider mode when the text has a ``***`` divider; module docstring)."""
+    return _line_stats(text)["par_texts"]
+
+
+# ------------------------------------------------------------- spans, words and phrases
+_HIGHLIGHT = re.compile(r"(?<!\*)(\*\*?)(?![\s*])[^*\n]*?(?<![\s*])\1(?!\*)")
+_PLACEHOLDER = re.compile(r"\[[^\[\]\n]*[^\s\[\]][^\[\]\n]*\]")
+_TITLE = re.compile(r"<<[^<>\n]*[^\s<>][^<>\n]*>>")
+_WORD_TOKEN = re.compile(r"[^\W_]+(?:['’][^\W_]+)*")
+_FIRST_WORD = re.compile(r"[^\W_]+")
+_PUNCT = re.compile(r"[^\w\s]")
+_TRAILING_END = _ASCII_WS + "\"'*_”’"
+
+
+def count_highlights(text: str) -> int:
+    """Markdown highlights: ``*text*`` or ``**text**`` spans on one line whose text does not
+    start or end with whitespace and has no ``*`` (``"* item"`` bullets are not spans)."""
+    return len(_HIGHLIGHT.findall(text))
+
+
+def count_placeholders(text: str) -> int:
+    """Square-bracket placeholders ``[like this]`` on one line with non-blank content."""
+    return len(_PLACEHOLDER.findall(text))
+
+
+def has_title(text: str) -> bool:
+    """A title in double angular brackets ``<<like this>>`` (one line, non-blank)."""
+    return _TITLE.search(text) is not None
+
+
+def is_quoted(text: str) -> bool:
+    """The text, stripped of ASCII whitespace, starts and ends with ``"`` (two at least)."""
+    t = text.strip(_ASCII_WS)
+    return len(t) >= 2 and t[0] == '"' and t[-1] == '"'
+
+
+def capital_word_count(text: str) -> int:
+    """Words (runs of letters and digits, inner apostrophes allowed) that are all capitals
+    (:meth:`str.isupper`: at least one cased letter, none lowercase; ``"I"`` counts)."""
+    return sum(1 for w in _WORD_TOKEN.findall(text) if w.isupper())
+
+
+def letter_count(text: str, letter: str) -> int:
+    """Occurrences of an ASCII letter in either case."""
+    return text.count(letter.lower()) + text.count(letter.upper())
+
+
+def first_word(text: str) -> str:
+    """First word of ``text`` lowercased: after leading whitespace and the markup ``# * _ >
+    " ' ( [ “ ‘ «``, the first run of letters and digits (``""`` when none)."""
+    m = _FIRST_WORD.match(text.lstrip(_LEADING_MARKUP))
+    return m.group(0).lower() if m else ""
+
+
+def _ws(s: str) -> str:
+    return " ".join(s.split())
+
+
+@functools.lru_cache(maxsize=4096)
+def _phrase_pattern(phrase: str) -> re.Pattern:
+    body = r"\s+".join(re.escape(w) for w in phrase.split())
+    tail = r"(?![^\W_])" if phrase[-1:].isalnum() else ""
+    return re.compile(body + tail, re.IGNORECASE)
+
+
+_HEAD_LINES = re.compile(r"(?:[ \t]*(?:<<[^<>\n]*>>|#{1,6}[ \t][^\n]*)[ \t]*(?:\n|\Z)[ \t\n]*)+")
+
+
+def starts_with_phrase(text: str, phrase: str) -> bool:
+    """``text`` begins with ``phrase`` (case-insensitive, inner whitespace flexible, not
+    followed by a letter or digit when it ends with one) after leading whitespace and markup
+    (as :func:`first_word`); a leading ``<<title>>`` or markdown heading line is skipped (the
+    start of the body counts)."""
+    if not phrase.split():
+        return False
+    pattern = _phrase_pattern(phrase)
+    head = text.lstrip(_ASCII_WS)
+    if pattern.match(head.lstrip(_LEADING_MARKUP)):
+        return True
+    m = _HEAD_LINES.match(head)
+    return bool(m) and m.end() < len(head) and pattern.match(head[m.end():].lstrip(_LEADING_MARKUP)) is not None
+
+
+def ends_with_phrase(text: str, phrase: str) -> bool:
+    """``text`` ends with ``phrase``: both casefolded with whitespace runs collapsed and the
+    trailing whitespace, quotes and emphasis ``" ' * _ ” ’`` removed; the text may not have a
+    letter or digit right before the phrase when the phrase starts with one."""
+    t = _ws(text).casefold().rstrip(_TRAILING_END)
+    p = _ws(phrase).casefold().rstrip(_TRAILING_END)
+    if not p or not t.endswith(p):
+        return False
+    before = t[: len(t) - len(p)]
+    return not (p[0].isalnum() and before[-1:].isalnum())
+
+
+def option_key(s: str) -> str:
+    """Comparison form of an answer option: casefolded, punctuation removed, whitespace
+    collapsed (``"My answer is yes."`` -> ``"my answer is yes"``)."""
+    return _ws(_PUNCT.sub("", s.casefold()))
+
+
+def matches_option(text: str, options: Sequence[str]) -> bool:
+    """The whole text is one of ``options`` (compared by :func:`option_key`)."""
+    key = option_key(text)
+    return bool(key) and key in {option_key(o) for o in options}
+
+
+@functools.lru_cache(maxsize=1024)
+def _marker_pattern(marker: str) -> str:
+    out = []
+    for i, ch in enumerate(marker):
+        if ch.isspace():
+            if not out or out[-1] != r"\s+":
+                out.append(r"\s+")
+        else:
+            out.append(re.escape(ch))
+            if ch == "." and i < len(marker) - 1 and not marker[i + 1].isspace():
+                out.append(r"[ \t]?")
+    return "".join(out)
+
+
+@functools.lru_cache(maxsize=1024)
+def _postscript_re(marker: str) -> re.Pattern:
+    return re.compile(r"(?:^[ \t]*|(?<=[.!?\"”)])[ \t]+)(?:[*_>#]+[ \t]*)?" + _marker_pattern(marker),
+                      re.IGNORECASE | re.MULTILINE)
+
+
+def has_postscript(text: str, marker: str) -> bool:
+    """``marker`` at the start of a line (after spaces and the markup ``* _ > #``) or of a
+    sentence (after ``. ! ? " ” )`` and a space), case-insensitive, where a space may follow
+    every inner ``.`` (``"P.S."`` matches ``"P. S."``, ``"p.s."``)."""
+    return bool(marker.strip()) and _postscript_re(marker.strip()).search(text) is not None
+
+
+@functools.lru_cache(maxsize=1024)
+def _section_re(marker: str) -> re.Pattern:
+    return re.compile(r"^[ \t]*(?:#{1,6}[ \t]*)?(?:[*_]{1,2})?" + _marker_pattern(marker)
+                      + r"[ \t]*[0-9]+(?![0-9])", re.IGNORECASE | re.MULTILINE)
+
+
+def count_sections(text: str, marker: str) -> int:
+    """Lines that start (after spaces, an optional heading ``#`` run and ``*``/``_``
+    emphasis) with ``marker`` (case-insensitive) and a number: ``"Section 2"``,
+    ``"## SECTION 2: ..."``, ``"**Part 3**"``."""
+    return len(_section_re(marker).findall(text)) if marker.strip() else 0
+
+
+def split_responses(text: str, separator: str) -> tuple[list[str], bool]:
+    """``(parts, clean)``: the non-blank parts of ``text`` between ``separator`` (stripped)
+    and whether blank parts occur only at the two ends."""
+    parts = text.split(separator)
+    clean = all(p.strip() for p in parts[1:-1])
+    return [p.strip() for p in parts if p.strip()], clean
+
+
+def repeats_request(text: str, request: str) -> bool:
+    """``text`` starts with ``request`` (whitespace runs collapsed, casefolded)."""
+    r = _ws(request).casefold()
+    return bool(r) and _ws(text).casefold().startswith(r)
 
 
 @functools.lru_cache(maxsize=1)
@@ -324,6 +636,15 @@ def measure(text: str, keywords: Iterable[str] = ()) -> dict:
         "json_valid": json_valid(text),
         "keywords": {k: count_keyword(text, k, whole=False) for k in keywords},
         "keywords_whole": {k: count_keyword(text, k, whole=True) for k in keywords},
+        "dividers": stats["dividers"],
+        "blank_paragraphs": stats["blank_paragraphs"],
+        "paragraph_first_words": [first_word(p) for p in stats["par_texts"]],
+        "first_word": first_word(text),
+        "highlights": count_highlights(text),
+        "placeholders": count_placeholders(text),
+        "capital_words": capital_word_count(text),
+        "has_title": has_title(text),
+        "quoted": is_quoted(text),
     }
     return out
 
@@ -404,6 +725,55 @@ def valid_keyword(k: str) -> bool:
             and "  " not in k)
 
 
+FLAG_FIELDS = ("json_output", "code_block", "end_question", "no_commas", "divider", "title",
+               "quoted")
+FEATURE_COUNTS = ("highlights", "placeholders", "capital_words")
+LIST_STYLES = ("bullet", "numbered")
+MAX_PHRASE = 120
+MAX_REPEAT = 2000
+_PHRASE_OK = re.compile(r"[^\n\r\t]*[^\W_][^\n\r\t]*")
+_MARKER_OK = re.compile(r"[A-Za-z][A-Za-z0-9 .]{0,19}")
+_SEPARATOR_OK = re.compile(r"[*\-=_~#|+]{3,20}")
+
+
+def valid_phrase(p: str, limit: int = MAX_PHRASE) -> bool:
+    """A phrase (start, end, option, postscript marker): one line of 1-``limit`` characters
+    with a letter or digit, no leading or trailing whitespace and no double space."""
+    return (isinstance(p, str) and 0 < len(p) <= limit and p == p.strip() and "  " not in p
+            and bool(_PHRASE_OK.fullmatch(p)) and not any(q in p for q in "\"“”"))
+
+
+def _check_feature(name: str, iv) -> None:
+    if iv is None:
+        return
+    if not isinstance(iv, Interval):
+        raise TypeError(f"{name} must be an Interval or None")
+    if iv.hi is None and iv.lo < 1 or iv.hi == 0 or (iv.hi if iv.hi is not None else iv.lo) > MAX_COUNT:
+        raise ValueError(f"{name}: {iv} is not a checkable request")
+
+
+def _check_word_counts(name: str, value, *, letter: bool) -> None:
+    if not isinstance(value, tuple):
+        raise ValueError(f"{name} must be a tuple of (word, Interval) pairs")
+    seen = set()
+    for pair in value:
+        if not (isinstance(pair, tuple) and len(pair) == 2 and isinstance(pair[1], Interval)):
+            raise ValueError(f"{name}: bad entry {pair!r}")
+        w, iv = pair
+        ok = (isinstance(w, str) and len(w) == 1 and "a" <= w <= "z") if letter else valid_keyword(w)
+        if not ok:
+            raise ValueError(f"{name}: bad word {w!r}")
+        if iv.hi is None and iv.lo < 1 or (iv.hi == 0 and not letter):
+            raise ValueError(f"{name}: {iv} for {w!r} is not a checkable request")
+        if not letter and iv == Interval(1, None):
+            raise ValueError(f"{name}: 'at least once' is a required keyword ({w!r})")
+        if (iv.hi if iv.hi is not None else iv.lo) > MAX_COUNT:
+            raise ValueError(f"{name}: {iv} is too large")
+        if w.lower() in seen:
+            raise ValueError(f"{name} has duplicates: {value!r}")
+        seen.add(w.lower())
+
+
 @dataclass(frozen=True)
 class ConstraintSpec:
     """Explicit, checkable constraints on one response (semantics in the module docstring)."""
@@ -420,6 +790,23 @@ class ConstraintSpec:
     case: str | None = None          # "lower" | "upper"
     end_question: bool = False
     no_commas: bool = False
+    list_style: str | None = None    # "bullet" | "numbered": every list item has that marker
+    frequencies: tuple[tuple[str, Interval], ...] = ()   # (word, whole-word occurrences)
+    letters: tuple[tuple[str, Interval], ...] = ()       # (ascii letter, occurrences)
+    highlights: Interval | None = None
+    placeholders: Interval | None = None
+    capital_words: Interval | None = None
+    sections: tuple[str, Interval] | None = None         # (marker, lines "<marker> <n>")
+    first_word: tuple[int, str] | None = None            # (paragraph number, lowercase word)
+    divider: bool = False            # paragraphs are separated by *** dividers
+    title: bool = False              # a <<title>>
+    postscript: str | None = None    # marker of a postscript line, e.g. "P.S."
+    quoted: bool = False             # the whole response in double quotes
+    starts_with: tuple[str, ...] = ()   # the response starts with one of these
+    end_phrase: str | None = None
+    one_of: tuple[str, ...] = ()        # the whole response is one of these
+    responses: tuple[str, int] | None = None   # (separator, n different responses)
+    repeat: str | None = None        # the request to repeat word for word first
 
     def __post_init__(self):
         for unit in COUNT_UNITS:
@@ -434,10 +821,64 @@ class ConstraintSpec:
                 raise ValueError(f"{name} must be a tuple of valid keywords, got {value!r}")
             if len({k.lower() for k in value}) != len(value):
                 raise ValueError(f"{name} has duplicates: {value!r}")
-        if {k.lower() for k in self.keywords} & {k.lower() for k in self.forbidden}:
+        forbidden = {k.lower() for k in self.forbidden}
+        if {k.lower() for k in self.keywords} & forbidden:
             raise ValueError("a keyword cannot be both required and forbidden")
         if self.case not in (None, "lower", "upper"):
             raise ValueError(f"case must be None, 'lower' or 'upper', got {self.case!r}")
+        if self.list_style not in (None, *LIST_STYLES):
+            raise ValueError(f"list_style must be None, 'bullet' or 'numbered', got {self.list_style!r}")
+        if self.list_style and self.items is not None and self.items.hi == 0:
+            raise ValueError("a list style needs list items")
+        _check_word_counts("frequencies", self.frequencies, letter=False)
+        _check_word_counts("letters", self.letters, letter=True)
+        for name in ("frequencies", "letters"):       # canonical order: by word
+            object.__setattr__(self, name, tuple(sorted(getattr(self, name), key=lambda p: (p[0].lower(), p[0]))))
+        if {w.lower() for w, _ in self.frequencies} & forbidden:
+            raise ValueError("a word cannot have a frequency and be forbidden")
+        for name in FEATURE_COUNTS:
+            _check_feature(name, getattr(self, name))
+        if self.sections is not None:
+            ok = (isinstance(self.sections, tuple) and len(self.sections) == 2
+                  and isinstance(self.sections[0], str) and bool(_MARKER_OK.fullmatch(self.sections[0]))
+                  and self.sections[0] == self.sections[0].strip()
+                  and isinstance(self.sections[1], Interval) and self.sections[1].hi != 0)
+            if not ok:
+                raise ValueError(f"sections must be (marker, Interval), got {self.sections!r}")
+            _check_feature("sections", self.sections[1])
+        if self.first_word is not None:
+            fw = self.first_word
+            ok = (isinstance(fw, tuple) and len(fw) == 2 and isinstance(fw[0], int)
+                  and 1 <= fw[0] <= 50 and isinstance(fw[1], str)
+                  and bool(_FIRST_WORD.fullmatch(fw[1])) and fw[1] == fw[1].lower() and len(fw[1]) <= 30)
+            if not ok:
+                raise ValueError(f"first_word must be (paragraph number, lowercase word), got {fw!r}")
+        for name in FLAG_FIELDS:
+            if not isinstance(getattr(self, name), bool):
+                raise TypeError(f"{name} must be a bool")
+        if self.postscript is not None and not (valid_phrase(self.postscript, 80) and self.postscript[0].isalpha()):
+            raise ValueError(f"bad postscript marker {self.postscript!r}")
+        if self.end_phrase is not None and not valid_phrase(self.end_phrase):
+            raise ValueError(f"bad end phrase {self.end_phrase!r}")
+        for name, top in (("starts_with", 4), ("one_of", 10)):
+            opts = getattr(self, name)
+            if not isinstance(opts, tuple) or len(opts) > top or not all(valid_phrase(o) for o in opts):
+                raise ValueError(f"{name} must be a tuple of at most {top} phrases, got {opts!r}")
+            keys = [option_key(o) if name == "one_of" else _ws(o).casefold() for o in opts]
+            if len(set(keys)) != len(keys) or not all(keys):
+                raise ValueError(f"{name} has duplicate or empty options: {opts!r}")
+            if name == "starts_with" and any(o[-1] in ".,;:…" for o in opts):
+                raise ValueError(f"starts_with options end without sentence punctuation: {opts!r}")
+        if self.responses is not None:
+            r = self.responses
+            ok = (isinstance(r, tuple) and len(r) == 2 and isinstance(r[0], str)
+                  and bool(_SEPARATOR_OK.fullmatch(r[0])) and isinstance(r[1], int) and 2 <= r[1] <= 4)
+            if not ok:
+                raise ValueError(f"responses must be (separator, 2..4), got {r!r}")
+        if self.repeat is not None and not (isinstance(self.repeat, str) and self.repeat.strip()
+                                            and self.repeat == self.repeat.strip()
+                                            and len(self.repeat) <= MAX_REPEAT):
+            raise ValueError("repeat must be a non-empty, stripped request text")
 
     @property
     def empty(self) -> bool:
@@ -446,7 +887,7 @@ class ConstraintSpec:
     @property
     def constraints(self) -> tuple[str, ...]:
         """One description per atomic constraint, e.g. ``("sentences: exactly 3",
-        "keyword: 'ocean'")``."""
+        "keyword: 'ocean'")``; it starts with the name used in :func:`verify` messages."""
         out = [f"{u}: {getattr(self, u)}" for u in COUNT_UNITS if getattr(self, u) is not None]
         out += [f"keyword: {k!r}" for k in self.keywords]
         out += [f"forbidden: {k!r}" for k in self.forbidden]
@@ -455,6 +896,30 @@ class ConstraintSpec:
                 out.append(name)
         if self.case:
             out.append(f"case: {self.case}")
+        if self.list_style:
+            out.append(f"list_style: {self.list_style}")
+        out += [f"frequency: {w!r} {iv}" for w, iv in self.frequencies]
+        out += [f"letter: {w!r} {iv}" for w, iv in self.letters]
+        out += [f"{name}: {getattr(self, name)}" for name in FEATURE_COUNTS if getattr(self, name) is not None]
+        if self.sections:
+            out.append(f"sections: {self.sections[0]!r} {self.sections[1]}")
+        if self.first_word:
+            out.append(f"first_word: paragraph {self.first_word[0]} {self.first_word[1]!r}")
+        for name in ("divider", "title", "quoted"):
+            if getattr(self, name):
+                out.append(name)
+        if self.postscript:
+            out.append(f"postscript: {self.postscript!r}")
+        if self.starts_with:
+            out.append("starts_with: " + " | ".join(repr(o) for o in self.starts_with))
+        if self.end_phrase:
+            out.append(f"end_phrase: {self.end_phrase!r}")
+        if self.one_of:
+            out.append("one_of: " + " | ".join(repr(o) for o in self.one_of))
+        if self.responses:
+            out.append(f"responses: {self.responses[1]} separated by {self.responses[0]!r}")
+        if self.repeat:
+            out.append("repeat")
         return tuple(out)
 
     def targets(self) -> tuple[int, int, int]:
@@ -462,15 +927,43 @@ class ConstraintSpec:
         return tuple(-1 if getattr(self, u) is None or getattr(self, u).hi is None
                      else getattr(self, u).hi for u in TARGET_UNITS)  # type: ignore[return-value]
 
+    def token_local(self) -> "TokenLocal":
+        """What a decoder can enforce token by token and what needs the complete text
+        (module docstring, "Token-local enforcement")."""
+        return token_local(self)
+
 
 EMPTY = ConstraintSpec()
 
 
+def _merge_pairs(x: tuple, y: tuple) -> tuple | None:
+    out: dict[str, tuple[str, Interval]] = {}
+    for w, iv in x + y:
+        key = w.lower()
+        if key in out:
+            both = out[key][1].intersect(iv)
+            if both is None:
+                return None
+            out[key] = (out[key][0], both)
+        else:
+            out[key] = (w, iv)
+    return tuple(out.values())
+
+
+def _same_or_none(x, y):
+    """``(value, ok)``: the one that is set, or ``x`` when both are equal."""
+    if x is None or x == () or x is False:
+        return y, True
+    if y is None or y == () or y is False:
+        return x, True
+    return x, x == y
+
+
 def merge(a: ConstraintSpec, b: ConstraintSpec) -> ConstraintSpec | None:
-    """Both specs at once (counts intersected, keyword lists concatenated without duplicates),
-    or ``None`` when they conflict."""
+    """Both specs at once (counts intersected, keyword lists concatenated without duplicates,
+    start / answer options intersected), or ``None`` when they conflict."""
     values: dict = {}
-    for unit in COUNT_UNITS:
+    for unit in COUNT_UNITS + FEATURE_COUNTS:
         x, y = getattr(a, unit), getattr(b, unit)
         if x is None or y is None:
             values[unit] = x if y is None else y
@@ -485,10 +978,33 @@ def merge(a: ConstraintSpec, b: ConstraintSpec) -> ConstraintSpec | None:
                 seen.add(k.lower())
                 out.append(k)
         values[name] = tuple(out)
-    if a.case and b.case and a.case != b.case:
-        return None
-    values["case"] = a.case or b.case
-    for name in ("json_output", "code_block", "end_question", "no_commas"):
+    for name in ("frequencies", "letters"):
+        values[name] = _merge_pairs(getattr(a, name), getattr(b, name))
+        if values[name] is None:
+            return None
+    if a.sections and b.sections:
+        if a.sections[0].lower() != b.sections[0].lower():
+            return None
+        both = a.sections[1].intersect(b.sections[1])
+        if both is None:
+            return None
+        values["sections"] = (a.sections[0], both)
+    else:
+        values["sections"] = a.sections or b.sections
+    for name, key in (("starts_with", lambda o: _ws(o).casefold()), ("one_of", option_key)):
+        x, y = getattr(a, name), getattr(b, name)
+        if x and y:
+            ys = {key(o) for o in y}
+            values[name] = tuple(o for o in x if key(o) in ys)
+            if not values[name]:
+                return None
+        else:
+            values[name] = x or y
+    for name in ("case", "list_style", "first_word", "postscript", "end_phrase", "responses", "repeat"):
+        values[name], ok = _same_or_none(getattr(a, name), getattr(b, name))
+        if not ok:
+            return None
+    for name in FLAG_FIELDS:
         values[name] = getattr(a, name) or getattr(b, name)
     try:
         return ConstraintSpec(**values)
@@ -527,7 +1043,152 @@ def verify(spec: ConstraintSpec, text: str, measured: dict | None = None) -> lis
         out.append("end_question: does not end with a question")
     if spec.no_commas and m["commas"]:
         out.append(f"no_commas: {m['commas']} commas")
+    if spec.list_style:
+        n_style = m["bullet_items" if spec.list_style == "bullet" else "numbered_items"]
+        if m["items"] == 0 or n_style != m["items"]:
+            out.append(f"list_style: {n_style} of {m['items']} list items are {spec.list_style}")
+    for w, iv in spec.frequencies:
+        n = count_keyword(text, w, whole=True)
+        if not iv.contains(n):
+            out.append(f"frequency: {w!r} occurs {n} times, want {iv}")
+    for ch, iv in spec.letters:
+        n = letter_count(text, ch)
+        if not iv.contains(n):
+            out.append(f"letter: {ch!r} occurs {n} times, want {iv}")
+    for name in FEATURE_COUNTS:
+        iv = getattr(spec, name)
+        if iv is not None and not iv.contains(m[name]):
+            out.append(f"{name}: {m[name]}, want {iv}")
+    if spec.sections:
+        n = count_sections(text, spec.sections[0])
+        if not spec.sections[1].contains(n):
+            out.append(f"sections: {n} lines start with {spec.sections[0]!r} N, want {spec.sections[1]}")
+    if spec.first_word:
+        k, word = spec.first_word
+        firsts = m["paragraph_first_words"]
+        got = firsts[k - 1] if k <= len(firsts) else None
+        if got != word:
+            out.append(f"first_word: paragraph {k} starts with {got!r}, want {word!r}")
+    if spec.divider and m["dividers"] == 0 and m["blank_paragraphs"] > 1:
+        out.append("divider: paragraphs are not separated by ***")
+    if spec.title and not m["has_title"]:
+        out.append("title: no <<title>>")
+    if spec.postscript and not has_postscript(text, spec.postscript):
+        out.append(f"postscript: no line starts with {spec.postscript!r}")
+    if spec.quoted and not m["quoted"]:
+        out.append("quoted: not wrapped in double quotes")
+    if spec.starts_with and not any(starts_with_phrase(text, o) for o in spec.starts_with):
+        out.append("starts_with: starts with none of " + ", ".join(repr(o) for o in spec.starts_with))
+    if spec.end_phrase and not ends_with_phrase(text, spec.end_phrase):
+        out.append(f"end_phrase: does not end with {spec.end_phrase!r}")
+    if spec.one_of and not matches_option(text, spec.one_of):
+        out.append("one_of: not one of " + ", ".join(repr(o) for o in spec.one_of))
+    if spec.responses:
+        sep, n = spec.responses
+        parts, clean = split_responses(text, sep)
+        if not clean or len(parts) != n or len(set(parts)) != len(parts):
+            out.append(f"responses: {len(parts)} parts separated by {sep!r}, want {n} different ones")
+    if spec.repeat and not repeats_request(text, spec.repeat):
+        out.append("repeat: does not start with the request")
     return out
+
+
+# ================================================================ token-local enforcement
+@dataclass(frozen=True)
+class TokenLocal:
+    """The part of a spec a decoder can enforce token by token (module docstring).
+
+    - ``counts``: ``(counter, lo, hi)`` with ``counter`` in ``"words", "sentences", "items"``,
+      the raw counters of ``bes.exact.registers.Incremental`` (``raw()[counter]``; per-token
+      increments ``table.inc[:, s, INC_WORDS | INC_SENT | INC_ITEMS]``). A token whose
+      increment takes the counter above ``hi`` can never be part of a valid response; ``END``
+      is valid only when ``lo <= count <= hi`` after its flush (``END`` adds one sentence when
+      ``table.components[s, 5] == 1``).
+    - ``lines``: ``(lo, hi)`` on non-blank lines, a byte-level count with one bit of state
+      (:func:`nonblank_line_step`; not the register's newline counter).
+    - ``banned_bytes``: bytes no token of the response may contain (``b","`` for no commas).
+    - ``case``: ``"lower"`` bans tokens with an ASCII capital, ``"upper"`` tokens with an ASCII
+      lowercase letter; non-ASCII letters and "at least one cased letter" are checked on the
+      complete text.
+    - ``forbidden``: lowercase UTF-8 forms of the forbidden words; an occurrence is the byte
+      string, ASCII-case-insensitive, with no ASCII letter or digit (or byte >= 0x80) right
+      before or after it (:func:`has_forbidden_bytes`; exact for ASCII neighbours).
+    - ``letters``: ``(letter bytes, lo, hi)``: every byte of the letter in either case counts.
+    - ``complete``: descriptions (as in ``ConstraintSpec.constraints``) of the constraints that
+      can only be verified on the complete text (``verify``).
+    """
+
+    counts: tuple[tuple[str, int, int | None], ...] = ()
+    lines: tuple[int, int | None] | None = None
+    banned_bytes: bytes = b""
+    case: str | None = None
+    forbidden: tuple[bytes, ...] = ()
+    letters: tuple[tuple[bytes, int, int | None], ...] = ()
+    complete: tuple[str, ...] = ()
+
+    @property
+    def empty(self) -> bool:
+        return not (self.counts or self.lines or self.banned_bytes or self.case or self.forbidden
+                    or self.letters)
+
+
+#: Constraint names (``ConstraintSpec.constraints`` prefixes) that are token-local.
+TOKEN_LOCAL_NAMES = frozenset(("words", "sentences", "items", "lines", "no_commas", "case",
+                               "forbidden", "letter"))
+
+
+def token_local(spec: ConstraintSpec) -> TokenLocal:
+    """The token-local part of ``spec`` and the descriptions of the rest (:class:`TokenLocal`)."""
+    counts = tuple((u, getattr(spec, u).lo, getattr(spec, u).hi)
+                   for u in ("words", "sentences", "items") if getattr(spec, u) is not None)
+    lines = None if spec.lines is None else (spec.lines.lo, spec.lines.hi)
+    letters = tuple((bytes([ord(ch), ord(ch.upper())]), iv.lo, iv.hi) for ch, iv in spec.letters)
+    complete = tuple(c for c in spec.constraints if c.split(":")[0] not in TOKEN_LOCAL_NAMES)
+    return TokenLocal(counts=counts, lines=lines, banned_bytes=b"," if spec.no_commas else b"",
+                      case=spec.case, forbidden=tuple(k.lower().encode("utf-8") for k in spec.forbidden),
+                      letters=letters, complete=complete)
+
+
+_BLANK_BYTES = frozenset(b" \t\r\x0b\x0c")
+
+
+def nonblank_line_step(data: bytes, open_line: bool) -> tuple[int, bool]:
+    """Consume ``data``: ``(lines that became non-blank, open_line after)``. ``open_line``
+    says whether the current line was already counted; a line counts at its first byte that
+    is neither ``\\n`` nor ASCII whitespace, and ``\\n`` starts a new line. Summed over a
+    response (from ``open_line=False``) this is ``measure(text)["lines"]``."""
+    n = 0
+    for b in data:
+        if b == 0x0A:
+            open_line = False
+        elif not open_line and b not in _BLANK_BYTES:
+            n += 1
+            open_line = True
+    return n, open_line
+
+
+def _word_byte(b: int) -> bool:
+    return b >= 0x80 or 0x30 <= b <= 0x39 or 0x41 <= b <= 0x5A or 0x61 <= b <= 0x7A
+
+
+def has_forbidden_bytes(data: bytes, words: Sequence[bytes], final: bool = True) -> bool:
+    """A complete occurrence of a forbidden word (``TokenLocal.forbidden``) in ``data``: the
+    bytes, ASCII-case-insensitive, not preceded and not followed by a word byte (ASCII letter
+    or digit, or any byte >= 0x80). An occurrence that ends ``data`` counts only when
+    ``final`` (the next byte could still extend it)."""
+    low = data.lower()
+    for w in words:
+        if not w:
+            continue
+        start = low.find(w)
+        while start >= 0:
+            end = start + len(w)
+            before_ok = start == 0 or not _word_byte(data[start - 1])
+            after_ok = (end == len(data) and final) or (end < len(data) and not _word_byte(data[end]))
+            if before_ok and after_ok:
+                return True
+            start = low.find(w, start + 1)
+    return False
 
 
 # ============================================================================== numbers
@@ -600,7 +1261,8 @@ def _mask_quotes(text: str) -> str:
     return _QUOTED.sub(lambda m: _mask_quote(m.group(0)), text)
 
 
-_SENTENCE_END = re.compile(r"(?<=[.!?])\s+|(?<=[.!?][\"'”’])\s+|\s*\n\s*|;\s*|(?<=:)\s+(?=[A-Z0-9])")
+_SENTENCE_END = re.compile(r"(?<=[.!?])\s+|(?<=[.!?][\"'”’])\s+(?!(?:or|and|nor)\b)|\s*\n\s*|;\s*|"
+                           r"(?<!phrase:)(?<!words:)(?<!sentence:)(?<!greeting:)(?<=:)\s+(?=[A-Z0-9])")
 
 
 def _sentences(masked: str) -> list[tuple[int, int]]:
@@ -641,14 +1303,18 @@ def _clauses(sentence: str) -> list[tuple[int, int]]:
 _ADJ = (r"(?:short|brief|concise|complete|full|separate|distinct|simple|clear|key|main|unique|"
         r"different|individual|coherent|informative|detailed|long|longer|descriptive|bulleted|"
         r"numbered|markdown|total|more|additional|well-written|well-formed|good|new|meaningful|"
-        r"grammatical|proper|actual|english|whole|own)")
+        r"grammatical|proper|actual|english|whole|own|easy|quick|basic|practical|concrete|"
+        r"actionable|logical)")
 _FILL = rf"(?:{_ADJ} ){{0,2}}?"
 _UNIT_ALT = (r"(?:bullet[- ]?points?|bullets?|bulleted (?:items?|points?|lines?)|"
              r"numbered (?:items?|points?|lines?)|list items?|items?|words?|sentences?|"
-             r"paragraphs?|lines?(?! of (?:code|python|javascript|java|sql|html|css|output)\b))"
+             r"paragraphs?|steps|lines?(?! of (?:code|python|javascript|java|sql|html|css|output)\b))"
              r"(?![\w-])")
 _UNIT_SING = (r"(?:bullet[- ]?point|bullet|(?:list|numbered|bulleted) (?:item|point)|item|word|"
               r"sentence|paragraph|line(?! of (?:code|python|javascript|java|sql|html|css|output)\b))")
+#: A bare word count up to this is exact ("in three words", "a single word"); larger bare
+#: word counts are budgets ("in 50 words" -> at most 50).
+BARE_EXACT_WORDS = 5
 
 
 def _unit(name: str = "unit") -> str:
@@ -656,14 +1322,23 @@ def _unit(name: str = "unit") -> str:
 
 
 def unit_of(noun: str) -> str:
-    """Count unit of a unit noun (``"bullet points"`` -> ``"items"``)."""
+    """Count unit of a unit noun (``"bullet points"`` -> ``"items"``, ``"steps"`` -> ``"items"``)."""
     n = noun.lower()
-    if n.startswith(("bullet", "numbered", "list", "item")):
+    if n.startswith(("bullet", "numbered", "list", "item", "step")):
         return "items"
     for unit in ("words", "sentences", "paragraphs", "lines"):
         if n.startswith(unit[:-1]):
             return unit
     raise ValueError(noun)
+
+
+def style_of(phrase: str) -> str | None:
+    """List style named in an item phrase: ``"bullet"`` (bullet points, bulleted items),
+    ``"numbered"`` (numbered items or steps) or ``None`` (list items, items, steps)."""
+    p = phrase.lower()
+    if "bullet" in p:
+        return None if "numbered" in p else "bullet"
+    return "numbered" if "numbered" in p else None
 
 
 _REL_WORDS = {
@@ -723,15 +1398,19 @@ _SUFFIX_AFTER = re.compile(r" (?:or (?:less|fewer|under|shorter|below|more|longe
 _APPROX_BEFORE = re.compile(r"(?:\b(?:about|around|approximately|approx|roughly|circa|nearly|"
                             r"almost|some|like|maybe|perhaps|or so)|~) ?\Z")
 _APPROX_AFTER = re.compile(r" ?(?:or so|give or take|more or less|roughly|approximately|"
-                           r"or thereabouts|-?ish)\b")
+                           r"or thereabouts|-?ish|hopefully|if (?:necessary|needed|possible|you can|applicable)|"
+                           r"(?:or|and) (?:so on|similar))\b")
 
 _LEAD = (r"(?:(?:[-*•]|[0-9]+[.)]) )?(?:(?:please|kindly|also|and|then|now|so|just|finally|"
          r"additionally|lastly|first|firstly|second|secondly|next|moreover|furthermore|plus|ok|"
-         r"okay|hey|hi|hello|again|instead|rather|simply|briefly|quickly|in addition|while),? )*")
+         r"okay|hey|hi|hello|again|instead|rather|simply|briefly|quickly|in addition|while|"
+         r"explicitly|clearly|always|carefully|however|but|well|actually|yet|still|though|honestly|"
+         r"anyway|besides),? )*")
 _ASK = (r"(?:(?:(?:can|could|would|will) you (?:please )?(?:kindly )?|i (?:want|need|would like|'d like|"
         r"d like|wish|would prefer|prefer) (?:you to )?|i'm looking for |im looking for |"
         r"make sure (?:to |that |you )?|making sure (?:to |that )?|be sure to |try to |remember to |"
-        r"feel free to |you (?:should|must|need to|have to|will) |"
+        r"feel free to |you (?:should|must|need to|have to|will|should not|shouldn't|must not|mustn't|"
+        r"cannot|can't|can not|may not|are not allowed to) |"
         r"let's |lets |help me |go ahead and |i'd appreciate it if you |please )){0,2}")
 _REQUEST_VERBS = (r"(?:write|compose|draft|create|generate|produce|give|provide|make|prepare|craft|"
                   r"summari[sz]e|explain|describe|answer|respond|reply|tell|list|name|rewrite|"
@@ -745,19 +1424,24 @@ _REQUEST_VERBS = (r"(?:write|compose|draft|create|generate|produce|give|provide|
                   r"evaluate|review|argue|justify|teach|clarify|interpret|predict|imagine|"
                   r"pretend|act|play|tweet|post|email|reword|edit|fix|correct|improve|polish|"
                   r"avoid|refrain|exclude|omit|steer|never|don't|dont|do not|ensure|ensuring|"
-                  r"making sure|make sure|be sure|aim|stick)")
+                  r"making sure|make sure|be sure|aim|stick|say|repeat|retell|restate|redo|recast|"
+                  r"mark|label|number|pick|choose|select|separate|conclude|close|wrap up)")
 # A predicate of a requirement list ("- contains at least 5 sentences", "and contain exactly 4
 # bullet points"): the request's subject was given before.
 _PREDICATE_START = re.compile(rf"^{_LEAD}(?:contains?|includes?|has|have|uses?|is|are|be|ends?|"
                               r"starts?|begins?|mentions?|features?|consists? of|should|must|"
                               r"needs to|totals?|spans?)\b")
 _REQUEST_START = re.compile(rf"^{_LEAD}{_ASK}{_REQUEST_VERBS}\b")
-_MODAL = re.compile(r"\b(?:should|must|shall|needs? to|has to|have to|ought to|is to|are to|"
+_MODAL = re.compile(r"\b(?:(?:(?<=letter i )|(?<!\bi )(?<!\bwe ))should|must|shall|needs to|(?:(?<=letter i )|(?<!\bi )(?<!\bwe ))need to|has to|"
+                    r"(?:(?<=letter i )|(?<!\bi )(?<!\bwe ))have to|"
+                    r"ought to|is to|are to|"
                     r"is required|are required|required to|is expected to|are expected to)\b")
 _I_WANT = re.compile(rf"^{_LEAD}(?:i (?:want|need|would like|'d like|d like|would prefer|prefer|"
                      r"don't want|do not want|dont want)|i'm looking for|im looking for)\b")
 # A modal near the start of the clause ("your response should ...", "there must be ...").
-_MODAL_EARLY = re.compile(rf"^{_LEAD}(?:\S+ ){{0,7}}?(?:should|must|shall|needs? to|has to|have to|"
+_MODAL_EARLY = re.compile(rf"^{_LEAD}(?:\S+ ){{0,7}}?(?:(?:(?<=letter i )|(?<!\bi )(?<!\bwe ))should|must|shall|needs to|"
+                          r"(?:(?<=letter i )|(?<!\bi )(?<!\bwe ))need to|has to|"
+                          r"(?:(?<=letter i )|(?<!\bi )(?<!\bwe ))have to|"
                           r"ought to|is to|are to|is required to|are required to|will need to)\b")
 # A clause that starts with a subject ("you edited it into 3 sentences", "this line of code does
 # two things in one line", "i wrote a 300-word essay") states a fact unless it is a request.
@@ -770,12 +1454,13 @@ _SUBJECT_START = re.compile(
 # possible ...", "how could they be merged ...").
 _QSUBJ = r"(?:i|we|they|it|this|that|these|those|he|she|the|one|there)"
 _NOT_A_REQUEST = re.compile(
-    r"^(?:(?:how|what|why|where|which|who|whose) (?:do|does|did|is|are|was|were|has|have|had)\b|"
+    r"^(?:and |but |so |also |or )?(?:(?:how|what|why|where|which|who|whose) (?:do|does|did|is|are|was|were|has|have|had)\b|"
     rf"how (?:can|could|would|should|might|may|will) {_QSUBJ}\b|"
     r"how (?:can|could|would|should|might|may|will|does|do|did) \w+ing\b|"
     rf"(?:is|are|was|were|does|do|did|has|have|can|could|would|will|should|might) {_QSUBJ}\b|"
     r"what if\b|what about\b|how about\b|if\b|when\b|whenever\b|unless\b|in case\b|once\b|"
-    r"whether\b|because\b|since\b|as long as\b)")
+    r"whether\b|because\b|since\b|as long as\b|for example\b|for instance\b|e\.g\.|"
+    r"do you (?:have|know|think|mean|see|agree|remember|understand)\b|have you\b)")
 # A multi-step task ("write a paragraph, then improve it", "write a sentence and explain it"):
 # whole-response counts do not apply.
 _SEQUENCE = re.compile(r"\b(?:then|followed by|after that|afterwards|before that|subsequently)\b"
@@ -793,8 +1478,24 @@ def _is_strict_request(clause: str) -> bool:
     return bool(_REQUEST_START.match(clause) or _I_WANT.match(clause) or _MODAL_EARLY.match(clause))
 
 
+_WITHOUT_START = re.compile(r"^(?:without|avoiding|never|not) (?:using|use|mentioning|saying|including)\b")
+
+
+def _strict_somewhere(sentence: str) -> bool:
+    """The sentence or one of its clauses is a strict request ("without using the word "x",
+    describe ...")."""
+    if _is_strict_request(sentence):
+        return True
+    return any(_is_strict_request(sentence[a:b].strip()) for a, b in _clauses(sentence))
+
+
+_OWN_TASK = re.compile(rf"^{_LEAD}i (?:(?:need|have|am trying|plan|am going|am planning|was asked|am supposed|"
+                       r"was told|am required) to\b(?! (?:get|have|receive|see|read)\b)|have (?!to\b)(?:a|an|the|"
+                       r"this|these|two|three|four|five|some|[0-9]+)\b)")
+
+
 def _is_statement(clause: str) -> bool:
-    if _NOT_A_REQUEST.match(clause):
+    if _NOT_A_REQUEST.match(clause) or _OWN_TASK.match(clause):
         return True
     if clause.startswith('"'):
         return True                      # '"alot" should be spelled as two words': about the text
@@ -859,7 +1560,7 @@ _P_LIMIT = re.compile(rf"\b(?:keep|limit|restrict|cap|constrain|shorten|condense
 _P_EXCEED = re.compile(rf"\b(?:exceed|exceeds|exceeding|surpass|surpassing|go over|go beyond|going over)"
                        rf"(?: the)?(?: limit of)? {_num('num')} {_FILL}{_unit()}")
 _P_FRAGMENT = re.compile(rf"^(?:please )?(?:only |just )?{_num('num')} {_FILL}{_unit()}"
-                         r"(?: (?:please|only|total|each|in total|is enough|will do))?$")
+                         r"(?: (?:please|only|total|each|in total|is enough|will do))?[.!]?$")
 _P_NO_ITEMS = re.compile(r"\b(?:do not|don't|dont|never|avoid|without|no)(?: (?:use|using|include|"
                          r"including|add|adding|any|the|a|bulleted|numbered|markdown|format(?:ting)?"
                          r"|with))* (?:bullet[- ]?points?|bullets|bulleted lists?|numbered lists?|"
@@ -870,12 +1571,16 @@ _LIST_VERBS = (r"(?:list|name|give(?: me| us)?|provide(?: me with| us with| me| 
                r"recommend|share|offer|enumerate|mention|outline|brainstorm|come up with|"
                r"tell me|write down|write out|jot down|think of)")
 _P_LIST_N = re.compile(rf"^{_LEAD}{_ASK}{_LIST_VERBS}(?: the)?(?: top)?(?: exactly)? {_num('num')} "
+                       r"(?:(?:different|distinct|separate|alternative|unique|other|possible|new) )?"
                        r"(?P<noun>[a-z][a-z'-]*)")
 # Measures, not listed things ("give me 5 minutes"), and words that cannot head a list noun.
 _LIST_BLOCK_NOUNS = frozenset(
     "minute minutes hour hours second seconds day days week weeks month months year years time "
     "times percent dollars dollar cents euros pounds kg km miles meters metres feet inches "
-    "degrees or to and".split())
+    "degrees or to and responses response answers versions replies drafts variations variants "
+    "alternatives as in of for at by on".split())
+#: "list N <things>" is read for 2 <= N <= this ("think of 2015 as ..." is not a list).
+MAX_LIST_N = 50
 _NUMBER_ANYWHERE = re.compile(_NUM_BODY)
 _INLINE_FORM = re.compile(r"comma[- ]separated|separated by commas|in (?:a |one )(?:single )?"
                           r"(?:sentence|line|paragraph)\b|on (?:a |one )(?:single )?line\b|\binline\b|"
@@ -889,10 +1594,25 @@ class _Cand:
     unit: str | None
     interval: Interval | None
     list_n: bool = False          # from "list N <things>" (dropped when an inline form is asked)
+    style: str | None = None      # list style named by the phrase ("3 bullet points")
 
 
 def _bare_interval(unit: str, n: int) -> Interval:
-    return Interval(0, n) if unit == "words" else Interval(n, n)
+    return Interval(0, n) if unit == "words" and n > BARE_EXACT_WORDS else Interval(n, n)
+
+
+# Steps count as list items after "in / into / using / with" or a relation ("break it into 4 steps").
+_STEPS_OK = re.compile(rf"\b(?:in|into|using|with|{_REL_ANY}) (?:only |just )?{_NUM_BODY} {_FILL}steps\b")
+# "answer with one word", "reply with just two words": a small bare word count after "with".
+_ANSWER_WITH = re.compile(r"\b(?:answer|respond|reply|answering|responding|replying)"
+                          r"(?: (?:only|just|simply|me|us))? \Z")
+# "pick three of them and present them as a numbered list": a count of the listed things.
+_P_PICK_N = re.compile(rf"^{_LEAD}{_ASK}(?:pick|choose|select|take)(?: out)?(?: the)?(?: top| best)? "
+                       rf"{_num('num')}(?: (?:of (?:them|these|those|the \w+|your \w+|my \w+)|"
+                       r"(?P<noun>[a-z][a-z'-]*s)))?(?![\w-])")
+# "give me a list of 5 tips", "write a numbered list of ten ideas".
+_P_LIST_OF = re.compile(rf"\b(?:a|an) (?:(?:short|brief|simple|quick|numbered|bulleted|bullet|markdown) )*"
+                        rf"list of (?:exactly |only |just )?{_num('num')} (?P<noun>[a-z][a-z'-]*)")
 
 
 _STRONG_PREPS = frozenset(("in", "into", "using", "within", "as"))
@@ -902,20 +1622,57 @@ _DET_BEFORE = re.compile(r"\b(?:this|that|these|those|the|my|your|his|her|our|th
 _EDIT_BEFORE = re.compile(r"\b(?:remove|removes|removing|removed|delete|deleting|deleted|cut|cutting|"
                           r"add|adding|added|change|changing|replace|replacing|drop|dropping|omit|"
                           r"omitting|trim|trimming|shorten (?:it |this )?by|reduce (?:it |this )?by)"
-                          r"(?: [\w']+){0,2} \Z")
+                          r"(?: [\w']+){0,2} \Z"
+                          # what was done ("while you were editing this paragraph into 3 sentences")
+                          r"|\b(?:edited|editing|condensed|shortened|rewrote|rewritten|rephrased|combined|"
+                          r"merged|converted|reduced|trimmed|broke|broken)(?: [\w'-]+){0,5} \Z"
+                          # a part of the reply ("begin your answer with a 1 sentence summary")
+                          r"|\b(?:begin|begins|start|starts|open|opens|end|ends|finish|finishes|conclude|"
+                          r"concludes|close|closes)(?: [\w']+){0,3} with (?:a |an |one )?(?:single )?\Z"
+                          r"|\b(?:improve|edit|revise|refine|fix|check|review|proofread|polish|correct) "
+                          r"(?:a |an |the |this |my |your )?\Z"
+                          r"|\b(?:changing|combining|merging|turning|converting|condensing|shortening|"
+                          r"splitting)(?: [\w'\"\x01-]+){0,8} \Z"
+                          # a text being worked on ("help on improving a single sentence")
+                          r"|\b(?:improving|editing|revising|rewriting|refining|fixing|checking|reviewing|"
+                          r"proofreading|polishing|correcting)(?: [\w']+){0,2} \Z")
+# "I want the revised passage to be no longer than 3 sentences": a part of the reply.
+_SCOPED_TEXT = re.compile(r"\b(?:the|your) (?:revised|edited|rewritten|new|improved|shortened|condensed|"
+                          r"corrected|updated|polished) (?:passage|paragraph|text|version|sentence|essay|draft|"
+                          r"story|section|letter|email|abstract)\b|\b(?:ending|opening|closing|concluding|"
+                          r"introductory) (?:sentence|paragraph|line)\b|\b(?:first|second|third|fourth|fifth|last|"
+                          r"final|next|previous) (?:and \w+ )?(?:sentence|paragraph|line)s?\b")
+# "a brief 5-7 word title": the length of that element.
+_PART_NOUN_AFTER = re.compile(r" (?:title|headline|name|slogan|tagline|caption|subject line|hashtag|motto|"
+                              r"phrase|label)s?\b")
+# "or even a single sentence": one of several alternatives.
+_OR_BEFORE = re.compile(r"\bor (?:even |just |perhaps |maybe |possibly )?(?:a |an |in |as |into )?\Z")
+# "decide if the characters in one paragraph are continued": a count inside an embedded question.
+_EMBEDDED_IF = re.compile(r"\b(?:if|whether)(?: [\w'-]+)+ \Z|\b(?:decide|decides|deciding|determine|determining|"
+                          r"check|checking|see|know|tell|ask|asking|wonder|sure|unsure)\s+(?:if|whether)\b"
+                          r"[^.;:?!]* \Z|\bwhether\b[^.;:?!]* \Z")
+# "generated sentences must have fewer than 10 words": a per-part count.
+_PLURAL_SUBJECT = re.compile(r"\b(?:sentences|lines|paragraphs|items|bullets|bullet points|points|steps|tips|"
+                             r"answers|titles|questions|examples) (?:must|should|need to|have to|are to|will|can)\b")
+_EDIT_AFTER = re.compile(r" (?:added|removed|deleted|changed|replaced|inserted|altered|modified|cut)\b")
 _REL_TAIL = re.compile(rf"(?:^| )({_REL_ANY}) \Z")
+# "replace the phrasal verb with a single word": the count is of the replacement.
+_REPLACE = re.compile(r"\b(?:replace|replacing|substitute|substituting|swap|swapping|exchange)\b")
 # "explain each concept in less than 50 words", "3 sentences per paragraph": per-part counts.
 _EACH = re.compile(r"\b(?:each|per|every)\b")
 # "one item shorter than the input": a comparison, not a count.
 _COMPARATIVE_AFTER = re.compile(r" (?:shorter|longer|more|less|fewer|bigger|smaller|larger|greater|than)\b")
 
 
-def _count_candidates(c: str, first_clause: bool = True, in_request: bool = False) -> list[_Cand]:
+def _count_candidates(c: str, first_clause: bool = True, in_request: bool = False,
+                      list_format: bool = False) -> list[_Cand]:
     """All count requests found in one normalised clause ``c`` (overlaps unresolved). A
     candidate with ``interval = None`` is a recognised but ambiguous phrase: it blocks shorter
     readings of the same words and yields no constraint. ``first_clause``: ``c`` opens its
     sentence (the "list N <things>" form is read only there); ``in_request``: the sentence is a
-    request ("your response should contain ..., and contain exactly 4 bullet points")."""
+    request ("your response should contain ..., and contain exactly 4 bullet points");
+    ``list_format``: the sentence asks for a list format ("as a numbered list"), which makes
+    "pick N of them" a count of list items."""
     cands: list[_Cand] = []
     if _is_statement(c):
         return cands
@@ -951,10 +1708,16 @@ def _count_candidates(c: str, first_clause: bool = True, in_request: bool = Fals
     def add(m: re.Match, unit_text: str | None, iv: Interval | None) -> None:
         if unit_text in ("item", "items") and not list_context:
             return                       # "orders of 100 items or more": not list items
-        if per_part or _COMPARATIVE_AFTER.match(c, m.end()):
+        if unit_text == "steps" and not (list_context or (_REQUEST_START.match(c) and _STEPS_OK.search(c, 0, m.end()))):
+            return                       # "solve it in 3 steps", "all I have to do is take five steps"
+        if (per_part or _COMPARATIVE_AFTER.match(c, m.end()) or _EDIT_AFTER.match(c, m.end())
+                or _SCOPED_TEXT.search(c, 0, m.start()) or _OR_BEFORE.search(c, 0, m.start())
+                or _EMBEDDED_IF.search(c, 0, m.start()) or _PLURAL_SUBJECT.search(c, 0, m.start())
+                or (unit_text and unit_text.startswith("word") and _PART_NOUN_AFTER.match(c, m.end()))):
             iv = None
         unit = unit_of(unit_text) if unit_text else None
-        cands.append(_Cand(m.start(), m.end(), unit, iv))
+        style = style_of(m.group(0)) if unit == "items" else None
+        cands.append(_Cand(m.start(), m.end(), unit, iv, style=style))
 
     def relation(kind: str, start: int) -> str | None:
         """The relation after negation: flipped, or ``None`` when it cannot be decided."""
@@ -1025,6 +1788,16 @@ def _count_candidates(c: str, first_clause: bool = True, in_request: bool = Fals
             continue                     # "in 3 sentences or more": the suffix form decides
         n, intro, unit = parse_count(m.group("num")), m.group("intro"), unit_of(m.group("unit"))
         strong = intro in ("in", "into", "using", "within", "as")
+        if strong and re.match(r"\S+ (?:this|that) ", m.group(0)):
+            continue                     # "refining the clarity in this one sentence"
+        answer_with = (unit == "words" and intro == "with" and n is not None
+                       and n <= BARE_EXACT_WORDS and _ANSWER_WITH.search(c, 0, m.start()) is not None)
+        if answer_with:
+            if not plain(m):
+                add(m, m.group("unit"), None)
+                continue
+            add(m, m.group("unit"), Interval(n, n))   # "answer with one word"
+            continue
         if not (strong or (unit != "words" and (request or m.start() == 0))):
             continue                     # not a request here ("give me 10 words that rhyme")
         if intro in ("of", "with") and m.start() > 0:
@@ -1036,6 +1809,8 @@ def _count_candidates(c: str, first_clause: bool = True, in_request: bool = Fals
             continue
         add(m, m.group("unit"), Interval(0, n) if intro == "within" else _bare_interval(unit, n))
     for m in _P_ADJ.finditer(c):
+        if _EDIT_BEFORE.search(c, 0, m.start()):
+            continue                     # "begin your answer with a 1 sentence summary"
         raw = m.group("num")
         n = 1 if raw == "single" else parse_count(raw)
         nouns = {m.group("noun"), m.group("noun2")}
@@ -1044,8 +1819,9 @@ def _count_candidates(c: str, first_clause: bool = True, in_request: bool = Fals
             continue                     # "describe a 5-paragraph essay structure"
         ok = n is not None and request and plain(m)
         add(m, m.group("unit"), _bare_interval(unit_of(m.group("unit")), n) if ok else None)
-    for m in _P_SINGLE.finditer(c):
-        ok = (m.group("prep") is not None or request) and negation(m.start()) is None
+    for m in _P_SINGLE.finditer(c) if not _REPLACE.search(c) and not re.search(r"\bfor (?:a |one )?single\b", c) else ():
+        ok = ((m.group("prep") is not None or request) and negation(m.start()) is None
+              and not _EDIT_BEFORE.search(c, 0, m.start()) and not _EDIT_BEFORE.search(c, 0, m.start("unit")))
         add(m, m.group("unit"), _bare_interval(unit_of(m.group("unit")), 1) if ok else None)
     for m in _P_A_ONE.finditer(c):
         ok = request and negation(m.start()) is None
@@ -1060,10 +1836,23 @@ def _count_candidates(c: str, first_clause: bool = True, in_request: bool = Fals
     m = _P_LIST_N.match(c) if first_clause and not _EACH.search(c) else None
     if m and m.group("noun") not in _LIST_BLOCK_NOUNS:
         n = parse_count(m.group("num"))
-        noun_is_unit = re.fullmatch(_UNIT_ALT, m.group("noun")) is not None
+        noun_is_unit = m.group("noun") != "steps" and re.fullmatch(_UNIT_ALT, m.group("noun")) is not None
         another = _NUMBER_ANYWHERE.search(c, m.end())    # "three pros and three cons"
-        if n is not None and n >= 2 and not noun_is_unit and not approx(m, "num") and not another:
+        if (n is not None and 2 <= n <= MAX_LIST_N and not noun_is_unit and not approx(m, "num")
+                and not another):
             cands.append(_Cand(m.start("num"), m.end(), "items", Interval(n, n), list_n=True))
+    m = _P_PICK_N.match(c) if first_clause and list_format and not _EACH.search(c) else None
+    if m and (m.group("noun") or "") not in _LIST_BLOCK_NOUNS:
+        n = parse_count(m.group("num"))
+        if n is not None and 2 <= n <= MAX_LIST_N and not approx(m, "num") and not _NUMBER_ANYWHERE.search(c, m.end()):
+            cands.append(_Cand(m.start("num"), m.end(), "items", Interval(n, n), list_n=True))
+    for m in _P_LIST_OF.finditer(c) if request and not _EACH.search(c) else ():
+        n, noun = parse_count(m.group("num")), m.group("noun")
+        if (n is not None and 2 <= n <= MAX_LIST_N and noun not in _LIST_BLOCK_NOUNS and noun.endswith("s")
+                and re.fullmatch(_UNIT_ALT, noun) is None and plain(m)
+                and not _NUMBER_ANYWHERE.search(c, m.end())):
+            cands.append(_Cand(m.start(), m.end(), "items", Interval(n, n), list_n=True,
+                               style=style_of(m.group(0))))
     return cands
 
 
@@ -1079,6 +1868,8 @@ def _resolve(cands: list[_Cand]) -> list[_Cand]:
 
 
 _COUNT_PHRASE_AT = re.compile(rf"{_NUM_BODY}\+? {_FILL}{_UNIT_ALT}")
+_MORE_UNITS = re.compile(rf"{_NUM_BODY} (?:more|additional|extra|further) (?P<u>{_UNIT_ALT})")
+_COUNT_UNIT_AT = re.compile(rf"{_NUM_BODY}\+?[- ]{_FILL}(?P<u>{_UNIT_ALT})")
 
 
 def _another_quantity(sentence: str, pos: int) -> bool:
@@ -1094,29 +1885,49 @@ _OR_ALTERNATIVE = re.compile(rf" or (?:[\w'-]+ ){{0,4}}?{_UNIT_ALT}")
 _OR_LIST = re.compile(r"(?:, (?!and\b)[^,.;:]{1,30}){1,3}, or\b")   # "a sentence, a paragraph, or ..."
 
 
-def _sentence_counts(sentence: str, inline_form: bool) -> list[tuple[str, Interval]]:
-    """Count requests of one normalised sentence, as ``(unit, interval)`` (none in a multi-step
-    sentence such as "write a single paragraph, then improve it")."""
+# A request for code: the things listed or counted in it are code.
+_CODE_REQUEST = re.compile(r"\b(?:write|writes|writing|implement|implementing|create|build|develop|generate)\b"
+                           r"(?: [\w+#'-]+){0,6} (?:function|functions|program|script|code(?! ?blocks?\b| fences?\b)|"
+                           r"class|method|query|regex|algorithm|unit tests?)\b|\bunit tests?\b|\bimplement\b")
+
+
+def _sentence_counts(sentence: str, inline_form: bool, list_format: bool = False,
+                     code_message: bool = False) -> list[tuple[str, Interval, str | None]]:
+    """Count requests of one normalised sentence, as ``(unit, interval, list style)`` (none in
+    a multi-step sentence such as "write a single paragraph, then improve it", nor when a
+    conditional clause carries its own count: "use one paragraph, but when providing the edited
+    text use 2 paragraphs")."""
     if _SEQUENCE.search(sentence):
         return []
+    for a, b in _clauses(sentence):
+        clause = sentence[a:b].strip()
+        if _CONDITIONAL.match(clause) and a > 0 and _COUNT_PHRASE_AT.search(clause):
+            return []
     statement = _is_statement(sentence)
     in_request = not statement and _is_strict_request(sentence)
     # "a function that takes a single word": counts of code, not of the response (except
     # "list N <things>", which is about the response: "give me three reasons to learn python").
     code = bool(_CODE_TOPIC.search(sentence)) and not _RESPONSE_SUBJ.search(sentence)
+    code_request = code and bool(_CODE_REQUEST.search(sentence))
+    per_sentence = bool(re.search(r"\bfor each\b|\beach (?:one|item|point|of them)\b", sentence))
     found: list[_Cand] = []
     for a, b in _clauses(sentence):
         clause = sentence[a:b].strip()
         offset = a + (len(sentence[a:b]) - len(sentence[a:b].lstrip()))
         if statement and not _is_strict_request(clause):
             continue                     # a clause of a statement: "..., divided into 10 lines"
-        for cand in _resolve(_count_candidates(clause, first_clause=a == 0, in_request=in_request)):
-            if code and not cand.list_n:
-                continue
+        for cand in _resolve(_count_candidates(clause, first_clause=a == 0, in_request=in_request,
+                                               list_format=list_format)):
+            if code and (not cand.list_n or code_request) or (code_message and not _RESPONSE_SUBJ.search(sentence)):
+                continue                 # counts of code; "write a function ... provide 2 solutions"
             if cand.list_n and _another_quantity(sentence, offset + cand.end):
                 continue                 # "list 9 discoveries, and also 4 breakthroughs"
+            before = sentence[: offset + cand.start]
+            if cand.interval is not None and (_EMBEDDED_IF.search(before) or (
+                    _PLURAL_SUBJECT.search(before) and cand.unit in ("words", "sentences", "lines"))):
+                continue                 # "decide if ..., settings in one paragraph", "sentences must have 10 words"
             found.append(_Cand(cand.start + offset, cand.end + offset, cand.unit, cand.interval,
-                               cand.list_n))
+                               cand.list_n, cand.style))
     found.sort(key=lambda x: x.start)
     drop = set()
     for i in range(len(found) - 1):          # "3 sentences or 2 paragraphs": alternatives
@@ -1125,13 +1936,18 @@ def _sentence_counts(sentence: str, inline_form: bool) -> list[tuple[str, Interv
     for i, cand in enumerate(found):
         if _OR_ALTERNATIVE.match(sentence, cand.end) or _OR_LIST.match(sentence, cand.end):
             drop.add(i)
+    bare = [unit_of(m.group("u")) for m in _COUNT_UNIT_AT.finditer(sentence)
+            if not _REL_TAIL.search(sentence, 0, m.start()) and not _P_LIST_N.match(sentence)]
+    added = {u for u in bare if bare.count(u) > 1}   # "4 clear sentences and four unclear sentences"
     out = []
     for i, cand in enumerate(found):
-        if i in drop or cand.interval is None or cand.unit is None:
+        if i in drop or cand.interval is None or cand.unit is None or cand.unit in added:
             continue
         if inline_form and cand.list_n:
             continue
-        out.append((cand.unit, cand.interval))
+        if per_sentence and not cand.list_n:
+            continue                     # "list 10 plots with a description (1 sentence) for each"
+        out.append((cand.unit, cand.interval, cand.style))
     return out
 
 
@@ -1143,28 +1959,37 @@ _KW_VERB = (r"(?:include|includes|including|included|use|uses|using|used|mention
             r"has|having|put)")
 _KW_STRONG = r"(?:include|includes|mention|mentions|incorporate|incorporates)"
 _FORBID_VERB = (r"(?:avoid|avoids|avoiding|exclude|excludes|excluding|omit|omits|omitting|"
-                r"refrain from(?: using)?|steer clear of)")
+                r"refrain from(?: using)?|steer clear of|(?:never|don't|dont|do not|you cannot|you can't|"
+                r"you may not|you must not) (?:say|use|write|type|mention|include))")
 _DET = r"(?:(?:the|these|those|following|all|both|each|every|of|exact|specific|any|using|use) )*"
 _ATOM_START = "(?=[\"“‘'\\[*])"
 _K_LIST = re.compile(rf"\b{_KW_VERB} {_DET}{_KW_NOUN} ?:? ?{_ATOM_START}", re.I)
 _K_STRONG = re.compile(rf"\b{_KW_STRONG} {_ATOM_START}", re.I)
 _K_FORBID = re.compile(rf"\b{_FORBID_VERB} {_DET}(?:{_KW_NOUN} ?:? ?)?{_ATOM_START}", re.I)
-_K_BARE = re.compile(rf"\b{_KW_VERB} (?:the )?(?:key[ -]?words?|keyword)(?: below)? ?:? (?=[a-z])", re.I)
+_K_BARE = re.compile(rf"\b{_KW_VERB} (?:the )?(?:key[ -]?words?|keyword)(?:\*\*)?(?: below)? ?:? (?=[a-z])", re.I)
 _ATOM = re.compile(
     r'"(?P<a>[^"\n]{1,60})"|“(?P<b>[^”\n]{1,60})”|‘(?P<c>[^’\n]{1,60})’'
-    r"|(?<![\w])'(?P<d>[^'\n]{1,60})'(?![\w])|\[(?P<f>[^\[\]\n]{1,80})\]"
+    r"|(?<![\w])'(?P<d>[^'\n]{1,60})'(?![\w])|\[(?P<f>[^\[\]\n]{1,200})\]"
     r"|\*\*(?P<g>[^*\n]{1,60})\*\*|\*(?P<h>[^*\n]{1,60})\*")
 _K_SUBJ = re.compile(
     rf"\b(?:the )?{_KW_NOUN} (?:(?P<atom>{_ATOM.pattern})|(?P<bare>[a-z][a-z'-]*)) "
-    r"(?:should|must|needs to|has to|is to|will|shall|is required to)(?: also)? (?P<neg>not )?"
+    r"(?:should|must|needs to|has to|is to|shall|is required to)(?: also)? (?P<neg>not )?"
     r"(?:appear|be (?:included|used|mentioned|present)|occur|show up|feature)\b", re.I)
+_K_SUBJ_LIST = re.compile(rf"\b(?:the )?(?:key[ -]?words|words|phrases|terms|expressions) (?={_ATOM_START})", re.I)
+_K_SUBJ_TAIL = re.compile(r" (?:should|must|needs to|need to|has to|have to|are to|will|shall|are required to)"
+                          r"(?: also)? (?P<neg>not )?(?:appear|be (?:included|used|mentioned|present)|occur|"
+                          r"show up|feature)\b", re.I)
 # "[keywords] are "a", "b"": a bracketed template variable defined elsewhere in the message.
-_PLACEHOLDER_DEF = re.compile(r"\[([^\[\]\n]{1,40})\] ?(?:is|are|=|:|-|will be|should be) ?:? ?", re.I)
+_PLACEHOLDER_DEF = re.compile(r"\[([^\[\]\n]{1,40})\] ?(?:is|are|=|:|-|will be|should be|can be|include|"
+                              r"includes) ?:? ?", re.I)
 # Bracketed names that are unfilled template variables, never keywords.
 _TEMPLATE_NAME = re.compile(r"(?:key ?words?|key ?phrases?|words?|phrases?|terms?|.*_.*|.*[0-9].*)", re.I)
 _LIST_SEP = re.compile(r" ?(?:, ?(?:and |& )?|and |& |as well as |plus )", re.I)
 _LIST_OR = re.compile(r" ?,? ?(?:or|nor) ", re.I)
 _BARE_WORD = re.compile(r"[a-z][a-z'-]{0,30}", re.I)
+# A plain keyword of one to three words ("health benefits", "anti-inflammatory") in a comma list.
+_BARE_PHRASE = re.compile(r"[a-z][a-z'-]{0,30}(?: [a-z][a-z'-]{0,30}){0,2}(?=,| and | or |\.|$| in )", re.I)
+_BARE_OR = re.compile(r" ?(?:, ?(?:or |nor )?|or |nor )", re.I)
 _BARE_END = re.compile(r" ?(?:in (?:the|your) (?:response|answer|reply|text|essay|story|poem|"
                        r"output|email|letter|post|summary|description|message))? ?[.!?;:]* ?\Z", re.I)
 _KW_STOP = frozenset(
@@ -1173,6 +1998,10 @@ _KW_STOP = frozenset(
     "appropriate specific important several many few other more most naturally throughout into "
     "at by when where how what why if not no all each every their its our my his her them they "
     "we he she there here than then also only just very well".split())
+_PAST_KW = re.compile(r"(?:used|included|mentioned|incorporated|added|inserted|featured|had)\b", re.I)
+_PRONOUN_BEFORE = re.compile(r"\b(?:i|you|we|they|he|she|it|you've|i've|we've|they've)\s+(?:have\s+|had\s+|just\s+|already\s+)?\Z", re.I)
+_NOUN_USE = re.compile(r"\b(?:the|its|their|this|that|his|her|my|your|our) use \Z", re.I)
+_FORBID_START = re.compile(rf"\b{_FORBID_VERB}\b", re.I)
 _KW_NEG_BEFORE = re.compile(r"(?:\b(?:do not|don't|dont|never|not|without|cannot|can't|should not|"
                             r"shouldn't|must not|mustn't|no|avoid|avoids|avoiding)) (?:[\w']+ ){0,2}\Z",
                             re.I)
@@ -1235,30 +2064,54 @@ def _placeholder_table(text: str) -> dict[str, list[str] | None]:
         words, has_or, _ = _parse_atom_list(flat, m.end())
         quoted = [w for w, kind in words if kind in ("quote", "code")]
         value = quoted if quoted and len(quoted) == len(words) and not has_or else None
+        if value is None and not words:
+            value = _plain_definition(flat, m.end())     # "[forbidden_words] are: error, mistake."
         table.setdefault(m.group(1).strip().lower(), value)
     return table
 
 
-def _parse_bare_list(s: str, pos: int) -> list[str] | None:
-    """Plain single words ``A, B and C`` ending the sentence (``in the response`` allowed)."""
-    words, end = [], pos
-    m = _BARE_WORD.match(s, end)
-    while m and len(words) < 6:
-        words.append(m.group(0))
-        end = m.end()
-        sep = _LIST_SEP.match(s, end)
-        if not sep:
-            break
-        m = _BARE_WORD.match(s, sep.end())
-        if m:
-            end = sep.end()
-        else:
-            break
-    if not words or not _BARE_END.fullmatch(s, end):
+def _parse_bare_list(s: str, pos: int, allow_or: bool = False) -> list[str] | None:
+    """Plain keywords ``A, B and C`` ending the sentence (``in the response`` allowed): single
+    words, or phrases of up to three words when the list has commas; ``allow_or``: ``or`` also
+    separates (a negated list, "do not include A, B, or C"). No stop words."""
+    for pattern in (_BARE_WORD, _BARE_PHRASE):
+        words, end = [], pos
+        m = pattern.match(s, end)
+        while m and len(words) < MAX_KEYWORDS:
+            words.append(m.group(0))
+            end = m.end()
+            sep = (_BARE_OR.match(s, end) if allow_or else None) or _LIST_SEP.match(s, end)
+            if not sep:
+                break
+            m = pattern.match(s, sep.end())
+            if m:
+                end = sep.end()
+            else:
+                break
+        if pattern is _BARE_PHRASE and ("," not in s[pos:end] or len(words) < 2):
+            continue
+        if not words or not _BARE_END.fullmatch(s, end):
+            continue
+        if any(w.lower() in _KW_STOP or w.lower().endswith("'") for p in words for w in p.split()):
+            continue
+        return words
+    return None
+
+
+def _plain_definition(s: str, pos: int) -> list[str] | None:
+    """An unquoted definition list ``[name] are: a, b and c.`` (keywords of one to three words,
+    no stop words) running to the end of the sentence."""
+    rest = s[pos:]
+    end = re.search(r"[.!?;](?:\s|$)|\n|$", rest)
+    body = rest[: end.start()].strip()
+    parts = [p.strip() for p in re.split(r"\s*,\s*(?:and\s+|or\s+)?|\s+and\s+|\s+or\s+", body) if p.strip()]
+    if not parts or len(parts) > MAX_KEYWORDS:
         return None
-    if any(w.lower() in _KW_STOP or w.lower().endswith("'") for w in words):
-        return None
-    return words
+    for p in parts:
+        ws = p.split()
+        if not 1 <= len(ws) <= 3 or not re.fullmatch(r"[A-Za-z][A-Za-z' -]*", p) or any(w.lower() in _KW_STOP for w in ws):
+            return None
+    return parts
 
 
 def _sentence_keywords(s: str, placeholders: dict[str, list[str] | None],
@@ -1302,6 +2155,10 @@ def _sentence_keywords(s: str, placeholders: dict[str, list[str] | None],
             atoms, has_or, end = _parse_atom_list(s, m.end())
             if not atoms or not free(m.start(), end):
                 continue
+            if _NOUN_USE.search(s, 0, m.start() + 4) and s[m.start():m.start() + 4].lower() == "use ":
+                continue                   # "explain the use of the word X"
+            if _PAST_KW.match(s, m.start()) and _PRONOUN_BEFORE.search(s, 0, m.start()):
+                continue                   # "why you used the word X"
             taken.append((m.start(), end))
             if negated(m.start()):
                 forbidden += values(atoms)
@@ -1310,10 +2167,23 @@ def _sentence_keywords(s: str, placeholders: dict[str, list[str] | None],
     for m in _K_BARE.finditer(s) if triggers else ():
         if not free(m.start(), m.end()):
             continue
-        words = _parse_bare_list(s, m.end())
+        neg = negated(m.start()) or bool(_FORBID_START.match(s, m.start()))
+        words = _parse_bare_list(s, m.end(), allow_or=neg)
         if words:
             taken.append((m.start(), len(s)))
-            (forbidden if negated(m.start()) else required).extend(words)
+            (forbidden if neg else required).extend(words)
+    for m in _K_SUBJ_LIST.finditer(s):                 # 'the words "a" and "b" should not appear'
+        if not free(m.start(), m.end()):
+            continue
+        atoms, has_or, end = _parse_atom_list(s, m.end())
+        tail = _K_SUBJ_TAIL.match(s, end)
+        if len(atoms) < 2 or tail is None:
+            continue
+        taken.append((m.start(), tail.end()))
+        if tail.group("neg") or negated(m.start()):
+            forbidden += values(atoms)
+        elif not has_or and not freq_kills(tail.end()):
+            required += values(atoms)
     for m in _K_SUBJ.finditer(s):
         if not free(m.start(), m.end()):
             continue
@@ -1350,8 +2220,25 @@ _F_JSON = [
                r"proper|strict|formatted|written|wrapped|given|provided|returned|output|presented|"
                r"structured|as|in the form of|using|entirely|completely|pure))* json\b"),
     re.compile(r"^(?:(?:respond|answer|reply|output|return) )?(?:(?:in|with|as) )?(?:(?:valid|pure|"
-               r"raw|strict) )?json(?: (?:format|object|output|response))?(?: only)?$"),
+               r"raw|strict) )?json(?: (?:format|object|output|response))?(?: only)?[.!]?$"
+               r"|^(?:just|only) (?:the |a |an )?(?:(?:valid|pure|raw) )?json(?: (?:format|object|output|"
+               r"response))?(?:,? please)?[.!]?$"),
+    # "give me a json object that describes ...", "return a json array of three colours"
+    re.compile(rf"(?:^|, |\band |\bthen |\bplease |\balso ){_LEAD}{_ASK}(?:give|provide|return|output|"
+               r"generate|create|write|produce|send|make|build|prepare|compose|reply with|respond with|"
+               r"answer with)(?: me| us)? (?:(?:a|an|one|the|single|valid|simple|small|short|sample|"
+               r"complete|proper|well-formed|properly formatted|json-formatted|only|just) )*json "
+               r"(?:object|array|list|document|dictionary|structure|record|response|output|string|"
+               r"representation|blob)s?\b"),
+    # "output only the json", "only return json", "nothing but json"
+    re.compile(r"\b(?:output|return|give|provide|respond with|reply with|answer with|print|send|show|"
+               r"write)(?: me| us)? (?:only|just|nothing but|solely|strictly|exclusively) (?:(?:the|a|an|"
+               r"valid|raw|pure|plain|resulting|final) )*json\b"
+               r"|\b(?:only|just) (?:output|return|give|provide|respond with|reply with|answer with|print|"
+               r"send|show|write) (?:(?:the|a|an|valid|raw|pure|plain) )*json\b"
+               r"|\bnothing (?:but|except|other than|besides) (?:(?:the|a|an|valid|raw) )*json\b"),
 ]
+_F_JSON_NEW = frozenset((3, 4))
 _CB_NOUN = (r"(?:(?:markdown |fenced |python |code )?code ?blocks?|code fences?|"
             r"fenced code(?: blocks?)?|triple backticks|backticks)")
 _CB_VERB = (r"(?:put|wrap|place|format|write|give|provide|return|present|enclose|show|output|"
@@ -1409,6 +2296,34 @@ _F_QUESTION = [
                r"must|needs to|has to) (?:end|finish|conclude) (?:with|on) (?:a |an )?(?:[\w-]+ )?question\b"),
     re.compile(r"\blast sentence (?:should|must) be a question\b"),
 ]
+# Further "end with a question" forms, read only outside informational questions.
+_F_QUESTION_NEW = [
+    re.compile(r"\b(?:end|finish|conclude|close|wrap up)(?: (?:it|this|your|the|entire|whole|response|"
+               r"answer|reply|message|text|output|email|letter|post|story|poem|note|paragraph))*(?: off)? "
+               r"by asking (?:me |us |the reader |the user |them |him |her |the audience )?(?:a |an |one )?"
+               r"(?:[\w-]+ )?question\b"),
+    re.compile(r"\b(?:ending|finishing|concluding|closing) (?:it |this |(?:your|the) (?:response|answer|reply|"
+               r"message|text|email|letter|post) )?(?:with|on) (?:a |an |one )?(?:[\w-]+ )?question\b"),
+    re.compile(r"\b(?:the|your) (?:last|final|closing) (?:sentence|line)(?: of (?:your|the) (?:response|answer|"
+               r"reply|message|text))? (?:should|must|has to|needs to|will|shall) be (?:a|an) (?:[\w-]+ )?question\b"),
+    re.compile(r"\bmake sure (?:that )?(?:the|your) (?:last|final) (?:sentence|line) is (?:a|an) (?:[\w-]+ )?question\b"),
+    re.compile(r"\b(?:your|the) (?:response|answer|reply|message|text|output)(?: [\w']+)? (?:should|must|needs to|"
+               r"has to|will) (?:end|finish|conclude|close) (?:by asking|in) (?:a |an )?(?:[\w-]+ )?question\b"),
+]
+_STYLE_INTRO = (r"\b(?:as|in|into|using|use|with|in the form of|formatted as|"
+                r"format(?: it| them| this| that| your answer| your response| the answer)? as|"
+                r"present(?:ed)?(?: it| them| this| these| those)? as|organi[sz]ed?(?: it| them)? (?:as|into)|"
+                r"write(?: it| them)? as|list(?: them| it)? (?:as|in)|give(?: me| us)?(?: it| them)? (?:as|in)|"
+                r"provide(?: it| them)? (?:as|in)|answer with|respond with|reply with)")
+_F_NUMBERED = re.compile(
+    rf"{_STYLE_INTRO} (?:a |an |one )?(?:(?:single|short|simple|clear|brief|concise|markdown|vertical) )*"
+    r"numbered (?:list|format|form|points|items|steps|lines|outline)\b"
+    r"|\bnumber (?:each|every|the|your|all the) (?:items?|points?|steps?|entries|entry|lines?|ideas?|tips?)\b")
+_STYLE_ALTERNATIVE = re.compile(r"\bbullet(?:ed|s)?(?: points?| list)? (?:or|and/or) (?:an? )?numbered\b"
+                                r"|\bnumbered (?:list|points|items)? ?(?:or|and/or) (?:an? )?bullet")
+_F_BULLETED = re.compile(
+    rf"{_STYLE_INTRO} (?:a |an |the )?(?:(?:short|simple|clear|brief|concise|markdown) )*"
+    r"(?:bullet(?:ed)?[- ]?(?:points?|list|format|form)|bullets)\b")
 _F_NO_COMMAS = [
     re.compile(r"\b(?:do not|don't|dont|never|without|avoid|refrain from)(?: (?:using|use|the use of|"
                r"any|the|of))* commas?\b"),
@@ -1416,10 +2331,27 @@ _F_NO_COMMAS = [
                r"in this|on)\b)"),
     re.compile(r"\bcommas? (?:are|is) (?:not allowed|forbidden|prohibited|not permitted)\b"),
 ]
+# Further "no commas" forms, read only outside informational questions.
+_F_NO_COMMAS_NEW = [
+    re.compile(r"\b(?:do not|don't|dont|never|without|avoid|cannot|can't|must not|mustn't|should not|"
+               r"shouldn't|may not)(?: (?:using|use|the use of|any|the|of|include|including|put|putting|add|"
+               r"adding|write|writing|type|typing|insert|inserting|contain|containing|have|having|a|"
+               r"a single|single|even one|one))* commas?\b(?! (?:after|before|between|around|inside|"
+               r"within|on|at|in this)\b)(?! in (?:the|your) (?!(?:entire |whole )?(?:response|answer|reply|"
+               r"output|text)\b))"),
+    re.compile(r"\b(?:no|zero) commas?\b(?! (?:after|before|between|around|inside|within|on|at|in this)\b)"
+               r"(?! in (?:the|your) (?!(?:entire |whole )?(?:response|answer|reply|output|text)\b))"),
+    re.compile(r"\bcommas? (?:are|is) (?:banned|not to be used|not acceptable)\b|\bcomma[- ]free\b"),
+]
 
 
 _CONDITIONAL = re.compile(r"^(?:if|when|whenever|unless|in case|once|while)\b")
-_CONVERSION = re.compile(r"\b(?:to|into|convert|converts|converting|lowercased|uppercased) \Z")
+# "give an example of a sentence where it would be better to use no comma": about comma usage.
+_COMMA_TOPIC = re.compile(r"\b(?:example|rule|rules|where it would|would be better|when to use|how to use)\b")
+# "a json array / object / string" names the response format, not a programming topic.
+_JSON_NOUNS = re.compile(r"\bjson (?:objects?|arrays?|lists?|strings?|files?|documents?|format)\b")
+_CONVERSION = re.compile(r"\b(?:to|into|convert|converts|converting|lowercased|uppercased|named|labell?ed|"
+                         r"called|spelled|spelt|titled|written as|capitali[sz]ed)(?: in)?(?: all)? \Z")
 _CASE_FREQUENCY = re.compile(r"\bwords? (?:with|in|written in|that are in|using) (?:all )?(?:capital|"
                              r"caps|upper|lower)|\b(?:capital(?:ized)?|upper ?case|lower ?case|"
                              r"all[- ]caps) words\b|\b(?:appear|appears|occur|occurs)\b")
@@ -1436,16 +2368,18 @@ def _sentence_formats(s: str) -> dict:
     if _CONDITIONAL.match(s):
         return {}
     sentence_request = _is_request(s)
-    code_topic = bool(_CODE_TOPIC.search(s)) and not _RESPONSE_SUBJ.search(s)
+    code_topic = bool(_CODE_TOPIC.search(_JSON_NOUNS.sub("json", s))) and not _RESPONSE_SUBJ.search(s)
     out = _formats_of(s, sentence_request, code_topic, whole=True)
     for a, b in _clauses(s):
         clause = s[a:b].strip()
         if clause != s and not _CONDITIONAL.match(clause):
             part = _formats_of(clause, sentence_request or _is_request(clause), code_topic, whole=False)
             out["case"] = out.get("case", set()) | part.pop("case", set())
+            out["list_style"] = out.get("list_style", set()) | part.pop("list_style", set())
             out.update(part)
-    if not out.get("case"):
-        out.pop("case", None)
+    for key in ("case", "list_style"):
+        if not out.get(key):
+            out.pop(key, None)
     return out
 
 
@@ -1454,11 +2388,23 @@ def _formats_of(s: str, request: bool, code_topic: bool, whole: bool) -> dict:
     is about code, so case words describe the code's output; ``whole``: ``s`` is a whole
     sentence, the only place where the fragment "JSON only." is read)."""
     out: dict = {}
-    json_patterns = () if code_topic else _F_JSON if whole else _F_JSON[:2]   # not a program's output
+    question = bool(_NOT_A_REQUEST.match(s))
+    json_patterns = () if code_topic else [     # not a program's output
+        p for i, p in enumerate(_F_JSON) if (whole or i != 2) and not (question and i in _F_JSON_NEW)]
     for pat in json_patterns:
         m = pat.search(s)
         if m and not _negated_before(s, m.start()):
             out["json_output"] = True
+    if (request or _RESPONSE_SUBJ.search(s)) and not code_topic:
+        styles = set()
+        for style, pat in (("numbered", _F_NUMBERED), ("bullet", _F_BULLETED)):
+            m = pat.search(s)
+            if m and not _negated_before(s, m.start()) and not question:
+                styles.add(style)
+        if styles and _STYLE_ALTERNATIVE.search(s):
+            styles = {"bullet", "numbered"}              # "bullet points or a numbered list"
+        if styles:
+            out["list_style"] = styles
     if request or _RESPONSE_SUBJ.search(s):
         for pat in _F_CODE:
             m = pat.search(s)
@@ -1466,7 +2412,7 @@ def _formats_of(s: str, request: bool, code_topic: bool, whole: bool) -> dict:
                 out["code_block"] = True
     cases = set()
     if not code_topic and not _CASE_FREQUENCY.search(s):
-        if request or _RESPONSE_SUBJ.search(s) or len(s.split()) <= 6:
+        if request or _RESPONSE_SUBJ.search(s) or (len(s.split()) <= 6 and not _is_statement(s)):
             for case, patterns in (("lower", _F_LOWER), ("upper", _F_UPPER)):
                 for pat in patterns:
                     m = pat.search(s)
@@ -1479,13 +2425,734 @@ def _formats_of(s: str, request: bool, code_topic: bool, whole: bool) -> dict:
             cases.add("upper")
     if cases:
         out["case"] = cases
-    for pat in _F_QUESTION:
+    for pat in _F_QUESTION + ([] if question else _F_QUESTION_NEW):
         m = pat.search(s)
         if m and not _negated_before(s, m.start()):
             out["end_question"] = True
-    if any(p.search(s) for p in _F_NO_COMMAS):
+    if (any(p.search(s) for p in _F_NO_COMMAS + ([] if question else _F_NO_COMMAS_NEW))
+            and not _COMMA_TOPIC.search(s)):
         out["no_commas"] = True
     return out
+
+
+# ================================================================ further instruction families
+def _rx(pattern: str) -> re.Pattern:
+    """Case-insensitive pattern in which every literal space matches any whitespace run."""
+    return re.compile(pattern.replace(" ", r"\s+"), re.IGNORECASE)
+
+
+_RELW = (r"(?P<rel>at least|at most|exactly|precisely|no more than|not more than|no less than|"
+         r"no fewer than|not less than|not fewer than|less than|fewer than|more than|over|under|"
+         r"a minimum of|a maximum of|minimum of|maximum of|up to|a total of|only|just)")
+_REL_KIND = {"at least": "at_least", "no less than": "at_least", "no fewer than": "at_least",
+             "not less than": "at_least", "not fewer than": "at_least", "a minimum of": "at_least",
+             "minimum of": "at_least", "at most": "at_most", "no more than": "at_most",
+             "not more than": "at_most", "a maximum of": "at_most", "maximum of": "at_most",
+             "up to": "at_most", "exactly": "exactly", "precisely": "exactly", "a total of": "exactly",
+             "only": "exactly", "just": "exactly", "less than": "lt", "fewer than": "lt",
+             "under": "lt", "more than": "gt", "over": "gt"}
+_SUF_KIND = {"or more": "at_least", "or fewer": "at_most", "or less": "at_most", "at least": "at_least",
+             "at most": "at_most", "at the most": "at_most", "max": "at_most", "maximum": "at_most",
+             "min": "at_least", "minimum": "at_least"}
+_TIMES = rf"(?:(?P<num>{_NUM_BODY}) (?:times?|x)(?![\w-])|(?P<nw>once|twice|thrice)(?![\w-]))"
+_TSUF = r"(?: (?P<suf>or more|or fewer|or less|at least|at most|at the most|max(?:imum)?|min(?:imum)?)(?![\w-]))?"
+_MODAL_V = (r"(?:should|must|needs to|need to|has to|have to|is to|are to|will|shall|is required to|"
+            r"are required to|ought to)(?: also| only| still)?")
+_APPEAR = r"(?:appear|be used|be included|be mentioned|be repeated|occur|show up|feature|be present)"
+_IN_RESPONSE = (r"(?: (?:in|throughout|within) (?:the|your|this) (?:entire |whole )?(?:response|answer|"
+                r"reply|text|output|story|poem|essay|paragraph|email|letter|note|message))?")
+_W_ATOM = (r'(?:"(?P<wq>[^"\n]{1,40})"|“(?P<wc>[^”\n]{1,40})”|‘(?P<ws>[^’\n]{1,40})’'
+           r"|(?<![\w])'(?P<wa>[^'\n]{1,40})'(?![\w])|\[(?P<wb>[^\[\]\n]{1,40})\]"
+           r"|\*\*?(?P<wt>[^*\n]{1,40})\*\*?|(?P<wbare>[A-Za-z][A-Za-z'’-]{0,30}))")
+_KW_NOUNS1 = r"(?:key ?word|word|term|phrase|keyword|name)"
+_FREQ_RULES = (
+    # "In your response, the word X should appear at least 3 times."
+    _rx(rf"\b(?:the )?{_KW_NOUNS1} {_W_ATOM} {_MODAL_V}(?P<neg> not)? {_APPEAR}{_IN_RESPONSE} "
+        rf"(?:{_RELW} )?{_TIMES}{_TSUF}"),
+    # "use the word X at least twice", "that uses the word "wheel" exactly twice"
+    _rx(rf"\b(?:use|uses|using|include|includes|including|mention|mentions|mentioning|repeat|repeats|"
+        r"repeating|say|says|saying|feature|features|featuring|contain|contains|containing|"
+        r"incorporate|incorporates|incorporating|insert|put|have|has|having)(?: the)?"
+        rf"(?P<noun> {_KW_NOUNS1})? {_W_ATOM}{_IN_RESPONSE} (?:{_RELW} )?{_TIMES}{_TSUF}"),
+    # '"X" should appear twice' (a delimited word only)
+    _rx(rf"(?:^|(?<=[\s,(])){_W_ATOM} {_MODAL_V}(?P<neg> not)? {_APPEAR}{_IN_RESPONSE} "
+        rf"(?:{_RELW} )?{_TIMES}{_TSUF}"),
+    # "(make sure) the word X appears at least 3 times"
+    _rx(rf"\b(?:the )?{_KW_NOUNS1} {_W_ATOM} (?:appears|occurs|is used|is mentioned|is repeated|shows up)"
+        rf"{_IN_RESPONSE} (?:{_RELW} )?{_TIMES}{_TSUF}"),
+)
+_L_ATOM = (r"(?:\"(?P<lq>[A-Za-z])\"|“(?P<lc>[A-Za-z])”|‘(?P<ls>[A-Za-z])’|(?<![\w])'(?P<la>[A-Za-z])'"
+           r"(?![\w])|\[(?P<lb>[A-Za-z])\]|\*(?P<lt>[A-Za-z])\*|(?P<lbare>[A-Za-z])(?![\w'’-]))")
+_LETTER_RULES = (
+    _rx(rf"\b(?:the )?letter {_L_ATOM} {_MODAL_V}(?P<neg> not)? {_APPEAR}{_IN_RESPONSE}"
+        rf"(?: (?:{_RELW} )?{_TIMES}{_TSUF})?"),
+    _rx(rf"\b(?:use|uses|using|include|includes|including|contain|contains|containing|feature|"
+        rf"features|have|has)(?: the)? letter {_L_ATOM}{_IN_RESPONSE} (?:{_RELW} )?{_TIMES}{_TSUF}"),
+    _rx(rf"\b(?:the )?letter {_L_ATOM} (?:appears|occurs|is used|shows up){_IN_RESPONSE} "
+        rf"(?:{_RELW} )?{_TIMES}{_TSUF}"),
+)
+_LIPOGRAM = _rx(r"\b(?:do not|don't|dont|never|without|avoid|avoiding|cannot|can't|must not|should not|"
+                r"shouldn't)(?: (?:use|using|include|including|type|typing|write|writing))?(?: (?:the|any))?"
+                rf" letter {_L_ATOM}(?![\w'])")
+_CAPS = (r"(?:all )?(?:capital letters|capitals|caps|block letters|uppercase(?: letters)?|"
+         r"upper case(?: letters)?|upper-case(?: letters)?)")
+_CAPW_RULES = (
+    # "In your response, words with all capital letters should appear at least 3 times."
+    _rx(rf"\b(?:the )?(?:number of )?words? (?:with|in|written in|that are in|using|consisting of|made of) "
+        rf"{_CAPS} {_MODAL_V}(?P<neg> not)? (?:appear|be used|occur|be included|show up|be present)"
+        rf"{_IN_RESPONSE} (?:{_RELW} )?{_TIMES}{_TSUF}"),
+    # "use at least 5 words in all caps", "include 3 all-caps words"
+    _rx(rf"\b(?:use|uses|using|include|includes|including|contain|contains|containing|have|has|with|"
+        rf"write|writing)(?: {_RELW})? (?P<num2>{_NUM_BODY})(?: \w+)? words? (?:in|with|written in) {_CAPS}\b"),
+    _rx(rf"\b(?:use|uses|using|include|includes|including|contain|contains|containing|have|has|with|"
+        rf"write)(?: {_RELW})? (?P<num2>{_NUM_BODY}) (?:all[- ]caps|all[- ]capitals?|fully capitali[sz]ed|"
+        r"uppercase|upper-case) words\b"),
+)
+_H_NUM = rf"(?P<num>{_NUM_BODY}|a single|a|an)"
+_HL_RULES = (
+    _rx(rf"\bhighlight(?:s|ed|ing)?(?: {_RELW})? {_H_NUM} (?:(?:key|important|main|different|relevant|"
+        r"separate|distinct|specific|crucial|essential|short) )?(?:sections?|parts?|phrases?|words?|"
+        r"points?|portions?|passages?|sentences?|lines?|ideas?|terms?|items?|areas?|segments?|"
+        r"key phrases?)(?![\w-])(?:[^.;\n]{0,60}?\bwith markdown\b)?"),
+    _rx(rf"(?:{_RELW} )?\b{_H_NUM} (?:markdown[- ])?highlighted (?:sections?|parts?|phrases?|words?|"
+        r"portions?|passages?|sentences?|points?|lines?|areas?|segments?)(?![\w-])"),
+    _rx(rf"(?:{_RELW} )?\b{_H_NUM} (?:markdown )?highlights? (?:using|with|in) markdown\b"),
+)
+# "highlight the benefits using markdown": at least one highlight.
+_HL_ANY = _rx(r"\bhighlight\b[^.;\n]{1,60}?\b(?:using|with|in) markdown\b")
+_PH_RULE = _rx(rf"(?:{_RELW} )?\b(?P<num>{_NUM_BODY}|a single|a|an|one)(?: \w+){{0,2}}? placeholders?(?![\w-])")
+_SEC_COUNT = _rx(rf"\b(?:have|has|having|contain|contains|containing|include|includes|consist of|consists of|"
+                 r"be divided into|divided into|split into|divide (?:it |this |your (?:response|answer) )?into|"
+                 r"organi[sz]ed? into|structured? into|in|into|with) (?:(?P<rel>exactly|at least|at most|"
+                 rf"no more than|no fewer than|precisely) )?(?P<num>{_NUM_BODY}) (?:\w+ )?"
+                 r"(?P<noun>sections?|parts?|chapters?)\b")
+_SEC_MARKER = (r"[\"“‘'\[*]*(?P<marker>[A-Za-z][A-Za-z]{1,19})[\"”’'\]*]*(?:\s*(?:#|[0-9]+|\[[^\]\n]{1,20}\]|"
+               r"\{[^}\n]{1,20}\})|\s+(?:X|N)|,?\s+(?:followed by|and then|then|and)\s+(?:a\s+|the\s+)?"
+               r"(?:number|numbers|numeral|section number)|,?\s+and\s+number\s+them)(?![\w])")
+_SEC_MARK_RULES = (
+    _rx(r"\b(?:mark|label|title|start|begin|head|denote|indicate|introduce|precede|prefix)(?:s|ed)?"
+        r"(?: the (?:beginning|start) of)? (?:each|every) (?P<noun>section|part|chapter)(?: of (?:your|the) "
+        r"(?:response|answer))? (?:with|as|by|using)(?: the (?:word|label|keyword|marker|heading|header|"
+        rf"prefix))?(?: of)? {_SEC_MARKER}"),
+    _rx(r"\b(?:each|every) (?P<noun>section|part|chapter) (?:should|must|needs to|has to|will|shall) "
+        r"(?:start|begin|be marked|be labell?ed|be introduced) (?:with|as|by)(?: the (?:word|label|keyword|"
+        rf"marker|heading|header|prefix))? {_SEC_MARKER}"),
+)
+_ORDINALS = {"first": 1, "second": 2, "third": 3, "fourth": 4, "fifth": 5, "sixth": 6, "seventh": 7,
+             "eighth": 8, "ninth": 9, "tenth": 10}
+_ORD_RE = r"(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|[1-9](?:st|nd|rd|th)|10th)"
+_FW_ATOM = (r"(?:\"(?P<fq>[A-Za-z][\w'’-]{0,29})[.,!?]?\"|“(?P<fc>[A-Za-z][\w'’-]{0,29})[.,!?]?”"
+            r"|(?<![\w])'(?P<fa>[A-Za-z][\w-]{0,29})'(?![\w])|\[(?P<fb>[A-Za-z][\w'’-]{0,29})\]"
+            r"|\*\*?(?P<ft>[A-Za-z][\w'’-]{0,29})\*\*?|(?P<fbare>[A-Za-z][\w'’-]{0,29})(?=\s*(?:[.,;:!?)]|$)))")
+_FW_RULES = (
+    _rx(r"\bparagraph (?:number )?(?P<n>[0-9]{1,2}|one|two|three|four|five|six|seven|eight|nine|ten) "
+        r"(?:must|should|has to|needs to|will|shall|is to)(?: also)? (?:start|begin) with(?: the)?"
+        rf"(?: (?:word|term))?:?\s*{_FW_ATOM}"),
+    _rx(rf"\b(?:the )?(?P<ord>{_ORD_RE}) paragraph(?: of (?:your|the) (?:response|answer|reply|text|essay|"
+        r"story))? (?:must|should|has to|needs to|will|shall|is to)(?: also)? (?:start|begin) with(?: the)?"
+        rf"(?: (?:word|term))?:?\s*{_FW_ATOM}"),
+    _rx(rf"\b(?:start|begin) (?:the|your) (?P<ord>{_ORD_RE}) paragraph with(?: the)?(?: (?:word|term))?:?\s*"
+        rf"{_FW_ATOM}"),
+    _rx(rf"\bthe first word of (?:the|your) (?P<ord>{_ORD_RE}) paragraph (?:must|should|has to|needs to|"
+        rf"will|shall) be:?\s*{_FW_ATOM}"),
+)
+_DIVIDER_RULES = (
+    _rx(r"\bparagraphs (?:are|should be|must be|will be|need to be|needs to be|have to be|shall be) "
+        r"separated (?:from each other |with each other )?(?:with|by|using)(?: the| a)?(?: markdown)?"
+        r"(?: (?:divider|separator|horizontal rule|line))?\s*:?\s*\*\*\*(?!\*)"),
+    _rx(r"\bseparate (?:the |your |each |all |all the )?paragraphs (?:with|by|using)(?: the| a)?"
+        r"(?: markdown)?(?: (?:divider|separator|horizontal rule))?\s*:?\s*\*\*\*(?!\*)"),
+    _rx(r"\buse (?:the (?:markdown )?divider )?\*\*\*(?!\*) (?:to separate|between) (?:the |your )?paragraphs\b"),
+)
+_TITLE_RULES = (
+    _rx(r"\btitle\b[^.;\n]{0,80}?(?:double angular brackets|double angle brackets|<<)"),
+    _rx(r"(?:double angular brackets|double angle brackets)[^.;\n]{0,40}?\btitle\b"),
+)
+_PHRASE_ATOM = (r"(?:\"(?P<pq>[^\"\n]{1,120})\"|“(?P<pc>[^”\n]{1,120})”|‘(?P<ps>[^’\n]{1,120})’"
+                r"|(?<![\w])'(?P<pa>[^'\n]{1,120})'(?![\w])|\[(?P<pb>[^\[\]\n]{1,120})\]"
+                r"|\*\*(?P<pt2>[^*\n]{1,120})\*\*|\*(?P<pt>[^*\n]{1,120})\*)")
+_PHRASE_RE = re.compile(_PHRASE_ATOM)
+_PS_MARK = r"(?P<pm>P\.\s?P\.\s?S\.?|P\.\s?S\.?)"
+_PS_RULES = (
+    _rx(rf"\bpost-?script\b(?:(?:[^.;\n]{{0,50}}?\b(?:start(?:ing|s)?|begin(?:ning|s)?|marked|opening) with|"
+        rf" (?:should|must|will|shall) be| is|:)\s*:?\s*(?:{_PHRASE_ATOM}|{_PS_MARK}))?"),
+    _rx(rf"\b(?:add|include|end with|finish with|append|write|put|close with)(?: a| an)? {_PS_MARK}"
+        r"(?=[\s,;:!?)]|$)"),
+)
+_QUOTE_OBJ = (r"(?:response|answer|reply|output|text|message|note|story|paragraph|poem|email|letter|"
+              r"essay|summary|description|speech|post|tweet)")
+_QUOTE_MARKS = r"(?:a pair of |a set of )?(?:double (?:quotation marks|quotes|quote marks)|quotation marks)\b"
+_QUOTED_RULES = (
+    _rx(rf"\b(?:wrap|enclose|put|place|surround|present|write)(?: your| the| this| my)?(?: entire| whole| full| "
+        rf"complete)? {_QUOTE_OBJ}(?: [\w']+){{0,2}}? (?:with|in|inside|within|between|using) {_QUOTE_MARKS}"),
+    _rx(rf"\b(?:(?:your|the|this)(?: entire| whole| full| complete)? {_QUOTE_OBJ}(?: [\w']+){{0,2}}?|it) "
+        r"(?:should|must|needs to|has to|will|shall|is|are)(?: also| always| then)?(?: be)? (?:wrapped|enclosed|"
+        rf"put|placed|contained|surrounded|written) (?:in|with|within|inside|between|by) {_QUOTE_MARKS}"),
+    _rx(rf"\b(?:that|which) (?:is|are) (?:wrapped|enclosed|put|placed|contained|surrounded) (?:in|with|within|"
+        rf"inside|between|by) {_QUOTE_MARKS}"),
+    _rx(rf"\b{_QUOTE_OBJ}\b[^.;\n]{{0,80}}?\b(?:is|be) (?:wrapped|enclosed|put|placed|contained|surrounded) "
+        rf"(?:in|with|within|inside|between|by) {_QUOTE_MARKS}"),
+)
+_TEXT_OBJ = (r"(?:response|answer|reply|message|text|email|letter|story|poem|essay|note|post|speech|"
+             r"output|introduction|intro|summary|description|paragraph|tweet|review)")
+_START_HEADS = (
+    _rx(rf"\b(?:start|begin|open)(?:s)?(?: (?:your|the|this|my))?(?: (?:entire|whole))?(?: {_TEXT_OBJ})? "
+        r"(?:with|by saying|by writing)(?: the (?:exact )?(?:word|phrase|words|sentence|greeting|line)s?)?"
+        r"\s*:?\s*"),
+    _rx(rf"\b(?:your|the|this)(?: (?:entire|whole))? {_TEXT_OBJ} (?:must|should|has to|needs to|will|shall)"
+        r"(?: (?:always|also))? (?:start|begin|open) with(?: the (?:exact )?(?:word|phrase|words|sentence)s?)?"
+        r"\s*:?\s*"),
+    _rx(r"\bit (?:must|should|has to|needs to|will) (?:start|begin|open) with(?: the (?:exact )?(?:word|phrase|"
+        r"words|sentence)s?)?\s*:?\s*"),
+    _rx(r"\b(?:the )?first word (?:of (?:your|the) (?:response|answer|reply|message|text) )?(?:must|should|"
+        r"has to|needs to|will|shall) be\s*:?\s*"),
+)
+_END_HEADS = (
+    _rx(rf"\b(?:end|finish|conclude|close|complete|wrap up)(?: (?:your|the|this))?(?: (?:entire|whole))?"
+        rf"(?: {_TEXT_OBJ})? (?:with|using|on)(?: (?:this|the|these|that|following))?(?: (?:exact|"
+        r"following|precise|specific|same))?(?: (?:phrase|sentence|words?|line|statement|quote|quotation|"
+        r"expression)s?)?\s*:?\s*"),
+    _rx(rf"\b(?:your|the|this)(?: (?:entire|whole))? {_TEXT_OBJ} (?:must|should|has to|needs to|will|shall)"
+        r"(?: (?:always|also))? (?:end|finish|conclude|close) with(?: (?:this|the|these|that|following))?"
+        r"(?: (?:exact|following|precise|specific))?(?: (?:phrase|sentence|words?|line|statement)s?)?\s*:?\s*"),
+    _rx(r"\b(?:the )?(?:last|final|closing) (?:sentence|line|words?|phrase) (?:of (?:your|the) (?:response|"
+        r"answer|reply|message|text) )?(?:must|should|has to|needs to|will|shall) be(?: (?:the|this) "
+        r"(?:exact )?(?:phrase|sentence|words?))?\s*:?\s*"),
+)
+_CLOSED_OPTION = r"(?:yes|no|maybe|true|false|agree|disagree|correct|incorrect|right|wrong)"
+_CLOSED_LIST = re.compile(rf"(?P<opts>{_CLOSED_OPTION}(?:(?:\s*,\s*(?:or\s+)?|\s+or\s+|\s*/\s*)"
+                          rf"{_CLOSED_OPTION})+)(?![\w-])", re.IGNORECASE)
+_ONEOF_TEMPLATE = _rx(r"\b(?:answer|respond|reply|choose|pick|select)(?: (?:with|using))?(?: only)? "
+                      r"(?:one of|from) the following(?: (?:options|choices|answers|responses|phrases))?\s*:?\s*")
+_ONEOF_HEADS = (
+    _rx(r"\b(?:answer|respond|reply|say)\b(?: (?:only|just|simply))?(?: (?:with|using))?(?: (?:only|just|"
+        r"simply))?(?: (?:a|the) (?:single |one )?words?)?(?: (?:a|an))?(?: (?:simple|plain|straight))?"
+        r"\s*:?\s*"),
+    _rx(r"\b(?:a|an) (?:one-word|single-word|single word|one word) (?:answer|response|reply)\s*:?\s*"),
+    _rx(r"\bwith (?:a single word|one word|only one word|just one word)\s*:?\s*"),
+)
+_ONEOF_ONLY = re.compile(r"\b(?:only|just|simply|nothing else|nothing more|no other|no explanation|"
+                         r"without (?:any )?explanation|single word|one word|one-word|single-word)\b", re.I)
+_RESP_COUNT = _rx(r"\b(?:give|provide|write|generate|offer|produce|create|draft|compose)(?: me| us)? "
+                  r"(?P<n>two|2|three|3|four|4) (?:different |distinct |separate |alternative |unique )?"
+                  r"(?:responses|answers|versions|replies|alternatives|drafts|variations|variants)\b")
+_RESP_SEP = _rx(r"\bseparated (?:by|with|using)(?:[\w\s]{0,40}?)?\s*:?\s*(?P<sep>[*\-=_~#|+]{3,})")
+_REPEAT_RE = re.compile(
+    r"(?:\bfirst,?\s+|\bbefore (?:you )?(?:answer|respond|reply)(?:ing)?(?:\s+(?:it|this))?,?\s+)?"
+    r"(?:please\s+)?\brepeat\s+(?:the|my|this|your)\s+(?:request|question|prompt|instruction|query)"
+    r"(?:\s+(?:above|below))?(?:\s+(?:word\s+for\s+word|verbatim|exactly(?:\s+as\s+(?:it\s+is|written|"
+    r"given))?|without\s+(?:any\s+)?changes?)){1,3}[^.()\n]{0,160}(?:\([^()]{0,400}\))?[ \t]*[.!]?",
+    re.IGNORECASE)
+_PARTS_THAT = re.compile(r"\b(?:sentences|lines|paragraphs|items|words|points|bullets|bullet points|names|"
+                         r"questions|titles|verses|stanzas)\s+(?:that|which|each|all)?\s*\Z", re.I)
+_RESPONSE_OBJ = re.compile(r"\b(?:your|the) (?:entire |whole )?(?:response|answer|reply|message)\b", re.I)
+_LETS = re.compile(r"\b(?:let's|lets|let us|we(?:'ll| will| can| could| should)?|i(?:'ll| will| can| would)?)\s+\Z", re.I)
+_NEG_RAW = re.compile(r"\b(?:not|never|no|don't|dont|doesn't|shouldn't|mustn't|cannot|can't|won't|without|"
+                      r"avoid|avoiding)\b", re.IGNORECASE)
+_TEMPLATE_VAR = re.compile(r"[a-z][a-z0-9_]{0,30}")
+# The head of a template-variable definition, at a line start or after a sentence end.
+_DEF_HEAD = re.compile(r"(?:^[ \t]*(?:[-*•][ \t]+)?|(?<=[.!?\"”])[ \t]+)\[([^\[\]\n]{1,40})\][ \t]*"
+                       r"(?:is|are|=|:|-|–|—|will be|should be|can be|means)[ \t]*:?[ \t]*(?=\S)",
+                       re.IGNORECASE | re.MULTILINE)
+_EXTRA_GATE = ("time", "twice", "once", "thrice", "letter", "highlight", "placeholder", "capital", "caps",
+               "upper", "section", "part", "chapter", "paragraph", "***", "title", "<<", "angular",
+               "angle", "p.s", "p. s", "postscript", "post-script", "quot", "start", "begin", "first word",
+               "open", "end", "finish", "conclude", "close", "complete", "wrap", "last", "final",
+               "option", "yes", "true", "agree", "correct", "right", "wrong", "word", "separat", "only",
+               "just", "simply")
+_EXTRA_GATE_RE = re.compile("|".join(re.escape(k) for k in _EXTRA_GATE))
+
+
+@dataclass(frozen=True)
+class _Tables:
+    """Template variables of a message: ``[name] are "a", "b"`` (quoted lists) and
+    ``[name] - value`` lines."""
+
+    quoted: dict
+    lines: dict
+
+
+def _template_tables(text: str) -> _Tables:
+    """Definitions ``[name] is "value"`` (the quoted value, punctuation kept) and ``[name] -
+    value`` (the rest of the line)."""
+    lines = {}
+    for m in _DEF_HEAD.finditer(text):
+        q = _PHRASE_RE.match(text, m.end())
+        if q and q.group(0)[0] in "\"“‘'":
+            value = next(g for g in q.groups() if g is not None)
+        else:
+            value = text[m.end():].split("\n", 1)[0].strip()
+        if value:
+            lines.setdefault(m.group(1).strip().lower(), " ".join(value.split()))
+    return _Tables(_placeholder_table(text), lines)
+
+
+def _resolve_var(name: str, tables: _Tables, phrase: bool = False) -> str | None:
+    """The value of a template variable ``[name]`` (one quoted value or a definition line;
+    ``phrase``: the definition line first, which keeps its punctuation)."""
+    key = name.strip().lower()
+    if phrase and key in tables.lines:
+        return tables.lines[key]
+    quoted = tables.quoted.get(key)
+    if quoted and len(quoted) == 1:
+        return quoted[0]
+    if quoted is None and key in tables.lines:
+        return tables.lines[key]
+    return None
+
+
+def _atom_word(m: re.Match, tables: _Tables, prefix: str = "w") -> str | None:
+    """The keyword of a word atom (quoted, bracketed, starred or bare); ``None`` when it is a
+    stop word or an unfilled template variable."""
+    groups = {k: m.group(prefix + k) for k in ("q", "c", "s", "a", "b", "t")}
+    bare = m.group(prefix + "bare")
+    if groups["b"] is not None:
+        inner = groups["b"].strip()
+        key = inner.lower()
+        if key in tables.quoted or key in tables.lines:
+            word = _resolve_var(key, tables)
+        elif _TEMPLATE_NAME.fullmatch(key):
+            return None
+        else:
+            word = inner
+    elif bare is not None:
+        if bare.lower() in _KW_STOP:
+            return None
+        word = bare
+    else:
+        word = next((v for v in groups.values() if v is not None), None)
+    if word is None:
+        return None
+    word = " ".join(word.split()).strip(".,;:!?")
+    return word if valid_keyword(word) else None
+
+
+def _phrase_value(m: re.Match, tables: _Tables) -> str | None:
+    """The phrase of a delimited atom (punctuation kept); a bracketed single lowercase name is a
+    template variable, resolved or ``None``."""
+    for g in ("pq", "pc", "ps", "pa", "pt2", "pt"):
+        v = m.group(g)
+        if v is not None:
+            return " ".join(v.split())
+    inner = " ".join(m.group("pb").split())
+    if _TEMPLATE_VAR.fullmatch(inner):
+        return _resolve_var(inner, tables, phrase=True)
+    return inner
+
+
+def _times_interval(m: re.Match, negated: bool = False, num_group: str = "num") -> Interval | None:
+    """Interval of a "<relation> N times" phrase (``once / twice / thrice``; a bare count is
+    exact); ``negated`` flips the relation ("should not appear more than twice")."""
+    nw = m.groupdict().get("nw")
+    n = {"once": 1, "twice": 2, "thrice": 3}[nw.lower()] if nw else parse_count(m.group(num_group) or "")
+    if n is None:
+        return None
+    rel, suf = m.groupdict().get("rel"), m.groupdict().get("suf")
+    if rel and suf:
+        return None
+    kind = _REL_KIND[" ".join(rel.lower().split())] if rel else (_SUF_KIND[" ".join(suf.lower().split())]
+                                                              if suf else "exactly")
+    if negated:
+        kind = _FLIP[kind]
+        if kind is None:
+            return None
+    return _interval(kind, n)
+
+
+def _count_interval_of(m: re.Match, bare_kind: str, num_group: str = "num") -> Interval | None:
+    """Interval of "<relation> N" (``a`` / ``an`` / ``a single`` = 1; a bare count gives
+    ``bare_kind``)."""
+    raw = (m.group(num_group) or "").lower()
+    n = 1 if raw in ("a", "an", "a single", "one") else parse_count(raw)
+    if n is None:
+        return None
+    rel = m.groupdict().get("rel")
+    kind = _REL_KIND[" ".join(rel.lower().split())] if rel else bare_kind
+    return _interval(kind, n)
+
+
+def _neg_raw(raw: str, start: int) -> bool:
+    """A negation shortly before ``start`` in the same clause of a raw sentence."""
+    seg = re.split(r"[,;:.!?]\s", raw[max(0, start - 40):start] + " ")[-1]
+    return bool(_NEG_RAW.search(seg))
+
+
+def _instruction(norm: str) -> bool:
+    """A sentence that instructs the assistant about its reply: not a conditional, an
+    informational question, a statement or a sentence about code; a request verb, a modal or
+    "I want" in the sentence or in one of its clauses."""
+    if not norm or _CONDITIONAL.match(norm) or _NOT_A_REQUEST.match(norm):
+        return False
+    if _CODE_TOPIC.search(norm) and not _RESPONSE_SUBJ.search(norm):
+        return False
+    if _is_request(norm) and not _is_statement(norm):
+        return True
+    for a, b in _clauses(norm):
+        clause = norm[a:b].strip()
+        if _is_request(clause) and not _is_statement(clause):
+            return True
+    return False
+
+
+def _phrase_list(s: str, pos: int, tables: _Tables, closed_ok: bool) -> tuple[list[str], bool]:
+    """Options at ``s[pos]``: delimited phrases joined by ``or`` / commas (``("Yes", "No")``)
+    or, with ``closed_ok``, plain words of a closed set ("yes, no, or maybe"). Returns
+    ``(options, has_and)``."""
+    out: list[str] = []
+    m = _PHRASE_RE.match(s, pos)
+    if m:
+        while m:
+            v = _phrase_value(m, tables)
+            if v is None:
+                return [], False
+            out.append(v)
+            sep = re.compile(r"\s*(?:,\s*(?:or\s+)?|or\s+|/\s*)", re.I).match(s, m.end())
+            nxt = _PHRASE_RE.match(s, sep.end()) if sep else None
+            if nxt is None:
+                tail = re.compile(r"\s*(?:,\s*)?(?:and|&)\s+", re.I).match(s, m.end())
+                return out, bool(tail and _PHRASE_RE.match(s, tail.end()))
+            m = nxt
+        return out, False
+    if closed_ok:
+        c = _CLOSED_LIST.match(s, pos)
+        if c:
+            return [w for w in re.split(r"\s*,\s*(?:or\s+)?|\s+or\s+|\s*/\s*", c.group("opts"), flags=re.I) if w], False
+    return [], False
+
+
+def _sentence_extras(raw: str, norm: str, tables: _Tables) -> tuple[dict, list[tuple[int, int]]]:
+    """Requests of the further instruction families in one sentence: ``raw`` (code masked,
+    quotes intact) and its normalised, quote-masked form ``norm`` (for licensing). Returns the
+    values found and the spans of ``raw`` they claim (masked before the count, keyword and
+    format rules read the sentence)."""
+    low = raw.lower()
+    out: dict = {}
+    spans: list[tuple[int, int]] = []
+    if not _EXTRA_GATE_RE.search(low):
+        return out, spans
+    per_part = bool(_EACH.search(norm))
+    if not _instruction(norm):
+        # The format description "Paragraphs are separated with the markdown divider: ***"
+        # opening its sentence is an instruction too.
+        m = _DIVIDER_RULES[0].match(raw, len(raw) - len(raw.lstrip()))
+        if m and not _NOT_A_REQUEST.match(norm) and not _CONDITIONAL.match(norm):
+            return {"divider": True}, [(m.start(), m.end())]
+        return out, spans
+
+    def free(a: int, b: int) -> bool:
+        return all(b <= x or a >= y for x, y in spans)
+
+    def claim(m: re.Match) -> None:
+        spans.append((m.start(), m.end()))
+
+    if (("time" in low or "twice" in low or "once" in low or "thrice" in low)) and not per_part:
+        if "letter" in low:
+            for i, pat in enumerate(_LETTER_RULES):
+                for m in pat.finditer(raw):
+                    if not free(m.start(), m.end()):
+                        continue
+                    letter = next((m.group("l" + k) for k in ("q", "c", "s", "a", "b", "t", "bare")
+                                   if m.group("l" + k) is not None), None)
+                    neg = bool(m.groupdict().get("neg")) or (i == 1 and _neg_raw(raw, m.start()))
+                    if m.group("num") is None and m.group("nw") is None:
+                        iv = Interval(0, 0) if neg else Interval(1, None)
+                    else:
+                        iv = _times_interval(m, neg)
+                    claim(m)
+                    if letter and iv is not None:
+                        out.setdefault("letters", []).append((letter.lower(), iv))
+        if "capital" in low or "caps" in low or "upper" in low:
+            for i, pat in enumerate(_CAPW_RULES):
+                for m in pat.finditer(raw):
+                    if not free(m.start(), m.end()):
+                        continue
+                    claim(m)
+                    if i == 0:
+                        iv = _times_interval(m, bool(m.group("neg")))
+                    else:
+                        iv = None if _neg_raw(raw, m.start()) else _count_interval_of(m, "at_least", "num2")
+                    if iv is not None:
+                        out["capital_words"] = iv
+        for i, pat in enumerate(_FREQ_RULES):
+            for m in pat.finditer(raw):
+                if not free(m.start(), m.end()):
+                    continue
+                if i == 1 and m.group("wbare") is not None and not m.group("noun"):
+                    continue                 # "repeat the process twice": not a word
+                if i == 2 and m.group("wbare") is not None:
+                    continue
+                word = _atom_word(m, tables)
+                neg = bool(m.groupdict().get("neg")) or (i in (1, 3) and _neg_raw(raw, m.start()))
+                iv = _times_interval(m, neg)
+                claim(m)
+                if word is None or iv is None:
+                    continue
+                if iv.hi == 0:
+                    out.setdefault("forbidden", []).append(word)
+                else:
+                    out.setdefault("frequencies", []).append((word, iv))
+    if "letter" in low and not per_part:
+        for m in _LETTER_RULES[0].finditer(raw):          # "the letter z should not appear"
+            if free(m.start(), m.end()):
+                letter = next((m.group("l" + k) for k in ("q", "c", "s", "a", "b", "t", "bare")
+                               if m.group("l" + k) is not None), None)
+                claim(m)
+                if letter:
+                    out.setdefault("letters", []).append(
+                        (letter.lower(), Interval(0, 0) if m.group("neg") else Interval(1, None)))
+        for m in _LIPOGRAM.finditer(raw):
+            if free(m.start(), m.end()):
+                letter = next((m.group("l" + k) for k in ("q", "c", "s", "a", "b", "t", "bare")
+                               if m.group("l" + k) is not None), None)
+                claim(m)
+                if letter:
+                    out.setdefault("letters", []).append((letter.lower(), Interval(0, 0)))
+    if ("capital" in low or "caps" in low or "upper" in low) and "capital_words" not in out:
+        for pat in _CAPW_RULES[1:]:
+            for m in pat.finditer(raw):
+                if free(m.start(), m.end()):
+                    claim(m)
+                    iv = None if _neg_raw(raw, m.start()) else _count_interval_of(m, "at_least", "num2")
+                    if iv is not None:
+                        out["capital_words"] = iv
+    if "highlight" in low:
+        for pat in _HL_RULES:
+            for m in pat.finditer(raw):
+                if free(m.start(), m.end()):
+                    claim(m)
+                    iv = None if _neg_raw(raw, m.start()) else _count_interval_of(m, "at_least")
+                    if iv is not None and _valid_feature(iv):
+                        out["highlights"] = iv
+        m = _HL_ANY.search(raw) if "highlights" not in out else None
+        if m and free(m.start(), m.end()) and not _neg_raw(raw, m.start()):
+            claim(m)
+            out["highlights"] = Interval(1, None)
+    if "placeholder" in low and ("square bracket" in low or "[" in raw):
+        for m in _PH_RULE.finditer(raw):
+            if free(m.start(), m.end()):
+                claim(m)
+                iv = None if _neg_raw(raw, m.start()) else _count_interval_of(m, "at_least")
+                if iv is not None and _valid_feature(iv):
+                    out["placeholders"] = iv
+    if "section" in low or "part" in low or "chapter" in low:
+        for pat in _SEC_MARK_RULES:
+            for m in pat.finditer(raw):
+                if free(m.start(), m.end()):
+                    claim(m)
+                    out.setdefault("section_markers", []).append((m.group("noun").lower(), m.group("marker")))
+        for m in _SEC_COUNT.finditer(raw):
+            if free(m.start(), m.end()) and not _neg_raw(raw, m.start()):
+                claim(m)
+                iv = _count_interval_of(m, "exactly")
+                if iv is not None and iv.hi != 0:
+                    out.setdefault("section_counts", []).append((m.group("noun").lower().rstrip("s"), iv))
+    if "paragraph" in low and ("start" in low or "begin" in low or "first word" in low):
+        for pat in _FW_RULES:
+            for m in pat.finditer(raw):
+                if not free(m.start(), m.end()):
+                    continue
+                k = m.groupdict().get("n") or m.groupdict().get("ord")
+                k = k.lower()
+                n = (int(k) if k.isdigit() else NUMBER_WORDS.get(k) if k in NUMBER_WORDS
+                     else _ORDINALS.get(k) or (int(k[:-2]) if k[:-2].isdigit() else None))
+                word = next((m.group("f" + g) for g in ("q", "c", "a", "b", "t", "bare")
+                             if m.group("f" + g) is not None), None)
+                claim(m)
+                if n and word:
+                    fw = _FIRST_WORD.match(word)
+                    if fw and fw.group(0) == word.rstrip("'’-"):
+                        out["first_word"] = (n, fw.group(0).lower())
+    if "***" in raw:
+        for pat in _DIVIDER_RULES:
+            m = pat.search(raw)
+            if m and free(m.start(), m.end()):
+                claim(m)
+                out["divider"] = True
+    if "title" in low and ("<<" in raw or "angular" in low or "angle bracket" in low):
+        for pat in _TITLE_RULES:
+            m = pat.search(raw)
+            if m and not _neg_raw(raw, m.start()):
+                out["title"] = True
+    if "p.s" in low or "p. s" in low or "postscript" in low or "post-script" in low:
+        for pat in _PS_RULES:
+            for m in pat.finditer(raw):
+                if not free(m.start(), m.end()) or _neg_raw(raw, m.start()):
+                    continue
+                marker = None
+                if m.groupdict().get("pm"):
+                    marker = " ".join(m.group("pm").split())
+                elif any(m.groupdict().get(g) for g in ("pq", "pc", "ps", "pa", "pb", "pt2", "pt")):
+                    marker = _phrase_value(m, tables)
+                    if marker is not None:
+                        marker = marker.strip("*_ ").rstrip(",;:")
+                claim(m)
+                if marker and valid_phrase(marker, 80) and marker[0].isalpha():
+                    out["postscript"] = marker
+                else:
+                    out.setdefault("postscript", "P.S.")
+    if "quot" in low:
+        for pat in _QUOTED_RULES:
+            m = pat.search(raw)
+            if m and not _neg_raw(raw, m.start()):
+                claim(m)
+                out["quoted"] = True
+    if "start" in low or "begin" in low or "open" in low or "first word" in low:
+        sequence = bool(_SEQUENCE.search(norm))
+        for pat in _START_HEADS:
+            for m in pat.finditer(raw):
+                if not free(m.start(), m.end()) or _neg_raw(raw, m.start()):
+                    continue
+                if sequence and not _RESPONSE_OBJ.search(m.group(0)):
+                    continue                         # "a sentence that starts with X, then ..."
+                if _LETS.search(raw, 0, m.start()) or _PARTS_THAT.search(raw, 0, m.start()):
+                    continue                         # "let's start with ...", "sentences that start with"
+                opts, has_and = _phrase_list(raw, m.end(), tables, closed_ok=True)
+                opts = [re.sub(r"(?:\.\.\.|…|[.,;:])+\Z", "", o).strip() for o in opts]
+                if (opts and not has_and and all(valid_phrase(o) for o in opts) and len(opts) <= 4
+                        and not any(_PLACEHOLDER.search(o) for o in opts)):
+                    claim(m)
+                    out.setdefault("starts_with", []).append(tuple(opts))
+    if any(k in low for k in ("end", "finish", "conclude", "close", "complete", "wrap", "last", "final")):
+        for pat in _END_HEADS:
+            for m in pat.finditer(raw):
+                if not free(m.start(), m.end()) or _neg_raw(raw, m.start()):
+                    continue
+                pm = _PHRASE_RE.match(raw, m.end())
+                phrase = _phrase_value(pm, tables) if pm else None
+                if pm is None and "exact phrase" in m.group(0).lower():
+                    rest = raw[m.end():].strip()       # "... this exact phrase Any other questions?."
+                    if rest.endswith(".") and rest[-2:-1] in ("?", "!"):
+                        rest = rest[:-1]
+                    if rest[-1:] in ("?", "!") and len(rest.split()) <= 12:
+                        phrase = rest
+                if phrase and valid_phrase(phrase) and not _PLACEHOLDER.search(phrase):
+                    spans.append((m.start(), pm.end() if pm else len(raw)))
+                    out.setdefault("end_phrase", []).append(phrase)
+    if any(k in low for k in ("option", "yes", "true", "false", "agree", "correct", "right", "wrong",
+                              "one word", "one-word", "single word", "single-word", "only", "just",
+                              "simply", "nothing else", "no other")):
+        if _ONEOF_TEMPLATE.search(raw) is None:      # the template is read on the whole message
+            restricted = bool(_ONEOF_ONLY.search(raw))
+            for i, pat in enumerate(_ONEOF_HEADS):
+                for m in pat.finditer(raw):
+                    plain_answer = re.search(r"\b(?:simple|plain|straight)\s*:?\s*\Z", m.group(0), re.I)
+                    if _neg_raw(raw, m.start()) or (i == 0 and not (restricted or plain_answer)):
+                        continue
+                    opts, has_and = _phrase_list(raw, m.end(), tables, closed_ok=True)
+                    if len(opts) >= 2 and not has_and and all(valid_phrase(o) for o in opts):
+                        out.setdefault("one_of", []).append(tuple(opts))
+                        break
+    return out, spans
+
+
+def _valid_feature(iv: Interval) -> bool:
+    return (not (iv.hi is None and iv.lo < 1) and iv.hi != 0
+            and (iv.hi if iv.hi is not None else iv.lo) <= MAX_COUNT)
+
+
+def _parse_options(rest: str, tables: _Tables) -> list[str]:
+    """Options listed after "one of the following options:": delimited phrases (possibly in
+    parentheses) separated by spaces, commas or "or", or plain phrases separated by commas or
+    sentence ends. Plain options must look like a fixed set: at most 8 words each and the same
+    first word, or at most 3 words each."""
+    rest = rest.strip()
+    if rest.startswith("("):
+        close = rest.find(")")
+        rest = rest[1:close] if close > 0 else rest[1:]
+    rest = rest.strip()
+    out: list[str] = []
+    pos = 0
+    while True:
+        m = _PHRASE_RE.match(rest, pos)
+        if m is None:
+            break
+        v = _phrase_value(m, tables)
+        if v is None:
+            return []
+        out.append(v)
+        sep = re.compile(r"\s*(?:,\s*(?:or\s+)?|or\s+|/\s*|\s+)", re.I).match(rest, m.end())
+        if sep is None or sep.end() == len(rest):
+            break
+        pos = sep.end()
+    if out:
+        return out
+    plain = rest.rstrip()
+    if plain.startswith("- "):                       # "- She cleans dishes. - not enough information"
+        parts = re.split(r"\s+-\s+", plain[2:])
+    elif "," in plain or " or " in plain:
+        parts = re.split(r"\s*,\s*(?:or\s+)?|\s+or\s+", plain)
+    else:
+        parts = re.split(r"(?<=[.!?])\s+", plain)
+    parts = [p.strip() for p in parts if p.strip()]
+    if len(parts) < 2 or not all(valid_phrase(p) and len(p.split()) <= 8 for p in parts):
+        return []
+    same_start = len({p.split()[0].lower() for p in parts}) == 1
+    return parts if same_start or all(len(p.split()) <= 3 for p in parts) else []
+
+
+def _message_one_of(raw: str, tables: _Tables) -> tuple[str, ...] | None:
+    """Options of "Answer with one of the following options: ..." (the IFEval template): the
+    rest of the line, a template variable first (defined elsewhere, or followed by the
+    options)."""
+    if "following" not in raw.lower():
+        return None
+    m = _ONEOF_TEMPLATE.search(raw)
+    if m is None or _neg_raw(raw, m.start()):
+        return None
+    end = raw.find("\n", m.end())
+    rest = raw[m.end(): end if end >= 0 else len(raw)].strip()
+    var = re.match(r"\[([a-z][a-z0-9_]{0,30})\]\s*\.?\s*", rest)
+    if var:
+        value = _resolve_var(var.group(1), tables, phrase=True)
+        rest = value if value is not None else rest[var.end():]
+    opts = _parse_options(rest, tables)
+    if not 1 <= len(opts) <= 10 or not all(valid_phrase(o) for o in opts):
+        return None
+    if len({option_key(o) for o in opts}) != len(opts) or not all(option_key(o) for o in opts):
+        return None
+    return tuple(opts)
+
+
+def _message_responses(masked: str, raw: str) -> tuple[str, int] | None:
+    """``(separator, n)`` of a "give two different responses ... separated by ******" request."""
+    low = raw.lower()
+    if "separat" not in low:
+        return None
+    count = next((m for m in _RESP_COUNT.finditer(raw) if not _neg_raw(raw, m.start())), None)
+    # not "paragraphs are separated with the markdown divider: ***"
+    sep = next((m for m in _RESP_SEP.finditer(raw)
+                if "paragraph" not in re.split(r"[.!?\n]\s", raw[max(0, m.start() - 60):m.start()])[-1].lower()),
+               None)
+    if count is None or sep is None:
+        return None
+    n = {"two": 2, "2": 2, "three": 3, "3": 3, "four": 4, "4": 4}[count.group("n").lower()]
+    return sep.group("sep"), n
+
+
+def _message_repeat(text: str, masked: str) -> tuple[str, tuple[int, int]] | None:
+    """The request to repeat (the message without the repeat instruction) and the span of the
+    instruction, for "First repeat the request word for word without change, then give your
+    answer (...)"."""
+    if "repeat" not in masked.lower():
+        return None
+    m = _REPEAT_RE.search(masked)
+    if m is None or _neg_raw(masked, m.start()):
+        return None
+    request = (text[: m.start()].strip() + " " + text[m.end():].strip()).strip()
+    if not request or len(request) > MAX_REPEAT:
+        return None
+    return request, (m.start(), m.end())
+
+
+def _blank(s: str, spans: Sequence[tuple[int, int]]) -> str:
+    if not spans:
+        return s
+    chars = list(s)
+    for a, b in spans:
+        for i in range(max(0, a), min(len(chars), b)):
+            if chars[i] != "\n":
+                chars[i] = " "
+    return "".join(chars)
 
 
 # ============================================================================== compile
@@ -1496,41 +3163,99 @@ def _scan_region(text: str) -> str:
     return text[:half] + "\n" + text[-half:]
 
 
+def _intersect_all(ivs: Sequence[Interval]) -> Interval | None:
+    acc: Interval | None = ivs[0]
+    for iv in ivs[1:]:
+        acc = acc.intersect(iv) if acc is not None else None
+    return acc
+
+
+def _one(values: Sequence, key=lambda v: v):
+    """The value when every entry agrees (by ``key``), else ``None``."""
+    if not values:
+        return None
+    keys = {key(v) for v in values}
+    return values[0] if len(keys) == 1 else None
+
+
 @functools.lru_cache(maxsize=16384)
 def _compile_cached(text: str) -> ConstraintSpec:
+    full = text
     text = _scan_region(text)
     code_masked = _mask_code(text)
     masked = _mask_quotes(code_masked)
+    repeat = _message_repeat(text, masked) if len(full) <= SCAN_CHARS else None
+    if repeat is not None:                          # the instruction is not read as a request
+        code_masked = _blank(code_masked, [repeat[1]])
+        masked = _blank(masked, [repeat[1]])
     inline_form = bool(_INLINE_FORM.search(_norm(masked)))
     placeholders = _placeholder_table(code_masked)
+    tables = _template_tables(code_masked) if "[" in code_masked else _Tables({}, {})
     counts: dict[str, list[Interval]] = {}
     required: list[str] = []
     forbidden: list[str] = []
     flags: dict = {}
     cases: set[str] = set()
-    for a, b in _sentences(masked):
-        sentence = _norm(masked[a:b])
-        for unit, iv in _sentence_counts(sentence, inline_form):
+    styles: set[str] = set()
+    extras: dict[str, list] = {}
+    spans_all = _sentences(masked)
+    norms = [_norm(masked[a:b]) for a, b in spans_all]
+    code_message = any(_CODE_TOPIC.search(n) and _CODE_REQUEST.search(n) for n in norms)
+    blocked: set[str] = set()                       # units counted inside multi-step sentences
+    for n in norms:
+        if _SEQUENCE.search(n):
+            blocked |= {unit_of(m.group("u")) for m in _COUNT_UNIT_AT.finditer(n)}
+        blocked |= {unit_of(m.group("u")) for m in _MORE_UNITS.finditer(n)}   # "in 120 more words"
+    for (a, b), sentence in zip(spans_all, norms):
+        raw, msk = code_masked[a:b], masked[a:b]
+        found, spans = _sentence_extras(raw, sentence, tables)
+        for key, value in found.items():
+            if isinstance(value, list):
+                extras.setdefault(key, []).extend(value)
+            else:
+                extras.setdefault(key, []).append(value)
+        if spans:
+            raw = _blank(raw, spans)
+            full_sentence, sentence = sentence, _norm(_blank(msk, spans))
+        else:
+            full_sentence = sentence
+        list_format = bool(_F_NUMBERED.search(sentence) or _F_BULLETED.search(sentence))
+        for unit, iv, style in _sentence_counts(sentence, inline_form, list_format, code_message):
             counts.setdefault(unit, []).append(iv)
-        code_task = _CODE_TOPIC.search(sentence) and not _RESPONSE_SUBJ.search(sentence)
-        if not code_task and not _NOT_A_REQUEST.match(sentence):
-            req, forb = _sentence_keywords(" ".join(code_masked[a:b].split()), placeholders,
-                                           triggers=_is_strict_request(sentence))
+            if style:
+                styles.add(style)
+        code_task = _CODE_TOPIC.search(full_sentence) and not _RESPONSE_SUBJ.search(full_sentence)
+        if not code_task and not _NOT_A_REQUEST.match(full_sentence):
+            req, forb = _sentence_keywords(" ".join(raw.split()), placeholders,
+                                           triggers=_is_strict_request(full_sentence)
+                                           or _is_strict_request(sentence)
+                                           or (bool(_WITHOUT_START.match(full_sentence))
+                                               and _strict_somewhere(full_sentence)))
             required += req
             forbidden += forb
         fmt = _sentence_formats(sentence)
+        if code_message and not _RESPONSE_SUBJ.search(full_sentence):
+            fmt = {k: v for k, v in fmt.items() if k == "code_block"}   # the code's output, not the reply
         cases |= fmt.pop("case", set())
+        styles |= fmt.pop("list_style", set())
         flags.update(fmt)
 
     values: dict = {}
     for unit, ivs in counts.items():
-        acc: Interval | None = ivs[0]
-        for iv in ivs[1:]:
-            acc = acc.intersect(iv) if acc is not None else None
-        if acc is not None and _valid_interval(unit, acc):
+        acc = _intersect_all(ivs)
+        if acc is not None and _valid_interval(unit, acc) and unit not in blocked:
             values[unit] = acc
+    forbidden += extras.pop("forbidden", [])
+    freq: dict[str, list] = {}
+    for w, iv in extras.pop("frequencies", []):
+        freq.setdefault(w.lower(), []).append((w, iv))
+    for key, pairs in list(freq.items()):
+        acc = _intersect_all([iv for _, iv in pairs])
+        if acc == Interval(1, None):              # "at least once": a required keyword
+            required.append(pairs[0][0])
+            del freq[key]
     req_l, forb_l = {k.lower() for k in required}, {k.lower() for k in forbidden}
-    both = req_l & forb_l
+    both = (req_l & forb_l) | (set(freq) & forb_l)
 
     def clean(words: list[str]) -> tuple[str, ...]:
         seen, out = set(), []
@@ -1542,10 +3267,80 @@ def _compile_cached(text: str) -> ConstraintSpec:
         return tuple(out[:MAX_KEYWORDS])
 
     values["keywords"], values["forbidden"] = clean(required), clean(forbidden)
+    values["frequencies"] = tuple(
+        (pairs[0][0], acc) for key, pairs in freq.items() if key not in both
+        and (acc := _intersect_all([iv for _, iv in pairs])) is not None)[:MAX_KEYWORDS]
+    letters: dict[str, list[Interval]] = {}
+    for ch, iv in extras.pop("letters", []):
+        letters.setdefault(ch, []).append(iv)
+    values["letters"] = tuple((ch, acc) for ch, ivs in letters.items()
+                              if (acc := _intersect_all(ivs)) is not None)[:MAX_KEYWORDS]
+    for name in FEATURE_COUNTS:
+        ivs = extras.pop(name, [])
+        acc = _intersect_all(ivs) if ivs else None
+        if acc is not None and _valid_feature(acc):
+            values[name] = acc
+    markers = extras.pop("section_markers", [])
+    sec_counts = extras.pop("section_counts", [])
+    marker = _one(markers, key=lambda v: (v[0], v[1].lower()))
+    if marker is not None:
+        ivs = [iv for noun, iv in sec_counts if noun == marker[0]]
+        acc = _intersect_all(ivs) if ivs else None
+        if acc is not None and acc.hi != 0 and _valid_feature(acc):
+            values["sections"] = (marker[1], acc)
+    for name in ("first_word", "end_phrase"):
+        v = _one(extras.pop(name, []), key=lambda x: x if name == "first_word" else _ws(x).casefold())
+        if v is not None:
+            values[name] = v
+    ps = extras.pop("postscript", [])
+    explicit = [p for p in ps if p != "P.S."] or ps
+    v = _one(explicit, key=lambda x: _ws(x).casefold())
+    if v is not None:
+        values["postscript"] = v
+    one_of = _message_one_of(code_masked, tables)
+    if one_of is not None:
+        extras.setdefault("one_of", []).append(one_of)
+    for name, key in (("starts_with", lambda o: tuple(_ws(x).casefold() for x in o)),
+                      ("one_of", lambda o: tuple(sorted(option_key(x) for x in o)))):
+        v = _one(extras.pop(name, []), key=key)
+        if v is not None and len({key((x,)) for x in v}) == len(v):
+            values[name] = tuple(v)
+    for name in ("divider", "title", "quoted"):
+        if extras.pop(name, None):
+            values[name] = True
+    responses = _message_responses(masked, code_masked)
+    if responses is not None and _SEPARATOR_OK.fullmatch(responses[0]):
+        values["responses"] = responses
+    if repeat is not None:
+        values["repeat"] = repeat[0]
     if len(cases) == 1:
         values["case"] = cases.pop()
+    if len(styles) == 1:
+        items = values.get("items")
+        if items is not None and items.hi == 0:
+            values.pop("items")                # "no bullet points; use a numbered list"
+        values["list_style"] = styles.pop()
     values.update(flags)
-    return ConstraintSpec(**values)
+    try:
+        return ConstraintSpec(**values)
+    except ValueError:
+        return _drop_conflicts(values)
+
+
+def _drop_conflicts(values: dict) -> ConstraintSpec:
+    """The spec without the fields that make ``values`` inconsistent (dropped one at a time,
+    newest families first)."""
+    order = ("repeat", "responses", "one_of", "end_phrase", "starts_with", "quoted", "postscript",
+             "title", "divider", "first_word", "sections", "capital_words", "placeholders",
+             "highlights", "letters", "frequencies", "list_style")
+    values = dict(values)
+    for name in order:
+        values.pop(name, None)
+        try:
+            return ConstraintSpec(**values)
+        except ValueError:
+            continue
+    return EMPTY
 
 
 def compile(text: str) -> ConstraintSpec:  # noqa: A001  (the name is part of the spec)
@@ -1568,10 +3363,9 @@ def _num_text(n: int, rng: np.random.Generator, words_ok: bool = True) -> str:
 
 
 _ITEM_NOUNS = {
-    None: (("list item", "list items"), ("bullet point", "bullet points"), ("bulleted item", "bulleted items")),
+    None: (("list item", "list items"),),
     "bullet": (("bullet point", "bullet points"), ("bullet point", "bullets"), ("bulleted item", "bulleted items")),
-    "numbered": (("numbered item", "numbered items"), ("numbered point", "numbered points"),
-                 ("list item", "list items")),
+    "numbered": (("numbered item", "numbered items"), ("numbered point", "numbered points")),
 }
 
 
@@ -1586,7 +3380,7 @@ def _noun(unit: str, n: int, rng: np.random.Generator, style: str | None, plural
 
 def _adj_noun(unit: str, style: str | None, rng: np.random.Generator) -> str:
     if unit == "items":
-        return _choice(rng, ("item", "bullet")) if style != "numbered" else "item"
+        return "bullet" if style == "bullet" else "item"
     return unit[:-1]
 
 
@@ -1619,15 +3413,20 @@ def _render_count(unit: str, iv: Interval, rng: np.random.Generator, style: str 
         nps = _np_exactly(unit, n, rng, style)
         sentences += [_choice(rng, _NP_FRAMES).replace("{np}", np_).replace("{NP}", np_.capitalize())
                       for np_ in nps]
-        if unit != "words":
+        if unit != "words" or n <= BARE_EXACT_WORDS:
             bare = f"{_num_text(n, rng)} {_noun(unit, n, rng, style)}"
-            sentences.append(_choice(rng, _NP_FRAMES).replace("{np}", bare).replace("{NP}", bare.capitalize()))
+            if unit != "words":
+                sentences.append(_choice(rng, _NP_FRAMES).replace("{np}", bare).replace("{NP}", bare.capitalize()))
             sentences.append(_choice(rng, _STRONG_FRAMES).replace("{np}", bare))
             adj = f"{_num_text(n, rng) if n <= 20 else n}-{_adj_noun(unit, style, rng)}"
             frame = _choice(rng, _ADJ_FRAMES)
             if unit == "items":
-                frame = _choice(rng, ("Answer with a {adj} list.", "Format your answer as a {adj} list."))
+                frame = _choice(rng, ("Answer with a {adj} list.", "Format your answer as a {adj} list.")
+                                if style != "numbered" else ("Answer with a {adj} numbered list.",))
             sentences.append(frame.replace("{adj}", adj))
+            if unit == "words":
+                sentences.append(_choice(rng, ("Answer with {b}.", "Reply with just {b}.", "Respond with {b}."))
+                                 .replace("{b}", bare))
             if n == 1:
                 single = f"a single {_noun(unit, 1, rng, style)}"
                 sentences.append(_choice(rng, ("Answer in {s}.", "Use {s}.", "Respond with {s}.",
@@ -1649,7 +3448,7 @@ def _render_count(unit: str, iv: Interval, rng: np.random.Generator, style: str 
                                        "Do not exceed {nt} {noun}.", "Don't write more than {nt} {noun}.",
                                        "Do not use more than {nt} {noun}.", "Your answer should not exceed {nt} {noun}."))
                          .replace("{nt}", nt).replace("{noun}", noun))
-        if unit == "words":
+        if unit == "words" and n > BARE_EXACT_WORDS:
             sentences.append(_choice(rng, _STRONG_FRAMES).replace("{np}", f"{nt} {noun}"))
             sentences.append(_choice(rng, _ADJ_FRAMES).replace("{adj}", f"{n}-word"))
     elif kind == "at_least":
@@ -1723,9 +3522,120 @@ def _render_forbidden(words: tuple[str, ...], rng: np.random.Generator) -> str:
     return frame.replace("{l}", _join(q, rng, conj))
 
 
+def _times_text(kind: str, n: int, rng: np.random.Generator) -> str:
+    """"at least 3 times", "exactly twice", "fewer than 4 times", ..."""
+    if kind == "exactly" and n <= 3 and rng.random() < 0.5:
+        word = ("once", "twice", "thrice")[n - 1] if n < 3 or rng.random() < 0.3 else f"{_num_text(n, rng)} times"
+        return _choice(rng, ("exactly ", "")) + word
+    count = (("once", "twice")[n - 1] if n <= 2 and rng.random() < 0.5
+             else f"{_num_text(n, rng)} time{'s' if n != 1 else ''}")
+    rel = {"exactly": ("exactly ", "precisely ", ""), "at_least": ("at least ", "no fewer than "),
+           "at_most": ("at most ", "no more than "), "lt": ("less than ", "fewer than ")}[kind]
+    return _choice(rng, rel) + count
+
+
+def _interval_phrases(iv: Interval) -> list[tuple[str, int]]:
+    """``(relation, n)`` phrases whose conjunction is ``iv`` ("between" needs two)."""
+    if iv.kind == "exactly":
+        return [("exactly", iv.lo)]
+    if iv.kind == "at_least":
+        return [("at_least", iv.lo)]
+    if iv.kind == "at_most":
+        return [("at_most", iv.hi)] if iv.hi > 1 else [("lt", iv.hi + 1)] if iv.hi == 0 else [("at_most", 1)]
+    return [("at_least", iv.lo), ("at_most", iv.hi)]
+
+
+def _render_frequency(word: str, iv: Interval, rng: np.random.Generator) -> str:
+    out = []
+    for kind, n in _interval_phrases(iv):
+        if kind == "at_most" and rng.random() < 0.4:
+            kind, n = "lt", n + 1
+        q = _quote(word, rng)
+        frame = _choice(rng, ("In your response, the word {q} should appear {t}.", "Use the word {q} {t}.",
+                              "Make sure the word {q} appears {t}.", "The word {q} must appear {t} in your answer.",
+                              "Mention {q} {t}."))
+        out.append(frame.replace("{q}", q).replace("{t}", _times_text(kind, n, rng)))
+    return " ".join(out)
+
+
+def _render_letter(letter: str, iv: Interval, rng: np.random.Generator) -> str:
+    q = _choice(rng, (f"'{letter}'", f'"{letter}"', f"[{letter}]", letter))
+    if iv.hi == 0:
+        return _choice(rng, ("Do not use the letter {q}.", "Write without using the letter {q}.",
+                             "The letter {q} should not appear in your response.")).replace("{q}", q)
+    out = []
+    for kind, n in _interval_phrases(iv):
+        frame = _choice(rng, ("In your response, the letter {q} should appear {t}.", "Use the letter {q} {t}.",
+                              "Make sure the letter {q} appears {t}."))
+        out.append(frame.replace("{q}", q).replace("{t}", _times_text(kind, n, rng)))
+    return " ".join(out)
+
+
+def _rel_text(kind: str, n: int, rng: np.random.Generator) -> str:
+    rel = {"exactly": ("exactly ",), "at_least": ("at least ", "no fewer than "),
+           "at_most": ("at most ", "no more than "), "lt": ("fewer than ", "less than ")}[kind]
+    return _choice(rng, rel) + _num_text(n, rng)
+
+
+def _render_feature(name: str, iv: Interval, rng: np.random.Generator) -> str:
+    out = []
+    for kind, n in _interval_phrases(iv):
+        r = _rel_text(kind, n, rng)
+        noun_n = n
+        if name == "highlights":
+            what = _choice(rng, ("sections", "key phrases", "parts")) if noun_n != 1 else _choice(rng, ("section", "key phrase", "part"))
+            frame = _choice(rng, ("Highlight {r} {w} in your answer with markdown, i.e. *highlighted section*.",
+                                  "Use markdown to highlight {r} {w}, like *this*.",
+                                  "Your answer must contain {r} highlighted {w}, such as *highlighted section*."))
+            if "highlighted {w}" in frame and what.startswith("key"):
+                what = "sections" if noun_n != 1 else "section"
+        elif name == "placeholders":
+            what = "placeholders" if noun_n != 1 else "placeholder"
+            frame = _choice(rng, ("The response must contain {r} {w} represented by square brackets, such as [address].",
+                                  "Include {r} {w} in square brackets, like [name].",
+                                  "Your answer should contain {r} {w} in square brackets, such as [date]."))
+        else:
+            what = "words" if noun_n != 1 else "word"
+            if kind == "exactly" or rng.random() < 0.5:
+                frame = "In your response, words with all capital letters should appear {t}."
+                out.append(frame.replace("{t}", _times_text(kind, n, rng)))
+                continue
+            frame = _choice(rng, ("Use {r} {w} in all capital letters.", "Include {r} {w} written in all caps."))
+        out.append(frame.replace("{r}", r).replace("{w}", what))
+    return " ".join(out)
+
+
+def _render_sections(marker: str, iv: Interval, rng: np.random.Generator) -> str:
+    noun = "section"
+    counts = [f"{_rel_text(kind, n, rng) if kind != 'exactly' or rng.random() < 0.3 else _num_text(n, rng)} "
+              f"{noun}{'s' if n != 1 else ''}" for kind, n in _interval_phrases(iv)]
+    count = " and ".join(counts) if len(counts) == 1 else f"{counts[0]}. Your response must have {counts[1]}"
+    head = _choice(rng, ("Your response must have {c}.", "Divide your answer into {c}.",
+                         "The response should have {c}.")).replace("{c}", count)
+    mark = _choice(rng, ("Mark the beginning of each section with {m} X, such as: {m} 1.",
+                         "Start each section with {m} X.", "Label each section with {m} N."))
+    return head + " " + mark.replace("{m}", marker)
+
+
+_ORDINAL_WORDS = {v: k for k, v in _ORDINALS.items()}
+
+
+def _render_first_word(n: int, word: str, rng: np.random.Generator) -> str:
+    w = _choice(rng, (word, f'"{word}"', f"'{word}'"))
+    if n in _ORDINAL_WORDS and rng.random() < 0.6:
+        return _choice(rng, ("The {o} paragraph must start with the word {w}.",
+                             "Start the {o} paragraph with the word {w}.")).replace("{o}", _ORDINAL_WORDS[n]).replace("{w}", w)
+    return f"Paragraph {n} must start with word {w}."
+
+
+def _render_phrase_list(options: tuple[str, ...], rng: np.random.Generator) -> str:
+    q = ['"' + o + '"' if '"' not in o else "“" + o + "”" for o in options]
+    return _join(q, rng, "or") if len(q) > 1 else q[0]
+
+
 _JSON_T = ("Answer in JSON.", "Format your entire response as valid JSON.", "Respond only with a JSON object.",
            "Your entire output should be in JSON format.", "Return your answer as JSON.",
-           "Please reply in valid JSON.")
+           "Please reply in valid JSON.", "Output only the JSON.")
 _CODE_T = ("Put your answer in a code block.", "Wrap the code in a markdown code block.", "Use a fenced code block.",
            "Format the code inside a code block.", "Present your answer within a code block.")
 _LOWER_T = ("Write your entire response in lowercase letters.", "Use only lowercase letters.",
@@ -1734,31 +3644,126 @@ _LOWER_T = ("Write your entire response in lowercase letters.", "Use only lowerc
 _UPPER_T = ("Write your entire response in capital letters.", "Respond in all caps.", "Use only uppercase letters.",
             "Your entire answer should be in English and in all capital letters.")
 _QUESTION_T = ("End your response with a question.", "Finish your answer with a question.",
-               "Your reply should end with a question.", "Conclude with a follow-up question.")
+               "Your reply should end with a question.", "Conclude with a follow-up question.",
+               "Make sure the last sentence is a question.")
 _COMMAS_T = ("Do not use any commas.", "Avoid commas in your response.", "Write without using commas.",
              "Refrain from the use of any commas.", "No commas are allowed.")
+_STYLE_T = {"numbered": ("Use a numbered list.", "Format your answer as a numbered list.",
+                         "Present your answer as a numbered list."),
+            "bullet": ("Use bullet points.", "Format your answer as a bulleted list.", "Answer in bullet points.",
+                       "Use the markdown bullet points such as: * This is point 1.")}
+_DIVIDER_T = ("Paragraphs are separated with the markdown divider: ***", "Separate paragraphs with the markdown divider ***.",
+              "Use *** to separate paragraphs.")
+_TITLE_T = ("Your answer must contain a title, wrapped in double angular brackets, such as <<poem of joy>>.",
+            "Include a title wrapped in double angular brackets, like <<title>>.",
+            "Give your response a title in double angular brackets, such as <<my title>>.")
+_QUOTED_T = ("Wrap your entire response with double quotation marks.", "Your entire answer should be wrapped in double quotes.",
+             "Put your whole reply in double quotation marks.")
+REPEAT_INSTRUCTIONS = _REPEAT_T = ("First repeat the request word for word without change, then give your answer (1. do not say any words "
+             "or characters before repeating the request; 2. the request you need to repeat does not include this "
+             "sentence)",
+             "First, repeat the request without change, then give your answer (do not say anything before repeating "
+             "the request; the request you need to repeat does not include this sentence)",
+             "Before answering, repeat the request word for word.")
+
+
+def _render_postscript(marker: str, rng: np.random.Generator) -> str:
+    plain = re.fullmatch(r"P\.(?:P\.)?S\.", marker, re.I) is not None
+    m = marker if plain and rng.random() < 0.7 else f'"{marker}"'
+    return _choice(rng, ("At the end of your response, please explicitly add a postscript starting with {m}",
+                         "Add a postscript that starts with {m}", "Include a postscript starting with {m}")
+                   ).replace("{m}", m) + ("" if m.endswith(".") else ".")
+
+
+def _render_start(options: tuple[str, ...], rng: np.random.Generator) -> str:
+    lst = _render_phrase_list(options, rng)
+    single_word = len(options) == 1 and len(options[0].split()) == 1
+    frames = ["Begin your answer with {l}.", "Your response must start with {l}.", "Start your reply with {l}."]
+    if single_word:
+        frames += ["Start your response with the word {l}.", "The first word of your response should be {l}."]
+    elif len(options) == 1:
+        frames += ["Start your response with the phrase {l}."]
+    return _choice(rng, frames).replace("{l}", lst)
+
+
+def _render_end(phrase: str, rng: np.random.Generator) -> str:
+    q = '"' + phrase + '"' if '"' not in phrase else "“" + phrase + "”"
+    return _choice(rng, ("Finish your response with this exact phrase {q}. No other words should follow this phrase.",
+                         "End your answer with the phrase {q}.", "Your response must end with the words {q}.",
+                         "Conclude your reply with {q}.")).replace("{q}", q)
+
+
+def _render_one_of(options: tuple[str, ...], rng: np.random.Generator) -> str:
+    q = ['"' + o + '"' if '"' not in o else "“" + o + "”" for o in options]
+    if len(options) == 1:
+        return f"Answer with one of the following options: ({q[0]})."
+    return _choice(rng, ("Answer with one of the following options: ({l}).",
+                         "Respond with only {o}.", "Reply with just {o}.")
+                   ).replace("{l}", ", ".join(q)).replace("{o}", _join(q, rng, "or"))
+
+
+def _render_responses(sep: str, n: int, rng: np.random.Generator) -> str:
+    word = {2: "two", 3: "three", 4: "four"}[n]
+    if sep == "******" and n == 2 and rng.random() < 0.6:
+        return ("Give two different responses. Responses and only responses should be separated by 6 asterisk "
+                "symbols: ******.")
+    return _choice(rng, ("Give {w} different responses, separated by {s}", "Provide {w} different answers "
+                         "separated by {s}")).replace("{w}", word).replace("{s}", sep) + "."
 
 
 def render(spec: ConstraintSpec, rng: np.random.Generator | None = None, *,
            item_style: str | None = None) -> str:
-    """Natural instruction text for ``spec``: one sentence per constraint (keywords grouped),
-    chosen among several templates and shuffled; ``compile(render(spec, rng)) == spec``.
+    """Natural instruction text for ``spec``: one sentence (or two) per constraint (keywords
+    grouped), chosen among several templates and shuffled; ``compile(render(spec, rng)) ==
+    spec``.
 
-    item_style: ``"bullet"``, ``"numbered"`` or ``None`` (neutral nouns) for item counts.
+    The list style of item counts comes from ``spec.list_style`` ("bullet points", "numbered
+    items"; neutral "list items" without one). ``item_style`` is accepted for compatibility and
+    ignored. A spec with ``repeat`` renders as the request itself followed by the repeat
+    instruction, so its other constraints must be those of the request (``ValueError``
+    otherwise).
     """
+    del item_style
     rng = np.random.default_rng() if rng is None else rng
-    pieces = [_render_count(u, getattr(spec, u), rng, item_style)
+    if spec.repeat is not None:
+        rest = dataclasses.replace(spec, repeat=None)
+        if compile(spec.repeat) != rest:
+            raise ValueError("a spec with `repeat` must have the constraints of its request")
+        return spec.repeat + _choice(rng, (" ", "\n\n")) + _choice(rng, _REPEAT_T)
+    style = spec.list_style
+    pieces = [_render_count(u, getattr(spec, u), rng, style if u == "items" else None)
               for u in COUNT_UNITS if getattr(spec, u) is not None]
+    if style and spec.items is None:
+        pieces.append(_choice(rng, _STYLE_T[style]))
     if spec.keywords:
         pieces.append(_render_keywords(spec.keywords, rng))
     if spec.forbidden:
         pieces.append(_render_forbidden(spec.forbidden, rng))
     for flag, options in (("json_output", _JSON_T), ("code_block", _CODE_T),
-                          ("end_question", _QUESTION_T), ("no_commas", _COMMAS_T)):
+                          ("end_question", _QUESTION_T), ("no_commas", _COMMAS_T),
+                          ("divider", _DIVIDER_T), ("title", _TITLE_T), ("quoted", _QUOTED_T)):
         if getattr(spec, flag):
             pieces.append(_choice(rng, options))
     if spec.case:
         pieces.append(_choice(rng, _LOWER_T if spec.case == "lower" else _UPPER_T))
+    pieces += [_render_frequency(w, iv, rng) for w, iv in spec.frequencies]
+    pieces += [_render_letter(ch, iv, rng) for ch, iv in spec.letters]
+    pieces += [_render_feature(name, getattr(spec, name), rng) for name in FEATURE_COUNTS
+               if getattr(spec, name) is not None]
+    if spec.sections:
+        pieces.append(_render_sections(spec.sections[0], spec.sections[1], rng))
+    if spec.first_word:
+        pieces.append(_render_first_word(spec.first_word[0], spec.first_word[1], rng))
+    if spec.postscript:
+        pieces.append(_render_postscript(spec.postscript, rng))
+    if spec.starts_with:
+        pieces.append(_render_start(spec.starts_with, rng))
+    if spec.end_phrase:
+        pieces.append(_render_end(spec.end_phrase, rng))
+    if spec.one_of:
+        pieces.append(_render_one_of(spec.one_of, rng))
+    if spec.responses:
+        pieces.append(_render_responses(spec.responses[0], spec.responses[1], rng))
     order = rng.permutation(len(pieces))
     return " ".join(pieces[i] for i in order)
 
@@ -1916,4 +3921,10 @@ class IncrementalTargets:
 __all__ = ["COUNT_UNITS", "TARGET_UNITS", "Interval", "ConstraintSpec", "EMPTY", "measure",
            "json_valid", "count_keyword", "keyword_pattern", "valid_keyword", "merge", "compile",
            "verify", "render", "parse_count", "unit_of", "targets_of_text", "targets_for_tokens",
-           "compile_from_tokens", "IncrementalTargets", "NUMBER_WORDS", "WORD_OF_NUMBER"]
+           "compile_from_tokens", "IncrementalTargets", "NUMBER_WORDS", "WORD_OF_NUMBER",
+           "TokenLocal", "token_local", "TOKEN_LOCAL_NAMES", "nonblank_line_step", "has_forbidden_bytes",
+           "paragraph_texts", "count_highlights", "count_placeholders", "has_title", "is_quoted",
+           "capital_word_count", "letter_count", "first_word", "starts_with_phrase", "ends_with_phrase",
+           "option_key", "matches_option", "has_postscript", "count_sections", "split_responses",
+           "repeats_request", "valid_phrase", "style_of", "LIST_STYLES", "FLAG_FIELDS", "FEATURE_COUNTS",
+           "BARE_EXACT_WORDS", "REPEAT_INSTRUCTIONS"]

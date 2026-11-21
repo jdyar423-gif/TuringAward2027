@@ -6,10 +6,18 @@ Every measured property is checked against a reference written here with differe
 are checked against ``bes.exact.transducer.measure_counts``, and the line-level fence and list
 rules against the transducer's own state. Targets are checked against a brute force that walks
 back from every position, and the countdown registers against the counts at every token.
+
+The further instruction families (highlights, placeholders, titles, capital words, paragraph
+texts and first words, start / end phrases) are checked against character scans written here;
+the compiler against hand-labelled prompts, including every constrained dev-half prompt of the
+proxy set and false positives found on natural chat prompts; ``render`` by a property-tested
+round trip over random specs of every family; the token-local metadata against the register
+counters, ``measure`` and ``verify``.
 """
 from __future__ import annotations
 
 import random
+import re
 import time
 
 import numpy as np
@@ -335,11 +343,11 @@ CASES = [
     ("50 words or less.", S(words=le(50))),
     ("Answer in 3 sentences or more.", S(sentences=ge(3))),
     ("Write 100+ words.", S(words=ge(100))),
-    ("Respond with a minimum of 8 bullet points.", S(items=ge(8))),
-    ("Use up to 4 bullet points.", S(items=le(4))),
-    ("As many as 4 bullet points.", S(items=le(4))),
+    ("Respond with a minimum of 8 bullet points.", S(items=ge(8), list_style="bullet")),
+    ("Use up to 4 bullet points.", S(items=le(4), list_style="bullet")),
+    ("As many as 4 bullet points.", S(items=le(4), list_style="bullet")),
     ("Your answer must contain exactly 3 bullet points. Use the markdown bullet points such as: * This is point 1.",
-     S(items=ex(3))),
+     S(items=ex(3), list_style="bullet")),
     ("Use precisely 7 lines.", S(lines=ex(7))),
     ("Answer in 1,000 words or fewer.", S(words=le(1000))),
     ("Use exactly twenty-one sentences.", S(sentences=ex(21))),
@@ -356,13 +364,13 @@ CASES = [
     ("Answer in at least 3 and at most 5 sentences.", S(sentences=bt(3, 5))),
     ("Your response should contain at least 200 words and at least 3 sentences.", S(words=ge(200), sentences=ge(3))),
     ("Your response should contain at least 500 words, include a postscript, and contain exactly 4 bullet points.",
-     S(words=ge(500), items=ex(4))),
+     S(words=ge(500), items=ex(4), list_style="bullet", postscript="P.S.")),
     ("Use at least 6 sentences. Use at most 2 sentences.", S()),
     ("Write 3 sentences or 2 paragraphs.", S()),
     ("Answer in a single sentence, a short paragraph, or a list.", S()),
     # negation
     ("Do not use more than 3 sentences.", S(sentences=le(3))),
-    ("Don't write fewer than 4 bullet points.", S(items=ge(4))),
+    ("Don't write fewer than 4 bullet points.", S(items=ge(4), list_style="bullet")),
     ("Your response should not exceed 100 words.", S(words=le(100))),
     ("Answer the question without exceeding 80 words.", S(words=le(80))),
     ("It must not be longer than 50 words.", S(words=le(50))),
@@ -375,15 +383,16 @@ CASES = [
     ("Give me a one-sentence answer.", S(sentences=ex(1))),
     ("Write a single paragraph about dogs.", S(paragraphs=ex(1))),
     ("Answer in a single sentence.", S(sentences=ex(1))),
-    ("There should be 2 paragraphs. Paragraphs are separated with the markdown divider: ***", S(paragraphs=ex(2))),
+    ("There should be 2 paragraphs. Paragraphs are separated with the markdown divider: ***",
+     S(paragraphs=ex(2), divider=True)),
     ("Your response must have 3 paragraphs.", S(paragraphs=ex(3))),
     ("Write a poem with 4 lines.", S(lines=ex(4))),
     ("Write a poem of between 12 and 20 lines about a pirate.", S(lines=bt(12, 20))),
     ("Write three sentences to describe a beach.", S(sentences=ex(3))),
-    ("Three bullet points, please.", S(items=ex(3))),
+    ("Three bullet points, please.", S(items=ex(3), list_style="bullet")),
     ("Write a 500-word essay on climate change.", S(words=le(500))),
     ("Describe the ocean in 50 words.", S(words=le(50))),
-    ("Answer in one word.", S(words=le(1))),
+    ("Answer in one word.", S(words=ex(1))),
     ("Write an 8-sentence paragraph about editing.", S(sentences=ex(8))),
     ("Format your answer as a 5-item list.", S(items=ex(5))),
     ("Explain it in a sentence.", S(sentences=ex(1))),
@@ -450,9 +459,9 @@ CASES = [
     ("Include keywords *chlorophyll*, *sunlight*, *carbon dioxide* in the response.",
      S(keywords=("chlorophyll", "sunlight", "carbon dioxide"))),
     ("Include keywords [love, joy, happiness] in the response.", S(keywords=("love", "joy", "happiness"))),
-    ('In your response, the word "joy" should appear at least 3 times.', S(keywords=("joy",))),
-    ("In your response, the word travel should appear at least 3 times.", S(keywords=("travel",))),
-    ('The word "joy" should appear less than 2 times.', S()),
+    ('In your response, the word "joy" should appear at least 3 times.', S(frequencies=(("joy", ge(3)),))),
+    ("In your response, the word travel should appear at least 3 times.", S(frequencies=(("travel", ge(3)),))),
+    ('The word "joy" should appear less than 2 times.', S(frequencies=(("joy", le(1)),))),
     ("Include keywords travel, adventure in the response.", S(keywords=("travel", "adventure"))),
     ("Include the keywords: research, dress, questions.", S(keywords=("research", "dress", "questions"))),
     ("Include keywords related to SEO in your response.", S()),
@@ -469,8 +478,9 @@ CASES = [
      S(words=ex(100), keywords=("information",), forbidden=("you",))),
     ('Include keywords [keywords] in the response. [keywords] are "sunny day", "fresh air".',
      S(keywords=("sunny day", "fresh air"))),
-    ("Do not include keywords [forbidden_words] in the response. [forbidden_words] are: error, mistake.", S()),
-    ("In your response, the letter [e] should appear at least 15 times.", S()),
+    ("Do not include keywords [forbidden_words] in the response. [forbidden_words] are: error, mistake.",
+     S(forbidden=("error", "mistake"))),
+    ("In your response, the letter [e] should appear at least 15 times.", S(letters=(("e", ge(15)),))),
     ('If I wanted to say "a lot" in the sentence how would I modify it to include "a lot"?', S()),
     ('The first array, "x", should contain the phrase "Hello" in this C program.', S()),
     ("Write a function that takes an `index` and returns items up to and including `index`.", S()),
@@ -501,7 +511,7 @@ CASES = [
     ("Your entire answer should be in English and in all capital letters.", S(case="upper")),
     ("Write a Python function that converts a string to lowercase.", S()),
     ("Convert this substring to all lowercase and sort it.", S()),
-    ("In your response, words with all capital letters should appear at least 2 times.", S()),
+    ("In your response, words with all capital letters should appear at least 2 times.", S(capital_words=ge(2))),
     ("Write in all lowercase but use all caps for the title.", S()),
     ("End your response with a question.", S(end_question=True)),
     ("Conclude with a follow-up question.", S(end_question=True)),
@@ -512,10 +522,10 @@ CASES = [
     # mixed IFEval-style prompts
     ("What are the benefits of solar energy? Your response should contain at least 5 sentences. "
      'Highlight at least 2 sections with markdown. Include keywords "cost", "clean".',
-     S(sentences=ge(5), keywords=("cost", "clean"))),
+     S(sentences=ge(5), keywords=("cost", "clean"), highlights=ge(2))),
     ('Provide a response to the following question: "What are the key elements of a plan?" '
      "Your response should contain at least 5 sentences and include a postscript starting with P.S.",
-     S(sentences=ge(5))),
+     S(sentences=ge(5), postscript="P.S.")),
     ("Please ensure the note is less than 60 words and includes the keywords \"gift\" and \"thanks\".",
      S(words=le(59), keywords=("gift", "thanks"))),
     ("Summarize the meeting, ensuring that your response:\n- Contains at least 5 sentences.\n- Is in all lowercase.",
@@ -599,7 +609,65 @@ def random_spec(rng: np.random.Generator) -> ConstraintSpec:
             values[flag] = True
     if rng.random() < 0.2:
         values["case"] = "lower" if rng.random() < 0.5 else "upper"
+    add_further_families(values, rng, words)
     return ConstraintSpec(**values)
+
+
+PHRASES = ["Yes", "No", "Dear Sir", "Once upon a time", "Any other questions?", "Best wishes",
+           "Is there anything else I can help with?", "Have a nice day!", "My answer is yes.",
+           "My answer is no.", "My answer is maybe.", "Welcome", "In summary", "Thank you",
+           "See you soon.", "Hope this helps!", "naïve start", "C3PO says hi", "true", "false"]
+SECTION_MARKERS = ["Section", "SECTION", "Part", "Chapter", "Day"]
+PS_MARKERS = ["P.S.", "P.P.S", "p.s.", "PS", "Note", "P. S."]
+FIRST_WORDS = ["however", "finally", "moreover", "historically", "dogs", "summer", "the", "a"]
+SEPARATORS = ["******", "***", "---", "===", "~~~", "+++"]
+
+
+def small_interval(rng, top: int = 6, allow_zero: bool = False, exclude_ge1: bool = False) -> Interval:
+    while True:
+        k, n = int(rng.integers(4)), int(rng.integers(1, top + 1))
+        iv = [ex(n), le(n), ge(n), bt(n, int(rng.integers(n + 1, top + 3)))][k]
+        if allow_zero and rng.random() < 0.15:
+            iv = ex(0)
+        if exclude_ge1 and iv == ge(1):
+            continue
+        return iv
+
+
+def add_further_families(values: dict, rng, words: list[str]) -> None:
+    """The instruction families beyond counts, keywords and simple formats."""
+    items = values.get("items")
+    if rng.random() < 0.15 and (items is None or items.hi != 0):
+        values["list_style"] = "bullet" if rng.random() < 0.5 else "numbered"
+    forbidden = {w.lower() for w in values.get("forbidden", ())}
+    if rng.random() < 0.15:
+        pool = [w for w in words if w.lower() not in forbidden]
+        k = int(rng.integers(1, 3))
+        values["frequencies"] = tuple((w, small_interval(rng, exclude_ge1=True)) for w in pool[-k:])
+    if rng.random() < 0.1:
+        letters = rng.choice(list("abcdefghijklmnopqrstuvwxyz"), size=int(rng.integers(1, 3)), replace=False)
+        values["letters"] = tuple((str(ch), small_interval(rng, 30, allow_zero=True)) for ch in letters)
+    for name in ("highlights", "placeholders", "capital_words"):
+        if rng.random() < 0.1:
+            values[name] = small_interval(rng)
+    if rng.random() < 0.08:
+        values["sections"] = (SECTION_MARKERS[int(rng.integers(len(SECTION_MARKERS)))], small_interval(rng))
+    if rng.random() < 0.08:
+        values["first_word"] = (int(rng.integers(1, 6)), FIRST_WORDS[int(rng.integers(len(FIRST_WORDS)))])
+    for flag in ("divider", "title", "quoted"):
+        if rng.random() < 0.08:
+            values[flag] = True
+    if rng.random() < 0.1:
+        values["postscript"] = PS_MARKERS[int(rng.integers(len(PS_MARKERS)))]
+    phrases = [str(p) for p in rng.permutation(PHRASES)]
+    if rng.random() < 0.1:
+        values["starts_with"] = tuple(p.rstrip(".") for p in phrases[: int(rng.integers(1, 3))])
+    if rng.random() < 0.1:
+        values["end_phrase"] = phrases[5]
+    if rng.random() < 0.08:
+        values["one_of"] = tuple(phrases[8: 8 + int(rng.integers(1, 4))])
+    if rng.random() < 0.06:
+        values["responses"] = (SEPARATORS[int(rng.integers(len(SEPARATORS)))], int(rng.integers(2, 5)))
 
 
 PREFIXES = ["", "Tell me about the history of Rome.", "What is photosynthesis?",
@@ -838,3 +906,694 @@ def test_targets_throughput(tok):
     t0 = time.perf_counter()
     C.targets_for_tokens(rows, None, tok)
     assert 32 / (time.perf_counter() - t0) > 60          # SPEC 2.3 budget for the whole exact layer
+
+
+# ================================================================ further instruction families
+# ------------------------------------------------------------------ independent references
+def ref_highlights(text: str) -> int:
+    """Left-to-right scan: an opening run of one or two stars (not after a star), a first
+    character that is neither whitespace nor a star, text up to the next star or newline, a
+    last character that is not whitespace and a closing run of the same length not followed by
+    a star."""
+    n, i = 0, 0
+    while i < len(text):
+        if text[i] == "*" and (i == 0 or text[i - 1] != "*"):
+            k = 2 if text[i:i + 2] == "**" else 1
+            j = i + k
+            if j < len(text) and not text[j].isspace() and text[j] != "*":
+                e = j
+                while e < len(text) and text[e] not in "*\n":
+                    e += 1
+                if (e < len(text) and text[e:e + k] == "*" * k and not text[e - 1].isspace()
+                        and (e + k == len(text) or text[e + k] != "*")):
+                    n += 1
+                    i = e + k
+                    continue
+        i += 1
+    return n
+
+
+def ref_placeholders(text: str) -> int:
+    n, i = 0, 0
+    while i < len(text):
+        if text[i] == "[":
+            j = i + 1
+            while j < len(text) and text[j] not in "[]\n":
+                j += 1
+            if j < len(text) and text[j] == "]" and text[i + 1:j].strip():
+                n += 1
+                i = j + 1
+                continue
+        i += 1
+    return n
+
+
+def ref_title(text: str) -> bool:
+    for i in range(len(text) - 1):
+        if text[i:i + 2] == "<<":
+            j = i + 2
+            while j < len(text) and text[j] not in "<>\n":
+                j += 1
+            if text[j:j + 2] == ">>" and text[i + 2:j].strip():
+                return True
+    return False
+
+
+def ref_capital_words(text: str) -> int:
+    words, cur = [], ""
+    for i, ch in enumerate(text):
+        if ch.isalnum():
+            cur += ch
+        elif ch in "'’" and cur and i + 1 < len(text) and text[i + 1].isalnum():
+            cur += ch
+        else:
+            if cur:
+                words.append(cur)
+            cur = ""
+    if cur:
+        words.append(cur)
+    return sum(1 for w in words if any(c.isupper() for c in w) and not any(c.islower() for c in w))
+
+
+def ref_paragraph_texts(text: str) -> list[str]:
+    lines = text.split("\n")
+    flags = ref_fence_flags(lines)
+    tokens, any_div = [], False
+    for line, fenced in zip(lines, flags):
+        body = line.rstrip("\r")
+        pieces = [body] if fenced else ref_dividers(body)
+        if pieces is None:
+            tokens.append(None)
+            any_div = True
+            continue
+        for k, piece in enumerate(pieces):
+            if k:
+                tokens.append(None)
+                any_div = True
+            tokens.append(piece)
+    out: list[list[str]] = []
+    cur = None
+    if any_div:
+        for t in tokens:
+            if t is None:
+                cur = None
+            elif cur is None:
+                if t.strip(LINE_WS):
+                    cur = [t]
+                    out.append(cur)
+            else:
+                cur.append(t)
+        return ["\n".join(c) for c in out]
+    for line, fenced in zip(lines, flags):
+        if not fenced and (not line.strip(LINE_WS) or ref_is_break(line)):
+            cur = None
+        else:
+            if cur is None:
+                cur = []
+                out.append(cur)
+            cur.append(line.rstrip("\r"))
+    return ["\n".join(c) for c in out]
+
+
+MARKUP = " \t\n\r\x0b\x0c#*_>\"'([“‘«"
+
+
+def ref_first_word(text: str) -> str:
+    i = 0
+    while i < len(text) and text[i] in MARKUP:
+        i += 1
+    j = i
+    while j < len(text) and text[j].isalnum():
+        j += 1
+    return text[i:j].lower()
+
+
+FAMILY_PIECES = PIECES + ["*", "**", "*x*", "**bold**", "* item", "[", "]", "[name]", "[ ]", "<<", ">>",
+                          "<<Title>>", "NASA", "I", "don't", "DON'T", "Ünited", "ÉTÉ", "3D", "e", "E",
+                          "P.S.", "Section 1", "\n\n", "***"]
+
+
+def family_text(rng: random.Random, n: int = 30) -> str:
+    return "".join(rng.choice(FAMILY_PIECES) for _ in range(rng.randint(0, n)))
+
+
+@pytest.mark.parametrize("seed", range(3))
+def test_further_measures_match_references(seed):
+    rng = random.Random(100 + seed)
+    for _ in range(1500):
+        t = family_text(rng)
+        m = C.measure(t)
+        assert m["highlights"] == ref_highlights(t) == C.count_highlights(t), t
+        assert m["placeholders"] == ref_placeholders(t), t
+        assert m["has_title"] == ref_title(t), t
+        assert m["capital_words"] == ref_capital_words(t), t
+        assert m["quoted"] == (len(t.strip(" \t\n\r\x0b\x0c")) >= 2 and t.strip(" \t\n\r\x0b\x0c")[0] == '"'
+                               and t.strip(" \t\n\r\x0b\x0c")[-1] == '"')
+        pars = C.paragraph_texts(t)
+        assert pars == ref_paragraph_texts(t), t
+        assert len(pars) == m["paragraphs"] == ref_paragraphs(t)
+        assert m["paragraph_first_words"] == [ref_first_word(p) for p in pars]
+        assert m["first_word"] == ref_first_word(t)
+        assert m["dividers"] >= 0 and (m["dividers"] > 0) == any(
+            ref_dividers(line.rstrip("\r")) is None or len(ref_dividers(line.rstrip("\r"))) > 1
+            for line, f in zip(t.split("\n"), ref_fence_flags(t.split("\n"))) if not f)
+        for ch in "eaz":
+            assert C.letter_count(t, ch) == sum(1 for c in t if c in (ch, ch.upper()))
+
+
+@pytest.mark.parametrize("text,key,want", [
+    ("This is *very* important, **really**.", "highlights", 2), ("* item\n* item", "highlights", 0),
+    ("a * b * c", "highlights", 0), ("***x***", "highlights", 0), ("*a*b*", "highlights", 1),
+    ("**Note:** read *this*", "highlights", 2), ("*multi\nline*", "highlights", 0),
+    ("Dear [Name], see you on [Date].", "placeholders", 2), ("[ ] and []", "placeholders", 0),
+    ("[a [b] c]", "placeholders", 1), ("<<My Poem>>\nText", "has_title", True), ("<< >>", "has_title", False),
+    ("<<a\nb>>", "has_title", False), ('  "Quoted answer."  ', "quoted", True), ('"Quoted".', "quoted", False),
+    ('"', "quoted", False), ("“Curly”", "quoted", False), ("I think NASA is GREAT. ok", "capital_words", 3),
+    ("DON'T stop", "capital_words", 1), ("3D and 42", "capital_words", 1), ("ÉTÉ été", "capital_words", 1),
+    ("**Hello** world\n\nNext one", "paragraph_first_words", ["hello", "next"]), ("# Title", "first_word", "title"),
+    ("- Item one", "first_word", ""), ('"Yes," she said', "first_word", "yes"), ("", "first_word", ""),
+    ("p1\n\n***\n\np2", "dividers", 1), ("p1\n\np2", "dividers", 0), ("a *** b", "dividers", 1),
+])
+def test_further_measures_hand_labelled(text, key, want):
+    assert C.measure(text)[key] == want
+
+
+@pytest.mark.parametrize("text,phrase,start,end", [
+    ("Yes, it is.", "Yes", True, False), ("Yesterday it rained.", "Yes", False, False),
+    ("**Yes**, of course.", "yes", True, False), ('"Welcome to our site!"', "Welcome", True, False),
+    ("Dear  Sir,\nthanks", "Dear Sir", True, False), ("Is there anything else I can help with?", "help with?", False, True),
+    ("Bye. Any other questions? ", "Any other questions?", False, True), ("... any other questions?**", "Any other questions?", False, True),
+    ("Many other questions?", "any other questions?", False, False), ("Hope this helps!\n", "Hope this helps!", True, True),
+    ("Hope this helps.", "Hope this helps", True, False), ("Best wishes", "Best wishes", True, True),
+])
+def test_phrase_checks(text, phrase, start, end):
+    assert C.starts_with_phrase(text, phrase) == start
+    assert C.ends_with_phrase(text, phrase) == end
+
+
+def _ref_starts(text: str, phrase: str) -> bool:
+    i = 0
+    while i < len(text) and text[i] in MARKUP:
+        i += 1
+    head = " ".join(text[i:].split())
+    p = " ".join(phrase.split())
+    if not head.lower().startswith(p.lower()):
+        return False
+    rest = head[len(p):]
+    return not (p[-1].isalnum() and rest[:1].isalnum())
+
+
+def ref_starts_with(text: str, phrase: str) -> bool:
+    """The text or its body after leading <<title>> / markdown heading lines starts with the
+    phrase."""
+    if _ref_starts(text, phrase):
+        return True
+    lines = text.lstrip(" \t\n\r\x0b\x0c").split("\n")
+    k = 0
+    while k < len(lines) and (lines[k].strip(" \t").startswith("<<") and lines[k].strip(" \t").endswith(">>")
+                              and "<" not in lines[k].strip(" \t")[2:-2] and ">" not in lines[k].strip(" \t")[2:-2]
+                              or re.match(r"[ \t]*#{1,6}[ \t]", lines[k])):
+        k += 1
+        while k < len(lines) and not lines[k].strip(" \t"):
+            k += 1
+    body = "\n".join(lines[k:])
+    return 0 < k and body.strip() != "" and _ref_starts(body, phrase)
+
+
+def ref_ends_with(text: str, phrase: str) -> bool:
+    t = " ".join(text.split()).lower().rstrip(" \t\n\r\x0b\x0c\"'*_”’")
+    p = " ".join(phrase.split()).lower().rstrip(" \t\n\r\x0b\x0c\"'*_”’")
+    if not p or not t.endswith(p):
+        return False
+    before = t[: len(t) - len(p)]
+    return not (p[0].isalnum() and before[-1:].isalnum())
+
+
+def test_phrase_checks_match_references():
+    rng = random.Random(7)
+    alphabet = ["yes", "Yes", "YES", "no", " ", "  ", "\n", ",", ".", "!", "?", "*", "**", '"', "'", "#",
+                "help", "with", "x", "s", "es", "<<T>>", "<<", ">>", "# ", "\n\n"]
+    phrases = ["yes", "Yes no", "help with?", "with!", "x", "s es"]
+    for _ in range(3000):
+        t = "".join(rng.choice(alphabet) for _ in range(rng.randint(0, 12)))
+        for p in phrases:
+            assert C.starts_with_phrase(t, p) == ref_starts_with(t, p), (t, p)
+            assert C.ends_with_phrase(t, p) == ref_ends_with(t, p), (t, p)
+
+
+@pytest.mark.parametrize("text,marker,want", [
+    ("Hi.\n\nP.S. See you.", "P.S.", True), ("Hi.\n\np. s. see you", "P.S.", True), ("Hi. P.S. inline", "P.S.", True), ("Hi P.S. inline", "P.S.", False),
+    ("x.P.S. y", "P.S.", False),
+    ("**P.S.** bold", "P.S.", True), ("PS: no dots", "P.S.", False), ("P.P.S also", "P.P.S", True),
+    ("P.S. only", "P.P.S", False), ("> P.S. quoted", "P.S.", True), ("P.S. Remember the sunscreen!", "P.S. Remember", True),
+])
+def test_has_postscript(text, marker, want):
+    assert C.has_postscript(text, marker) == want
+
+
+@pytest.mark.parametrize("text,marker,want", [
+    ("Section 1\na\nSection 2\nb", "Section", 2), ("SECTION 1: x\n## SECTION 2\n**SECTION 3**", "Section", 3),
+    ("See Section 2 below", "Section", 0), ("Section one", "Section", 0), ("Part 1\nPart 2", "Section", 0),
+    ("  Day 1\n  Day 12\nDay x", "Day", 2),
+])
+def test_count_sections(text, marker, want):
+    assert C.count_sections(text, marker) == want
+
+
+def test_split_responses_repeat_and_options():
+    assert C.split_responses("a ****** b", "******") == (["a", "b"], True)
+    assert C.split_responses("****** a ****** b ******", "******") == (["a", "b"], True)
+    assert C.split_responses("a ****** ****** b", "******") == (["a", "b"], False)
+    assert C.repeats_request("Write a poem.\n\nRoses are red.", "write a  poem.")
+    assert not C.repeats_request("Sure! Write a poem.", "Write a poem.")
+    assert C.option_key("  My answer is **yes**. ") == "my answer is yes"
+    assert C.matches_option("Yes.", ("yes", "no")) and not C.matches_option("Yes, it is.", ("yes", "no"))
+    assert not C.matches_option("", ("yes",))
+
+
+# --------------------------------------------------------------------------- spec validation
+def test_further_spec_validation():
+    bad = [{"list_style": "dashes"}, {"list_style": "bullet", "items": ex(0)},
+           {"frequencies": (("x", ge(1)),)}, {"frequencies": (("x", le(0)),)}, {"frequencies": (("x", ge(0)),)},
+           {"frequencies": (("x", ex(2)), ("X", ex(3)))}, {"frequencies": (("x", ex(2)),), "forbidden": ("x",)},
+           {"letters": (("ab", ge(2)),)}, {"letters": (("E", ge(2)),)}, {"highlights": ex(0)},
+           {"placeholders": ge(0)}, {"sections": ("1st", ge(2))}, {"sections": ("Section", le(0))},
+           {"first_word": (0, "x")}, {"first_word": (1, "Hello")}, {"first_word": (1, "two words")},
+           {"postscript": "1PS"}, {"end_phrase": 'say "hi"'}, {"end_phrase": " padded"}, {"starts_with": ("a",) * 2},
+           {"starts_with": tuple("abcde")}, {"one_of": ("Yes.", "yes")}, {"responses": ("ab", 2)},
+           {"responses": ("***", 1)}, {"repeat": "  "}, {"repeat": " padded "}, {"divider": 1}]
+    for kw in bad:
+        with pytest.raises((ValueError, TypeError)):
+            ConstraintSpec(**kw)
+    spec = S(frequencies=(("zeta", ex(2)), ("Alpha", ge(3))), letters=(("z", le(3)), ("a", ex(0))))
+    assert spec.frequencies == (("Alpha", ge(3)), ("zeta", ex(2))) and spec.letters == (("a", ex(0)), ("z", le(3)))
+    assert spec == S(frequencies=(("Alpha", ge(3)), ("zeta", ex(2))), letters=(("z", le(3)), ("a", ex(0))))
+    full = S(list_style="numbered", items=ex(3), highlights=ge(2), sections=("Part", ex(2)), first_word=(2, "however"),
+             divider=True, title=True, postscript="P.S.", quoted=True, starts_with=("Yes", "No"),
+             end_phrase="Bye.", one_of=("yes", "no"), responses=("******", 2), repeat="Write it.")
+    assert len(full.constraints) == 14 and full.targets() == (-1, 3, -1)
+
+
+def test_further_merge():
+    a = S(frequencies=(("x", ge(2)),), starts_with=("Yes", "No"), one_of=("yes", "no", "maybe"), title=True)
+    b = S(frequencies=(("X", le(4)),), starts_with=("no",), one_of=("No", "maybe"), letters=(("e", ge(3)),))
+    m = C.merge(a, b)
+    assert m == S(frequencies=(("x", bt(2, 4)),), starts_with=("No",), one_of=("no", "maybe"), title=True,
+                  letters=(("e", ge(3)),))
+    assert C.merge(S(list_style="bullet"), S(list_style="numbered")) is None
+    assert C.merge(S(starts_with=("Yes",)), S(starts_with=("No",))) is None
+    assert C.merge(S(frequencies=(("x", le(1)),)), S(frequencies=(("x", ge(3)),))) is None
+    assert C.merge(S(sections=("Part", ex(2))), S(sections=("Section", ex(2)))) is None
+    assert C.merge(S(end_phrase="Bye."), S(end_phrase="Bye.")) == S(end_phrase="Bye.")
+    assert C.merge(S(frequencies=(("x", ex(2)),)), S(forbidden=("x",))) is None
+
+
+# ------------------------------------------------------------------------------- compile
+FURTHER_CASES = [
+    # list styles and steps
+    ("Present them as a numbered list.", S(list_style="numbered")),
+    ("Pick three of them and present them as a numbered list.", S(items=ex(3), list_style="numbered")),
+    ("Now explain it in exactly three numbered steps.", S(items=ex(3), list_style="numbered")),
+    ("Name five musical instruments as a numbered list, with no other text.", S(items=ex(5), list_style="numbered")),
+    ("List four tips for staying focused while studying, as bullet points.", S(items=ex(4), list_style="bullet")),
+    ("Turn those tips into exactly four bullet points.", S(items=ex(4), list_style="bullet")),
+    ("Explain how to plant a tree in 4 steps.", S(items=ex(4))),
+    ("Give me a list of 5 tips for sleeping.", S(items=ex(5))),
+    ("Use bullet points or a numbered list.", S()),
+    ("Don't use bullet points; use a numbered list instead.", S(list_style="numbered")),
+    ("Solve it in 3 steps.", S()),
+    ("I like numbered lists.", S()),
+    # single words and small word counts
+    ("What is the opposite of \"hot\"? Answer with a single word.", S(words=ex(1))),
+    ("Reply with one word.", S(words=ex(1))),
+    ("Answer with one word only.", S(words=ex(1))),
+    ("What color is the sky? One word.", S(words=ex(1))),
+    ("Describe yourself in three words.", S(words=ex(3))),
+    ("Describe it in 10 words.", S(words=le(10))),
+    ("Give me 3 words that describe you.", S()),
+    ("Give me a one-word answer: yes, no, or maybe.", S(words=ex(1), one_of=("yes", "no", "maybe"))),
+    # follow-up turns, JSON, questions
+    ("Now say it again in all capital letters.", S(case="upper")),
+    ("Give me a JSON object that describes a fictional person, with the keys \"name\", \"age\" and \"city\". "
+     "Output only the JSON.", S(json_output=True)),
+    ("Return a JSON array of three colors.", S(json_output=True)),
+    ("Just the JSON, please.", S(json_output=True)),
+    ("Write a Python function that returns a JSON array.", S()),
+    ("What is a JSON object?", S()),
+    ("Close by asking me a question.", S(end_question=True)),
+    ("Make sure the last sentence is a question.", S(end_question=True)),
+    ("What is a good way of ending with a question?", S()),
+    # forbidden words and commas
+    ("Never say 'basically'.", S(forbidden=("basically",))),
+    ('Without using the word "love", describe your mother.', S(forbidden=("love",))),
+    ('The words "cat" and "dog" should not appear.', S(forbidden=("cat", "dog"))),
+    ('You cannot use the word "the".', S(forbidden=("the",))),
+    ("Do not mention apples.", S()),
+    ("Do not include any commas in your answer.", S(no_commas=True)),
+    ("Your response must not contain any commas.", S(no_commas=True)),
+    ("There should be no commas in your response.", S(no_commas=True)),
+    ("Write a comma-free paragraph.", S(no_commas=True)),
+    ("Don't put commas between the adjectives.", S()),
+    ("There are no commas in this sentence.", S()),
+    ("Is this sentence comma-free?", S()),
+    # keyword and letter frequency
+    ('Rewrite the story so that it uses the word "honey" at least twice.', S(frequencies=(("honey", ge(2)),))),
+    ('Write a short paragraph about bicycles that uses the word "wheel" exactly twice.',
+     S(frequencies=(("wheel", ex(2)),))),
+    ('Do not use the word "very" more than twice.', S(frequencies=(("very", le(2)),))),
+    ("In your response, the word [success] should appear at least 2 times.", S(frequencies=(("success", ge(2)),))),
+    ('Use the word "x" at least once.', S(keywords=("x",))),
+    ("the word love should not appear more than 3 times", S(frequencies=(("love", le(3)),))),
+    ("Repeat the process twice.", S()),
+    ("Say it three times.", S()),
+    ("Use the letter q at least 3 times.", S(letters=(("q", ge(3)),))),
+    ("Write a sentence without the letter e.", S(letters=(("e", ex(0)),))),
+    ("In your response, the letter e should appear less than 5 times.", S(letters=(("e", le(4)),))),
+    ("How many times does the letter e appear in this sentence?", S()),
+    # highlights, placeholders, capital words
+    ("Write a short motivational message, and highlight at least two key phrases with markdown, like *this*.",
+     S(highlights=ge(2))),
+    ("Highlight at least 1 section in your answer with markdown, i.e. *highlighted section*.", S(highlights=ge(1))),
+    ("Use markdown to highlight two sections.", S(highlights=ge(2))),
+    ("Highlight the most important points in bold.", S()),
+    ("Do not highlight more than 2 words.", S()),
+    ("The response must contain at least 2 placeholders represented by square brackets, such as [address].",
+     S(placeholders=ge(2))),
+    ("Use placeholders where needed.", S()),
+    ("Use at least 5 words in all caps.", S(capital_words=ge(5))),
+    ("Include no more than 2 all-caps words.", S(capital_words=le(2))),
+    # sections, first words, dividers, titles, postscripts, quotes
+    ("Your response must have 3 sections. Mark the beginning of each section with SECTION X, such as:\nSECTION 1\n"
+     "[content of section 1]\nSECTION 2\n[content of section 2]", S(sections=("SECTION", ex(3)))),
+    ("The response must have 2 sections. Mark the beginning of each section with Section 1 and Section 2.",
+     S(sections=("Section", ex(2)))),
+    ("Write a report with 3 sections.", S()),
+    ("There should be 4 paragraphs. Paragraphs and only paragraphs are separated with each other by two new lines "
+     "as if it was '\\n\\n' in python. Paragraph 2 must start with word historically.",
+     S(paragraphs=ex(4), first_word=(2, "historically"))),
+    ('The second paragraph should start with the word "Moreover".', S(first_word=(2, "moreover"))),
+    ("Start the second paragraph with a question.", S()),
+    ("Separate paragraphs with the markdown divider ***.", S(divider=True)),
+    ("Write a title for a blog post about saving money. Wrap the title in double angular brackets, like <<title>>.",
+     S(title=True)),
+    ("Add a title to your essay.", S()),
+    ("Write a short note to a friend about your holiday plans. At the end, add a postscript that starts with P.S.",
+     S(postscript="P.S.")),
+    ("At the end of your response, please explicitly add a postscript starting with *P.S.*", S(postscript="P.S.")),
+    ("At the end of your response, please explicitly add a postscript starting with P.P.S", S(postscript="P.P.S")),
+    ("Add a postscript starting with [postscript].\n[postscript] is \"P.S. Remember the sunscreen!\"",
+     S(postscript="P.S. Remember the sunscreen!")),
+    ("Do not add a postscript.", S()),
+    ("Wrap your entire response with double quotation marks.", S(quoted=True)),
+    ("Put the title in quotes.", S()),
+    # start, end and fixed answers
+    ('Is the Pacific the largest ocean on Earth? Start your answer with "Yes" or "No", then explain briefly.',
+     S(starts_with=("Yes", "No"))),
+    ('Write a short welcome message for a website. It must start with the word "Welcome".', S(starts_with=("Welcome",))),
+    ("Start with a summary.", S()),
+    ('Start each sentence with "I".', S()),
+    ('Don\'t start your answer with "I".', S()),
+    ('Finish your response with this exact phrase "Any other questions?". No other words should follow this phrase.',
+     S(end_phrase="Any other questions?")),
+    ("Finish your response with this exact phrase Is there anything else I can help with?. No other words should "
+     "follow this phrase.", S(end_phrase="Is there anything else I can help with?")),
+    ("Finish your response with this exact phrase [ender]. No other words should follow this phrase.", S()),
+    ('End each line with "!"', S()),
+    ("Answer with yes or no only: is the Sun a star?", S(one_of=("yes", "no"))),
+    ('Answer with one of the following options: ("My answer is yes.", "My answer is no.", "My answer is maybe.")',
+     S(one_of=("My answer is yes.", "My answer is no.", "My answer is maybe."))),
+    ("Answer yes or no: is water wet?", S()),
+    ("Is it yes or no?", S()),
+    ("Answer with yes or no, and explain why.", S()),
+    # two responses, repetition
+    ("Give two different responses. Responses and only responses should be separated by 6 asterisk symbols: ******.",
+     S(responses=("******", 2))),
+    ("There should be 2 paragraphs. Paragraphs are separated with the markdown divider: *** Give two responses.",
+     S(paragraphs=ex(2), divider=True)),
+    ("Write a haiku about rain. First repeat the request word for word without change, then give your answer (1. do "
+     "not say any words or characters before repeating the request; 2. the request you need to repeat does not "
+     "include this sentence)", S(repeat="Write a haiku about rain.")),
+    ("First, repeat the request without change, then give your answer (do not say anything before repeating the "
+     "request; the request you need to repeat does not include this sentence) Write a story in 3 sentences.",
+     S(sentences=ex(3), repeat="Write a story in 3 sentences.")),
+    ("Repeat the question before answering it.", S()),
+    ("Do not repeat the request word for word.", S()),
+    # false positives found on natural prompts
+    ("Think of 2015 as a coming out party for this former mining center.", S()),
+    ("All I have to do is take five steps and I can be home.", S()),
+    ("Replace the following phrasal verb with a single word that conveys the same meaning.", S()),
+    ("Let's start with 'Defining the Purpose and Goals'.", S()),
+    ('Create a sentence that starts with the word "Given", then provide a rewritten version.', S()),
+    ("Give me 5 steps to bake bread.", S(items=ex(5))),
+    ("Break it down into 5 steps.", S(items=ex(5))),
+    ("Use only one paragraph for your answer however, when providing the edited text use 2 paragraphs.", S()),
+    ('Explain the use of the word "surge" in the revised sentence.', S()),
+    ("However, you could have simply stated those two sentences could be broken up instead of rephrasing them "
+     "into two sentences.", S()),
+    ("Pick the correct answer from the following options: - She cleans dishes. - not enough information - She "
+     "irons clothes.\nA:", S(one_of=("She cleans dishes.", "not enough information", "She irons clothes."))),
+    ("Each word must include the letter 'a' at least once.", S()),
+    ("Can you write a Python function to format these references into a bulleted list, like this:", S()),
+    ("Generated sentences must minimally alter the given middle, with at most 4 new words added.", S()),
+    ('For example, if the story talks about "doctors", you can talk about "health", but don\'t mention "aliens".', S()),
+    ("This is all lower case. Can you fix that?", S()),
+    ("Can you explain your thought process while you were editing this 5-sentence paragraph into 3 sentences.", S()),
+    ("Can you give me an example of refining the clarity and conciseness in this one sentence?", S()),
+    ("I would like help on improving a single sentence to make it more concise.", S()),
+    ("I have this 1300-word essay and I need to edit it down to a 750-word essay.", S()),
+    ("Begin your answer with a 1 sentence summary before providing more details in paragraph format:", S()),
+    ("I want the revised passage to be no longer than 3 sentences.", S()),
+    ("I need you to write a 300-word essay.", S(words=le(300))),
+    ("Can you explain what constants should specifically be named in all caps with underscore separation?", S()),
+    ("(I'm not sure if I should make one or two paragraphs of these three sentences.)", S()),
+    ("I want to start simply with a single sentence.", S()),
+    ("Write me a rewritten version with an alternative ending sentence that is 1 sentence instead of the current "
+     "2-sentence ending.", S()),
+    ('You\'ve used the word "considerable" in the edit - can you provide alternatives to this word?', S()),
+    ("We have gone to 3 sentences. Now how about we go for a 2 sentence and then 1 sentence form of the proof. "
+     "In a single sentence form.", S()),
+    ("Can you suggest a brief 5-7 word title that effectively summarizes the revised text?", S()),
+    ("Write an example of feedback you would give to improve a single sentence.", S()),
+    ('Can you explain changing "The company is doing this" into a single sentence "The move aims to".', S()),
+    ("How would you implement a queue using a linked list? **Language: Python** **Provide 5 unit tests**", S()),
+    ("Do you have a specific piece of writing you would like me to review, such as an essay, or even a single "
+     "sentence?", S()),
+    ("Generated sentences must be short, have fewer than 10 words, and be simple.", S()),
+    ('Write 7 sentences that start with the word "Suddenly" using an interesting voice.', S(sentences=ex(7))),
+    ('Explain in more detail why you used the word "targeted".', S()),
+    ("Write a C++ program to find the maximum and minimum values from a list of 5 integers inputted by a user.", S()),
+    ("Specifically I would like to combine the second and third sentence into one sentence.", S()),
+    ("Write a function that ensures all elements in a list are unique. Can you provide two solutions for that "
+     "problem?", S()),
+    ("Also, give an example of a short sentence where it would be better to use no comma and a conjunction.", S()),
+    ("You'll need to decide if the characters, events, or settings in one paragraph are continued in another.", S()),
+    ("If possible, answer in 3 sentences.", S(sentences=ex(3))),
+    ("Can you condense this into 3 sentences?", S(sentences=ex(3))),
+    ("In your response, the letter i should appear no more than 25 times.", S(letters=(("i", le(25)),))),
+    ("Write 4 sentences that are clear and engaging and four sentences of the same subject which are unclear.", S()),
+    ("Define it in 50 words. Provide an explanation and example in 120 more words to follow.", S()),
+    ("(The term petitioner will be used henceforth to refer to William N.", S()),
+    ("And do you think this is a good idea, breaking this sentence into 2 sentences?", S()),
+    ("Write a brief question on cooking techniques, less than 50 words hopefully.", S()),
+    ("Present a bit of explanation of the changed version in 2-3 sentences if necessary.", S()),
+    ("I have two paragraphs which needs to be edited.", S()),
+    ("I need an editor for a single sentence that needs to be powerful.", S()),
+    ("List 10 types of plots and provide a very short description (1 sentence) for each.", S(items=ex(10))),
+    ("Write a Python function to process a file. The email address should be in lower case.", S()),
+    ("Create a Python function process_sentence. Join the words back into a single sentence and return.", S()),
+    ("Write Python code to check areas. **Solution Must be 5-7 lines.**", S()),
+    ("Write a function to add numbers. Put the code in a code block.", S(code_block=True)),
+    ("What does this Python code do? Please provide your analysis in 3-5 sentences.", S(sentences=bt(3, 5))),
+    ("Answer in fourteen lines. Wrap the code in a markdown code block.", S(lines=ex(14), code_block=True)),
+]
+
+
+@pytest.mark.parametrize("text,want", FURTHER_CASES, ids=[c[0][:50] for c in FURTHER_CASES])
+def test_compile_further_families(text, want):
+    assert C.compile(text) == want
+
+
+#: Every dev-half turn of bes/eval/proxy/prompts.jsonl that carries constraints, with what the
+#: compiler reads. Differences from the prompt author's list are deliberate: "about 100 words"
+#: (approximate, no exact check), the unquoted details of writing-044 and the five languages of
+#: instruct-075 (a count of things, not of a request) are not compiled; "two sentences" and
+#: "one-word answer" are read in addition (they are explicit).
+DEV_CASES = [
+    ("writing-002", "Give me a one-sentence summary of this text.\n\nWhen a small town added protected bike lanes.",
+     S(sentences=ex(1))),
+    ("writing-006", "Summarize the following paragraph in no more than 30 words.\n\nMany office workers say so.",
+     S(words=le(30))),
+    ("writing-039", "Write a story of about 100 words about the last day of summer vacation.", S()),
+    ("writing-044", "Add these details: Saturday at 1 pm, at Willow Park, and everyone should bring a dish to share.", S()),
+    ("writing-060", "Retell the same story in exactly three sentences.", S(sentences=ex(3))),
+    ("writing-074", "Write a four-line poem about the ocean.", S(lines=ex(4))),
+    ("instruct-006", "In all lowercase letters, tell me what the three primary colors are.", S(case="lower")),
+    ("instruct-007", "Invent a brand name for a smart water bottle, written in all capital letters. Reply with the "
+     "name only.", S(case="upper")),
+    ("instruct-012", "Explain it again in fewer than 20 words.", S(words=le(19))),
+    ("instruct-013", "Tell me about the Eiffel Tower without using any commas.", S(no_commas=True)),
+    ("instruct-019", 'Describe your ideal weekend without using the word "very".', S(forbidden=("very",))),
+    ("instruct-029", "Write two sentences about mountains, and end your reply with a question.",
+     S(sentences=ex(2), end_question=True)),
+    ("instruct-030", "Write a Python function that adds two numbers. Put the code in a code block and do not write "
+     "any explanation.", S(code_block=True)),
+    ("instruct-033", "Name three countries in Europe. Use exactly three bullet points.", S(items=ex(3), list_style="bullet")),
+    ("instruct-035", "Explain gravity to a child in exactly two sentences.", S(sentences=ex(2))),
+    ("instruct-036", "Now say it again in all capital letters.", S(case="upper")),
+    ("instruct-037", 'Write a sentence that contains the words "river", "bridge" and "sunset".',
+     S(keywords=("river", "bridge", "sunset"))),
+    ("instruct-039", 'Write a short paragraph about the history of chess. Do not use the words "game" or "board".',
+     S(forbidden=("game", "board"))),
+    ("instruct-042", "Write a haiku about winter, and make sure it has exactly three lines.", S(lines=ex(3))),
+    ("instruct-045", "Answer in exactly one sentence: why do birds migrate?", S(sentences=ex(1))),
+    ("instruct-047", "Write a poem about the moon that is exactly four lines long.", S(lines=ex(4))),
+    ("instruct-049", "Give me some advice about public speaking. Use at least 80 words.", S(words=ge(80))),
+    ("instruct-055", "In exactly three bullet points, list the advantages of electric cars.",
+     S(items=ex(3), list_style="bullet")),
+    ("instruct-060", "Give me a JSON object in which each key is one of those bridges and each value is the city it "
+     "is in. Output only the JSON.", S(json_output=True)),
+    ("instruct-064", "Now explain it in exactly three numbered steps.", S(items=ex(3), list_style="numbered")),
+    ("instruct-065", "What are the colors of the rainbow? Answer with a numbered list of exactly seven items.",
+     S(items=ex(7), list_style="numbered")),
+    ("instruct-068", 'Split it into two paragraphs separated by a blank line, and do not use the word "leaves".',
+     S(paragraphs=ex(2), forbidden=("leaves",))),
+    ("instruct-071", "Write an advertisement for a lemonade stand in fewer than 25 words, all in capital letters.",
+     S(words=le(24), case="upper")),
+    ("instruct-075", 'Write the word "hello" in five different languages, as a numbered list.', S(list_style="numbered")),
+    ("instruct-079", 'Explain what a verb is in exactly two sentences, and use the word "action" in your answer.',
+     S(sentences=ex(2), keywords=("action",))),
+]
+
+
+@pytest.mark.parametrize("pid,text,want", DEV_CASES, ids=[c[0] for c in DEV_CASES])
+def test_compile_dev_prompts(pid, text, want):
+    assert C.compile(text) == want
+
+
+# -------------------------------------------------------------------------------- verify
+@pytest.mark.parametrize("spec,text,violated", [
+    (S(list_style="bullet"), "- a\n- b", []), (S(list_style="bullet"), "1. a\n2. b", ["list_style"]),
+    (S(list_style="numbered"), "Prose only.", ["list_style"]), (S(list_style="numbered", items=ex(2)), "1. a\n2) b", []),
+    (S(list_style="bullet"), "- a\n1. b", ["list_style"]),
+    (S(frequencies=(("honey", ge(2)),)), "Honey and honey.", []), (S(frequencies=(("honey", ge(2)),)), "honeybee honey", ["frequency"]),
+    (S(frequencies=(("very", le(1)),)), "very very", ["frequency"]), (S(frequencies=(("a b", ex(1)),)), "A\nb", []),
+    (S(letters=(("e", ge(3)),)), "Eee", []), (S(letters=(("e", ex(0)),)), "A cat", []), (S(letters=(("e", ex(0)),)), "E", ["letter"]),
+    (S(highlights=ge(2)), "*a* and **b**", []), (S(highlights=ge(2)), "*a* only", ["highlights"]),
+    (S(placeholders=ex(1)), "Hi [Name]", []), (S(capital_words=le(1)), "I AM", ["capital_words"]),
+    (S(sections=("Section", ex(2))), "Section 1\nx\nSection 2\ny", []), (S(sections=("Section", ex(2))), "Section 1\nx", ["sections"]),
+    (S(first_word=(2, "however")), "One.\n\nHowever, two.", []), (S(first_word=(2, "however")), "One.\n\nBut two.", ["first_word"]),
+    (S(first_word=(3, "x")), "One.\n\nTwo.", ["first_word"]),
+    (S(divider=True), "One.\n\n***\n\nTwo.", []), (S(divider=True), "One.\n\nTwo.", ["divider"]), (S(divider=True), "One.", []),
+    (S(title=True), "<<T>>\nx", []), (S(title=True), "x", ["title"]),
+    (S(postscript="P.S."), "x\n\nP.S. y", []), (S(postscript="P.S."), "x", ["postscript"]),
+    (S(quoted=True), '"x"', []), (S(quoted=True), "x", ["quoted"]),
+    (S(starts_with=("Yes", "No")), "No, it is not.", []), (S(starts_with=("Yes", "No")), "Nope.", ["starts_with"]),
+    (S(end_phrase="Any other questions?"), "Done. Any other questions?", []),
+    (S(end_phrase="Any other questions?"), "Any other questions? Bye.", ["end_phrase"]),
+    (S(one_of=("yes", "no")), "No.", []), (S(one_of=("yes", "no")), "No, never.", ["one_of"]),
+    (S(responses=("******", 2)), "a\n******\nb", []), (S(responses=("******", 2)), "a\n******\na", ["responses"]),
+    (S(responses=("******", 2)), "a", ["responses"]), (S(repeat="Write a poem."), "Write a poem. Roses...", []),
+    (S(repeat="Write a poem."), "A poem: roses...", ["repeat"]),
+])
+def test_verify_further_families(spec, text, violated):
+    got = C.verify(spec, text)
+    assert [v.split(":")[0] for v in got] == violated
+    assert C.verify(spec, text, C.measure(text)) == got
+
+
+# -------------------------------------------------------------------------------- render
+@pytest.mark.parametrize("seed", range(3))
+def test_render_repeat_round_trip(seed):
+    """A spec with ``repeat`` renders as its request followed by the repeat instruction; the
+    request may itself carry instructions (they are part of what must be repeated)."""
+    rng = np.random.default_rng(50 + seed)
+    for i in range(150):
+        inner = random_spec(rng)
+        request = (PREFIXES[1 + i % (len(PREFIXES) - 1)] + " " + C.render(inner, rng)).strip()
+        spec = C.merge(C.compile(request), S(repeat=request))
+        assert spec is not None
+        text = C.render(spec, rng)
+        assert C.compile(text) == spec, text
+    with pytest.raises(ValueError):
+        C.render(S(repeat="Write a poem.", no_commas=True), rng)
+
+
+def test_render_further_templates_vary():
+    rng = np.random.default_rng(1)
+    for spec in (S(frequencies=(("ocean", ge(2)),)), S(highlights=ge(2)), S(postscript="P.S."), S(title=True),
+                 S(starts_with=("Yes", "No")), S(end_phrase="Bye now."), S(one_of=("yes", "no")),
+                 S(list_style="numbered"), S(sections=("Section", ex(3)))):
+        texts = {C.render(spec, rng) for _ in range(60)}
+        assert len(texts) >= 3, spec
+        assert all(C.compile(t) == spec for t in texts)
+
+
+# --------------------------------------------------------------------------- token-local
+def test_token_local_classification():
+    spec = S(words=le(50), sentences=ex(3), items=ge(2), lines=bt(2, 4), no_commas=True, case="lower",
+             forbidden=("Very", "naïve"), letters=(("e", le(9)),), keywords=("ocean",), paragraphs=ex(2),
+             json_output=True, end_question=True, title=True, list_style="bullet", one_of=("yes", "no"))
+    tl = spec.token_local()
+    assert tl == C.token_local(spec)
+    assert tl.counts == (("words", 0, 50), ("sentences", 3, 3), ("items", 2, None))
+    assert tl.lines == (2, 4) and tl.banned_bytes == b"," and tl.case == "lower"
+    assert tl.forbidden == (b"very", "naïve".encode())
+    assert tl.letters == ((b"eE", 0, 9),)
+    names = {c.split(":")[0] for c in tl.complete}
+    assert names == {"paragraphs", "keyword", "json_output", "end_question", "title", "list_style", "one_of"}
+    assert not tl.empty and C.EMPTY.token_local().empty and C.EMPTY.token_local().complete == ()
+    from bes.exact import registers
+    assert {c for c, _, _ in tl.counts} <= set(registers.RAW_FIELDS)
+
+
+def test_nonblank_line_step_sums_to_measure():
+    rng = random.Random(3)
+    for _ in range(800):
+        t = family_text(rng)
+        data = t.encode("utf-8")
+        cuts = sorted(rng.sample(range(len(data) + 1), min(len(data) + 1, rng.randint(0, 6))))
+        total, open_line, prev = 0, False, 0
+        for c in cuts + [len(data)]:
+            n, open_line = C.nonblank_line_step(data[prev:c], open_line)
+            total += n
+            prev = c
+        assert total == C.measure(t)["lines"], t
+
+
+def test_has_forbidden_bytes_matches_verify():
+    rng = random.Random(4)
+    alphabet = ["cat", "Cat", "CATS", "dog", " ", "\n", ".", "-", "_", "x", "1", "'", "é"]
+    words = ["cat", "dog x"]
+    for _ in range(2000):
+        t = "".join(rng.choice(alphabet) for _ in range(rng.randint(0, 10)))
+        spec = S(forbidden=("cat", "dog x"))
+        hit = C.has_forbidden_bytes(t.encode(), [w.encode() for w in words])
+        if "é" not in t and "\n" not in t:            # exact for ASCII neighbours
+            assert hit == bool(C.verify(spec, t)), t
+        # an occurrence at the very end only counts once the text is final
+        if hit and not C.has_forbidden_bytes(t.encode(), [w.encode() for w in words], final=False):
+            assert t.lower().rstrip().endswith(("cat", "dog x"))
+
+
+def test_token_local_counts_are_monotone_register_counters(tok):
+    """Pruning a token whose increment exceeds an upper bound is sound: the raw counters of
+    registers.Incremental never decrease inside a turn, and after END they equal measure()."""
+    from bes.data import chat_format as cf
+    from bes.exact import registers as R
+
+    rng = random.Random(5)
+    for _ in range(30):
+        reply = random_text(rng, 30)
+        ids = cf.render_conversation([{"role": "user", "content": "Hi."}, {"role": "assistant", "content": reply}], tok)[0]
+        inc = R.Incremental(1)
+        a = ids.tolist().index(ASSISTANT)
+        last = {k: 0 for k in ("words", "sentences", "items")}
+        for t, v in enumerate(ids.tolist()):
+            inc.step(v)
+            if t > a:
+                raw = inc.raw()
+                for k in last:
+                    assert raw[k][0] >= last[k]
+                    last[k] = int(raw[k][0])
+        m = C.measure(cf.display_text(ids[a + 1:-1], tok))
+        assert last == {k: m[k] for k in last}
