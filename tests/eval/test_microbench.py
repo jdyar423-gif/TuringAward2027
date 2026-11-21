@@ -294,7 +294,7 @@ def test_e2_arms_resolve_to_valid_configs():
     assert len(names) == len(set(names)) and names[:2] == ["ref", "ref_s1"]
     assert {"no_tape", "tape_out_only", "tape_in_only", "no_reg", "no_clock", "no_sink", "no_conf",
             "ve_0", "ve_wide", "muon", "loops_4", "loops_12", "lr_feature_x0.3", "lr_feature_x3",
-            "mass_offset_4", "mass_offset_8", "no_transfer_rule"} <= set(names)
+            "mass_offset_4", "mass_offset_8", "transfer_rule", "src5_train_025", "src5_train_0"} <= set(names)
     lrs = {}
     for a in MA.E2_ARMS:
         cfg = mb.arm_config(a, 1_000_000, mb.Bench())
@@ -302,9 +302,10 @@ def test_e2_arms_resolve_to_valid_configs():
         assert micro_shape(cfg, cfg.data.seq_len) == (2, 4, 512)
         assert cfg.optim.horizon_tokens == 1e6
         lrs[a.name] = group_lrs(cfg)
-    # the transfer rule is active for the reference and absent in its arm
-    assert lrs["ref"]["embed"] < 0.2 * lrs["no_transfer_rule"]["embed"]
-    assert lrs["ref"]["matrix"] != lrs["no_transfer_rule"]["matrix"]
+    # the transfer rule is off for the reference (configs/micro/bench.py) and on in its arm
+    assert lrs["transfer_rule"]["embed"] < 0.2 * lrs["ref"]["embed"]
+    assert lrs["transfer_rule"]["matrix"] != lrs["ref"]["matrix"]
+    assert lrs["ref"]["matrix"] == pytest.approx(0.014)
     assert {n for n, _ in MA.SKIPPED} == {"sink_prior"}
 
 
