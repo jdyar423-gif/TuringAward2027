@@ -399,3 +399,38 @@ class MixCfg:
                                      # (measured on lib_60M: 51% of draws usable, 131 tokens each)
     qa_task_tokens: float = 44.0     # mean tokens per question-answer task (measured on NQ-open
                                      # train pairs with a BM25 stand-in for the qa index)
+
+
+# --------------------------------------------------------------------------- loader
+@dataclass(frozen=True)
+class LoaderCfg:
+    """Training loader (``bes/data/loader.py``, ``bes/data/packing.py``).
+
+    Appended by the loader track; not (yet) a field of ``Cfg``. The fields marked (journal)
+    decide the batches and are stored in the plan journal's header: a journal can only be
+    reopened with the same values.
+    """
+
+    n_streams: int = 64              # (journal) virtual streams, a power of two; every row
+                                     # belongs to one, so batches do not depend on the workers
+    block_steps: int = 64            # (journal) steps per planned block (one journal record);
+                                     # stage changes other than the shape apply at the next block
+    lookahead: int = 32              # (journal) chat-row best-fit buffer per stream (samples)
+    lib_lookahead: int = 16          # (journal) library-row best-fit buffer per stream
+    max_wait: int = 128              # (journal) rows a buffered sample may wait before it is
+                                     # forced to open the next row (0 = never forced)
+    max_draw_attempts: int = 64      # (journal) failed draws (too long, declined) per refill
+    reepoch_growth: float = 0.25     # (journal) a stream starts a new epoch of a source as soon as
+                                     # its visible segments grew by this factor (0 = only at the end)
+    workers: int = 2                 # worker processes when Loader(n_workers=None); 0 = in-process
+    ring: int = 4                    # batches produced ahead (shared-memory slots) - back-pressure
+    feature_rows: int = 64           # rows per exact_features call inside a worker (peak memory)
+    horizon_tokens: float = 2.0e10   # token horizon of the run for the epoch caps until progress
+                                     # p >= horizon_min_p allows the estimate tokens / p
+    horizon_min_p: float = 0.05
+    growing_blocks: int = 8          # a source with new shards within this many blocks is still
+                                     # downloading: its epoch cap uses the registry's expected size
+    task_timeout_s: float = 600.0    # a worker silent this long on pending work is replaced
+    journal_name: str = "loader_journal.jsonl"  # under RunCfg.out_dir unless a path is given
+    copy_out: bool = True            # return batches copied out of the shared ring
+    stats_blocks: int = 32           # block summaries kept for Loader.stats()
