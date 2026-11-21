@@ -1,0 +1,3 @@
+# Per-token transducer tables, rebuilt from the tokenizer in about a second (bes/exact/instr_table.py).
+*.npz
+*.tmp
