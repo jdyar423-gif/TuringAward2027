@@ -46,3 +46,16 @@ def test_strict_config_is_under_20m_in_the_strict_reading_too():
     assert final.active_strict(2048, 840) > 20e6          # why the strict variant exists
     assert final.active_step - strict.active_step == pytest.approx(
         2 * 2 * 768 * (3072 - 2688) + 768 * (256 - 128) + (256 - 128), abs=1)
+
+
+def test_recorded_library_assets_match_the_library_on_disk():
+    """V2_ASSETS is a recorded copy of one build; a rebuilt library must not drift silently."""
+    from bes.config import LibraryCfg
+    lib_dir = os.path.join(ROOT, LibraryCfg().library_dir)
+    if not os.path.exists(os.path.join(lib_dir, "library.json")):
+        pytest.skip("the built library is not present")
+    from bes.library.retrieve import Library
+    live = budget.assets_of(Library.load(lib_dir))
+    v2 = budget.V2_ASSETS
+    assert live.library_numbers + live.index_numbers == v2.library_numbers + v2.index_numbers
+    assert live.library_read + live.index_read == v2.library_read + v2.index_read
