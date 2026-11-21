@@ -176,3 +176,17 @@ Consequences:
    256-token chunk; one generation compared with the full-sequence forward at bf16 tolerance.
 7. Determinism: the same batch twice gives the same loss bit for bit.
 8. Host pipeline rate (exact layer, loader) against the measured step time.
+
+## Addendum: the plan without rematerialisation
+
+Compile-only, same target (v6e:1x1), after the output-law change:
+
+| program | attention | shape | remat | compile | peak |
+|---|---|---|---|---|---|
+| train step | splash | A=16, T=1024, B=16 | off | 413 s | 17.03 GiB (temp 18.35) |
+| train step | splash | A=8, T=1024, B=32 | on | 325 s | 4.21 GiB |
+
+Halving the micro-batch (and doubling the number of micro-batches, so the tokens per step stay
+262,144) fits in device memory without rematerialisation and avoids recomputing every loop body in
+the backward pass. Which of the two plans is faster on the chip is unknown; the start-up benchmark
+times both and keeps the faster one (`optim.micro_seqs=16, model.remat=False` against the default).
