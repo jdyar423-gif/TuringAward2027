@@ -2,8 +2,9 @@
 
 Every check compares against an independent numpy float64 implementation written here: the full
 log-probabilities and the per-token cross-entropy from the direct formula, repeated and invalid
-candidate ids, the masses from the trust tables (cap, kind switches, ``src`` multipliers), and
-the zero-initialised tables at the model level.
+candidate ids, the masses from the trust tables (smooth cap, kind switches, ``src``
+multipliers), the zero-initialised tables at the model level, and the sampling temperature,
+which tempers the network's distribution q only: p_T = (softmax(z / T) + masses) / (1 + M).
 """
 from __future__ import annotations
 
@@ -32,9 +33,10 @@ def np_softmax(z: np.ndarray) -> np.ndarray:
     return e / e.sum(-1, keepdims=True)
 
 
-def np_law(z: np.ndarray, cand: np.ndarray, m: np.ndarray) -> np.ndarray:
-    """The direct formula for one row (float64): z [V], cand [K], m [K] -> p [V]."""
-    q = np_softmax(z)
+def np_law(z: np.ndarray, cand: np.ndarray, m: np.ndarray, temperature: float = 1.0) -> np.ndarray:
+    """The direct formula for one row (float64): z [V], cand [K], m [K] -> p_T [V] (the
+    network's softmax at ``temperature``, the masses as they are)."""
+    q = np_softmax(np.asarray(z, np.float64) / temperature)
     p, total = q.copy(), 0.0
     for c, mk in zip(np.asarray(cand).tolist(), np.asarray(m, np.float64).tolist()):
         if 0 <= c < q.size:                        # empty slots and ids >= V carry nothing
@@ -64,6 +66,14 @@ _mix_logprobs = jax.jit(predictive.mix_logprobs)
 _mix_ce = jax.jit(predictive.mix_ce, static_argnums=(4,))
 
 
+def np_soft_cap(a: np.ndarray, cap: float, knee: float = 2.0) -> np.ndarray:
+    """The smooth cap written here (float64): ``a`` up to ``cap - knee``, then
+    ``cap - knee + knee * tanh((a - cap + knee) / knee)``."""
+    a = np.asarray(a, np.float64)
+    lo = cap - knee
+    return np.where(a <= lo, a, lo + knee * np.tanh((a - lo) / knee))
+
+
 def _ce_base(z: np.ndarray, y: np.ndarray) -> np.ndarray:
     """``-log q(y)`` in float32 (what ``head.chunked_ce`` delivers)."""
     lq = jax.nn.log_softmax(jnp.asarray(z), axis=-1)
@@ -82,6 +92,44 @@ def test_mix_logprobs_is_the_direct_formula_and_normalised(seed):
         assert abs(np.exp(lp[i]).sum() - 1.0) < 1e-6
     # the row without mass is the network's own distribution
     np.testing.assert_allclose(np.exp(lp[0]), np_softmax(z[0]), atol=1e-7)
+
+
+@pytest.mark.parametrize("temperature", [0.5, 0.8, 1.7])
+def test_mix_logprobs_tempers_the_network_only(temperature):
+    """p_T = (softmax(z / T) + masses) / (1 + M): normalised, every non-candidate token keeps the
+    share 1 / (1 + M) of the tempered network, the tape's share M / (1 + M) is untouched, and it
+    differs from tempering the whole mixture (softmax(log p / T)). A traced float32 temperature
+    gives the same result as a Python float, and T = 1 is the law itself bit for bit."""
+    z, cand, m, _ = random_case(2)
+    V = z.shape[1]
+    lp = np.asarray(_mix_logprobs(z, cand, m, np.float32(temperature)), np.float64)
+    lp_py = np.asarray(predictive.mix_logprobs(z, cand, m, temperature), np.float64)
+    np.testing.assert_allclose(lp, lp_py, atol=1e-6, rtol=0)
+    for i in range(z.shape[0]):
+        want = np_law(z[i], cand[i], m[i], temperature)
+        np.testing.assert_allclose(lp[i], np.log(want), atol=2e-5, rtol=0)
+        assert abs(np.exp(lp[i]).sum() - 1.0) < 1e-6
+        valid = (cand[i] >= 0) & (cand[i] < V)
+        total = float(np.where(valid, m[i].astype(np.float64), 0.0).sum())
+        others = np.setdiff1d(np.arange(V), cand[i][valid])
+        np.testing.assert_allclose(np.exp(lp[i, others]),
+                                   np_softmax(z[i] / temperature)[others] / (1.0 + total),
+                                   atol=1e-6, rtol=1e-5)
+        if total > 0.1:          # tempering the mixture would move the tape's share
+            mixture = np_softmax(np.log(np_law(z[i], cand[i], m[i])) / temperature)
+            assert np.max(np.abs(np.exp(lp[i]) - mixture)) > 1e-3
+    one = np.asarray(_mix_logprobs(z, cand, m, np.float32(1.0)))
+    assert one.tobytes() == np.asarray(_mix_logprobs(z, cand, m)).tobytes()
+
+
+def test_one_compiled_program_serves_every_temperature():
+    fn = jax.jit(predictive.mix_logprobs)
+    z, cand, m, _ = random_case(3, n=5)
+    first = np.asarray(fn(z, cand, m, np.float32(0.5)))
+    size = fn._cache_size()           # (jit wrappers of one function share their cache)
+    outs = [np.asarray(fn(z, cand, m, np.float32(t))) for t in (0.7, 1.0, 1.3)]
+    assert fn._cache_size() == size
+    assert not np.allclose(first, outs[0])
 
 
 @pytest.mark.parametrize("seed", [0, 1])
@@ -210,12 +258,13 @@ def np_masses(P: dict, h: np.ndarray, cand: np.ndarray, feat: np.ndarray, cfg, k
     a = beta + np.einsum("...c,...kc->...k", h @ P["trust"]["proj"], c) - cfg.mass_offset
     w = ((cand >= 0) & (cand < cfg.vocab_size)) * kind_on[feat[..., KIND]] * cand_out \
         * src_scale[feat[..., SRC]]
-    return np.exp(np.minimum(a, cfg.mass_log_cap)) * w, a
+    return np.exp(np_soft_cap(a, cfg.mass_log_cap)) * w, a
 
 
 def test_masses_follow_the_formula():
     """Masses from random trust tables against the float64 formula, with a kind switched
-    off, a src multiplier, ids beyond the vocabulary and the cap reached by some slots."""
+    off, a src multiplier, ids beyond the vocabulary and the smooth cap reached by some slots
+    (some far below it, some in its knee, some above the cap itself)."""
     cfg = tiny_cfg(mass_offset=2.0, mass_log_cap=1.5)
     params = random_params(cfg, seed=3)
     batch = make_batch(cfg, B=2, T=12, seed=4)
@@ -231,8 +280,86 @@ def test_masses_follow_the_formula():
     np.testing.assert_array_equal(np.asarray(cand), batch["cand_tok"])
     np.testing.assert_allclose(np.asarray(m, np.float64), want, rtol=2e-5, atol=1e-7)
     live = want > 0
-    assert np.any(live & (a > cfg.mass_log_cap)) and np.any(live & (a < cfg.mass_log_cap))
+    knee = cfg.mass_log_cap - predictive.MASS_CAP_KNEE
+    assert np.any(live & (a > cfg.mass_log_cap)) and np.any(live & (a < knee))
+    assert np.any(live & (a > knee) & (a < cfg.mass_log_cap))
     assert np.all(np.asarray(m)[batch["cand_tok"] >= cfg.vocab_size] == 0)
+    assert np.all(np.asarray(m, np.float64) <= np.exp(cfg.mass_log_cap) * src.max() + 1e-6)
+
+
+def test_soft_cap_keeps_values_below_the_knee_and_a_gradient_above_the_cap():
+    """Bit for bit below ``cap - knee``; increasing, below the cap and C1 at the joint; a
+    positive derivative at and above the cap (a hard ``min`` has none there)."""
+    cap = 10.0
+    lo = cap - predictive.MASS_CAP_KNEE
+    below = np.linspace(-40.0, lo, 2001).astype(np.float32)
+    got = np.asarray(predictive.soft_cap(jnp.asarray(below), cap))
+    assert got.tobytes() == below.tobytes()                        # unchanged bit for bit
+    a = np.linspace(-5.0, 60.0, 6501).astype(np.float32)
+    y = np.asarray(predictive.soft_cap(jnp.asarray(a), cap), np.float64)
+    np.testing.assert_allclose(y, np_soft_cap(a, cap), atol=2e-6, rtol=0)
+    # increasing (to one float32 ulp: XLA's tanh is not exactly monotone near saturation),
+    # never above the cap (float32 tanh reaches 1 far above it)
+    assert np.all(np.diff(y) >= -2e-6) and np.all(np.diff(y[a <= cap]) > 0) and np.all(y <= cap)
+    assert np.all(y[a < cap + 4.0] < cap)
+    grad = jax.vmap(jax.grad(lambda x: predictive.soft_cap(x, cap)))
+    g = np.asarray(grad(jnp.asarray(a)), np.float64)
+    want = np.where(a <= lo, 1.0, 1.0 / np.cosh((a.astype(np.float64) - lo) / predictive.MASS_CAP_KNEE) ** 2)
+    np.testing.assert_allclose(g, want, atol=1e-6, rtol=1e-4)
+    for x in (cap, cap + 0.1, cap + 4.0, cap + 10.0):
+        assert float(grad(jnp.asarray([x], jnp.float32))[0]) > 0.0
+    # C1 at the joint: the slope from the right tends to 1
+    eps = 1e-3
+    right = (np_soft_cap(lo + eps, cap) - np_soft_cap(lo, cap)) / eps
+    assert abs(float(right) - 1.0) < 1e-5
+
+
+def test_a_wrong_candidate_above_the_cap_still_gets_a_gradient():
+    """One wrong candidate whose log-mass sits at or above ``mass_log_cap``: the loss sends a
+    non-zero gradient to the trust biases (with ``exp(min(a, cap))`` it was exactly zero, so
+    the slot could never be corrected), and the loss stays bounded by log(1 + exp(cap))."""
+    cfg = tiny_cfg(n_loops=2)
+    params = jax.tree.map(np.array, random_params(cfg, seed=1))
+    for f in params["trust"]["bias"]:
+        params["trust"]["bias"][f][:] = 0.0
+    for f in params["trust"]["feat"]:
+        params["trust"]["feat"][f][:] = 0.0              # a_k = sum of biases - offset exactly
+    batch = make_batch(cfg, B=1, T=8, seed=2, seg_starts=((0,),))
+    y = batch["tokens"][0, 1:]
+    batch["cand_tok"][:] = -1
+    batch["cand_feat"][:] = 0
+    batch["cand_tok"][0, -1, 0] = (int(y[-1]) + 1) % (cfg.vocab_size - 16)   # wrong candidate
+    batch["cand_feat"][0, -1, 0] = [4, 7, 7, 1, 0, 7]
+    batch["w"][:] = 0.0
+    batch["w"][0, -1] = 1.0
+    consts = M.make_consts(cfg)
+    vg = jax.jit(jax.value_and_grad(lambda p: M.loss_fn(p, consts, batch, cfg), has_aux=True))
+    for a_target in (cfg.mass_log_cap + 0.1, cfg.mass_log_cap + 4.0):
+        p = jax.tree.map(np.array, params)
+        p["trust"]["bias"]["kind"][4] = a_target + cfg.mass_offset
+        (loss, met), g = vg(p)
+        gb = float(np.abs(np.asarray(g["trust"]["bias"]["kind"])).sum())
+        assert gb > 0.0, a_target
+        mass = math.exp(float(np_soft_cap(a_target, cfg.mass_log_cap)))
+        assert float(met["tape_gain"]) == pytest.approx(-math.log1p(mass), rel=1e-4)
+        assert float(met["tape_gain"]) > -math.log1p(math.exp(cfg.mass_log_cap)) - 1e-4
+
+
+def test_zero_mass_is_the_plain_cross_entropy_bit_for_bit_with_slots_above_the_cap():
+    """Every src multiplier zero: the per-token loss is ``-log q(y)`` bit for bit, also where
+    the (unused) log-masses are far above the cap."""
+    cfg = tiny_cfg(mass_offset=-12.0)                   # a = beta + <hA, c> + 12: above the cap
+    params = random_params(cfg, seed=4)
+    batch = make_batch(cfg, B=2, T=16, seed=5)
+    feats, yy, _ = M.split_batch(batch)
+    consts = M.make_consts(cfg, src=0.0)
+    h = jitted("forward_hidden", cfg)(params, consts, feats)
+    tok_ce = jax.jit(functools.partial(M.token_ce, cfg=cfg, parts=True))
+    ce, ce_base, mass = tok_ce(params, consts, h, feats, yy)
+    assert np.asarray(ce).tobytes() == np.asarray(ce_base).tobytes()
+    assert not np.asarray(mass).any()
+    a = predictive.log_mass(params["trust"], h, jnp.asarray(batch["cand_feat"]), cfg.mass_offset)
+    assert float(jnp.max(a)) > cfg.mass_log_cap
 
 
 def test_src_multipliers_scale_exactly_the_masses_of_that_source():

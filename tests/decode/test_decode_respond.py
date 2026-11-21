@@ -314,3 +314,203 @@ def test_our_generator_follows_the_harness_contract(tmp_path):
         R.load_checkpoint(tmp_path, dataclasses.replace(cfg.model, head_rank=32))
     with pytest.raises(FileNotFoundError):
         R.find_checkpoint(tmp_path / "missing")
+
+
+# ------------------------------------------------------------ self-evidence weight
+@pytest.fixture(scope="module")
+def smoke_model():
+    import jax
+
+    from bes.config import load_config
+    from bes.model import model as M
+    from bes.tokenizer import load
+
+    tok = load()
+    cfg = dataclasses.replace(load_config(str(REPO / "configs" / "smoke.py")).model, n_loops=2,
+                              max_seq=256)
+    params = jax.tree.map(np.array, M.init_params(cfg, jax.random.PRNGKey(0)))
+    params["trust"]["bias"]["src"][3] = 9.0      # trust evidence from earlier assistant turns
+    params["trust"]["bias"]["src"][5] = 9.0      # ... and from the turn being generated
+    params["trust"]["bias"]["kind"][1:5] = 2.0
+    return tok, cfg, params, M.make_consts(cfg)  # the consts a checkpoint stores: src_5 = 1
+
+
+def test_the_self_evidence_weight_reaches_the_model(smoke_model):
+    """The request's ``self_evidence_weight`` is the multiplier the model decodes with
+    (``enable["src"][5]``), different weights give different replies, the default is the
+    configured one, and the applied value is reported."""
+    from bes.decode.lm import OurLM
+
+    tok, cfg, params, consts = smoke_model
+    made = []
+
+    def factory(n):
+        made.append(OurLM(params, consts, cfg, tok, max_steps=2 * n))
+        return made[-1]
+
+    resp = R.Responder(factory, tok, DecodeCfg(particles=1, max_new_tokens=24), context=256)
+    msgs = [{"role": "user", "content": "List colours."},
+            {"role": "assistant", "content": "red blue green red blue green"},
+            {"role": "user", "content": "Again."}]
+    outs = {}
+    for w in (1.0, 0.25, 0.0):
+        out = resp.reply(msgs, {"temperature": 0, "self_evidence_weight": w}, seed=0)
+        assert float(np.asarray(made[-1].consts["enable"]["src"])[5]) == w
+        assert out["extra"]["self_evidence_weight"] == w and "ignored" not in out["extra"]
+        outs[w] = (out["text"], round(out["logprob_sum"], 5))
+    assert len(set(outs.values())) == 3, outs
+    default = resp.reply(msgs, {"temperature": 0}, seed=0)
+    assert default["extra"]["self_evidence_weight"] == 0.25
+    assert (default["text"], round(default["logprob_sum"], 5)) == outs[0.25]
+
+
+def test_a_self_evidence_weight_a_model_cannot_apply_is_recorded_as_ignored():
+    tok, lm, resp = setup()
+    out = resp.reply(USER, {"self_evidence_weight": 0.5}, seed=0)
+    assert out["extra"]["self_evidence_weight"] is None
+    assert out["extra"]["ignored"] == {"self_evidence_weight": 0.5}
+    plain = resp.reply(USER, {}, seed=0)                 # the default is not a request
+    assert plain["extra"]["self_evidence_weight"] is None and "ignored" not in plain["extra"]
+
+
+def test_the_generator_decodes_with_the_configured_weight_and_keys_on_it(tmp_path):
+    from bes.config import load_config
+
+    config = str(REPO / "configs" / "smoke.py")
+    over = "model.n_loops=2,decode.particles=2,decode.max_new_tokens=8"
+    cfg = load_config(config, over.split(","))
+    _save_smoke(tmp_path / "ckpt", 1, cfg)
+    gen = R.our_generator(checkpoint=str(tmp_path), config=config, overrides=over)
+    lm = gen.responder.lm_factory(8)
+    assert float(np.asarray(lm.consts["enable"]["src"])[5]) == cfg.decode.self_evidence_weight
+    assert lm.max_steps == 16                            # about 2 x max_new_tokens steps
+    gen2 = R.our_generator(checkpoint=str(tmp_path), config=config,
+                           overrides=over + ",decode.self_evidence_weight=0.5")
+    assert float(np.asarray(gen2.responder.lm_factory(8).consts["enable"]["src"])[5]) == 0.5
+    assert gen2.key != gen.key
+    # one cache length for every request of up to the configured budget
+    from bes.decode.lm import cache_slots
+
+    assert gen.responder.lm_factory(4).tmax == lm.tmax == cache_slots(gen.responder.context, 8)
+
+
+# ---------------------------------------------------------------- feasibility
+def test_an_infeasible_count_is_dropped_and_the_reply_is_never_empty():
+    """'at least 60 words' cannot fit 40 tokens of a one-character tokenizer: it is dropped and
+    recorded, the feasible rest of the spec (exactly 2 sentences) is still enforced, and the
+    reply is a finished, non-empty text (before: every particle died at the first step)."""
+    tok, lm, resp = setup(seed=1)
+    msgs = [{"role": "user", "content": "Write at least 60 words in exactly 2 sentences."}]
+    spec = C.compile(msgs[0]["content"])
+    assert spec.words == C.Interval(60, None) and spec.sentences == C.Interval(2, 2)
+    out = resp.reply(msgs, {"particles": 4}, seed=0)
+    ex = out["extra"]
+    assert ex["infeasible"] == ["words: at least 60"]
+    assert ex["enforced"] == ["sentences: exactly 2"]
+    assert out["text"] and out["finish_reason"] == "stop" and ex["finishes"].get("dead", 0) == 0
+    assert C.measure(out["text"])["sentences"] == 2
+    # a feasible request is left alone
+    ok = resp.reply(USER, {"particles": 2}, seed=0)
+    assert "infeasible" not in ok["extra"] and ok["extra"]["enforced"] == ["sentences: exactly 2"]
+
+
+def test_dead_particles_trigger_a_structural_rerun():
+    """A model that starts a calculator span and writes ``1-2`` under 'at most 2 words': the
+    result would be a third word, so ``EQ`` is never allowed and every particle dies inside the
+    expression. The responder decodes again with the structural potentials only and returns
+    a finished, non-empty reply."""
+    tok = TinyTokenizer(PIECES)
+    sp = tok.special_tokens
+    v = tok.vocab_size
+    table = np.full((v, v), -6.0)
+    one, minus, two = PIECES.index("1"), PIECES.index("-"), PIECES.index("2")
+    table[sp["<|assistant|>"], sp["<|calc|>"]] = 10.0
+    table[sp["<|calc|>"], one] = 10.0
+    table[one, minus] = 10.0
+    table[minus, two] = 10.0
+    table[two, sp["<|eq|>"]] = 10.0
+    table[sp["<|/calc|>"], sp["<|end|>"]] = 10.0
+    lm = TableLM.from_table(table)
+    resp = R.Responder(lambda n: lm, tok, DecodeCfg(particles=2, max_new_tokens=30), chat=TinyChat(tok),
+                       context=4096)
+    out = resp.reply([{"role": "user", "content": "Answer in at most 2 words."}],
+                     {"temperature": 0}, seed=0)
+    ex = out["extra"]
+    assert ex["rerun"]["reason"] == "all particles died" and ex["rerun"]["finishes"] == {"dead": 2}
+    # "1-2" EQ "-1" CALC_END (TinyChat shows the ordinary tokens only: no " = " for EQ)
+    assert out["finish_reason"] == "stop" and out["text"] == "1-2-1"
+
+
+# ------------------------------------------------------------------- copy cap
+class ScriptLM:
+    """Puts 97% of the mass on the next token of a fixed answer (a perfect copier)."""
+
+    def __init__(self, answer_ids, vocab_size, end_id):
+        from bes.decode.lm import PerSequenceLM
+
+        class _LM(PerSequenceLM):
+            def __init__(self):
+                self.vocab_size = vocab_size
+
+            def _logp(self, n):
+                p = np.full(vocab_size, 0.03 / vocab_size)
+                p[answer[min(n, len(answer) - 1)]] += 0.97
+                return np.log(p)
+
+            def start_sequence(self, prompt_ids):
+                return 0, self._logp(0)
+
+            def advance(self, state, token):
+                return state + 1, self._logp(state + 1)
+
+            def copy_state(self, state):
+                return state
+
+        answer = list(answer_ids) + [end_id]
+        self.lm = _LM()
+
+
+def _longest_common_run(a, b):
+    best = 0
+    for i in range(len(a)):
+        for j in range(len(b)):
+            n = 0
+            while i + n < len(a) and j + n < len(b) and a[i + n] == b[j + n]:
+                n += 1
+            best = max(best, n)
+    return best
+
+
+def test_the_copy_cap_stops_passage_regurgitation_but_not_the_users_own_text():
+    """Repeating the request word for word, and returning the user's sentence corrected, copy
+    far more than ``max_copy_run`` tokens of the user's turn: nothing is capped (before, the
+    13th copied token was replaced). A LIBRARY passage is still capped."""
+    from bes.tokenizer import load
+
+    real = load()
+    request = "Write a short poem about the quiet morning light over the sleepy harbor town."
+    user = request + " " + C.REPEAT_INSTRUCTIONS[0]
+    answer = request + "\n\nSoft gold on the water, gulls asleep on the pier."
+    lm = ScriptLM(real.encode(answer), real.vocab_size, real.end).lm
+    resp = R.Responder(lambda n: lm, real, DecodeCfg(particles=4, max_new_tokens=64))
+    out = resp.reply([{"role": "user", "content": user}], {}, seed=0)
+    assert out["text"].startswith(request) and out["extra"]["violations"] == []
+    assert out["extra"]["copy_cap"] == 0                   # a spec that needs copied text
+    fix = ("Fix the spelling mistake in this sentence: The old fisherman walked slowly along the "
+           "quiet beach every morning to watch the boats come bak.")
+    corrected = ("The old fisherman walked slowly along the quiet beach every morning to watch the "
+                 "boats come back.")
+    lm2 = ScriptLM(real.encode(corrected), real.vocab_size, real.end).lm
+    resp2 = R.Responder(lambda n: lm2, real, DecodeCfg(particles=4, max_new_tokens=64, max_copy_run=12))
+    out2 = resp2.reply([{"role": "user", "content": fix}], {}, seed=0)
+    assert out2["text"] == corrected and out2["extra"]["copy_cap"] == 12
+    passage = ("the river runs past the old mill and under the stone bridge where the children "
+               "play in the long summer evenings and the swallows dive over the water")
+    lib = FakeLibrary({"Tell me about the river.": ("River", passage)})
+    lm3 = ScriptLM(real.encode(passage), real.vocab_size, real.end).lm
+    resp3 = R.Responder(lambda n: lm3, real, DecodeCfg(particles=2, max_new_tokens=64, max_copy_run=12),
+                        library=lib)   # the cap is off by default; when set it acts on passages only
+    out3 = resp3.reply([{"role": "user", "content": "Tell me about the river."}], {}, seed=0)
+    assert out3["extra"]["library"] == "River"
+    reply_ids = real.encode(out3["text"])
+    assert _longest_common_run(reply_ids, real.encode(passage)) <= 12 + 1

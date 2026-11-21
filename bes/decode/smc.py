@@ -6,6 +6,16 @@ within ``max_new_tokens``), where ``gamma_t`` is the target increment of
 0/1 potentials of ``bes.decode.potentials``. Tokens forced by the host (calculator results)
 have ``gamma = 1`` on the forced token: they are written with weight 1 and are never masked.
 
+Temperature. The tempered model ``p_T`` is the distribution the decoder samples from. A
+language model with ``set_temperature`` (``bes.decode.lm.OurLM``) is asked to apply the request's
+temperature itself: it tempers its network's distribution only (the candidate tape's masses are
+a calibrated probability and are not sharpened), its rows are ``log p_T`` and the decoder applies
+no second temperature (``step_increment`` with ``T = 1``). Any other model's rows are tempered
+here, ``p_T = softmax(log p / T)``. The incremental weights (allowed masses) and the reported
+per-token log-probabilities (``ParticleResult.token_logp``) are both those of ``p_T``; truncation
+(top-k / top-p / min-p), the potentials and the twist act on ``p_T`` as described in
+``bes.decode.sampling``. At ``T = 1``, ``p_T`` is the model's own distribution.
+
 One synchronous step, for every running particle ``j`` that is not inside a forced span:
 
 1. model log-probabilities (from the previous LM call) -> ``step_increment`` with the
@@ -43,6 +53,7 @@ without potentials, blocking or copy cap is ordinary sampling, draw for draw.
 """
 from __future__ import annotations
 
+import dataclasses
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 
@@ -59,9 +70,11 @@ _FINISH = {STOP: "stop", LENGTH: "length", DEAD: "dead", RUN: "length", WAIT: "l
 @dataclass
 class ParticleResult:
     """One particle at the end: its response tokens (``END`` included when it finished), its
-    final log-weight (since the last resampling; ``-inf`` when dead or unfinished), the model's
-    log-probability of every token (forced ones included) and their sum, which tokens were
-    forced, and the finish reason (``"stop"``, ``"length"`` or ``"dead"``)."""
+    final log-weight (since the last resampling; ``-inf`` when dead or unfinished), the
+    log-probability of every token (forced ones included) under the tempered model ``p_T`` the
+    decoder samples from (module docstring; before truncation, potentials and twist; the model's
+    own distribution at ``T = 1``) and their sum ``logp_model``, which tokens were forced, and the
+    finish reason (``"stop"``, ``"length"`` or ``"dead"``)."""
 
     tokens: list[int]
     log_weight: float
@@ -84,7 +97,9 @@ class SMCResult:
     ``log_alpha``: ``float64[K]`` log incremental weight of every step (NaN where a particle
     did not sample: waiting, finished, forced); ``resampled``: ``{"step", "ess", "ancestors"}``
     per resampling event; ``forced_spans``: per particle ``(start, stop)`` token positions of the
-    forced spans; ``steps``: synchronous steps (LM calls after the prefill)."""
+    forced spans; ``steps``: synchronous steps (LM calls after the prefill); ``extra``:
+    ``temperature`` and ``tempered_by`` (``"model"``: the language model tempered its network's
+    distribution itself, ``"decoder"``: the decoder tempered the model's rows)."""
 
     particles: list[ParticleResult]
     log_z: float
@@ -133,6 +148,13 @@ def library_passages(prompt_ids: Sequence[int], table: it.InstrTable) -> list[li
     return out
 
 
+def _lm_tempers(lm, temperature: float) -> bool:
+    """Ask the language model to apply the sampling temperature itself (``set_temperature``,
+    module docstring); False for a model without that method."""
+    setter = getattr(lm, "set_temperature", None)
+    return bool(setter(float(temperature))) if callable(setter) else False
+
+
 def decode(lm, prompt_ids: Sequence[int], *, n_particles: int, max_new_tokens: int, seed: int = 0,
            settings: S.SamplingSettings = S.SamplingSettings(), program: Program | None = None,
            tok=None, table: it.InstrTable | None = None, twist: Twist | None = None,
@@ -143,12 +165,14 @@ def decode(lm, prompt_ids: Sequence[int], *, n_particles: int, max_new_tokens: i
            greedy: bool = False) -> SMCResult:
     """Run the particle filter on one prompt (module docstring).
 
-    lm: a ``bes.decode.lm.LanguageModel``; program: compiled potentials (``None``: none; give
+    lm: a ``bes.decode.lm.LanguageModel`` (told the temperature through ``set_temperature``
+    when it has that method); program: compiled potentials (``None``: none; give
     ``tok`` and/or ``table`` so that calculator spans, sentence boundaries and the code / quote
     exemptions still work); twist: an optional ``potentials.Twist`` of ``program``;
     no_repeat_ngram / max_copy_run: sizes of the degeneracy guards (0 = off); library: LIBRARY
     passages exempt from n-gram blocking (default: the prompt's LIBRARY turns); sources: copy
-    sources of the copy cap (default: the whole prompt); max_steps: cap on synchronous steps
+    sources of the copy cap (default: the prompt's LIBRARY passages, so text of the user's own
+    turns is never capped); max_steps: cap on synchronous steps
     (waiting included; default ``4 * max_new_tokens``, at most the LM's ``capacity`` when it has
     one, e.g. ``OurLM``); greedy: arg-max instead of drawing
     (deterministic, not a sampler: diagnostics only).
@@ -186,9 +210,14 @@ def decode(lm, prompt_ids: Sequence[int], *, n_particles: int, max_new_tokens: i
             lib = library_passages(prompt_ids, table) if library is None else library
             blocker = S.NgramBlocker(no_repeat_ngram, k, word=word, special=special, library=lib)
         if max_copy_run > 0:
-            src = [list(prompt_ids)] if sources is None else sources
+            src = library_passages(prompt_ids, table) if sources is None else sources
             capper = S.CopyCap(max_copy_run, k, src, exempt=exempt_tok, special=special)
     max_steps = 4 * t_max if max_steps is None else int(max_steps)
+    temperature = float(settings.temperature)
+    lm_tempers = _lm_tempers(lm, temperature)
+    if lm_tempers:             # the model's rows already are log p_T: no second temperature
+        settings = dataclasses.replace(settings, temperature=1.0)
+    report_tempered = not lm_tempers and temperature != 1.0
 
     logp = np.asarray(lm.prefill(list(prompt_ids), k), np.float32)
     if getattr(lm, "capacity", None) is not None:
@@ -307,9 +336,11 @@ def decode(lm, prompt_ids: Sequence[int], *, n_particles: int, max_new_tokens: i
             x[j] = queue[j].pop(0)
         stepping = running & (x >= 0)
         srows = np.flatnonzero(stepping)
-        for j in srows:
+        # log p_T of the drawn (or forced) token: the model's rows when it tempered them itself
+        lp_rows = S.tempered(logp[srows], temperature) if report_tempered else logp[srows]
+        for r, j in enumerate(srows):
             tokens[j].append(int(x[j]))
-            token_lp[j].append(float(logp[j, x[j]]))
+            token_lp[j].append(float(lp_rows[r, x[j]]))
             forced_flags[j].append(bool(has_q[j]))
             if blocker is not None:
                 blocker.push(int(j), int(x[j]))
@@ -358,7 +389,8 @@ def decode(lm, prompt_ids: Sequence[int], *, n_particles: int, max_new_tokens: i
     particles = [ParticleResult(tokens[j], float(logw[j]), float(np.sum(token_lp[j])), token_lp[j],
                                 forced_flags[j], _FINISH[int(status[j])]) for j in range(k)]
     return SMCResult(particles, float(log_z), weights, ess_trace, alpha_trace, events, spans,
-                     steps)
+                     steps, {"temperature": temperature,
+                             "tempered_by": "model" if lm_tempers else "decoder"})
 
 
 def run(lm, prompt_ids: Sequence[int], *, spec=None, tok=None, cfg=None, seed: int = 0,
@@ -368,11 +400,15 @@ def run(lm, prompt_ids: Sequence[int], *, spec=None, tok=None, cfg=None, seed: i
     ``None``): temperature / top-p / top-k / min-p / truncate_after_mask, particles,
     max_new_tokens, ess_frac, no_repeat_ngram, max_copy_run, and the potential options
     ``max_depth``, ``budget_aware``, ``resample_at``, ``unit_max_tokens`` when the config has
-    them. ``spec``: a ``ConstraintSpec`` (or ``None``); ``potentials=False`` turns every potential
-    off. Keyword ``overrides`` go to :func:`decode`."""
+    them; a model with a candidate tape (``set_self_evidence_weight``) is given
+    ``self_evidence_weight``. ``spec``: a ``ConstraintSpec`` (or ``None``); ``potentials=False``
+    turns every potential off. Keyword ``overrides`` go to :func:`decode`."""
     from bes.config import DecodeCfg
 
     cfg = DecodeCfg() if cfg is None else cfg
+    setter = getattr(lm, "set_self_evidence_weight", None)
+    if callable(setter) and hasattr(cfg, "self_evidence_weight"):
+        setter(float(cfg.self_evidence_weight))
     if tok is None:
         from bes.tokenizer.tok import load as load_tokenizer
 

@@ -332,27 +332,33 @@ def tape_masses(params: dict, consts: dict, hidden: jax.Array, feats: dict, cfg)
     return cand_tok, predictive.masses(params["trust"], hidden, cand_tok, cand_feat, mask, src, cfg)
 
 
-def logits_from_hidden(params: dict, consts: dict, hidden: jax.Array, feats: dict, cfg) -> jax.Array:
+def logits_from_hidden(params: dict, consts: dict, hidden: jax.Array, feats: dict, cfg,
+                       temperature=1.0) -> jax.Array:
     """Final next-token scores ``s float32[..., V]`` from a hidden state ``[..., d]``, with
-    ``softmax(s) = p`` (the output law).
+    ``softmax(s) = p_T``: the output law at sampling temperature ``T``, which tempers the
+    network's distribution only (``predictive.mix_logprobs``; the tape's masses are untouched).
 
     feats may hold ``cand_tok [..., K]`` / ``cand_feat [..., K, F]`` with the same leading
     shape as ``hidden`` (e.g. ``[B]`` for one decoding step). When the tape path is statically
-    on and a tape is given, ``s = log p`` (normalised log-probabilities,
-    ``predictive.mix_logprobs``); otherwise ``s`` are the softcapped logits unchanged. Callers
-    rely only on ``softmax(s) = p``.
+    on and a tape is given, ``s = log p_T`` (normalised log-probabilities); otherwise
+    ``s = z / T`` (the softcapped logits ``z``). temperature: ``T > 0``, a Python float or a
+    float32 scalar (traced under ``jit``: one compiled program serves every temperature); the
+    default ``1`` gives the law ``p`` itself and leaves ``z`` untouched. Callers rely only on
+    ``softmax(s) = p_T``.
     """
     z = head.logits(params["head"], hidden, cfg)
     cand_tok, m = tape_masses(params, consts, hidden, feats, cfg)
+    unit = isinstance(temperature, (int, float)) and float(temperature) == 1.0
     if cand_tok is None:
-        return z
-    return predictive.mix_logprobs(z, cand_tok, m)
+        return z if unit else z / jnp.asarray(temperature, z.dtype)
+    return predictive.mix_logprobs(z, cand_tok, m, temperature)
 
 
-def logits_fn(params: dict, consts: dict, feats: dict, cfg) -> jax.Array:
+def logits_fn(params: dict, consts: dict, feats: dict, cfg, temperature=1.0) -> jax.Array:
     """Unchunked scores ``float32[B, T, V]`` of :func:`logits_from_hidden` (tests and
-    generation references)."""
-    return logits_from_hidden(params, consts, forward_hidden(params, consts, feats, cfg), feats, cfg)
+    generation references; ``temperature`` as there)."""
+    return logits_from_hidden(params, consts, forward_hidden(params, consts, feats, cfg), feats, cfg,
+                              temperature)
 
 
 def token_ce(params: dict, consts: dict, hidden: jax.Array, feats: dict, y: jax.Array, cfg, *,

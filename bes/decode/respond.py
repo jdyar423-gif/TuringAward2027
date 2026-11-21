@@ -18,10 +18,25 @@
    It must fit ``context - max_new_tokens`` tokens: the oldest exchanges (user + assistant) are
    dropped first, then the passage, then the system message, then the middle of the last user
    message (its head and tail, where instructions are, are kept).
-5. **Particle filter** ``bes.decode.smc.decode`` with the compiled potentials of the spec
-   (``potentials`` on; off: plain sampling), the decoding settings (below) and the seed.
-6. **Selection** ``bes.decode.select.select`` among the particles; the reply is the chosen
-   particle's display text (calculator spans shown as ``expr = result``), stripped.
+5. **Feasibility**: when no accepted response fits ``max_new_tokens`` (the program's
+   ``start_distance()``, ``END`` included, exceeds it, e.g. "at least 900 words" with a 768-token
+   budget), the count constraints that cannot be met are dropped (each one that cannot be met
+   alone, then, while the rest still cannot be met together, the one needing the most tokens);
+   the rest is kept and ``extra["infeasible"]`` lists what was dropped. Selection then uses the
+   reduced spec and no length band.
+6. **Particle filter** ``bes.decode.smc.decode`` with the compiled potentials of the spec
+   (``potentials`` on; off: plain sampling), the decoding settings (below) and the seed. The
+   language model is told the request's ``self_evidence_weight`` (multiplier of tape evidence
+   from the turn being generated; ``extra["self_evidence_weight"]``, ``None`` for a model
+   without a tape) and, by the decoder, the temperature (``OurLM`` tempers its network's
+   distribution only; ``extra["tempered_by"]``). The copy cap (``max_copy_run``) acts on
+   LIBRARY passages only and is switched off for specs that need copied text (repeat the
+   request, answer with one of the options, start or end with a given phrase).
+7. **Selection** ``bes.decode.select.select`` among the particles; the reply is the chosen
+   particle's display text (calculator spans shown as ``expr = result``), stripped. When every
+   particle died, or the reply would be empty because particles died, the decoder runs again
+   with the structural potentials only (``extra["rerun"]``), so the reply is never empty for
+   that reason.
 
 Deterministic given ``(messages, settings, seed)``: the decoder's random numbers are
 counter based on ``seed``, retrieval and selection are deterministic.
@@ -35,7 +50,12 @@ may be given by name (``particles``, ``use_library``, ``no_repeat_ngram``, ``res
 the selection, default on), ``utility`` (consensus utility, default ``"f12"``), ``trim`` (the
 no-leading/trailing-whitespace potential, default on). ``repeat_penalty`` is not implemented
 (n-gram blocking is the decoder's repetition control) and ``use_critic`` is ignored (there is
-no critic in the decoder); both are recorded in ``extra["ignored"]`` when set.
+no critic in the decoder); both are recorded in ``extra["ignored"]`` when set, as is an
+explicit ``self_evidence_weight`` for a model without a candidate tape.
+
+``logprob_sum`` / ``logprob_count`` sum the decoder's per-token log-probabilities
+(``smc.ParticleResult.token_logp``): under the distribution the decoder samples from, the
+model at the request's temperature (the model's own distribution at temperature 1).
 
 :func:`our_generator` is the harness factory (``--generator bes.decode.respond:our_generator
 --generator-arg checkpoint=... --generator-arg config=... [--generator-arg library=...]``).
@@ -58,7 +78,11 @@ from bes.config import DecodeCfg
 
 REPO = Path(__file__).resolve().parents[2]
 #: Bump when a change alters replies for the same checkpoint and settings.
-RESPOND_VERSION = "1"
+#: 2: temperature on the network only, self-evidence weight applied, feasibility check and
+#: structural rerun, copy cap on LIBRARY passages only, token-local potentials, smooth mass cap.
+RESPOND_VERSION = "2"
+#: count constraints the feasibility check may drop (``bes.exact.constraints.COUNT_UNITS``)
+COUNT_FIELDS = ("words", "sentences", "items", "paragraphs", "lines")
 _DECODE_FIELDS = {f.name: f for f in dataclasses.fields(DecodeCfg)}
 _SWITCHES = {"potentials": True, "band": True, "utility": "f12", "trim": True}
 _HARNESS_ONLY = ("max_tokens", "system_prompt")
@@ -237,6 +261,28 @@ def fit_prompt(chat, messages: Sequence[Mapping[str, str]], passage: str | None,
     return ids, info
 
 
+# ======================================================================== decoding helpers
+def needs_copied_text(spec) -> bool:
+    """The spec asks for text taken verbatim from the prompt (repeat the request, answer with
+    one of given options, start or end with a given phrase): the copy cap must stay off."""
+    if spec is None:
+        return False
+    return bool(getattr(spec, "repeat", None) or getattr(spec, "one_of", ())
+                or getattr(spec, "starts_with", ()) or getattr(spec, "end_phrase", None))
+
+
+def set_self_evidence(lm, weight: float) -> bool:
+    """Give the language model the self-evidence weight (``set_self_evidence_weight``); False
+    when it has no candidate tape (the weight does nothing there)."""
+    setter = getattr(lm, "set_self_evidence_weight", None)
+    return bool(setter(float(weight))) if callable(setter) else False
+
+
+def drop_counts(spec, units: Sequence[str]):
+    """``spec`` without the count constraints ``units``."""
+    return dataclasses.replace(spec, **{u: None for u in units}) if units else spec
+
+
 # ============================================================================== responder
 class Responder:
     """One reply per call (module docstring).
@@ -286,6 +332,37 @@ class Responder:
                                   max_depth=r.decode.max_depth, budget_aware=r.decode.budget_aware,
                                   trim=r.trim)
 
+    def feasible_program(self, spec, r: Resolved, budget: int):
+        """``(program, spec_used, dropped)``: the program of ``spec`` when an accepted response
+        fits ``budget`` tokens (``program.start_distance() <= budget``). Otherwise the count
+        constraints that cannot be met are dropped (module docstring, step 5): first every count
+        that cannot be met on its own (with the spec's other constraints), then, while the rest
+        still cannot be met together, the remaining count needing the most tokens; the last
+        resort is the structural program. ``dropped``: the descriptions of what was dropped
+        (``ConstraintSpec.constraints`` wording)."""
+        prog = self.program(spec, r)
+        if spec is None or prog.start_distance() <= budget:
+            return prog, spec, ()
+        units = [u for u in COUNT_FIELDS if getattr(spec, u, None) is not None]
+        need = {}
+        for u in units:
+            need[u] = self.program(drop_counts(spec, [x for x in units if x != u]), r).start_distance()
+        drop = [u for u in units if need[u] > budget]
+        keep = [u for u in units if u not in drop]
+        while True:
+            reduced = drop_counts(spec, drop)
+            prog = self.program(reduced, r)
+            if prog.start_distance() <= budget or not keep:
+                break
+            worst = max(keep, key=lambda u: (need[u], -COUNT_FIELDS.index(u)))
+            keep.remove(worst)
+            drop.append(worst)
+        dropped = [f"{u}: {getattr(spec, u)}" for u in COUNT_FIELDS if u in drop]
+        if prog.start_distance() > budget:          # not even without counts: structure only
+            dropped = list(spec.constraints)
+            reduced, prog = None, self.program(None, r)
+        return prog, reduced, tuple(dropped)
+
     # -- one reply ------------------------------------------------------------------------
     def reply(self, messages: Sequence[Mapping[str, Any]], settings: Mapping[str, Any] | None = None,
               seed: int = 0) -> dict[str, Any]:
@@ -304,26 +381,49 @@ class Responder:
         budget = self.context - d.max_new_tokens
         prompt, fit = fit_prompt(self.chat, msgs, None if passage is None else passage.text, budget)
         program, prog_error = None, None
+        spec_used, infeasible = spec, ()
         if r.potentials:
             try:
-                program = self.program(spec, r)
+                program, spec_used, infeasible = self.feasible_program(spec, r, d.max_new_tokens)
             except Exception as err:               # fall back to the structural potentials
                 prog_error = f"{type(err).__name__}: {err}"
-                program = self.program(None, r)
+                program, spec_used = self.program(None, r), spec
+        if spec_used is None:
+            from bes.exact import constraints
+
+            spec_used = constraints.ConstraintSpec()
         lm = self.lm_factory(d.max_new_tokens)
-        res = smc.decode(lm, prompt, n_particles=d.particles, max_new_tokens=d.max_new_tokens,
-                         seed=int(seed), settings=S.SamplingSettings.from_cfg(d),
-                         program=program, tok=self.tok, ess_frac=d.ess_frac,
-                         resample_at=d.resample_at, unit_max_tokens=d.unit_max_tokens,
-                         no_repeat_ngram=d.no_repeat_ngram, max_copy_run=d.max_copy_run,
-                         greedy=r.greedy)
-        cands = [sel_mod.Candidate(text=self.chat.display(p.tokens).strip(),
-                                   weight=float(res.weights[j]), finish=p.finish,
-                                   n_tokens=len(p.tokens), logp=p.logp_model)
-                 for j, p in enumerate(res.particles)]
-        choice = sel_mod.select(cands, spec, user_text, history=history,
-                                band="auto" if r.band else None, utility_kind=r.utility,
-                                budget=d.max_new_tokens)
+        self_evidence = set_self_evidence(lm, d.self_evidence_weight)
+        copy_cap = 0 if needs_copied_text(spec) else d.max_copy_run
+        sampling = S.SamplingSettings.from_cfg(d)
+
+        def run(prog):
+            return smc.decode(lm, prompt, n_particles=d.particles, max_new_tokens=d.max_new_tokens,
+                              seed=int(seed), settings=sampling, program=prog, tok=self.tok,
+                              ess_frac=d.ess_frac, resample_at=d.resample_at,
+                              unit_max_tokens=d.unit_max_tokens, no_repeat_ngram=d.no_repeat_ngram,
+                              max_copy_run=copy_cap, greedy=r.greedy)
+
+        def choose(res, sel_spec, band):
+            cands = [sel_mod.Candidate(text=self.chat.display(q.tokens).strip(),
+                                       weight=float(res.weights[j]), finish=q.finish,
+                                       n_tokens=len(q.tokens), logp=q.logp_model)
+                     for j, q in enumerate(res.particles)]
+            return sel_mod.select(cands, sel_spec, user_text, history=history, band=band,
+                                  utility_kind=r.utility, budget=d.max_new_tokens)
+
+        band = "auto" if (r.band and not infeasible) else None
+        res = run(program)
+        choice = choose(res, spec_used, band)
+        rerun = None
+        dead = [q.finish == "dead" for q in res.particles]
+        if program is not None and any(dead) and (all(dead) or not choice.text):
+            # never an empty reply because the potentials killed the particles: decode again
+            # with the structural potentials only (the spec is still used by the selection)
+            rerun = {"reason": "all particles died" if all(dead) else "empty reply",
+                     "finishes": dict(Counter(q.finish for q in res.particles))}
+            res = run(self.program(None, r))
+            choice = choose(res, spec_used, band)
         p = res.particles[choice.index]
         free = [lp for lp, f in zip(p.token_logp, p.forced) if not f]
         extra = {
@@ -334,7 +434,7 @@ class Responder:
             "finish": p.finish, "prompt_type": choice.prompt_type,
             "band": None if choice.band is None else str(choice.band), "answer": choice.answer,
             "constraints": list(spec.constraints),
-            "enforced": enforced(spec) if program is not None else [],
+            "enforced": enforced(spec_used) if program is not None and rerun is None else [],
             "violations": [x for x in choice.reasons.get(choice.index, []) if x.startswith("violation")],
             "library": None if passage is None else passage.title,
             "calc_spans": len(res.forced_spans[choice.index]),
@@ -344,10 +444,19 @@ class Responder:
             "ess_min": round(float(min(res.ess)), 4) if res.ess else None,
             "log_z": None if not np.isfinite(res.log_z) else round(float(res.log_z), 4),
             "logprob_sum_free": float(np.sum(free)), "logprob_count_free": len(free),
-            "fit": fit, "seed": int(seed), "greedy": r.greedy,
+            "temperature": res.extra.get("temperature"), "tempered_by": res.extra.get("tempered_by"),
+            "self_evidence_weight": d.self_evidence_weight if self_evidence else None,
+            "copy_cap": copy_cap, "fit": fit, "seed": int(seed), "greedy": r.greedy,
         }
-        if r.ignored:
-            extra["ignored"] = {k: v for k, v in r.ignored}
+        if infeasible:
+            extra["infeasible"] = list(infeasible)
+        if rerun is not None:
+            extra["rerun"] = rerun
+        ignored = {k: v for k, v in r.ignored}
+        if not self_evidence and (settings or {}).get("self_evidence_weight") is not None:
+            ignored["self_evidence_weight"] = (settings or {})["self_evidence_weight"]
+        if ignored:
+            extra["ignored"] = ignored
         for name, err in (("spec_error", spec_error), ("program_error", prog_error)):
             if err:
                 extra[name] = err
@@ -459,7 +568,7 @@ def our_generator(checkpoint: str, config: str, library: str = "", overrides: st
     key: cache key (default: derived from the checkpoint, the configuration, the code and the
     library). Returns ``generate(messages, settings, seed) -> dict`` with a ``key`` attribute."""
     from bes.config import config_hash, load_config, to_dict
-    from bes.decode.lm import OurLM
+    from bes.decode.lm import OurLM, cache_slots
     from bes.tokenizer import load as load_tokenizer
 
     items = [x.strip() for x in str(overrides).split(",") if x.strip()]
@@ -472,8 +581,16 @@ def our_generator(checkpoint: str, config: str, library: str = "", overrides: st
 
         lib = Library.load(str(library))
 
+    n_cap = int(cfg.decode.max_new_tokens)
+
     def lm_factory(max_new_tokens: int):
-        return OurLM(params, consts, cfg.model, tok, max_steps=4 * int(max_new_tokens))
+        # about 2 x max_new_tokens synchronous steps (waiting included) is enough; the cache
+        # holds any prompt that fits the context plus those steps for every request of up to
+        # n_cap new tokens, so one compiled decoder per particle count serves every reply
+        n = int(max_new_tokens)
+        return OurLM(params, consts, cfg.model, tok, max_steps=2 * n,
+                     tmax=cache_slots(responder.context, max(n, n_cap)),
+                     self_evidence_weight=cfg.decode.self_evidence_weight)
 
     responder = Responder(lm_factory, tok, cfg, library=lib)
 
@@ -494,4 +611,4 @@ def our_generator(checkpoint: str, config: str, library: str = "", overrides: st
 
 __all__ = ["Responder", "OurChat", "Resolved", "resolve", "clean_messages", "fit_prompt",
            "our_generator", "load_checkpoint", "find_checkpoint", "checkpoint_fingerprint",
-           "code_hash", "RESPOND_VERSION"]
+           "code_hash", "RESPOND_VERSION", "needs_copied_text", "set_self_evidence", "drop_counts"]

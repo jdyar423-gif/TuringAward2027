@@ -68,6 +68,14 @@ _DENSE_SWITCH = {"cand/in_proj": "cand_in", "trust/proj": "cand_out",
 
 
 # ---------------------------------------------------------------------------- helpers
+
+def _soft_cap(a: float, cap: float, knee: float = 2.0) -> float:
+    """The smooth cap of ``bes.model.predictive.soft_cap`` (independent re-statement): identity
+    up to ``cap - knee``, then ``(cap - knee) + knee * tanh((a - cap + knee) / knee)``."""
+    lo = cap - knee
+    return a if a <= lo else lo + knee * math.tanh((a - lo) / knee)
+
+
 def _enable(consts: Mapping | None, cfg) -> dict[str, Any]:
     """Runtime switches as floats (``kind`` as ``float64[N_KINDS]``, ``src`` as
     ``float64[N_SRC]``); defaults follow the static flags (as ``bes.model.model.make_consts``)."""
@@ -452,7 +460,7 @@ def reference_logits(store: RowStore, consts: Mapping | None, feats: Mapping, cf
             c = sum(store.row(f"trust/feat/{name}", r) for name, r in rows)
             bias = sum(float(store.row(f"trust/bias/{name}", r)) for name, r in rows)
             a = bias + float(ht @ c) - cfg.mass_offset
-            mass = math.exp(min(a, cfg.mass_log_cap)) * float(weight[k])
+            mass = math.exp(_soft_cap(a, cfg.mass_log_cap)) * float(weight[k])
             add[ct[k]] += mass
             total += mass
         logq = log_softmax(z)

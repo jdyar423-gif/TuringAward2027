@@ -3,6 +3,9 @@
 masking of unused slots, cache reordering, the host loops and determinism."""
 from __future__ import annotations
 
+import functools
+
+import jax
 import numpy as np
 import pytest
 
@@ -254,6 +257,102 @@ def test_down_weighted_self_evidence_in_decoding(setup):
     src = [name for name, _ in CAND_FEATS].index("src")
     assert np.any(feats["cand_feat"][..., src] == 5)
     assert np.max(np.abs(full - full_default)) > 1e-4
+
+
+def _np_tempered_law(cfg, params, hidden, cand, m, temperature):
+    """log p_T from hidden states (numpy float64): the head logits written here, the network
+    tempered, the masses added untempered: log((softmax(z / T) + add) / (1 + M))."""
+    from _model_testlib import to_numpy
+
+    P = to_numpy(params)
+    h = np.asarray(hidden, np.float64)
+    z = (h @ P["head"]["proj"]) @ P["head"]["out"].T
+    z = cfg.softcap * np.tanh(z / cfg.softcap)
+    zt = z / temperature
+    q = np.exp(zt - zt.max(-1, keepdims=True))
+    q /= q.sum(-1, keepdims=True)
+    m = np.asarray(m, np.float64)
+    cand = np.asarray(cand)
+    valid = (cand >= 0) & (cand < cfg.vocab_size)
+    m = np.where(valid, m, 0.0)
+    add = np.zeros_like(q)
+    for idx in np.ndindex(cand.shape[:-1]):
+        for k in range(cand.shape[-1]):
+            if valid[idx + (k,)]:
+                add[idx + (int(cand[idx + (k,)]),)] += m[idx + (k,)]
+    return np.log((q + add) / (1.0 + m.sum(-1))[..., None])
+
+
+@pytest.mark.parametrize("temperature", [0.5, 0.8])
+def test_decoding_at_a_temperature_tempers_the_network_only(setup, temperature):
+    """Prefill + stepwise decode at temperature T: the scores are log p_T with the network
+    tempered and the tape's masses untouched (independent numpy law from the hidden states and
+    the masses); one compiled program serves every temperature (default 1 included); without
+    a tape the scores are z / T."""
+    cfg, params, consts, feats, full, hidden = setup
+    dec = G.jitted(cfg, donate=False)
+    hs = []
+    z, _ = incremental(dec, params, consts, cfg, feats, 9, hidden_out=hs)     # temperature 1
+
+    def n_compiled():
+        return tuple(getattr(f, "compiled", f)._cache_size() for f in (dec.prefill, dec.decode_step))
+    sizes = n_compiled()
+    zt = _incremental_t(dec, params, consts, cfg, feats, 9, temperature)
+    tail = {k: feats[k][:, 8:] for k in ("cand_tok", "cand_feat")}
+    cand, m = jitted("tape_masses", cfg)(params, consts, hs[0], tail)
+    want = _np_tempered_law(cfg, params, hs[0], cand, m, temperature)
+    np.testing.assert_allclose(zt, want, atol=2e-4, rtol=0)
+    assert np.max(np.abs(_logsumexp(zt))) < 1e-5
+    mixture = z / temperature                           # tempering the whole law: different
+    mixture = mixture - _logsumexp(mixture)[..., None]
+    assert np.max(np.abs(zt - mixture)) > 1e-2
+    off = M.make_consts(cfg, cand_out=0.0)
+    zo = _incremental_t(dec, params, off, cfg, feats, 9, temperature)
+    plain = np.asarray(jitted("logits_fn", cfg)(params, off, feats))[:, 8:] / temperature
+    np.testing.assert_allclose(zo - _logsumexp(zo)[..., None],
+                               plain - _logsumexp(plain)[..., None], atol=2e-4, rtol=0)
+    _incremental_t(dec, params, consts, cfg, feats, 9, 1.3)
+    # no temperature, the default one or any other: the same compiled programs
+    assert n_compiled() == sizes
+
+
+def _incremental_t(dec, params, consts, cfg, feats, split, temperature, chunk=8):
+    """:func:`incremental` with the temperature passed to every call."""
+    b, t = feats["tokens"].shape
+    pad_id = special_id("<|pad|>", cfg.vocab_size)
+    cache = G.init_cache(cfg, b, TMAX)
+    pre = _left_pad(_slice(feats, slice(0, split)), (-split) % chunk, pad_id)
+    n_pad = (-split) % chunk
+    pre["pos"] = np.concatenate([np.zeros((b, n_pad), np.int32),
+                                 np.broadcast_to(np.arange(split, dtype=np.int32), (b, split))], 1)
+    for lo in range(0, split + n_pad, chunk):
+        z, _, cache = dec.prefill(params, consts, cache, {k: a[:, lo:lo + chunk] for k, a in pre.items()},
+                                  temperature)
+    out = [np.asarray(z)]
+    for j in range(split, t):
+        row = {k: np.asarray(feats[k])[:, j] for k in KEYS if k != "tokens"}
+        z, _, cache = dec.decode_step(params, consts, cache, feats["tokens"][:, j], row, temperature)
+        out.append(np.asarray(z))
+    return np.stack(out, axis=1)
+
+
+def test_generate_loop_samples_the_tempered_law(setup):
+    """The host loop at a temperature records the scores of the full forward at that
+    temperature (``logits_fn(..., temperature)``)."""
+    cfg, params, consts, _, _, _ = setup
+    bos = M.bos_id(cfg)
+    prompt = [bos] + list(range(30, 40))
+    n_new = 6
+    rows = _random_rows(cfg, len(prompt) + n_new, seed=16)
+    out = G.generate(params, consts, cfg, prompt, ReplayFeatures(rows), G.greedy,
+                     max_new_tokens=n_new, stop_ids=(), chunk=8, record=True, temperature=0.6)
+    seq = prompt + out.tokens
+    f = {"tokens": np.asarray(seq[:-1], np.int32)[None],
+         "seg": G.prompt_segments(seq[:-1], bos)[None],
+         **{k: a[None, :len(seq) - 1] for k, a in rows.items()}}
+    ref = np.asarray(jax.jit(functools.partial(M.logits_fn, cfg=cfg))(params, consts, f,
+                                                                       temperature=np.float32(0.6)))[0]
+    np.testing.assert_allclose(out.logits, ref[len(prompt) - 1:], atol=ATOL, rtol=0)
 
 
 def test_decode_is_deterministic(setup):

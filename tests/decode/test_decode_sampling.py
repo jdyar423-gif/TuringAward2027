@@ -104,6 +104,55 @@ def test_truncation_matches_reference(top_k, top_p, min_p):
             np.testing.assert_array_equal(got[r], _ref_keep(lq[r], top_k, top_p, min_p, within[r]))
 
 
+def _two_sort_keep(lq, top_k, top_p, min_p, within):
+    """The earlier implementation (a second sort for top-p), kept here as a reference."""
+    lq = np.where(within, np.asarray(lq, np.float64), -np.inf)
+    keep = np.isfinite(lq)
+    n_v = lq.shape[-1]
+    if 0 < top_k < n_v:
+        order = np.argsort(-lq, axis=-1, kind="stable")
+        rank = np.empty_like(order)
+        np.put_along_axis(rank, order, np.broadcast_to(np.arange(n_v), order.shape), axis=-1)
+        keep &= rank < top_k
+    if top_p < 1.0:
+        x = np.where(keep, lq, -np.inf)
+        p = np.exp(S.log_softmax(x))
+        order = np.argsort(-x, axis=-1, kind="stable")
+        ps = np.take_along_axis(p, order, axis=-1)
+        kept = (np.cumsum(ps, axis=-1) - ps) < top_p
+        kp = np.zeros_like(keep)
+        np.put_along_axis(kp, order, kept, axis=-1)
+        keep &= kp
+    if min_p > 0.0:
+        x = np.where(keep, lq, -np.inf)
+        keep &= x >= np.max(x, axis=-1, keepdims=True) + np.log(min_p)
+    return keep
+
+
+def test_truncation_sorts_each_row_once(monkeypatch):
+    """top-k and top-p share one sort per row (the survivors of top-k keep their order), with
+    exactly the earlier results, ties included."""
+    rng = np.random.default_rng(12)
+    calls = []
+    real = np.argsort
+
+    def counting(*a, **k):
+        calls.append(1)
+        return real(*a, **k)
+
+    for ties in (False, True):
+        lq = S.log_softmax(_rand_logp(rng, 7, 50, ties=ties))
+        within = rng.random((7, 50)) < 0.9
+        for top_k, top_p, min_p in ((10, 0.8, 0.0), (5, 0.95, 0.05), (0, 0.7, 0.0), (20, 1.0, 0.0)):
+            want = _two_sort_keep(lq, top_k, top_p, min_p, within)
+            monkeypatch.setattr(np, "argsort", counting)
+            calls.clear()
+            got = S.truncation_keep(lq, top_k, top_p, min_p, within=within)
+            monkeypatch.setattr(np, "argsort", real)
+            np.testing.assert_array_equal(got, want)
+            assert len(calls) == 1, (top_k, top_p)
+
+
 def test_step_increment_before_and_after_the_mask():
     rng = np.random.default_rng(2)
     k, v = 5, 17

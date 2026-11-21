@@ -9,6 +9,12 @@ the increment is ``p~ * allowed`` (truncation before the mask) or ``alpha * q`` 
 ``alpha`` the allowed mass of the tempered model, ``q`` the truncated renormalised allowed
 distribution). ``Z`` is the sum over complete accepted sequences of the product of the
 increments and ``pi`` their normalised products.
+
+The tempered model is the distribution the decoder samples from: ``softmax(log p / T)`` for a
+table model, and for :class:`TapeTableLM` (a table model with tape-like masses that tempers
+itself, as ``OurLM`` does) ``p_T = (softmax(z / T) + m) / (1 + M)``, computed here from its
+tables. The reported per-token log-probabilities and the incremental weights must be those of
+that distribution.
 """
 from __future__ import annotations
 
@@ -71,17 +77,68 @@ def ref_top_p(logq: np.ndarray, top_p: float, within: np.ndarray) -> np.ndarray:
     return out
 
 
+class TapeTableLM(TableLM):
+    """An order-2 table model with tape-like masses: after context token ``c``,
+    ``p(v) = (softmax(z[c])(v) + m[c, v]) / (1 + sum_v m[c, v])``. Like ``OurLM`` it tempers
+    itself (``set_temperature``): only ``softmax(z[c] / T)`` is tempered, the masses are not."""
+
+    def __init__(self, z: np.ndarray, m: np.ndarray):
+        self.z = np.asarray(z, np.float64)
+        self.m = np.asarray(m, np.float64)
+        self.t = 1.0
+        self.set_calls = []
+        super().__init__(self._law, self.z.shape[-1], order=2)
+
+    def _law(self, ctx):
+        zc = self.z[ctx[0]] / self.t
+        q = np.exp(zc - zc.max())
+        q /= q.sum()
+        mc = self.m[ctx[0]]
+        return np.log((q + mc) / (1.0 + mc.sum()))
+
+    def set_temperature(self, t: float) -> bool:
+        self.t = float(t)
+        self.set_calls.append(self.t)
+        return True
+
+    @classmethod
+    def random(cls, vocab_size: int, seed: int, n_cand: int = 2, mass: float = 1.5,
+               boost: dict | None = None) -> "TapeTableLM":
+        rng = np.random.default_rng(seed)
+        z = rng.standard_normal((vocab_size, vocab_size)) * 1.5
+        for v, b in (boost or {}).items():
+            z[:, v] += b
+        m = np.zeros((vocab_size, vocab_size))
+        for c in range(vocab_size):
+            for v in rng.choice(vocab_size - 16, size=n_cand, replace=False):
+                m[c, v] = mass * rng.gamma(1.0)
+        return cls(z, m)
+
+
+def tape_law(lm: TapeTableLM, ctx: int, temperature: float) -> np.ndarray:
+    """Reference ``p_T`` of the tape table model (float64), from its tables."""
+    zc = lm.z[ctx] / temperature
+    q = np.exp(zc - zc.max())
+    q = q / q.sum()
+    return (q + lm.m[ctx]) / (1.0 + lm.m[ctx].sum())
+
+
 class Setting:
-    """Tiny vocabulary, table model, spec, horizon and sampling settings, with the exact target."""
+    """Tiny vocabulary, table model, spec, horizon and sampling settings, with the exact target.
+    ``tape``: the model is a :class:`TapeTableLM` (masses ``tape`` on two candidates per
+    context) and the reference tempers its network only."""
 
     def __init__(self, pieces, spec, horizon, *, seed=0, order=2, temperature=1.0, top_p=1.0,
-                 after=True, boost_end=1.0, lm=None):
+                 after=True, boost_end=1.0, lm=None, tape: float = 0.0):
         self.tok = TinyTokenizer(pieces)
         self.pieces = [p.encode() for p in pieces]
         self.spec, self.horizon = spec, horizon
         sp = self.tok.special_tokens
         self.end = sp["<|end|>"]
         v = self.tok.vocab_size
+        self.tape = bool(tape)
+        if tape:
+            lm = TapeTableLM.random(v, seed=seed, mass=tape, boost={self.end: boost_end})
         self.lm = lm or TableLM.random(v, order=order, seed=seed, boost={self.end: boost_end})
         self.prompt = [sp["<|bos|>"], sp["<|user|>"], 0, self.end, sp["<|assistant|>"]]
         self.settings = S.SamplingSettings(temperature=temperature, top_p=top_p,
@@ -110,10 +167,19 @@ class Setting:
             m[v] = self.exists(data + p, rem - 1)
         return m
 
+    def logq(self, seq: tuple) -> np.ndarray:
+        """``log p_T`` the decoder samples from after ``seq`` (float32 model rows, as the model
+        hands them over)."""
+        hist = self.prompt + list(seq)
+        if self.tape:
+            logp = np.log(tape_law(self.lm, hist[-1], self.settings.temperature)).astype(np.float32)
+            return ref_logq(logp, 1.0)                  # the model tempered itself
+        logp = self.lm.logp(hist).astype(np.float32)
+        return ref_logq(logp, self.settings.temperature)
+
     def increment(self, seq: tuple, data: bytes) -> np.ndarray:
         """Unnormalised target increment ``gamma[v]`` (float64) after the prefix ``seq``."""
-        logp = self.lm.logp(self.prompt + list(seq)).astype(np.float32)
-        lq = ref_logq(logp, self.settings.temperature)
+        lq = self.logq(seq)
         m = self.allowed(seq, data)
         if self.settings.truncate_after_mask:
             alpha = np.exp(lq)[m].sum()
@@ -291,6 +357,8 @@ def test_incremental_weight_is_the_allowed_mass(setting):
 
 
 def test_k1_without_potentials_is_ordinary_sampling():
+    """Draw for draw a plain sampling loop at T = 0.8; the reported log-probabilities are those
+    of the distribution sampled from, the tempered model ``softmax(log p / T)`` (bit for bit)."""
     tok = TinyTokenizer(PIECES)
     end = tok.special_tokens["<|end|>"]
     lm = TableLM.random(tok.vocab_size, order=2, seed=5, boost={end: 1.5})
@@ -307,13 +375,82 @@ def test_k1_without_potentials_is_ordinary_sampling():
             t = int(S.draw(lg, S.counter_uniform(seed, S.STREAM_TOKEN, np.array([0]),
                                                  np.array([n])))[0])
             out.append(t)
-            lps.append(float(logp[0, t]))
+            lps.append(float(S.tempered(logp, 0.8)[0, t]))
             if t == end:
                 break
             logp = lm.step(np.array([t]), np.array([True]))
         assert res.particles[0].tokens == out
         assert res.particles[0].token_logp == lps          # bit for bit
         assert abs(res.log_z) < 1e-9 or res.particles[0].finish != "stop"
+        assert res.extra == {"temperature": 0.8, "tempered_by": "decoder"}
+
+
+def test_a_self_tempering_model_is_not_tempered_again():
+    """A tape model that tempers its network itself (like OurLM): the decoder tells it the
+    temperature, samples its rows as they are (draw for draw a plain loop over p_T computed
+    here from its tables, never softmax(log p_T / T)) and reports log p_T of every token."""
+    tok = TinyTokenizer(PIECES)
+    end = tok.special_tokens["<|end|>"]
+    prompt = [tok.special_tokens["<|bos|>"], tok.special_tokens["<|assistant|>"]]
+    lm = TapeTableLM.random(tok.vocab_size, seed=6, mass=2.0, boost={end: 1.0})
+    st = S.SamplingSettings(temperature=0.6, top_p=0.9)
+    for seed in range(25):
+        res = smc.decode(lm, prompt, n_particles=1, max_new_tokens=12, seed=seed, settings=st,
+                         tok=tok)
+        assert lm.set_calls[-1] == 0.6 and res.extra["tempered_by"] == "model"
+        out, lps, ctx = [], [], prompt[-1]
+        for n in range(12):
+            row = np.log(tape_law(lm, ctx, 0.6)).astype(np.float32)[None]
+            lg, _ = S.step_increment(row, S.SamplingSettings(temperature=1.0, top_p=0.9))
+            t = int(S.draw(lg, S.counter_uniform(seed, S.STREAM_TOKEN, np.array([0]),
+                                                 np.array([n])))[0])
+            out.append(t)
+            lps.append(float(row[0, t]))
+            if t == end:
+                break
+            ctx = t
+        assert res.particles[0].tokens == out
+        assert res.particles[0].token_logp == lps          # bit for bit
+
+
+@pytest.mark.parametrize("spec,seed,top_p", [(ConstraintSpec(words=Interval(0, 2)), 5, 0.9),
+                                              (SPEC, 3, 0.9),
+                                              (ConstraintSpec(words=Interval(0, 2)), 5, 1.0)],
+                         ids=["<=2 words, top-p", "1 sentence <=2 words, top-p", "<=2 words"])
+def test_normalising_constant_is_unbiased_with_a_self_tempering_tape_model(spec, seed, top_p):
+    """F1 at T = 0.6 for a model with tape-like masses that tempers its network only: the
+    estimate is unbiased for the target built from p_T = (softmax(z / T) + m) / (1 + M), which
+    is several standard errors (and a factor > 3) away from the target of the tempered mixture,
+    what the decoder sampled before (truncation after the mask, the decoder's default; the other
+    target is covered with the table model above)."""
+    st = Setting(PIECES, spec, 5, seed=seed, temperature=0.6, top_p=top_p, tape=2.0)
+    zs = [math.exp(st.run(4, s, ess_frac=0.7, resample_at="token").log_z) for s in range(300)]
+    mean, se = _mean_and_se(zs)
+    assert st.z > 0
+    assert abs(mean - st.z) < 4 * se + 1e-12, (mean, st.z, se)
+    # the tempered-mixture target: the same law at T = 1 as a plain table, tempered by the decoder
+    v = st.tok.vocab_size
+    table = np.stack([np.log(tape_law(st.lm, c, 1.0)) for c in range(v)])
+    mix = Setting(PIECES, spec, 5, temperature=0.6, top_p=top_p, lm=TableLM.from_table(table))
+    assert st.z > 3 * mix.z and st.z - mix.z > 5 * se, (mix.z, st.z, se)
+
+
+def test_tape_model_weights_and_reported_logprobs_are_those_of_the_sampled_distribution():
+    """F2 with the self-tempering tape model: every incremental weight is the allowed mass of
+    p_T and every reported token log-probability is log p_T of that token."""
+    st = Setting(PIECES, SPEC, 5, seed=4, temperature=0.7, tape=1.5)
+    for seed in range(20):
+        res = st.run(6, seed, ess_frac=0.0, resample_at="token")
+        for j, p in enumerate(res.particles):
+            data = b""
+            for pos, t in enumerate(p.tokens):
+                g = st.increment(tuple(p.tokens[:pos]), data)
+                assert res.log_alpha[pos][j] == pytest.approx(math.log(g.sum()), abs=1e-9)
+                hist = st.prompt + list(p.tokens[:pos])
+                want = float(np.log(tape_law(st.lm, hist[-1], 0.7)).astype(np.float32)[t])
+                assert p.token_logp[pos] == want
+                if t != st.end:
+                    data += st.pieces[t]
 
 
 def test_determinism_and_resampling_bookkeeping(setting):
@@ -436,7 +573,9 @@ def test_our_model_end_to_end_with_real_tokenizer_features_and_constraints():
     for p in finished:
         text = display_text(p.tokens, tok)
         assert not [x for x in C.verify(spec, text) if x.split(":")[0] in ENFORCED], text
-    # reported log-probabilities equal a full forward pass over prompt + response
+    # reported log-probabilities equal a full forward pass over prompt + response with the
+    # consts the model decodes with (the self-evidence weight applied)
+    assert float(np.asarray(lm.consts["enable"]["src"])[5]) == 0.25
     for p in res.particles:
         if not p.tokens:
             continue
@@ -444,7 +583,7 @@ def test_our_model_end_to_end_with_real_tokenizer_features_and_constraints():
         feats = exact_features(seq, None, tok)
         feats = {k: np.asarray(v) for k, v in feats.items()}
         feats["tokens"] = seq
-        logits = np.asarray(jax.jit(M.logits_fn, static_argnames="cfg")(params, consts, feats,
+        logits = np.asarray(jax.jit(M.logits_fn, static_argnames="cfg")(params, lm.consts, feats,
                                                                         cfg=cfg))[0]
         lp = S.log_softmax(logits)
         n = len(prompt)
@@ -488,26 +627,35 @@ def test_ngram_blocking_outside_quotes_only():
     assert t[0] == 2 and t[1:6] == [0, 1, 0, 1, 0], t      # inside the quote nothing is blocked
 
 
-def test_copy_cap_limits_verbatim_runs_from_the_prompt():
+def test_copy_cap_limits_verbatim_runs_from_library_passages_only():
+    """The cap stops regurgitation of a LIBRARY passage; the same text in the user's own turn
+    (to repeat, quote or edit) is never capped."""
     pieces = ["a", "b", "c", "d", "e", "f", "Z", "."]
     tok = TinyTokenizer(pieces)
     sp = tok.special_tokens
-    source = [0, 1, 2, 3, 4, 5]                          # "abcdef" in the user turn
-    prompt = [sp["<|bos|>"], sp["<|user|>"], *source, sp["<|end|>"], sp["<|assistant|>"]]
+    source = [0, 1, 2, 3, 4, 5]                          # "abcdef"
+    lib_prompt = [sp["<|bos|>"], sp["<|library|>"], *source, sp["<|end|>"], sp["<|user|>"], 6,
+                  sp["<|end|>"], sp["<|assistant|>"]]
+    user_prompt = [sp["<|bos|>"], sp["<|user|>"], *source, sp["<|end|>"], sp["<|assistant|>"]]
     lm = _cycle_lm(tok, 0, [0, 1, 2, 3, 4, 5])
-    capped = smc.decode(lm, prompt, n_particles=1, max_new_tokens=9, seed=0, tok=tok,
+    capped = smc.decode(lm, lib_prompt, n_particles=1, max_new_tokens=9, seed=0, tok=tok,
                         max_copy_run=3, greedy=True).particles[0].tokens
-    free = smc.decode(lm, prompt, n_particles=1, max_new_tokens=9, seed=0, tok=tok,
+    free = smc.decode(lm, lib_prompt, n_particles=1, max_new_tokens=9, seed=0, tok=tok,
                       greedy=True).particles[0].tokens
     assert free[:6] == source
     runs = {tuple(source[i:i + 4]) for i in range(len(source) - 3)}
     body = [t for t in capped if t < len(pieces)]
     assert not any(tuple(body[i:i + 4]) in runs for i in range(len(body) - 3)), capped
     assert body[:3] == source[:3]                        # copying up to the cap is fine
+    # the user's own text: copied verbatim with the cap on
+    own = smc.decode(lm, user_prompt, n_particles=1, max_new_tokens=9, seed=0, tok=tok,
+                     max_copy_run=3, greedy=True).particles[0].tokens
+    assert own[:6] == source
     # names and numbers are exempt: a capitalised token may continue a copy
     lm2 = _cycle_lm(tok, 0, [0, 1, 2, 6])
     src2 = [0, 1, 2, 6, 7]
-    prompt2 = [sp["<|bos|>"], sp["<|user|>"], *src2, sp["<|end|>"], sp["<|assistant|>"]]
+    prompt2 = [sp["<|bos|>"], sp["<|library|>"], *src2, sp["<|end|>"], sp["<|user|>"], 3,
+               sp["<|end|>"], sp["<|assistant|>"]]
     out = smc.decode(lm2, prompt2, n_particles=1, max_new_tokens=6, seed=0, tok=tok,
                      max_copy_run=3, greedy=True).particles[0].tokens
     assert out[:4] == [0, 1, 2, 6]

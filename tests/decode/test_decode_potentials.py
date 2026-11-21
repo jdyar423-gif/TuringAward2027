@@ -168,19 +168,21 @@ def test_tracker_counts_match_measure_and_registers(unit):
 
 
 # ------------------------------------------------------------ exhaustive tiny vocabularies
-def _tree_check(pieces, spec, horizon, max_check_len, max_depth=8):
-    """Compare the budget-aware masks with exhaustive search over every prefix."""
+def _tree_check(pieces, spec, horizon, max_check_len, max_depth=8, accept=None):
+    """Compare the budget-aware masks with exhaustive search over every prefix (``accept``:
+    the reference acceptance of a complete response, default :func:`accepted`)."""
     tok = TinyTokenizer(pieces)
     prog = P.compile(spec, tok, max_depth=max_depth)
     ids = list(range(len(pieces)))
     end = prog.ids["end"]
     tb = [p.encode() for p in pieces]
+    accept = accept or (lambda data: accepted(data, spec, max_depth))
 
     @lru_cache(maxsize=None)
     def exists(data: bytes, budget: int) -> bool:
         if budget <= 0:
             return False
-        if accepted(data, spec, max_depth):
+        if accept(data):
             return True
         return budget > 1 and any(exists(data + tb[v], budget - 1) for v in ids)
 
@@ -192,7 +194,7 @@ def _tree_check(pieces, spec, horizon, max_check_len, max_depth=8):
         seq, data, trk = stack.pop()
         mask = trk.allowed()[0]
         rem = horizon - len(seq)
-        assert mask[end] == (rem >= 1 and accepted(data, spec, max_depth)), (seq, data)
+        assert mask[end] == (rem >= 1 and accept(data)), (seq, data)
         assert not mask[others].any()
         for v in ids:
             want = exists(data + tb[v], rem - 1)
@@ -551,6 +553,152 @@ def test_enforced_lists_what_the_masks_guarantee():
     spec = ConstraintSpec(words=Interval(0, 9), keywords=("ocean",), no_commas=True,
                           json_output=True)
     assert P.enforced(spec) == ["words: at most 9", "no_commas"]
+    local = ConstraintSpec(forbidden=("dog",), case="lower", letters=(("e", Interval(0, 0)),
+                                                                       ("a", Interval(2, None))))
+    assert P.enforced(local) == ["forbidden: 'dog'", "case: lower", "letter: 'e' exactly 0"]
+
+
+# ------------------------------------------------- token-local: forbidden, case, letters
+def _no_forbidden(data: bytes, words) -> bool:
+    """Reference: no complete occurrence (bytes, ASCII case-insensitive, no ASCII letter or
+    digit or byte >= 0x80 right before or after), written here by brute force."""
+    low = data.lower()
+    def wordb(b):
+        return b >= 0x80 or chr(b).isalnum() and b < 0x80
+    for w in words:
+        for i in range(len(low) - len(w) + 1):
+            if low[i:i + len(w)] == w and (i == 0 or not wordb(data[i - 1])) and \
+                    (i + len(w) == len(data) or not wordb(data[i + len(w)])):
+                return False
+    return True
+
+
+def test_forbidden_machine_matches_has_forbidden_bytes():
+    rng = random.Random(11)
+    words = [b"cat", b"ice cream", b"a", b"x9"]
+    machine = P.ForbiddenMachine(words)
+    alpha = [b"c", b"a", b"t", b"C", b"A", b"T", b"ice", b" cream", b" ", b".", b"_", b"-",
+             b"x9", b"9", b"s", b"\xc3\xa9", b"i", b"\n"]
+    seen = {True: 0, False: 0}
+    for _ in range(20000):
+        data = b"".join(rng.choice(alpha) for _ in range(rng.randint(0, 8)))
+        st, _, ok = P.run_machine(machine, data, final=False)
+        got = ok and machine.accept(st)
+        want = not C.has_forbidden_bytes(data, words, final=True)
+        assert got == want == _no_forbidden(data, words), data
+        seen[got] += 1
+    assert min(seen.values()) > 2000
+
+
+def _local_accept(spec):
+    words = tuple(k.lower().encode() for k in spec.forbidden)
+    banned = [w.encode() for w, iv in spec.letters if iv.hi == 0]
+
+    def accept(data: bytes) -> bool:
+        if not accepted(data, spec):
+            return False
+        if not _no_forbidden(data, words):
+            return False
+        if spec.case == "lower" and any(65 <= b <= 90 for b in data):
+            return False
+        if spec.case == "upper" and any(97 <= b <= 122 for b in data):
+            return False
+        return not any(b in data.lower() for b in banned)
+    return accept
+
+
+LOCAL = [
+    ("forbidden word", ["a", "b", "ab", " ", ".", "A"], ConstraintSpec(forbidden=("ab",)), 6),
+    ("forbidden + 1 sentence", ["c", "at", " ", ".", "s"],
+     ConstraintSpec(forbidden=("cat",), sentences=Interval(1, 1)), 7),
+    ("lower case", ["a", "B", " ", ".", "Ab"], ConstraintSpec(case="lower"), 5),
+    ("upper case + <=2 words", ["a", "B", " ", "AB", "."],
+     ConstraintSpec(case="upper", words=Interval(0, 2)), 6),
+    ("no letter e", ["e", "E", "a", " ", "ae"], ConstraintSpec(letters=(("e", Interval(0, 0)),)), 5),
+]
+
+
+@pytest.mark.parametrize("name,pieces,spec,horizon", LOCAL, ids=[s[0] for s in LOCAL])
+def test_token_local_constraints_are_exact_on_tiny_vocabularies(name, pieces, spec, horizon):
+    """Forbidden words (an aux machine of the reachability search), required case and banned
+    letters (static masks): every allowed token has an accepted completion and every token
+    with one is allowed."""
+    assert _tree_check(pieces, spec, horizon, max_check_len=4, accept=_local_accept(spec)) > 50
+
+
+def test_forbidden_words_and_case_on_the_real_tokenizer():
+    tok = load()
+    spec = C.compile("Describe a cat in lowercase letters without using the words 'dog' or "
+                     "'animal'.")
+    assert spec.forbidden == ("dog", "animal") and spec.case == "lower"
+    prog = P.compile(spec, tok)
+    trk = prog.tracker(1, 64)
+    for t in tok.encode("my"):
+        trk.advance(np.array([t]))
+    mask = trk.allowed()[0]
+    tb = tok.all_token_bytes()
+    caps = [v for v in range(tok.vocab_size - 16) if any(65 <= b <= 90 for b in tb[v])]
+    assert caps and not mask[caps].any()                   # no ASCII capital anywhere
+    dog = tok.encode(" dog")
+    assert len(dog) == 1 and mask[dog[0]]                  # may still become "dogs" ...
+    trk.advance(np.array(dog))
+    m2 = trk.allowed()[0]
+    for w in (".", ",", " is"):
+        assert not m2[tok.encode(w)[0]], w                 # ... but must not end as "dog"
+    assert m2[tok.encode("s")[0]] and not m2[prog.ids["end"]]
+
+
+# ------------------------------------------------------ calculator under a word bound
+def test_calc_needs_a_reachable_minimal_span():
+    """CALC is allowed only when the cheapest span (a one-token expression, EQ, its result,
+    CALC_END) keeps an accepted END reachable: under 'exactly 1 word' never (the span alone
+    holds two words), under 'at most 2 words' at the start but not after a word."""
+    pieces = ["1", "0", "-", "a", " b", "."]
+    tok = TinyTokenizer(pieces)
+    calc = tok.special_tokens["<|calc|>"]
+    one = P.compile(ConstraintSpec(words=Interval(1, 1)), tok)
+    assert not one.tracker(1, 20).allowed()[0, calc] and one.calc_span is not None
+    two = P.compile(ConstraintSpec(words=Interval(0, 2)), tok)
+    trk = two.tracker(1, 20)
+    assert trk.allowed()[0, calc]
+    after_word = trk.copy()
+    for t in (3, 4):                                        # "a b": two words already
+        after_word.advance(np.array([t]))
+    assert not after_word.allowed()[0, calc]
+    glued = trk.copy()
+    glued.advance(np.array([3]))                           # "a": an expression continues it
+    assert glued.allowed()[0, calc]                         # "a0 = 0" holds two words
+    # without a count the budget alone decides, as before
+    free = P.compile(None, tok)
+    t5 = free.tracker(1, 5)
+    assert not t5.allowed()[0, calc]                       # CALC 0 EQ 0 CALC_END leaves no END
+    assert free.tracker(1, 6).allowed()[0, calc]
+
+
+def test_calculator_spans_never_strand_particles_under_a_word_bound():
+    """The stand-in of the review: a model that likes starting calculator spans, 'exactly 1
+    word', eight particles without resampling: every particle finishes (before: 7 of 8 died
+    inside an expression that could never be closed)."""
+    from bes.decode import sampling as S
+    from bes.decode import smc
+    from bes.decode.lm import TableLM
+
+    tok = load()
+    prog = P.compile(C.compile("What is 17 times 23? Answer in one word."), tok)
+    v = tok.vocab_size
+    logits = np.full(v, -30.0)
+    logits[[tok.encode(str(d))[0] for d in range(10)]] = 1.0
+    logits[tok.encode("*")[0]] = 0.5
+    logits[prog.ids["calc"]] = 3.0
+    logits[prog.ids["eq"]] = 2.0
+    logits[tok.end] = 1.0
+    for w in (" yes", "Yes", "391"):
+        logits[tok.encode(w)[0]] = 1.0
+    lt = logits - np.log(np.exp(logits).sum())
+    lm = TableLM(lambda ctx: lt, v, order=1)
+    res = smc.decode(lm, [tok.bos], n_particles=8, max_new_tokens=384, seed=0, ess_frac=0.0,
+                     settings=S.SamplingSettings(temperature=1.0, top_p=1.0), program=prog)
+    assert [p.finish for p in res.particles] == ["stop"] * 8
 
 
 # ---------------------------------------------------------------------------- twist

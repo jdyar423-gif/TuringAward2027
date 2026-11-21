@@ -18,7 +18,10 @@ Structure (``structure=True``):
 - the bracket depth outside code stays ``<= max_depth`` after every token (a token that would
   end deeper is masked; documented change of the target);
 - calculator spans (``CALC expr EQ result CALC_END``): ``CALC`` only when the vocabulary can spell
-  a valid expression and the budget leaves room for a span; expression tokens consist of
+  a valid expression and the cheapest span (one expression token such as ``0``, ``EQ``, its
+  forced result, ``CALC_END``) keeps an accepted ``END`` reachable within the budget, its counts
+  included (no span adds less to any count, so under an upper word bound that no span can
+  meet ``CALC`` is masked instead of stranding the particle); expression tokens consist of
   ``0-9 . + - * / % ( )`` and spaces and must keep the expression a *viable prefix* of the
   calculator's grammar (a recogniser with a parenthesis depth: no completion of ``"2 3"`` or
   ``"(*"`` is valid), the expression neither starts nor ends with whitespace (so the token bytes
@@ -36,8 +39,17 @@ with ``,`` are masked); ``end_question`` (``END`` only when the text, without tr
 whitespace and closers, ends with ``?``); ``code_block`` (``END`` only after a fenced block).
 Paragraph constraints add one restriction (documented change of the target): outside a fence, a
 line that so far holds only spaces, tabs and ``*`` with at least three ``*`` must stay a pure
-``***`` divider line. Other spec fields (keywords, forbidden words, JSON, case, families added
-later) are not enforced here; verify them on the complete text (:func:`enforced` lists what is).
+``***`` divider line.
+
+Token-local constraints of ``ConstraintSpec.token_local()`` besides the counts: ``case`` (a
+static mask: ``"lower"`` bans tokens with an ASCII capital, ``"upper"`` tokens with an ASCII
+small letter; "at least one cased letter" and non-ASCII letters are left to the verifier),
+banned letters (a letter whose count must be 0: tokens holding it in either case are masked)
+and ``forbidden`` words (:class:`ForbiddenMachine`, an aux machine of the reachability
+search: no complete occurrence of a forbidden word, byte for byte as
+``constraints.has_forbidden_bytes``, which only flags what ``constraints.verify`` flags). Other
+spec fields (keywords, JSON, letter counts other than 0, families added later) are not
+enforced here; verify them on the complete text (:func:`enforced` lists what is).
 
 Reachability pruning (mandatory, exact)
 ---------------------------------------
@@ -402,6 +414,68 @@ class EndQuestionMachine:
         return ()
 
 
+def _word_byte(b: int) -> bool:
+    """A word byte of ``constraints.has_forbidden_bytes``: ASCII letter or digit, or >= 0x80."""
+    return b >= 0x80 or 48 <= b <= 57 or 65 <= b <= 90 or 97 <= b <= 122
+
+
+class ForbiddenMachine:
+    """No complete occurrence of a forbidden word, one byte at a time: exactly
+    ``not constraints.has_forbidden_bytes(text, words)`` (``ConstraintSpec.token_local().forbidden``:
+    lowercase bytes, matched ASCII-case-insensitively, with no word byte right before or after).
+    That byte-level test only flags texts ``constraints.verify`` also flags (it is exact for
+    ASCII neighbours), so the potential never removes a response the verifier accepts.
+
+    State ``(prev_word, partial, pending)``: the previous byte is a word byte; ``partial``: the
+    sorted ``(word index, bytes matched)`` of the matches in progress (a match starts only after
+    a non-word byte or at the start of the response); ``pending``: some word is complete up to
+    the previous byte. The next byte decides a pending occurrence: a word byte extends it into a
+    longer word (no occurrence), any other byte completes it, which :meth:`step` forbids by
+    returning ``None``; at the end of the text :meth:`accept` rejects a pending occurrence.
+    """
+
+    events: tuple[str, ...] = ()
+    flags: tuple[str, ...] = ()
+
+    def __init__(self, words: Sequence[bytes]):
+        self.words = tuple(bytes(w).lower() for w in words if w)
+
+    def init(self) -> tuple:
+        return (0, (), 0)
+
+    def step(self, st: tuple, b: int):
+        prev_word, partial, pending = st
+        word = _word_byte(b)
+        if pending and not word:
+            return None
+        lb = b + 32 if 65 <= b <= 90 else b
+        nxt, done = set(), 0
+        for i, j in partial:
+            w = self.words[i]
+            if w[j] == lb:
+                if j + 1 == len(w):
+                    done = 1
+                else:
+                    nxt.add((i, j + 1))
+        if not prev_word:
+            for i, w in enumerate(self.words):
+                if w[0] == lb:
+                    if len(w) == 1:
+                        done = 1
+                    else:
+                        nxt.add((i, 1))
+        return (int(word), tuple(sorted(nxt)), done), ()
+
+    def flush(self, st: tuple):
+        return st, ()
+
+    def accept(self, st: tuple) -> bool:
+        return not st[2]
+
+    def flag(self, st: tuple) -> tuple:
+        return ()
+
+
 class ProductMachine:
     """Several byte machines side by side (state = tuple of states, events concatenated)."""
 
@@ -610,9 +684,25 @@ def dims_for(spec) -> list[Dim]:
     return dims
 
 
+def _token_local(spec) -> dict:
+    """Token-local constraints of ``spec`` besides the counts and flags, from
+    ``ConstraintSpec.token_local()``: ``forbidden`` (lowercase bytes of the forbidden words,
+    sorted), ``case`` (``"lower"``, ``"upper"`` or ``None``) and ``banned_letters`` (the byte
+    pair of every letter whose upper bound is 0, sorted)."""
+    out = {"forbidden": (), "case": None, "banned_letters": ()}
+    if spec is None or not hasattr(spec, "token_local"):
+        return out
+    tl = spec.token_local()
+    out["forbidden"] = tuple(sorted(set(tl.forbidden)))
+    out["case"] = tl.case
+    out["banned_letters"] = tuple(sorted(lb for lb, _lo, hi in tl.letters if hi == 0))
+    return out
+
+
 def enforced(spec) -> list[str]:
     """The constraints of ``spec`` that the potentials guarantee (``ConstraintSpec.constraints``
-    wording); everything else must be checked with ``constraints.verify`` on the final text."""
+    wording); everything else must be checked with ``constraints.verify`` on the final text.
+    ``case`` is guaranteed for ASCII letters only (``verify`` also wants a cased letter)."""
     out = []
     for unit in COUNT_UNITS:
         iv = getattr(spec, unit, None)
@@ -621,6 +711,10 @@ def enforced(spec) -> list[str]:
     for name in ("end_question", "no_commas", "code_block"):
         if getattr(spec, name, False):
             out.append(name)
+    out += [f"forbidden: {k!r}" for k in getattr(spec, "forbidden", ())]
+    if getattr(spec, "case", None):
+        out.append(f"case: {spec.case}")
+    out += [f"letter: {w!r} {iv}" for w, iv in getattr(spec, "letters", ()) if iv.hi == 0]
     return out
 
 
@@ -1004,6 +1098,7 @@ class Program:
     x_low: np.ndarray = None   # int16[N_XMODES, V]: lowest parenthesis depth reached (relative)
     x_net: np.ndarray = None   # int16[N_XMODES, V]: net parenthesis depth change
     calc_possible: bool = False   # some single token is a complete valid expression
+    calc_span: tuple = None    # (expression token, result tokens) of the cheapest span
     structure: bool = True
     reachability: bool = True
     budget_aware: bool = True
@@ -1060,31 +1155,34 @@ def _token_bytes(tok, v: int) -> list[bytes]:
 
 
 def _aux_tables(tok, tbytes, alphabet, lines: bool, pars: bool, fenced: bool,
-                endq: bool) -> AuxTables | None:
+                endq: bool, forbidden: tuple[bytes, ...] = ()) -> AuxTables | None:
     parts = []
     if lines or pars or fenced:
         parts.append(LineMachine(lines=lines, paragraphs=pars, fenced=fenced))
     if endq:
         parts.append(EndQuestionMachine())
+    if forbidden:
+        parts.append(ForbiddenMachine(forbidden))
     if not parts:
         return None
     byte_ok = sorted(set(b for v, tb in enumerate(tbytes) if alphabet[v] for b in tb)
                      | set(it.EQ_BYTES))
-    key = (str(tok.sha256), lines, pars, fenced, endq, tuple(byte_ok))
+    key = (str(tok.sha256), lines, pars, fenced, endq, tuple(forbidden), tuple(byte_ok))
     if key not in _AUX:
         _AUX[key] = aux_token_tables(compile_aux(ProductMachine(parts), byte_ok), tbytes)
     return _AUX[key]
 
 
 def _part(table, tok, tbytes, alphabet, dims: list, flags: dict, with_flags: bool, max_depth: int,
-          trim: bool, structure: bool, build_dp: bool = True):
+          trim: bool, structure: bool, build_dp: bool = True, forbidden: tuple[bytes, ...] = ()):
     sources = []
     for d in dims:
         if d.source not in sources:
             sources.append(d.source)
     aux = _aux_tables(tok, tbytes, alphabet, "lines" in sources,
                       any(s in ("pars", "chunks") for s in sources),
-                      with_flags and flags["code_block"], with_flags and flags["end_question"])
+                      with_flags and flags["code_block"], with_flags and flags["end_question"],
+                      tuple(forbidden) if with_flags else ())
     auto = build_automaton(table, aux, alphabet, sources, max_depth, trim and structure,
                            track_depth=structure)
     if not structure:
@@ -1101,8 +1199,12 @@ _CALC_TABLES: dict[str, tuple] = {}
 
 def _calc_tables(tok, tbytes, calc_ok, ws_lead):
     """Recogniser tables of every expression token (``x_mode``, ``x_low``, ``x_net``
-    ``[N_XMODES, V]``) and whether some single token is a complete valid expression whose result the
-    tokenizer can spell. Cached per tokenizer."""
+    ``[N_XMODES, V]``), whether some single token is a complete valid expression whose result the
+    tokenizer can spell, and the cheapest such span ``(expression token, result tokens)``
+    (fewest result tokens, then fewest bytes, then the lowest id; ``None`` when there is none).
+    That span is minimal in every counted quantity: a calculator expression holds a number, so
+    every span adds at least what ``0 = 0`` adds (a word for the result, a word for the
+    expression unless it continues the word before it, nothing else). Cached per tokenizer."""
     key = str(tok.sha256)
     if key in _CALC_TABLES:
         return _CALC_TABLES[key]
@@ -1110,7 +1212,7 @@ def _calc_tables(tok, tbytes, calc_ok, ws_lead):
     x_mode = np.full((N_XMODES, v), X_DEAD, np.int8)
     x_low = np.zeros((N_XMODES, v), np.int16)
     x_net = np.zeros((N_XMODES, v), np.int16)
-    possible = False
+    best = None
     for t in np.flatnonzero(calc_ok):
         for m0 in range(N_XMODES):
             mode, depth, low = m0, 0, 0
@@ -1121,16 +1223,19 @@ def _calc_tables(tok, tbytes, calc_ok, ws_lead):
                 low = min(low, depth)
             if mode != X_DEAD:
                 x_mode[m0, t], x_low[m0, t], x_net[m0, t] = mode, low, depth
-        if (not possible and x_mode[X_ATOM, t] in X_COMPLETE and x_net[X_ATOM, t] == 0
+        if (x_mode[X_ATOM, t] in X_COMPLETE and x_net[X_ATOM, t] == 0
                 and not ws_lead[t] and tbytes[t][-1] not in WS_BYTES):
             res = calc_mod.evaluate(tbytes[t].decode("ascii"))
             if res is not None:
                 try:
-                    tok.encode(res)
-                    possible = True
+                    rids = [int(r) for r in tok.encode(res)]
                 except ValueError:
-                    pass
-    _CALC_TABLES[key] = (x_mode, x_low, x_net, possible)
+                    continue
+                cand = (len(rids), len(tbytes[t]), int(t))
+                if best is None or cand < best[0]:
+                    best = (cand, (int(t), tuple(rids)))
+    span = None if best is None else best[1]
+    _CALC_TABLES[key] = (x_mode, x_low, x_net, span is not None, span)
     return _CALC_TABLES[key]
 
 
@@ -1157,8 +1262,10 @@ def compile(spec=None, tok=None, *, structure: bool = True, reachability: bool =
     dims = dims_for(spec)
     flags = {name: bool(getattr(spec, name, False)) if spec is not None else False
              for name in ("end_question", "no_commas", "code_block")}
-    sig = (str(tok.sha256), tuple(dims), tuple(sorted(flags.items())), structure, reachability,
-           budget_aware, max_depth, trim, limit)
+    local = _token_local(spec)
+    forbidden, case, banned = local["forbidden"], local["case"], local["banned_letters"]
+    sig = (str(tok.sha256), tuple(dims), tuple(sorted(flags.items())), forbidden, case, banned,
+           structure, reachability, budget_aware, max_depth, trim, limit)
     key = hashlib.sha256(repr(sig).encode()).hexdigest()[:20]
     if key in _PROGRAMS:
         _PROGRAMS.move_to_end(key)
@@ -1179,14 +1286,19 @@ def compile(spec=None, tok=None, *, structure: bool = True, reachability: bool =
         never[[ids["end"], ids["calc"], ids["eq"]]] = False
     if flags["no_commas"]:
         never |= comma
+    if case is not None:                 # "lower": no ASCII capital; "upper": no ASCII small letter
+        lo_b, hi_b = (65, 90) if case == "lower" else (97, 122)
+        never |= np.array([any(lo_b <= b <= hi_b for b in tb) for tb in tbytes], bool) & ~special
+    for letter in banned:                # a letter that may not occur (either case)
+        never |= np.array([any(b in letter for b in tb) for tb in tbytes], bool) & ~special
     alphabet = ~special & ~never & ~control
 
     args = (table, tok, tbytes, alphabet)
-    opts = dict(max_depth=max_depth, trim=trim, structure=structure)
+    opts = dict(max_depth=max_depth, trim=trim, structure=structure, forbidden=forbidden)
     auto, box, cols = _part(*args, dims, flags, True, build_dp=False, **opts)
     tx_dims = [d for d in dims if d.source in TX_FIELDS]
     aux_dims = [d for d in dims if d.source not in TX_FIELDS]
-    has_aux = bool(aux_dims) or flags["code_block"] or flags["end_question"]
+    has_aux = bool(aux_dims) or flags["code_block"] or flags["end_question"] or bool(forbidden)
     if auto.n_q * box.n <= limit or not (tx_dims and has_aux):
         parts = [Part(auto, box, cols, distance_table(auto, box, cols))]
     else:
@@ -1197,12 +1309,12 @@ def compile(spec=None, tok=None, *, structure: bool = True, reachability: bool =
         else:
             groups.append((tx_dims, False))
         parts = [_part(*args, g, flags, wf, **opts) for g, wf in groups]
-    x_mode, x_low, x_net, calc_possible = _calc_tables(tok, tbytes, calc_ok, ws_lead)
+    x_mode, x_low, x_net, calc_possible, calc_span = _calc_tables(tok, tbytes, calc_ok, ws_lead)
     prog = Program(table=table, tok=tok, spec=spec, parts=parts, never=never, ws_lead=ws_lead,
                    calc_ok=calc_ok, tok_len=np.array([len(tb) for tb in tbytes], np.int32),
                    token_bytes=tbytes, ids=ids, structure=structure, reachability=reachability,
                    budget_aware=budget_aware, key=key, x_mode=x_mode, x_low=x_low, x_net=x_net,
-                   calc_possible=calc_possible)
+                   calc_possible=calc_possible, calc_span=calc_span)
     _PROGRAMS[key] = prog
     while len(_PROGRAMS) > MAX_CACHED:
         _PROGRAMS.popitem(last=False)
@@ -1385,7 +1497,10 @@ class Tracker:
             end_ok = end_ok & pt.end_ok(self.q[i][rows], self.idx[i][rows])
         if p.structure:
             tok_ok[self.n[rows] == 0] &= ~p.ws_lead
-        dist_here = self.distance(rows)
+        outside = self.calc[rows] == 0
+        calc_start = np.zeros(len(rows), bool)
+        if outside.any():
+            calc_start[outside] = self._calc_span_ok(rows[outside], rem[outside])
         ids = self._ids
         for r, j in enumerate(rows):
             row = tok_ok[r]
@@ -1404,14 +1519,38 @@ class Tracker:
                 row[ids["eq"]] = self._eq_ok(int(j), int(rem[r]))
                 continue
             row[ids["eq"]] = False
-            if p.structure and p.calc_possible:
-                row[ids["calc"]] = bool(dist_here[r] + 4 <= rem[r] - 1) if p.budget_aware \
-                    else bool(dist_here[r] < INF)
-            else:
-                row[ids["calc"]] = False
+            row[ids["calc"]] = bool(calc_start[r])
             row[ids["end"]] = bool(end_ok[r]) and self.calc[j] == 0
         out[rows] = tok_ok
         return out
+
+    def _calc_span_ok(self, rows: np.ndarray, rem: np.ndarray) -> np.ndarray:
+        """``bool[len(rows)]``: ``CALC`` may start for these particles (outside a span): after the
+        cheapest span (``Program.calc_span``: ``CALC``, its expression token, ``EQ``, the forced
+        result, ``CALC_END``) every part can still reach an accepted ``END`` (with
+        ``budget_aware``: within the budget left after the span). No span adds less to any
+        count than that one, so a particle that takes ``CALC`` here is never stranded by the
+        counts; where even the cheapest span cannot fit (e.g. under an upper word bound),
+        ``CALC`` is masked."""
+        p = self.p
+        if not (p.structure and p.calc_possible and p.calc_span is not None) or not len(rows):
+            return np.zeros(len(rows), bool)
+        expr, result = p.calc_span
+        seq = [int(expr), int(self.table.eq_row)] + [int(t) for t in result]
+        jj = np.asarray(rows, np.int64)
+        s, d = self.s.copy(), self.d.copy()
+        a = [x.copy() for x in self.a]
+        idx = [x.copy() for x in self.idx]
+        for t in seq:
+            self._apply_rows(np.full(len(jj), t, np.int64), jj, s, d, a, idx)
+        worst = np.zeros(len(jj), np.int64)
+        for i, pt in enumerate(self.parts):
+            q = self._qof(i, s[jj], d[jj], a[i][jj], idx[i][jj])
+            worst = np.maximum(worst, pt.distance(q, idx[i][jj]).astype(np.int64))
+        if not p.budget_aware:
+            return worst < INF
+        span = len(seq) + 1                     # expression, EQ, result tokens, CALC_END
+        return worst <= np.asarray(rem, np.int64) - 1 - span
 
     def _eq_ok(self, j: int, rem: int) -> bool:
         e = self.expr[j]
@@ -1621,6 +1760,6 @@ class Twist:
 
 
 __all__ = ["compile", "Program", "Part", "Tracker", "Advance", "Twist", "fit_unigram",
-           "enforced", "dims_for", "Dim", "Box", "LineMachine", "EndQuestionMachine",
+           "enforced", "dims_for", "Dim", "Box", "LineMachine", "EndQuestionMachine", "ForbiddenMachine",
            "ProductMachine", "run_machine", "compile_aux", "aux_token_tables", "build_automaton",
            "minimize", "distance_table", "table_for", "INF", "JOINT_LIMIT"]

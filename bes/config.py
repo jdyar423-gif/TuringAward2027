@@ -111,7 +111,7 @@ class ModelCfg:
     splash_fused_bwd: bool = False      # one fused dQ/dK/dV backward kernel instead of two
     splash_interpret: str = "auto"      # Pallas interpret mode: "auto" (= not on TPU) | "true" | "false"
     mass_offset: float = 6.0     # output law: log-mass a_k = bias + <h A, c_k> - mass_offset
-    mass_log_cap: float = 10.0   # output law: m_k = exp(min(a_k, mass_log_cap)) * mask_k * src_scale
+    mass_log_cap: float = 10.0   # output law: m_k = exp(soft_cap(a_k, mass_log_cap)) * mask_k * src_scale
     ffn_width: int = 0           # feed-forward width; 0 = d_model * ffn_mult
 
     @property
@@ -241,10 +241,11 @@ class DecodeCfg:
     temperature: float = 0.6
     top_p: float = 0.9
     particles: int = 6
-    max_new_tokens: int = 384
+    max_new_tokens: int = 768        # reply budget: 2048-token context leaves 1280 for the prompt
     ess_frac: float = 0.5
     no_repeat_ngram: int = 6
-    max_copy_run: int = 12
+    max_copy_run: int = 0            # cap on verbatim copy runs from a LIBRARY passage; 0 = off (reading
+                                     # tasks train the model to quote the lead sentences of a passage)
     self_evidence_weight: float = 0.25
     use_library: bool = True
     use_critic: bool = False

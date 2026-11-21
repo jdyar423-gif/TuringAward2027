@@ -220,9 +220,15 @@ def test_decoder_end_to_end_on_the_stand_in(falcon):
         assert text == ref.detokenize(p.tokens[:-1]).decode("utf-8", "replace").strip()
     p = finished[0]
     rows = ref_rows(ref, prompt, p.tokens[:-1])
+    eog = np.flatnonzero(v.eog)
     for t, lp, row in zip(p.tokens, p.token_logp, rows):
-        e = row[np.flatnonzero(v.eog)]
-        expect = math.log(np.exp(e).sum()) if t == v.end else row[t]
+        # the reported log-probability is that of the distribution sampled from: the model's
+        # row (end-of-generation mass on END) tempered at T = 0.8 (no tape: the decoder tempers)
+        merged = np.full(v.vocab_size, -np.inf)
+        merged[:len(row)] = row
+        merged[eog] = -np.inf
+        merged[v.end] = math.log(np.exp(row[eog]).sum())
+        expect = S.tempered(merged[None], 0.8)[0, t]
         assert lp == pytest.approx(expect, abs=1e-4)
     # without potentials, particle 0 of three is the single-particle sample, draw for draw
     one = smc.decode(lm, prompt, n_particles=1, max_new_tokens=40, seed=5, settings=st, tok=v)

@@ -17,10 +17,13 @@ A key is visible to a query when ``pos_k <= pos_q`` and ``seg_k == seg_q``; slot
 address, so gaps of padding or empty slots are harmless. Every call appends ``Tq`` slots at
 ``t`` (``prefill``: a chunk ``[B, Tq]``; ``decode_step``: one token per row) and returns the
 next-token scores of the chunk's last position (``model.logits_from_hidden``: ``softmax`` of the
-scores is the output law ``p``; with a candidate tape they are its normalised
-log-probabilities, so ``logsumexp = 0``). Positions whose ``seg`` is negative are padding: they are
-written with ``seg = -1`` and never seen by real queries, which gives left-padded ragged prompts
-and fixed-size prefill chunks (one compilation for any prompt length).
+scores is the output law ``p_T`` at the sampling temperature ``T``, which tempers the network's
+distribution only; with a candidate tape the scores are its normalised log-probabilities, so
+``logsumexp = 0``). The temperature is a traced float32 scalar (default 1: the law itself), so
+:func:`jitted` compiles one program for every temperature. Positions whose ``seg`` is negative
+are padding: they are written with ``seg = -1`` and never seen by real queries, which gives
+left-padded ragged prompts and fixed-size prefill chunks (one compilation for any prompt
+length).
 
 Feature rows (``reg``, ``clock``, ``cand_tok``, ``cand_feat``) follow ``docs/SPEC.md`` 2: the row
 of position ``t`` describes the state after consuming token ``t`` and its candidate tape lists
@@ -116,7 +119,7 @@ def _features(feats: dict, names: Sequence[str]) -> dict:
     return {k: jnp.asarray(feats[k]) for k in names if feats.get(k) is not None}
 
 
-def extend(params: dict, consts: dict, cache: dict, feats: dict, cfg):
+def extend(params: dict, consts: dict, cache: dict, feats: dict, cfg, temperature=1.0):
     """Append a chunk of ``Tq`` positions per row to the cache.
 
     feats: ``tokens int[B, Tq]`` and optionally ``seg [B, Tq]`` (default: each row's
@@ -124,9 +127,11 @@ def extend(params: dict, consts: dict, cache: dict, feats: dict, cfg):
     ``reg [B, Tq, N_REG]``, ``clock [B, Tq, N_CLOCKS]``, ``cand_tok [B, Tq, K]``,
     ``cand_feat [B, Tq, K, N_CAND_FEAT]``. The slots ``[t, t + Tq)`` must fit in the cache
     (checked by the host loops; ``dynamic_update_slice`` would clamp the start index).
+    temperature: sampling temperature ``T > 0`` of the scores (a float or a float32 scalar;
+    it tempers the network's distribution only, see ``model.logits_from_hidden``).
     Returns ``(logits float32[B, V], hidden float32[B, d], cache)`` at the chunk's last
     position: ``logits`` are the scores of ``model.logits_from_hidden`` (``softmax`` = the
-    output law, with the masses of that position's candidate row).
+    output law ``p_T``, with the masses of that position's candidate row).
     """
     M.check_cfg(cfg)
     dt = act_dtype(cfg)
@@ -179,7 +184,7 @@ def extend(params: dict, consts: dict, cache: dict, feats: dict, cfg):
     (lanes, ck, cv), _ = jax.lax.scan(step, (lanes0, cache["k"], cache["v"]), xs)
     hidden = head.final_hidden(lanes, params["head"]["g"])[:, -1]           # [B, d] float32
     tail = {k: a[:, -1] for k, a in _features(full, ("cand_tok", "cand_feat")).items()}
-    logits = M.logits_from_hidden(params, consts, hidden, tail, cfg)
+    logits = M.logits_from_hidden(params, consts, hidden, tail, cfg, temperature)
     last = valid[:, -1]
     new_cache = {"k": ck, "v": cv, "seg": seg_k, "pos": pos_k, "t": t0 + tq,
                  "next_pos": jnp.where(last, pos[:, -1] + 1, cache["next_pos"]),
@@ -187,19 +192,21 @@ def extend(params: dict, consts: dict, cache: dict, feats: dict, cfg):
     return logits, hidden, new_cache
 
 
-def prefill(params: dict, consts: dict, cache: dict, feats: dict, cfg):
+def prefill(params: dict, consts: dict, cache: dict, feats: dict, cfg, temperature=1.0):
     """Process a prompt chunk ``feats["tokens"] int[B, Tq]`` (see :func:`extend`; prompts may
     be fed in several chunks). Returns ``(logits float32[B, V], hidden float32[B, d], cache)``
-    of the chunk's last position."""
-    return extend(params, consts, cache, feats, cfg)
+    of the chunk's last position (scores at ``temperature``, see :func:`extend`)."""
+    return extend(params, consts, cache, feats, cfg, temperature)
 
 
-def decode_step(params: dict, consts: dict, cache: dict, tok, feats: dict | None, cfg):
+def decode_step(params: dict, consts: dict, cache: dict, tok, feats: dict | None, cfg,
+                temperature=1.0):
     """One token per row.
 
     tok: int ``[B]``; feats: rows ``reg [B, N_REG]``, ``clock [B, N_CLOCKS]``,
     ``cand_tok [B, K]``, ``cand_feat [B, K, N_CAND_FEAT]`` (each optional) and optionally
-    ``seg [B]`` / ``pos [B]`` (defaults: ``cur_seg`` / ``next_pos`` of the cache).
+    ``seg [B]`` / ``pos [B]`` (defaults: ``cur_seg`` / ``next_pos`` of the cache);
+    temperature: as in :func:`extend`.
     Returns ``(logits float32[B, V], hidden float32[B, d], cache)``.
     """
     tok = jnp.asarray(tok).astype(jnp.int32).reshape(-1)
@@ -207,25 +214,53 @@ def decode_step(params: dict, consts: dict, cache: dict, tok, feats: dict | None
     if feats is not None:
         for name, a in _features(feats, FEATURE_KEYS + _POSITION_KEYS).items():
             f[name] = a[:, None]
-    return extend(params, consts, cache, f, cfg)
+    return extend(params, consts, cache, f, cfg, temperature)
 
 
 class Decoder(NamedTuple):
-    """Jit-compiled entry points for one model configuration (SPEC 4.4 signatures)."""
-    prefill: Callable      # (params, consts, cache, feats) -> (logits, hidden, cache)
-    decode_step: Callable  # (params, consts, cache, tok, feats) -> (logits, hidden, cache)
+    """Jit-compiled entry points for one model configuration (SPEC 4.4 signatures). The
+    temperature (default 1) is always passed to the compiled program as a float32 scalar, so
+    one compilation per input shape serves every temperature."""
+    prefill: Callable      # (params, consts, cache, feats, temperature=1) -> (logits, hidden, cache)
+    decode_step: Callable  # (params, consts, cache, tok, feats, temperature=1) -> (logits, hidden, cache)
     reorder: Callable      # (cache, idx) -> cache
+
+
+def as_temperature(temperature) -> np.ndarray:
+    """``float32[]`` sampling temperature for the compiled programs (raises ``ValueError``
+    unless it is a positive finite number)."""
+    t = np.asarray(temperature, np.float32).reshape(())
+    if not (np.isfinite(t) and t > 0):
+        raise ValueError(f"temperature must be a positive finite number, got {temperature!r}")
+    return t
 
 
 @functools.lru_cache(maxsize=None)
 def jitted(cfg, donate: bool = True) -> Decoder:
     """Compiled :func:`prefill`, :func:`decode_step` and :func:`reorder_cache` for ``cfg``
-    (one compilation per input shape). With ``donate`` the input cache is consumed."""
+    (one compilation per input shape, whatever the temperature; cached per ``(cfg, donate)``,
+    so every caller in a process shares the compiled programs). With ``donate`` the input
+    cache is consumed."""
     dn = (2,) if donate else ()
-    return Decoder(
-        prefill=jax.jit(functools.partial(prefill, cfg=cfg), donate_argnums=dn),
-        decode_step=jax.jit(functools.partial(decode_step, cfg=cfg), donate_argnums=dn),
-        reorder=jax.jit(reorder_cache))
+
+    def _prefill(params, consts, cache, feats, temperature):
+        return prefill(params, consts, cache, feats, cfg, temperature)
+
+    def _decode_step(params, consts, cache, tok, feats, temperature):
+        return decode_step(params, consts, cache, tok, feats, cfg, temperature)
+
+    pre = jax.jit(_prefill, donate_argnums=dn)
+    step = jax.jit(_decode_step, donate_argnums=dn)
+
+    def prefill_fn(params, consts, cache, feats, temperature=1.0):
+        return pre(params, consts, cache, feats, as_temperature(temperature))
+
+    def decode_step_fn(params, consts, cache, tok, feats, temperature=1.0):
+        return step(params, consts, cache, tok, feats, as_temperature(temperature))
+
+    prefill_fn.compiled = pre                    # the jitted programs (cache sizes, lowering)
+    decode_step_fn.compiled = step
+    return Decoder(prefill=prefill_fn, decode_step=decode_step_fn, reorder=jax.jit(reorder_cache))
 
 
 # ------------------------------------------------------------------ feature providers
@@ -276,6 +311,12 @@ def _round_up(n: int, m: int) -> int:
     return -(-n // m) * m
 
 
+def _t_args(temperature) -> tuple:
+    """Extra positional argument of a decoder call: none at temperature 1 (any decoder with
+    the plain SPEC 4.4 signature works), else the temperature."""
+    return () if float(temperature) == 1.0 else (temperature,)
+
+
 def _layout(n_prompt: int, max_new: int, chunk: int, tmax: int | None) -> tuple[int, int]:
     n_pad = (-n_prompt) % chunk
     need = n_pad + n_prompt + max_new
@@ -285,9 +326,11 @@ def _layout(n_prompt: int, max_new: int, chunk: int, tmax: int | None) -> tuple[
     return n_pad, tmax
 
 
-def _prefill_prompt(dec: Decoder, params, consts, cfg, prompt_ids, rows, tmax, chunk, n_pad):
+def _prefill_prompt(dec: Decoder, params, consts, cfg, prompt_ids, rows, tmax, chunk, n_pad,
+                    temperature=1.0):
     """Left-pad the prompt to a multiple of ``chunk`` (padding: ``seg = -1``) and prefill a
-    one-row cache chunk by chunk. Returns ``(logits [1, V], hidden [1, d], cache)``."""
+    one-row cache chunk by chunk. Returns ``(logits [1, V], hidden [1, d], cache)`` (scores at
+    ``temperature``)."""
     n = len(prompt_ids)
     pad_id = special_id("<|pad|>", cfg.vocab_size)
     tokens = np.concatenate([np.full(n_pad, pad_id, np.int32), np.asarray(prompt_ids, np.int32)])
@@ -300,7 +343,7 @@ def _prefill_prompt(dec: Decoder, params, consts, cfg, prompt_ids, rows, tmax, c
         sl = slice(lo, lo + chunk)
         f = {"tokens": tokens[None, sl], "seg": seg[None, sl], "pos": pos[None, sl],
              **{k: a[None, sl] for k, a in feat.items()}}
-        logits, hidden, cache = dec.prefill(params, consts, cache, f)
+        logits, hidden, cache = dec.prefill(params, consts, cache, f, *_t_args(temperature))
     return logits, hidden, cache
 
 
@@ -325,14 +368,16 @@ def generate(params: dict, consts: dict, cfg, prompt_ids: Sequence[int], provide
              sample_fn: Callable[[np.ndarray, int], int] = greedy, *, max_new_tokens: int = 64,
              stop_ids: Sequence[int] = (END,), tmax: int | None = None,
              chunk: int = DEFAULT_CHUNK, record: bool = False,
-             decoder: Decoder | None = None) -> Generation:
+             decoder: Decoder | None = None, temperature: float = 1.0) -> Generation:
     """Host-side generation loop for one stream.
 
     prompt_ids: the prompt (normally ``BOS ... ASSISTANT``); provider: feature provider
     (default :class:`ZeroFeatures`), stepped through the prompt and every new token;
-    sample_fn: ``(logits float32[V], step) -> token``; tmax: cache slots (default: enough for
-    the padded prompt and ``max_new_tokens``, rounded up to ``TMAX_ROUND``). As in training
-    rows, every ``BOS`` (in the prompt or generated) starts a new segment.
+    sample_fn: ``(logits float32[V], step) -> token`` where ``softmax(logits)`` is the output
+    law at ``temperature`` (the network tempered, the tape untouched: sample from
+    ``softmax(logits)`` itself); tmax: cache slots (default: enough for the padded prompt and
+    ``max_new_tokens``, rounded up to ``TMAX_ROUND``). As in training rows, every ``BOS`` (in
+    the prompt or generated) starts a new segment.
     """
     if not len(prompt_ids):
         raise ValueError("the prompt must hold at least one token (normally BOS)")
@@ -341,7 +386,7 @@ def generate(params: dict, consts: dict, cfg, prompt_ids: Sequence[int], provide
     n_pad, tmax = _layout(len(prompt_ids), max_new_tokens, chunk, tmax)
     rows = _stack([_row(provider, tok) for tok in prompt_ids])
     logits, hidden, cache = _prefill_prompt(dec, params, consts, cfg, prompt_ids, rows, tmax,
-                                            chunk, n_pad)
+                                            chunk, n_pad, temperature)
     bos = M.bos_id(cfg)
     seg = int(prompt_segments(prompt_ids, bos)[-1])
     stops = set(int(s) for s in stop_ids)
@@ -364,7 +409,7 @@ def generate(params: dict, consts: dict, cfg, prompt_ids: Sequence[int], provide
         row = {k: a[None] for k, a in _row(provider, tok).items()}
         row["seg"] = np.asarray([seg], np.int32)
         logits, hidden, cache = dec.decode_step(params, consts, cache, np.asarray([tok], np.int32),
-                                                row)
+                                                row, *_t_args(temperature))
     return Generation(out, stopped, np.stack(rec_z) if record and rec_z else None,
                       np.stack(rec_h) if record and rec_h else None)
 
@@ -397,13 +442,14 @@ def _parse_sample(out, k: int) -> tuple[np.ndarray, np.ndarray | None]:
 def generate_particles(params: dict, consts: dict, cfg, prompt_ids: Sequence[int], provider,
                        sample_fn: Callable, n_particles: int, *, max_new_tokens: int = 64,
                        stop_ids: Sequence[int] = (END,), tmax: int | None = None,
-                       chunk: int = DEFAULT_CHUNK,
-                       decoder: Decoder | None = None) -> ParticleGeneration:
+                       chunk: int = DEFAULT_CHUNK, decoder: Decoder | None = None,
+                       temperature: float = 1.0) -> ParticleGeneration:
     """``K`` batched particles of one prompt (each row an independent continuation).
 
     The prompt is prefilled once in a one-row cache that is then duplicated into ``K`` rows;
     the provider is forked once per particle. sample_fn: ``(logits float32[K, V], step,
-    done bool[K]) -> tokens int[K]`` or ``(tokens, ancestors int[K])``. With ancestors,
+    done bool[K]) -> tokens int[K]`` or ``(tokens, ancestors int[K])`` (``softmax(logits)``
+    is the output law at ``temperature``, as in :func:`generate`). With ancestors,
     particle ``j`` continues the history (cache row, provider, tokens, done flag) of old
     particle ``ancestors[j]`` and then appends ``tokens[j]``. Finished particles keep their
     tokens; their later rows are fed as padding. Every ``BOS`` starts a new segment.
@@ -414,7 +460,7 @@ def generate_particles(params: dict, consts: dict, cfg, prompt_ids: Sequence[int
     n_pad, tmax = _layout(len(prompt_ids), max_new_tokens, chunk, tmax)
     rows = _stack([_row(provider, tok) for tok in prompt_ids])
     logits, _, cache = _prefill_prompt(dec, params, consts, cfg, prompt_ids, rows, tmax, chunk,
-                                       n_pad)
+                                       n_pad, temperature)
     cache = dec.reorder(cache, np.zeros(k, np.int32))
     logits = np.repeat(np.asarray(logits), k, axis=0)
     bos = M.bos_id(cfg)
@@ -446,11 +492,11 @@ def generate_particles(params: dict, consts: dict, cfg, prompt_ids: Sequence[int
                   for j in range(k)]
         f = {n: np.concatenate([r[n] for r in rows_k]) for n in FEATURE_KEYS}
         f["seg"] = np.where(done, -1, seg).astype(np.int32)
-        logits, _, cache = dec.decode_step(params, consts, cache, feed, f)
+        logits, _, cache = dec.decode_step(params, consts, cache, feed, f, *_t_args(temperature))
     return ParticleGeneration(histories, done, ancestry)
 
 
 __all__ = ["init_cache", "cache_capacity", "reorder_cache", "attend_cache", "extend", "prefill",
-           "decode_step", "Decoder", "jitted", "empty_rows", "ZeroFeatures", "fork_provider",
-           "prompt_segments", "greedy", "Generation", "generate", "ParticleGeneration",
-           "generate_particles", "FEATURE_KEYS", "DEFAULT_CHUNK"]
+           "decode_step", "Decoder", "jitted", "as_temperature", "empty_rows", "ZeroFeatures",
+           "fork_provider", "prompt_segments", "greedy", "Generation", "generate",
+           "ParticleGeneration", "generate_particles", "FEATURE_KEYS", "DEFAULT_CHUNK"]

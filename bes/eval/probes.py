@@ -33,8 +33,10 @@ fence lines, an even number, and ``measure(text)["open_fence"]`` is false; ``ari
 
 Decoding: :func:`decode_batch` runs many prompts at once on ``bes.model.generate``'s compiled
 ``prefill`` / ``decode_step`` (left padding with ``seg = -1``), one feature provider per row,
-greedy or temperature sampling, and optional forcing of calculator results through
-``bes.decode.potentials.Tracker`` (the local :class:`CalcForcer` when that does not import).
+greedy or temperature sampling (the temperature on the network's distribution only, as the
+particle decoder samples, or on the whole output law, the earlier sampler: ``temper``), and
+optional forcing of calculator results through ``bes.decode.potentials.Tracker`` (the local
+:class:`CalcForcer` when that does not import).
 
 E5: :func:`self_generation_metrics` gives, per sample, the repeated 4-gram rate, whether the
 sample ends in an absorbing repetition loop (:func:`ends_in_loop`) and the share of tokens copied
@@ -409,19 +411,29 @@ def _round_up(n: int, m: int) -> int:
     return -(-n // m) * m
 
 
+TEMPER = ("network", "mixture")
+
+
 def decode_batch(params, consts, cfg, prompts: Sequence[Sequence[int]], *, max_new: int,
                  tok=None, features: bool = True, temperature: float = 0.0,
                  rngs: Sequence[np.random.Generator] | None = None, force_calc: bool = False,
                  stop_ids: Sequence[int] = (END,), chunk: int = 64, decoder=None,
-                 provider_factory: Callable[[], Any] | None = None) -> list[Decoded]:
+                 provider_factory: Callable[[], Any] | None = None,
+                 temper: str = "mixture") -> list[Decoded]:
     """Decode ``len(prompts)`` streams at once.
 
     params / consts / cfg: the model (``cfg`` the ``ModelCfg``); prompts: token ids (normally
     ``BOS ... ASSISTANT``); features: feed the exact-layer rows (``IncrementalFeatures``, or
-    ``provider_factory()``) else zero rows; temperature: 0 = greedy, else sampling from
-    ``softmax(scores / temperature)`` with one ``numpy`` generator per stream (``rngs``);
-    force_calc: the host forces calculator results after ``EQ``. Every ``BOS`` starts a new
-    segment (as in training rows). Returns one :class:`Decoded` per prompt.
+    ``provider_factory()``) else zero rows; temperature: 0 = greedy, else sampling with one
+    ``numpy`` generator per stream (``rngs``); temper: where a positive temperature acts:
+    ``"network"`` passes it to the compiled programs, which temper the network's distribution
+    only and leave the candidate tape's masses alone (``bes.model.predictive.mix_logprobs``,
+    what the particle decoder does with ``bes.decode.lm.OurLM``), and samples from
+    ``softmax(scores)``; ``"mixture"`` (the earlier sampler, kept for the E5 comparison) samples
+    from ``softmax(scores / temperature)`` of the untempered law, i.e. tempers the whole mixture.
+    Without a tape the two agree. force_calc: the host forces calculator results after ``EQ``.
+    Every ``BOS`` starts a new segment (as in training rows). Returns one :class:`Decoded` per
+    prompt.
     """
     from bes.exact.features import IncrementalFeatures
     from bes.model import generate as G
@@ -431,6 +443,11 @@ def decode_batch(params, consts, cfg, prompts: Sequence[Sequence[int]], *, max_n
         return []
     if temperature > 0 and (rngs is None or len(rngs) != b):
         raise ValueError("sampling needs one generator per stream")
+    if temper not in TEMPER:
+        raise ValueError(f"temper must be one of {TEMPER}, got {temper!r}")
+    net = temperature > 0 and temper == "network"
+    t_args = (float(temperature),) if net else ()       # the compiled programs temper the network
+    scale = 1.0 if net else temperature                 # ... else the sampler tempers the law
     dec = decoder if decoder is not None else G.jitted(cfg)
     if provider_factory is None:
         provider_factory = (lambda: IncrementalFeatures(tok)) if features else G.ZeroFeatures
@@ -460,7 +477,7 @@ def decode_batch(params, consts, cfg, prompts: Sequence[Sequence[int]], *, max_n
         sl = slice(lo, lo + chunk)
         f = {"tokens": tokens[:, sl], "seg": seg[:, sl], "pos": pos[:, sl],
              **{k: a[:, sl] for k, a in feat.items()}}
-        logits, _, cache = dec.prefill(params, consts, cache, f)
+        logits, _, cache = dec.prefill(params, consts, cache, f, *t_args)
     cur_seg = seg[:, -1].astype(np.int64)
     forcer = make_forcer(b, max_new, tok)[0] if force_calc else None
     queues: list[list[int]] = [[] for _ in range(b)]
@@ -480,7 +497,7 @@ def decode_batch(params, consts, cfg, prompts: Sequence[Sequence[int]], *, max_n
             elif temperature <= 0:
                 nxt[j] = int(np.argmax(z[j]))
             else:
-                s = z[j] / temperature
+                s = z[j] / scale
                 s = np.exp(s - s.max())
                 cdf = np.cumsum(s)
                 nxt[j] = int(np.searchsorted(cdf, rngs[j].random() * cdf[-1], side="right"))
@@ -508,7 +525,7 @@ def decode_batch(params, consts, cfg, prompts: Sequence[Sequence[int]], *, max_n
         f = {k: np.stack([r[k] for r in rows_k]) for k in G.FEATURE_KEYS}
         f["seg"] = np.where(done, -1, cur_seg).astype(np.int32)
         feed = np.where(done, PAD, nxt).astype(np.int32)
-        logits, _, cache = dec.decode_step(params, consts, cache, feed, f)
+        logits, _, cache = dec.decode_step(params, consts, cache, feed, f, *t_args)
     return out
 
 

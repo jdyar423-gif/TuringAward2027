@@ -12,8 +12,13 @@ What each operation does to the target ``pi`` (``docs/MATH.md`` F1-F5)
 ``pi(x)`` is proportional to the product over steps of ``gamma_t(x_t)``. The operations of this
 module therefore *define* the target; they are not proposal tricks:
 
-- **temperature** ``tau > 0``: the target is built from the tempered model
-  ``p_tau = softmax(log p / tau)``. ``K = 1`` without potentials is ordinary sampling at ``tau``.
+- **temperature** ``tau > 0``: the target is built from the tempered model ``p_tau``, the
+  distribution the decoder samples from: for a language model that tempers itself
+  (``LanguageModel.set_temperature``: ``bes.decode.lm.OurLM`` tempers the network's distribution
+  and leaves the candidate tape's masses alone) its rows already are ``log p_tau`` and the
+  decoder uses ``tau = 1`` on them; for any other model ``p_tau = softmax(log p / tau)``
+  (:func:`tempered`; ``bes.decode.smc.decode`` decides). ``K = 1`` without potentials is ordinary
+  sampling at ``tau``.
 - **truncation** (top-k, then top-p on the renormalised remainder, then min-p relative to the
   largest kept probability), **n-gram blocking** and the **copy-run cap** remove tokens. Where
   they act is set by ``truncate_after_mask``:
@@ -131,15 +136,17 @@ def truncation_keep(logq: np.ndarray, top_k: int = 0, top_p: float = 1.0, min_p:
         lq = np.where(within, lq, NEG_INF)
     keep = np.isfinite(lq)
     n_v = lq.shape[-1]
-    if 0 < top_k < n_v:
-        order = np.argsort(-lq, axis=-1, kind="stable")
+    use_k, use_p = 0 < top_k < n_v, top_p < 1.0
+    # one stable sort per row serves both filters: top-k keeps a prefix of this order, so the
+    # survivors keep their relative order (ties: lower id first) for top-p
+    order = np.argsort(-lq, axis=-1, kind="stable") if (use_k or use_p) else None
+    if use_k:
         rank = np.empty_like(order)
         np.put_along_axis(rank, order, np.broadcast_to(np.arange(n_v), order.shape), axis=-1)
         keep &= rank < top_k
-    if top_p < 1.0:
+    if use_p:
         x = np.where(keep, lq, NEG_INF)
         p = np.exp(log_softmax(x))
-        order = np.argsort(-x, axis=-1, kind="stable")
         ps = np.take_along_axis(p, order, axis=-1)
         before = np.cumsum(ps, axis=-1) - ps
         kept_sorted = before < top_p
@@ -347,11 +354,14 @@ class NgramBlocker:
 
 
 class CopyCap:
-    """Cap on verbatim copy runs from the prompt (LIBRARY passage included).
+    """Cap on verbatim copy runs from source texts: the decoder passes the prompt's LIBRARY
+    passages (``bes.decode.smc.decode``), because the cap exists to stop passage
+    regurgitation; the user's own text is never a source (repeating, quoting or editing it is
+    often the task).
 
     Operational definition: let ``C = max_run``. Token ``v`` is blocked for particle ``j`` when
-    the last ``C`` response tokens followed by ``v`` occur contiguously in a source run (the
-    prompt's content split at special tokens), i.e. when ``v`` would extend a verbatim copy
+    the last ``C`` response tokens followed by ``v`` occur contiguously in a source run (a
+    source's tokens split at special tokens), i.e. when ``v`` would extend a verbatim copy
     beyond ``C`` tokens. Exempt (never blocked): special tokens, *names and numbers*
     (``exempt[v]``: tokens with a digit, or whose first letter is an upper-case ASCII letter),
     and whole steps the caller exempts (*quoted text and code*: inside a double quote, inline

@@ -9,8 +9,11 @@ reference arm, with the evaluation-time switch of each mechanism::
     python scripts/run_probes.py --report --out runs/e4               # writes docs/E4_PROBES.md
 
 E5 samples continuations of held-out chat and web prompts from the trained E2 reference arm
-(and the E2 ``no_tape`` arm when it exists) at temperatures 0.5, 0.7 and 0.8 with the tape on,
-off, and with the self-evidence scale ``src_5 = w`` for w in {1, 0.5, 0.25, 0}::
+(and the E2 ``no_tape`` arm when it exists) at temperatures 0.5, 0.7 and 0.8 with the tape off
+(``tape_off``), with the tape on and the whole output law tempered (the earlier sampler,
+self-evidence 1: ``mix_w1``), and with the tape on and the temperature on the network's
+distribution only (what the decoder does) at self-evidence scale ``src_5 = w`` for w in
+{1, 0.5, 0.25, 0} (``net_w<w>``)::
 
     nohup python scripts/run_probes.py --e5 --from runs/e2 --out runs/e5 > runs/e5/e5.log 2>&1 &
     python scripts/run_probes.py --e5 --report --out runs/e5          # writes docs/E5_SELF_GENERATION.md
@@ -85,6 +88,11 @@ E5_FILE = "e5.jsonl"
 E5_TEMPS = (0.5, 0.7, 0.8)
 E5_W = (1.0, 0.5, 0.25, 0.0)
 E5_TOL = 0.005
+#: version of the E5 settings: 2 = tape off / mixture tempering / network-only tempering at
+#: every self-evidence scale (records of other versions are ignored)
+E5_VERSION = 2
+#: setting names in report order (``no_tape_arm``: the model trained without the tape)
+E5_ORDER = ("mix_w1",) + tuple(f"net_w{w:g}" for w in E5_W) + ("tape_off", "no_tape_arm")
 
 
 def log(msg: str) -> None:
@@ -229,9 +237,15 @@ def e4_report(out: Path, arms=E4_ARMS) -> str:
 
 
 # ================================================================================ E5
-def e5_settings(cfg, train_sw: dict) -> list[tuple[str, dict]]:
-    out = [("tape_on" if w == 1.0 else f"src5_{w:g}", {**train_sw, "src_5": w}) for w in E5_W]
-    out.append(("tape_off", {**train_sw, "cand_in": 0.0, "cand_out": 0.0}))
+def e5_settings(cfg, train_sw: dict) -> list[tuple[str, dict, str]]:
+    """``(name, make_consts switches, temper)`` of every E5 setting of the reference arm
+    (``temper`` as in ``bes.eval.probes.decode_batch``): the tape off; the tape on with the
+    whole mixture tempered at self-evidence 1 (the earlier sampler); the tape on with the
+    temperature on the network only at every self-evidence scale of ``E5_W``."""
+    del cfg
+    out = [("tape_off", {**train_sw, "cand_in": 0.0, "cand_out": 0.0}, "network"),
+           ("mix_w1", {**train_sw, "src_5": 1.0}, "mixture")]
+    out += [(f"net_w{w:g}", {**train_sw, "src_5": w}, "network") for w in E5_W]
     return out
 
 
@@ -255,14 +269,16 @@ def run_e5(args) -> None:
         log(f"no finished arm {args.no_tape_arm!r} in {src}: the baseline is the evaluation-time switch")
     prompts = {"chat": P.chat_prompts(args.n_prompts, tok), "web": P.web_prompts(args.n_prompts, tok)}
     done = {(r["domain"], r["setting"], r["temperature"]) for r in mb.read_jsonl(out / E5_FILE)
-            if r.get("ref_hash") == rec["spec_hash"] and r.get("n_prompts") == args.n_prompts}
+            if r.get("ref_hash") == rec["spec_hash"] and r.get("n_prompts") == args.n_prompts
+            and r.get("e5_version") == E5_VERSION}
     for label, mrec, mcfg, mparams in models:
         train_sw = dict(tuple(s) for s in mrec["arm"]["switches"])
-        settings = e5_settings(mcfg, train_sw) if label == "ref" else [("no_tape_arm", train_sw)]
+        settings = e5_settings(mcfg, train_sw) if label == "ref" else \
+            [("no_tape_arm", train_sw, "network")]
         for domain, plist in prompts.items():
             max_new = args.max_new_chat if domain == "chat" else args.max_new_web
-            for setting, sw in settings:
-                if domain == "web" and setting.startswith("src5_"):
+            for setting, sw, temper in settings:
+                if domain == "web" and setting.startswith("net_w") and setting != "net_w1":
                     continue          # no assistant turn: the self-evidence scale has no effect
                 consts = M.make_consts(mcfg.model, **sw)
                 for temp in E5_TEMPS:
@@ -274,17 +290,17 @@ def run_e5(args) -> None:
                         part = plist[lo:lo + args.batch]
                         rngs = [rng_for("e5", args.seed, domain, lo + i, temp) for i in range(len(part))]
                         got = P.decode_batch(mparams, consts, mcfg.model, part, max_new=max_new,
-                                             tok=tok, temperature=temp, rngs=rngs)
+                                             tok=tok, temperature=temp, rngs=rngs, temper=temper)
                         for pr, d in zip(part, got):
                             samples.append(P.self_generation_metrics(d.tokens, pr, d.stopped))
                     mean = {k: float(np.mean([s[k] for s in samples])) for k in ("rep4", "loop", "copy", "n", "stopped")}
                     mb.append_jsonl(out / E5_FILE, {
-                        "type": "e5", "domain": domain, "setting": setting, "temperature": temp,
-                        "model": label, "arm": mrec["name"], "ref_hash": rec["spec_hash"],
-                        "from": mb._rel(src), "n_prompts": args.n_prompts, "max_new": max_new,
-                        "switches": sw, "samples": samples, "mean": mean, "seconds": time.time() - t0,
-                        "tokens": mrec["tokens"]})
-                    log(f"E5 {domain} {setting} T={temp}: rep4 {mean['rep4']:.3f} loop "
+                        "type": "e5", "e5_version": E5_VERSION, "domain": domain, "setting": setting,
+                        "temperature": temp, "temper": temper, "model": label, "arm": mrec["name"],
+                        "ref_hash": rec["spec_hash"], "from": mb._rel(src), "n_prompts": args.n_prompts,
+                        "max_new": max_new, "switches": sw, "samples": samples, "mean": mean,
+                        "seconds": time.time() - t0, "tokens": mrec["tokens"]})
+                    log(f"E5 {domain} {setting} ({temper}) T={temp}: rep4 {mean['rep4']:.3f} loop "
                         f"{mean['loop']:.2f} copy {mean['copy']:.3f} len {mean['n']:.0f} "
                         f"({time.time() - t0:.0f} s)")
 
@@ -328,7 +344,7 @@ def e5_report(out: Path) -> str:
 
     from bes.eval import probes as P
 
-    recs = mb.read_jsonl(out / E5_FILE)
+    recs = [r for r in mb.read_jsonl(out / E5_FILE) if r.get("e5_version") == E5_VERSION]
     latest = {}
     for r in recs:
         latest[(r["domain"], r["setting"], r["temperature"])] = r
@@ -344,13 +360,18 @@ def e5_report(out: Path) -> str:
             f"setting is *not worse* when every paired difference (same prompts, same random "
             f"numbers) is at most max(2 x paired SE, {E5_TOL}). Baseline: the E2 `no_tape` arm "
             "when it exists, else the reference with the tape switched off at evaluation time.", "",
+            "Settings: `tape_off` (the tape switched off at evaluation time); `mix_w1` (the tape on, "
+            "the whole output law tempered, `softmax(log p / T)`: the earlier sampler, self-evidence "
+            "1); `net_w<w>` (the tape on, the temperature on the network's distribution only, "
+            "`p_T = (softmax(z / T) + masses) / (1 + M)`, as the decoder samples, with the masses of "
+            "candidates whose source is the turn being generated scaled by w: "
+            "`make_consts(cfg, src_5=w)`; web prompts have no such turn, so only w = 1 is run).", "",
             "Definitions (`bes/eval/probes.py`): **rep4** = share of the 4-gram occurrences of a "
             "sample that repeat an earlier 4-gram of the same sample; **loop** = the sample did not "
             f"emit END within its budget and its last max(2p, {P.LOOP_MIN_TAIL}) tokens are exactly "
             f"periodic with a period p <= {P.LOOP_MAX_PERIOD} (an absorbing repetition loop); "
             f"**copy** = share of generated tokens inside a run of >= {P.COPY_MIN_RUN} tokens that "
-            "occurs verbatim in the prompt. `src5_w` scales the masses of candidates whose source is "
-            "the turn being generated (`make_consts(cfg, src_5=w)`); `tape_on` is w = 1.", ""]
+            "occurs verbatim in the prompt.", ""]
     if not recs:
         return "\n".join(head + ["## Status", "", "**Not run yet.** Run `scripts/run_probes.py --e5 "
                                  "--from runs/e2 --out runs/e5` after the E2 reference has finished, "
@@ -370,9 +391,8 @@ def e5_report(out: Path) -> str:
             continue
         lines += [f"## {domain}", ""]
         rows = []
-        order = ["tape_on"] + [f"src5_{w:g}" for w in E5_W[1:]] + ["tape_off", "no_tape_arm"]
         for temp in E5_TEMPS:
-            for setting in order:
+            for setting in E5_ORDER:
                 r = latest.get((domain, setting, temp))
                 if r is None:
                     continue
@@ -391,18 +411,24 @@ def e5_report(out: Path) -> str:
                  for (d, st), (ok, why) in sorted(verdicts.items()) if d == domain]
         if vrows:
             lines += [f"### Verdicts ({domain})", "", mb._md_table(["setting", "verdict", "violations"], vrows), ""]
-    chat_ok = [w for w in E5_W if verdicts.get(("chat", "tape_on" if w == 1.0 else f"src5_{w:g}"), (False,))[0]]
-    web_ok = verdicts.get(("web", "tape_on"), (None,))[0]
+    chat_ok = [w for w in E5_W if verdicts.get(("chat", f"net_w{w:g}"), (False,))[0]]
     lines += ["## Decision", ""]
     if not chat_ok:
-        lines.append("No self-evidence scale passes on chat prompts: switch the tape off at decoding "
-                     "(or down-weight below the tested values) until a retrained model passes.")
+        lines.append("No self-evidence scale passes on chat prompts with the temperature on the "
+                     "network: switch the tape off at decoding (or down-weight below the tested "
+                     "values) until a retrained model passes.")
     else:
-        lines.append(f"Largest passing self-evidence scale on chat prompts: **src_5 = {max(chat_ok):g}** "
-                     f"(passing: {', '.join(f'{w:g}' for w in chat_ok)}; the decoder default is "
+        lines.append(f"Largest passing self-evidence scale on chat prompts (temperature on the network, "
+                     f"as the decoder samples): **src_5 = {max(chat_ok):g}** (passing: "
+                     f"{', '.join(f'{w:g}' for w in chat_ok)}; the decoder default is "
                      "`DecodeCfg.self_evidence_weight`).")
-    if web_ok is not None:
-        lines.append(f"Web continuations with the tape on: {'not worse' if web_ok else 'worse'} than the baseline.")
+    for domain in ("chat", "web"):
+        for setting, what in (("net_w1", "the temperature on the network"),
+                              ("mix_w1", "the whole mixture tempered")):
+            ok = verdicts.get((domain, setting), (None,))[0]
+            if ok is not None:
+                lines.append(f"{domain.capitalize()} prompts, tape on, self-evidence 1, {what}: "
+                             f"{'not worse' if ok else 'worse'} than the baseline.")
     lines += ["", "## Limits", "",
               "- Micro model (d=128, 1-4M tokens): its unconditional samples are far less fluent than "
               "the final model's, so loop and repetition rates are high for every setting; the gate "

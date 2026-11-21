@@ -256,6 +256,77 @@ class _Script:
         return self._z(len(tok)), None, cache
 
 
+class _Rec(_Script):
+    """Stand-in decoder with fixed random scores that records the extra call arguments."""
+
+    def __init__(self, vocab, seed=0):
+        super().__init__([0], vocab)
+        self.z0 = np.random.default_rng(seed).normal(0, 2, vocab).astype(np.float32)
+        self.args = []
+
+    def _z(self, b):
+        return np.repeat(self.z0[None], b, 0)
+
+    def prefill(self, params, consts, cache, f, *extra):
+        self.args.append(extra)
+        return self._z(f["tokens"].shape[0]), None, cache
+
+    def decode_step(self, params, consts, cache, tok, f, *extra):
+        self.args.append(extra)
+        return self._z(len(tok)), None, cache
+
+
+def test_the_sampler_tempers_the_network_or_the_whole_law(tok):
+    """``temper="network"`` hands the temperature to the compiled programs and samples their
+    scores as they are; ``"mixture"`` (the earlier sampler) samples ``softmax(scores / T)``.
+    Checked draw for draw with the same generators against the inverse CDF written here."""
+    prompt = P.eval_items("arith", 1, tok)[0].prompt_ids
+    for temper, scale in (("network", 1.0), ("mixture", 0.6)):
+        rec = _Rec(512)
+        got = P.decode_batch(None, None, TINY, [prompt], max_new=5, tok=tok, temperature=0.6,
+                             rngs=[np.random.default_rng(3)], decoder=rec, temper=temper,
+                             stop_ids=())
+        assert all(a == ((0.6,) if temper == "network" else ()) for a in rec.args)
+        rng = np.random.default_rng(3)
+        p = np.exp(rec.z0.astype(np.float64) / scale - np.max(rec.z0) / scale)
+        cdf = np.cumsum(p)
+        want = [min(int(np.searchsorted(cdf, rng.random() * cdf[-1], side="right")), 511)
+                for _ in range(5)]
+        assert got[0].tokens == want
+    with pytest.raises(ValueError):
+        P.decode_batch(None, None, TINY, [prompt], max_new=2, tok=tok, temperature=0.6,
+                       rngs=[np.random.default_rng(0)], decoder=_Rec(512), temper="both")
+
+
+def test_network_tempering_samples_the_model_at_that_temperature(tok):
+    """decode_batch with the temperature on the network equals the single-stream generation
+    loop at that temperature (same draws), and differs from tempering the whole law."""
+    from bes.exact.features import IncrementalFeatures
+    from bes.model import generate as G
+
+    import jax
+
+    params, consts = _tiny_model(3)
+    params = jax.tree.map(np.array, params)
+    params["trust"]["bias"]["kind"][1:5] += 6.0           # masses of order 1: the tape matters
+    prompts = [it.prompt_ids for it in P.eval_items("copy", 2, tok)]
+    got = P.decode_batch(params, consts, TINY, prompts, max_new=8, tok=tok, temperature=0.5,
+                         rngs=[np.random.default_rng(i) for i in range(2)], temper="network")
+    mix = P.decode_batch(params, consts, TINY, prompts, max_new=8, tok=tok, temperature=0.5,
+                         rngs=[np.random.default_rng(i) for i in range(2)], temper="mixture")
+    for i, (prompt, d) in enumerate(zip(prompts, got)):
+        rng = np.random.default_rng(i)
+
+        def sample(z, step, rng=rng):
+            s = np.exp(np.asarray(z, np.float64) - np.max(z))
+            cdf = np.cumsum(s)
+            return min(int(np.searchsorted(cdf, rng.random() * cdf[-1], side="right")), len(s) - 1)
+        ref = G.generate(params, consts, TINY, prompt, IncrementalFeatures(tok), sample,
+                         max_new_tokens=8, temperature=0.5)
+        assert d.tokens == ref.tokens
+    assert [d.tokens for d in got] != [d.tokens for d in mix]
+
+
 def test_calculator_results_are_forced(tok):
     expr = tok.encode("12 * 3")
     forced = tok.encode("36") + [CALC_END]
@@ -297,21 +368,57 @@ def _rp():
     return run_probes
 
 
+def _e5_rec(setting, loops, rep=0.1, model="ref", temp=0.5, domain="chat"):
+    samples = [{"rep4": rep, "loop": i < loops, "copy": 0.0, "n": 50, "stopped": i >= loops}
+               for i in range(20)]
+    mean = {k: float(np.mean([s[k] for s in samples])) for k in ("rep4", "loop", "copy", "n", "stopped")}
+    return {"type": "e5", "e5_version": 2, "domain": domain, "setting": setting,
+            "temperature": temp, "samples": samples, "model": model, "mean": mean,
+            "arm": "ref", "from": "runs/e2", "n_prompts": 20, "tokens": 1000}
+
+
 def test_e5_verdicts_compare_against_the_baseline():
     rp = _rp()
-
-    def rec(setting, loops, rep=0.1, model="ref"):
-        samples = [{"rep4": rep, "loop": i < loops, "copy": 0.0, "n": 50, "stopped": i >= loops}
-                   for i in range(20)]
-        return {"domain": "chat", "setting": setting, "temperature": 0.5, "samples": samples, "model": model}
-    recs = [rec("tape_off", 2), rec("tape_on", 10), rec("src5_0.25", 2), rec("src5_0.5", 3, rep=0.104)]
+    rec = _e5_rec
+    recs = [rec("tape_off", 2), rec("mix_w1", 10), rec("net_w0.25", 2), rec("net_w0.5", 3, rep=0.104)]
     v = rp.e5_verdicts(recs)
-    assert v[("chat", "tape_on")][0] is False and "loop" in v[("chat", "tape_on")][1][0]
-    assert v[("chat", "src5_0.25")] == (True, [])
-    assert v[("chat", "src5_0.5")][0] is True          # +0.05 loops within 2 x SE, +0.004 rep4 < tol
+    assert v[("chat", "mix_w1")][0] is False and "loop" in v[("chat", "mix_w1")][1][0]
+    assert v[("chat", "net_w0.25")] == (True, [])
+    assert v[("chat", "net_w0.5")][0] is True          # +0.05 loops within 2 x SE, +0.004 rep4 < tol
     # the trained no-tape arm, when present, is the baseline
     v2 = rp.e5_verdicts(recs + [rec("no_tape_arm", 12, model="no_tape_arm")])
-    assert v2[("chat", "tape_on")][0] is True
+    assert v2[("chat", "mix_w1")][0] is True
+
+
+def test_e5_settings_compare_tape_off_mixture_and_network_tempering():
+    """At every temperature: tape off; tape on with the whole law tempered (the earlier
+    sampler, self-evidence 1); tape on with the temperature on the network at self-evidence
+    1, 0.5, 0.25 and 0."""
+    rp = _rp()
+    settings = rp.e5_settings(None, {"sink": 0.0})
+    assert [(n, t) for n, _, t in settings] == [
+        ("tape_off", "network"), ("mix_w1", "mixture"), ("net_w1", "network"),
+        ("net_w0.5", "network"), ("net_w0.25", "network"), ("net_w0", "network")]
+    sw = {n: s for n, s, _ in settings}
+    assert sw["tape_off"] == {"sink": 0.0, "cand_in": 0.0, "cand_out": 0.0}
+    assert sw["mix_w1"]["src_5"] == 1.0 and sw["net_w0.25"] == {"sink": 0.0, "src_5": 0.25}
+    assert rp.E5_TEMPS == (0.5, 0.7, 0.8)
+
+
+def test_e5_report_on_synthetic_records(tmp_path):
+    from bes.eval import microbench as mb
+
+    rp = _rp()
+    for temp in rp.E5_TEMPS:
+        for setting, loops in (("tape_off", 2), ("mix_w1", 12), ("net_w1", 3), ("net_w0.5", 2),
+                               ("net_w0.25", 2), ("net_w0", 2)):
+            mb.append_jsonl(tmp_path / rp.E5_FILE, _e5_rec(setting, loops, temp=temp))
+    old = dict(_e5_rec("tape_on", 0), e5_version=1)              # an earlier sampler's record
+    mb.append_jsonl(tmp_path / rp.E5_FILE, old)
+    text = rp.e5_report(tmp_path)
+    assert "`mix_w1`" in text and "`net_w0.25`" in text and "`tape_on`" not in text
+    assert "**src_5 = 0.5**" in text or "**src_5 = 1**" in text
+    assert "the whole mixture tempered: worse" in text
 
 
 def test_reports_have_placeholders_before_any_run(tmp_path):
