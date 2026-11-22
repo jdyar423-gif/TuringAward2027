@@ -2,7 +2,7 @@
 
 ## 摘要（繁體中文）
 
-這個倉庫是 BES-100M-A20M：一個總共至多 1 億個儲存數字（每個數字至多 16 位元，含權重、查表與藏書）、每產生一個 token 至多讀取 2,000 萬個數字的語言模型，設計成在單顆 TPU v6e 上於 24 小時內從零訓練完成。核心原理是「後驗 ∝ 先驗 × 證據」，在三個尺度上能精確算的就精確算：注意力頭帶校準匯點與信心通道；主機端精確計算的 n-gram 計數頭與候選帶進入輸出律；整段回覆以少量粒子加精確勢函數做 Feynman–Kac 解碼；另附一個門控、離線、凍結的書寫藏書。所有程式都在 CPU 容器上開發、測試與彩排，**目前沒有任何數字是在 TPU 上量到的**（`docs/TPU_NOTES.md`）。正式的 24 小時訓練請照 `RUNBOOK.md` 使用 `notebooks/colab_v6e_24h.ipynb`；計畫原文在 `docs/PLAN.md`，核准後的修訂在 `docs/CHANGES.md`。
+這個倉庫是 BES-100M-A20M：一個總共至多 1 億個儲存數字（每個數字至多 16 位元，含權重、查表與藏書）、每產生一個 token 至多讀取 2,000 萬個數字的語言模型，設計成在單顆 TPU v6e 上於 24 小時內從零訓練完成。核心原理是「後驗 ∝ 先驗 × 證據」，在三個尺度上能精確算的就精確算：注意力頭帶校準匯點與信心通道；主機端精確計算的 n-gram 計數頭與候選帶進入輸出律；整段回覆以少量粒子加精確勢函數做 Feynman–Kac 解碼；另附一個門控、離線、凍結的書寫藏書，是否隨模型出貨由訓練後的事實題對照（藏書開與關各答一次）決定。所有程式都在 CPU 容器上開發、測試與彩排，**目前沒有任何數字是在 TPU 上量到的**（`docs/TPU_NOTES.md`）。正式的 24 小時訓練請照 `RUNBOOK.md` 使用 `notebooks/colab_v6e_24h.ipynb`；計畫原文在 `docs/PLAN.md`，核准後的修訂在 `docs/CHANGES.md`。
 
 ## What this is
 
@@ -22,6 +22,21 @@ English Wikipedia and question-answer pairs) is retrieved behind a calibrated ga
 against the 100M. The core is a looped transformer (2 shared blocks, 8 loops, d = 768). Plan,
 mathematics and honest odds: `docs/PLAN.md`, `docs/MATH.md`, `docs/NEGATIVE_RESULTS.md`.
 
+**Decoding defaults** (`bes.config.DecodeCfg`): 6 particles; temperature 0.6 applied to the
+network's distribution only, `p_T = (softmax(z / T) + masses) / (1 + M)`, because the candidate
+masses are calibrated probabilities that tempering would sharpen into copy loops
+(`docs/CHANGES.md` section 10); the masses of candidates from the reply being written are
+weighted x0.25; replies of up to 768 tokens; no cap on verbatim copies (when set, it applies to
+library passages only).
+
+**Whether the library ships** is decided after training by the decode selection of
+`scripts/run_24h.py`: factual questions (evaluation splits that the library's store excludes, and
+head-entity probes) are answered with the library on and off under the same seeds
+(`python -m bes.eval.proxy factual`, `docs/EVAL_PROTOCOL.md` section 10). The library ships only
+if it helps significantly more questions than it hurts (exact sign test, p < 0.05) and the dev
+prompts' exact scores do not drop with it; otherwise the export ships without it and the
+stored-number total drops by its 63.8M.
+
 ## Measured so far
 
 Everything below was measured on a 4-core CPU container (or compiled for the TPU without running
@@ -29,13 +44,14 @@ on it); nothing has run on a TPU.
 
 | fact | where |
 |---|---|
-| `configs/final.py`: 19.10M numbers read per generated token (standard convention); strict convention 19.62-19.81M at T = 1024 and 20.07-20.49M at T = 2048 on real text (`configs/strict.py` keeps both under 20M) | `docs/ACCOUNTING.md` |
-| Library `lib_v2`: 63,720,178 stored numbers; NQ-open questions answered 35.0% at 54.1% precision (18.5% at 37.3% without a near-duplicate stored question), worst-case read of one retrieval 232,818 numbers | `docs/E1_COVERAGE.md` |
+| `configs/final.py`: 98,300,111 stored numbers with the built library; 19.28M numbers read per generated token on a step that retrieves (worst case of one retrieval; 19.03M on every other step), standard convention. The strict convention (union over the context window) is above 20M at T = 2048 for `final`; `configs/strict.py` stays under 20M in both conventions at T = 2048 for windows of up to about 918 distinct tokens by the budget's upper bound (19.85M at 840; real 2048-token windows held 606-837) | `docs/ACCOUNTING.md` |
+| Library `lib_v2`: 63,768,391 stored numbers, worst-case read of one retrieval 245,223; gate at precision 0.8 on every dev set: head-entity probes 74.4% answered at 99.1% precision, common names 81.3% at 99.9%, NQ-open questions only 6.0% at 76.9% | `docs/E1_COVERAGE.md` |
 | Candidate tape on a micro model (d = 128, 4M tokens, one seed): held-out loss 4.488 against 4.963 nats without it | `docs/CHANGES.md` section 9 |
+| Temperature on the network only: with the full decoder on a tape-trained micro model at T = 0.5, repeated 4-gram rate 0.717 -> 0.207 and prompt copying 22.5% -> 2.0%; gate E5 (1M-token reference arm, 48 held-out chat prompts): with the defaults the repetition and loop rates are within error of the model trained without the tape (no loops) | `docs/CHANGES.md` sections 10 and 12, `docs/E5_SELF_GENERATION.md` |
 | Particle decoding, measured on an opponent model as a stand-in: prompts with every constraint satisfied 66% (plain) -> 91% (filter) -> 98% (exact potentials), about 4x the compute | `docs/E9_DECODING.md` |
 | Compile-only for v6e: train step peak 4.21 GiB with rematerialisation; without it the full micro-batch does not fit (32.93 GB of temporaries), half of it does (17.03 GiB) | `docs/TPU_NOTES.md` |
 | Proxy blind test harness; Falcon-H1-Tiny-90M-Instruct on the dev half: math 66.7%, constraint prompts fully satisfied 78.7% | `docs/EVAL_PROTOCOL.md` |
-| Evidence gates E2, E4, E5: not run when this README was written (the reports say where they stand) | `docs/E2_ABLATIONS.md`, `docs/E4_PROBES.md`, `docs/E5_SELF_GENERATION.md` |
+| Evidence gates E2 and E4: not run yet (the reports say where they stand) | `docs/E2_ABLATIONS.md`, `docs/E4_PROBES.md` |
 | Rejected after testing: exact Gaussian-process attention, scale-recursive loops and others | `docs/NEGATIVE_RESULTS.md` |
 
 ## Running it
@@ -46,16 +62,30 @@ ones):
     python -m pytest tests/model
     python -m pytest tests/train tests/eval
 
-CPU rehearsal of the whole 24-hour pipeline in 12 minutes (downloads from `data_cache/`, the
-library, the start-up benchmark and canary, training, sampling, DPO, decode selection, the judged
-comparison against a GGUF opponent and a stand-in, the export):
+CPU rehearsal of the whole 24-hour pipeline in 12 minutes (downloads into `data_cache/`, the
+library, the start-up benchmark and canary, training, sampling, DPO, decode selection with the
+factual library measurement, the judged comparison against a GGUF opponent and a stand-in, the
+export):
 
     python scripts/run_24h.py --config configs/smoke.py --allow-cpu --budget-minutes 12 --out runs/smoke
     python scripts/chat.py --export runs/smoke/final --show-diagnostics
     python scripts/arena.py --export runs/smoke/final --opponent falcon=recommended
 
+The run reuses a built library only when it was built with the run's settings (permissive flag,
+question-answer sources, and, recorded in `build_settings.json` by the run's library task, the
+tokenizer and `LibraryCfg`); otherwise it moves the library aside and builds it again (about 10
+minutes of host time plus downloads). A library built by hand with `scripts/build_library.py`
+has no such record: it is reused when what it records itself matches, unless
+`--override run.library_reuse_unrecorded=false`.
+
 The real run: `RUNBOOK.md` (what to do before, during and after the 24 hours) and
 `notebooks/colab_v6e_24h.ipynb`; a 30-minute free-tier check: `notebooks/colab_v5e_smoke.ipynb`.
+The code and every data file stay on the runtime's local disk (about 72 GB for the default plan:
+raw downloads are deleted once tokenised); Google Drive receives only the run's records, logs, the
+newest checkpoint and the export. Along the way the run keeps a hashed 0.3% of every chat, rag
+and math source out of training (the sampling prompts and the side-car's probes come from it),
+caches compiled programs under `RUN_DIR/jax_cache`, and its canary runs every compiled shape
+before training starts.
 
 ## Layout
 

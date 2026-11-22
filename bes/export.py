@@ -27,7 +27,9 @@ Directory layout (:data:`FORMAT` 1)
                       overrides, the horizon and the decoding choice of the run
 ``config.py``         ``load_config("<export>/config.py")`` rebuilds that configuration
 ``tokenizer/``        ``tokenizer.json`` and ``meta.json`` (``bes.tokenizer.load(<dir>)``)
-``library/``          a copy of the built library (``library_mode="copy"``), or
+``library/``          the built library's counted tables, the JSON files that configure them and
+                      its plain-text attribution (:func:`library_files`; ``library_mode="copy"``),
+                      or
 ``library_pointer.json``  its path, per-file SHA-256 and digest (``library_mode="pointer"``)
 ``reports/``          the run's stage ledger, manifest, training ledger, post-training and
                       evaluation reports that exist
@@ -37,7 +39,12 @@ Directory layout (:data:`FORMAT` 1)
 ``SHA256SUMS``        ``sha256sum -c`` format, every other file of the directory
 ====================  ==========================================================================
 
-Storage rule (``docs/ACCOUNTING.md``): one stored number has at most 16 bits. Each leaf is stored
+Storage rule (``docs/ACCOUNTING.md``): one stored number has at most 16 bits, and the export holds
+nothing numeric that the accounting does not count. The library ships only what
+``Library.load`` reads and ``Library.accounting`` counts (each table at ``ceil(bytes / 2)``
+numbers, so a ``uint32`` table counts two numbers per element) plus its attribution text; its
+provenance arrays and build reports stay behind, and the export checks that the shipped tables
+add up to the accounted total exactly (:func:`library_numbers`). Each leaf is stored
 in the format that reproduces its float32 values with the smaller relative L2 error
 ``||x - q(x)|| / ||x||`` (:func:`choose_16bit`; a ``float16`` overflow counts as an infinite
 error, so leaves outside the ``float16`` range go to ``bfloat16``; ties go to ``float16``). The
@@ -84,6 +91,12 @@ EXPORT_JSON = "export.json"
 CARD = "MODEL_CARD.md"
 SUMS = "SHA256SUMS"
 POINTER = "library_pointer.json"
+#: Plain-text files of a built library that ship with its counted tables: the attribution the
+#: sources' licences require (never read by the model, so not counted).
+LIBRARY_TEXT_FILES = ("ATTRIBUTION.md", "ATTRIBUTION.tsv", "ATTRIBUTION_QA.tsv")
+#: The supervisor's record of the settings a library was built with
+#: (``bes.train.supervisor.LIBRARY_SETTINGS``; read here, never shipped).
+LIBRARY_SETTINGS = "build_settings.json"
 #: version of the export code; part of the generator cache key
 EXPORT_VERSION = "1"
 
@@ -667,17 +680,126 @@ def check_16bit(params32: Any, params16: Any, consts: Any, batches: Sequence[Hel
 
 
 # ===================================================================== accounting
-def library_digest(path: str | Path) -> dict[str, Any]:
-    """Per-file SHA-256 of a library directory and their digest (SHA-256 of the sorted
-    ``relpath<TAB>sha256`` lines)."""
+def library_files(path: str | Path) -> dict[str, list[str]]:
+    """The files of a built library that an export ships (paths relative to ``path``):
+
+    ``arrays``: every table ``Library.load`` reads, which ``Library.accounting`` counts (the
+    packed text, the BM25 index, the title look-up, the question-answer layer and the gate, as
+    their classes name them); ``meta``: the JSON files that configure those tables (and hold the
+    index and qa header numbers the accounting counts); ``text``: the attribution files of
+    :data:`LIBRARY_TEXT_FILES` that exist. Nothing else is shipped: ``provenance/`` (int64 /
+    float64 build data, not counted), build reports, the supervisor's settings record.
+    Raises ``FileNotFoundError`` when a file the loader needs is missing."""
+    from bes.library.index import TruncatedIndex
+    from bes.library.pack import EntryBlocks, Packed
+    from bes.library.qa import QAStore
+    from bes.library.retrieve import TitleTable
+
     root = Path(path)
-    files = {}
-    for p in sorted(root.rglob("*")):
-        if p.is_file():
-            files[str(p.relative_to(root))] = sha256_file(p)
-    blob = "".join(f"{k}\t{v}\n" for k, v in sorted(files.items())).encode()
-    return {"digest": hashlib.sha256(blob).hexdigest(), "files": files,
-            "bytes": sum((root / k).stat().st_size for k in files)}
+    arrays = [f"pack_{k}.npy" for k in Packed.ARRAYS] + [f"index_{k}.npy" for k in TruncatedIndex.ARRAYS]
+    meta = ["library.json", "pack.json", "index.json"]
+    if (root / "titlekey_hash.npy").exists():                   # as Library.load decides
+        arrays += [f"titlekey_{k}.npy" for k in TitleTable.ARRAYS]
+    if (root / "qa.json").exists():
+        meta.append("qa.json")
+        arrays += [f"qa_{k}.npy" for k in (*EntryBlocks.ARRAYS, *QAStore.PER_ENTRY, *QAStore.INDEX)]
+    if (root / "gate_coef.npy").exists():
+        arrays.append("gate_coef.npy")
+        if (root / "gate.json").exists():
+            meta.append("gate.json")
+    missing = [f for f in arrays + meta if not (root / f).is_file()]
+    if missing:
+        raise FileNotFoundError(f"{root} is not a complete library: missing {missing}")
+    return {"arrays": sorted(arrays), "meta": sorted(meta),
+            "text": [f for f in LIBRARY_TEXT_FILES if (root / f).is_file()]}
+
+
+def library_file_list(ship: Mapping[str, Sequence[str]]) -> list[str]:
+    """Every path of :func:`library_files`, sorted."""
+    return sorted({f for part in ("arrays", "meta", "text") for f in ship.get(part, ())})
+
+
+def library_numbers(path: str | Path, ship: Mapping[str, Sequence[str]],
+                    accounting: Mapping[str, Any]) -> dict[str, Any]:
+    """The shipped tables against the library's own accounting. Each table holds
+    ``ceil(bytes / 2)`` numbers of 16 bits (a ``uint32`` table two per element, as
+    ``Library.accounting`` counts it); their sum plus the header numbers the accounting adds
+    (``*header_numbers``: scalars kept in the JSON files) must equal ``total_numbers``.
+    ``ok`` is False otherwise: a shipped array the accounting does not count, or a counted one
+    that would not ship."""
+    root = Path(path)
+    tables: dict[str, dict[str, Any]] = {}
+    for rel in ship.get("arrays", ()):
+        a = np.load(root / rel, mmap_mode="r", allow_pickle=False)
+        n = (int(a.nbytes) + 1) // 2
+        tables[rel] = {"dtype": a.dtype.name, "shape": [int(s) for s in a.shape], "numbers": n,
+                       "bits_per_number": round(8.0 * a.nbytes / n, 3) if n else 0.0}
+    header = sum(int(v) for k, v in accounting.items() if str(k).endswith("header_numbers"))
+    counted = sum(t["numbers"] for t in tables.values())
+    total = int(accounting["total_numbers"])
+    problems = []
+    if counted + header != total:
+        problems.append(f"the shipped tables hold {counted:,} numbers plus {header} header numbers, the "
+                        f"accounting counts {total:,}")
+    problems += [f"{k}: {t['bits_per_number']} bits per counted number" for k, t in tables.items()
+                 if t["bits_per_number"] > 16]
+    return {"ok": not problems, "problems": problems, "table_numbers": counted,
+            "header_numbers": header, "total_numbers": total, "tables": tables,
+            "wide_tables": sorted(k for k, t in tables.items() if np.dtype(t["dtype"]).itemsize > 2)}
+
+
+def library_digest(path: str | Path, files: Sequence[str] | None = None) -> dict[str, Any]:
+    """Per-file SHA-256 of a library and their digest (SHA-256 of the sorted
+    ``relpath<TAB>sha256`` lines), over ``files`` (default: the shipped files of
+    :func:`library_files`; every file when ``path`` is not a complete library)."""
+    root = Path(path)
+    if files is None:
+        try:
+            files = library_file_list(library_files(root))
+        except (FileNotFoundError, ImportError):
+            files = [str(p.relative_to(root)) for p in sorted(root.rglob("*")) if p.is_file()]
+    hashes = {rel: sha256_file(root / rel) for rel in sorted(files)}
+    blob = "".join(f"{k}\t{v}\n" for k, v in sorted(hashes.items())).encode()
+    return {"digest": hashlib.sha256(blob).hexdigest(), "files": hashes,
+            "bytes": sum((root / k).stat().st_size for k in hashes)}
+
+
+def library_qa_sources(path: str | Path) -> list[dict[str, Any]]:
+    """The question-answer sources a built library stores (``qa.json`` ``sources``), each with
+    its registry entry (dataset, config, split, revision, licence, permissive) and the number of
+    stored entries (rows of ``ATTRIBUTION_QA.tsv``; ``None`` without that file)."""
+    root = Path(path)
+    qa = _read_json(root / "qa.json")
+    if not qa:
+        return []
+    counts: dict[str, int] | None = None
+    tsv = root / "ATTRIBUTION_QA.tsv"
+    if tsv.is_file():
+        counts = {}
+        with open(tsv, encoding="utf-8", errors="replace") as f:
+            header = True
+            for line in f:
+                if line.startswith("#"):
+                    continue
+                if header:                      # the column names: entry, source, row
+                    header = False
+                    continue
+                parts = line.rstrip("\n").split("\t")
+                if len(parts) >= 2:
+                    counts[parts[1]] = counts.get(parts[1], 0) + 1
+    try:
+        from bes.library.sources import QA_SOURCES
+    except ImportError:  # pragma: no cover - the library package is part of the repository
+        QA_SOURCES = {}
+    out = []
+    for name in sorted(qa.get("sources") or []):
+        s = QA_SOURCES.get(name)
+        out.append({"source": name, "repo": getattr(s, "repo", None), "config": getattr(s, "config", None),
+                    "split": getattr(s, "split", None), "revision": getattr(s, "revision", None),
+                    "license": getattr(s, "license", "unknown (not in bes.library.sources)"),
+                    "permissive": bool(getattr(s, "permissive", False)),
+                    "entries": None if counts is None else counts.get(name, 0)})
+    return out
 
 
 def accounting_report(params: Any, model_cfg, lib: Any = None) -> dict[str, Any]:
@@ -717,11 +839,12 @@ def probe_sequences(batches: Sequence[HeldoutBatch]) -> list[tuple[str, np.ndarr
 
 
 def readset_report(params: Any, consts: Any, model_cfg, tok, probes: Sequence[tuple[str, Any]],
-                   *, lib: Any = None, queries: Sequence[str] = (), windows: Sequence[int] = (),
+                   *, lib: Any = None, queries: Sequence[Any] = (), windows: Sequence[int] = (),
                    include_critic: bool = False) -> dict[str, Any]:
     """Distinct stored numbers read per generated token (``bes.readset.ReadLogger``, both
     conventions) on probe sequences with real exact-layer features, and the numbers one library
-    retrieval reads (``ReadLog``) over ``queries``."""
+    retrieval reads (``ReadLog``) over ``queries`` (user turns, or ``(turn, earlier user
+    turns)`` pairs retrieved with that context, as ``bes.decode.respond`` does)."""
     from bes.exact.features import exact_features
     from bes.readset import ReadLogger
 
@@ -749,9 +872,11 @@ def readset_report(params: Any, consts: Any, model_cfg, tok, probes: Sequence[tu
 
         reads, n_ret = [], 0
         for q in queries:
+            # a query is a user turn, or (turn, earlier user turns) as the responder retrieves
+            text, context = (q, None) if isinstance(q, str) else (q[0], list(q[1]) or None)
             log = ReadLog()
             try:
-                p = lib.retrieve(q, log=log)
+                p = lib.retrieve(text, log=log, context=context) if context else lib.retrieve(text, log=log)
             except Exception:  # noqa: BLE001 - a query the library cannot handle reads nothing
                 continue
             if p is not None:
@@ -869,13 +994,20 @@ def report_files(facts: Mapping[str, Any], proxy_root: Path | None) -> list[Path
             files += sorted((rep / "ab").glob(f"{ps}--*"))
     if judged.get("ours"):
         files += sorted((rep / "exact").glob(f"{judged['ours'].replace('/', '__')}-*"))
+    factual = ((dec.get("library") or {}).get("factual") or {}).get("report")
+    if factual:                                       # the library decision's measurement
+        files += [Path(factual).with_suffix(".md"), Path(factual).with_suffix(".json")]
     return [f for f in dict.fromkeys(files) if f.is_file()]
 
 
 # ===================================================================== licences
-def data_licences(cfg, out_dir: Path, manifest: Mapping[str, Any] | None) -> dict[str, Any]:
+def data_licences(cfg, out_dir: Path, manifest: Mapping[str, Any] | None,
+                  library_sources: Sequence[Mapping[str, Any]] | None = None) -> dict[str, Any]:
     """Training data sources with token shards on disk (registry licences), the tokenizer's
-    training data, and the opponent and judge models used for evaluation only."""
+    training data, the question-answer sources of the shipped library
+    (:func:`library_qa_sources`) and the opponent and judge models used for evaluation only.
+    ``permissive_violations``: stored qa sources without a clear licence in a run that asked for
+    permissive data only (``data.permissive_only``)."""
     from bes.data import sources
 
     rows = []
@@ -922,8 +1054,12 @@ def data_licences(cfg, out_dir: Path, manifest: Mapping[str, Any] | None) -> dic
                                   "file": e.filename, "license": e.license})
     except Exception:  # noqa: BLE001
         pass
+    qa = [dict(s) for s in (library_sources or [])]
+    violations = [s["source"] for s in qa if not s.get("permissive")] if cfg.data.permissive_only else []
     return {"training_sources": rows, "tokenizer_training": tok_data, "evaluation_models": evaluated,
-            "permissive_only": bool(cfg.data.permissive_only)}
+            "permissive_only": bool(cfg.data.permissive_only), "library_qa_sources": qa,
+            "library_permissive": all(s.get("permissive") for s in qa) if qa else None,
+            "permissive_violations": violations}
 
 
 # ===================================================================== configuration files
@@ -1018,14 +1154,91 @@ def _secs(x: Any) -> str:
     return f"{x / 3600:.2f} h" if x >= 3600 else f"{x / 60:.1f} min" if x >= 60 else f"{x:.0f} s"
 
 
+#: The model's runtime switches (``bes.model.model.SWITCHES``) as the card names them.
+_FEATURE_NAMES = (("reg", "registers"), ("cand_in", "candidate-tape input features (n-gram count heads)"),
+                  ("cand_out", "candidate-tape masses in the output law"),
+                  ("sink", "calibrated attention sinks"), ("conf", "the confidence channel"),
+                  ("clock", "structural clocks"))
+
+
+def _switch_on(v: Any) -> bool | None:
+    if v is None:
+        return None
+    if isinstance(v, (list, tuple)):
+        return any(float(x) != 0.0 for x in v)
+    try:
+        return float(v) != 0.0
+    except (TypeError, ValueError):
+        return None
+
+
+def what_this_is(rec: Mapping[str, Any]) -> str:
+    """The card's first paragraph, from the export record only: the architecture, the feature
+    paths the shipped runtime switches leave on and off (and the fallback-ladder rung), whether
+    a library ships, and how replies are decoded."""
+    m = (((rec.get("config") or {}).get("cfg") or {}).get("model")) or {}
+    ffn = m.get("ffn_width") or (m.get("d_model") or 0) * (m.get("ffn_mult") or 0)
+    s = (f"A looped transformer: d_model {m.get('d_model')}, {m.get('n_blocks')} shared blocks applied "
+         f"{m.get('n_loops')} times, {m.get('n_heads')} heads of {m.get('head_dim')}, feed-forward width "
+         f"{ffn}, vocabulary {m.get('vocab_size')}, context {m.get('max_seq')} tokens (`docs/PLAN.md`).")
+    en = (rec.get("consts") or {}).get("enable") or {}
+    on = [name for key, name in _FEATURE_NAMES if _switch_on(en.get(key))]
+    off = [name for key, name in _FEATURE_NAMES if _switch_on(en.get(key)) is False]
+    if not en:
+        s += " The runtime switches of the weights were not recorded."
+    if on:
+        s += " Feature paths on: " + ", ".join(on) + "."
+    if off:
+        s += " Switched off: " + ", ".join(off) + "."
+    lad = ((rec.get("run") or {}).get("benchmark") or {}).get("ladder") or {}
+    if lad.get("groups"):
+        s += f" The canary put the run on fallback ladder rung {lad.get('rung')} ({', '.join(lad['groups'])} off)."
+    lib = rec.get("library") or {}
+    settings = (rec.get("decode_choice") or {}).get("settings") or {}
+    if lib.get("mode") not in (None, "none"):
+        s += (" A written library (Simple English Wikipedia passages and question-answer pairs) ships with "
+              f"it behind a calibrated retrieval gate, {'on' if settings.get('use_library', True) else 'off'} "
+              "by default.")
+    else:
+        s += " No written library ships with it" + (f" ({lib['not_shipped']})" if lib.get("not_shipped") else "") + "."
+    k = settings.get("particles")
+    if isinstance(k, int) and not isinstance(k, bool) and k > 1:
+        s += (f" Replies are decoded with K = {k} particles steered by exact potentials and chosen by a "
+              "satisficing rule.")
+    elif k == 1:
+        s += " Replies are decoded with one sample (K = 1)."
+    else:
+        s += " The decoding settings were not recorded."
+    return s
+
+
+def library_decision_text(dec: Mapping[str, Any] | None) -> str:
+    """One line on the decode selection's library decision (``manifest.json`` ``decode.library``):
+    shipped or not, why, and the numbers it rests on."""
+    if not dec:
+        return "no library decision recorded"
+    out = [("shipped" if dec.get("ship") else "not shipped") + f": {dec.get('reason')}"]
+    fa = dec.get("factual") or {}
+    if fa:
+        out.append(f"factual questions: {fa.get('n_paired')} of {fa.get('n_questions')} answered with the "
+                   f"library on and off, gate fired on {fa.get('fired')}; helped {fa.get('helped')}, hurt "
+                   f"{fa.get('hurt')} (sign test p = {fa.get('p')}); right with the library {fa.get('lib_acc')}, "
+                   f"without {fa.get('nolib_acc')}" + (" (stopped early)" if fa.get("stopped_early") else ""))
+    elif dec.get("factual_error"):
+        out.append(f"factual measurement: {dec['factual_error']}")
+    dev = dec.get("dev") or {}
+    if dev:
+        out.append(f"dev exact score with the library {dev.get('on')}, without {dev.get('off')} over "
+                   f"{dev.get('n_common')} prompts")
+    return "; ".join(out)
+
+
 def model_card(rec: Mapping[str, Any]) -> str:
     """``MODEL_CARD.md`` from an ``export.json`` record: measured facts only; anything missing
     is reported as missing."""
     L: list[str] = []
     chk = rec.get("check") or {}
     facts = rec.get("run") or {}
-    cfg = (rec.get("config") or {}).get("cfg") or {}
-    m = cfg.get("model", {})
     src = rec.get("source") or {}
     L.append(f"# Model card: BES-100M-A20M, export of run `{Path(str(facts.get('run_dir') or '?')).name}`")
     L.append("")
@@ -1043,12 +1256,7 @@ def model_card(rec: Mapping[str, Any]) -> str:
         L += ["> **Parts of the export failed** (details in `export.json`, key `errors`): "
               + "; ".join(f"{e.get('part')}: {e.get('error')}" for e in rec["errors"]), ""]
     L += ["## What this is", ""]
-    L.append(f"A looped transformer: d_model {m.get('d_model')}, {m.get('n_blocks')} shared blocks "
-             f"applied {m.get('n_loops')} times, {m.get('n_heads')} heads of {m.get('head_dim')}, "
-             f"feed-forward width {m.get('ffn_width') or (m.get('d_model') or 0) * (m.get('ffn_mult') or 0)}, "
-             f"vocabulary {m.get('vocab_size')}, context {m.get('max_seq')} tokens, with the host-side "
-             "exact layer (registers, candidate tape), a written library behind a retrieval gate and "
-             "particle decoding (`docs/PLAN.md`).")
+    L.append(what_this_is(rec))
     L.append("")
     L.append(f"- checkpoint: `{src.get('checkpoint')}` (step {src.get('step')}, {src.get('weights')} weights)")
     L.append(f"- configuration hash {rec.get('config', {}).get('config_hash')}; configuration file "
@@ -1126,9 +1334,23 @@ def model_card(rec: Mapping[str, Any]) -> str:
                      f"{_fmt_int(la.get('index_numbers'))}, title look-up {_fmt_int(la.get('title_table_numbers'))}, "
                      f"qa layer {_fmt_int(la.get('qa_numbers'))}, gate {_fmt_int(la.get('gate_numbers'))}); "
                      f"worst-case read of one retrieval {_fmt_int((lib.get('read_bound') or {}).get('total'))}.")
+            lr = rec.get("library") or {}
+            nb = lr.get("numbers") or {}
+            if nb:
+                L.append("")
+                wide = nb.get("wide_tables") or []
+                L.append(f"The export's library holds exactly these tables: {len(nb.get('tables') or {})} arrays "
+                         f"of {_fmt_int(nb.get('table_numbers'))} numbers plus {nb.get('header_numbers')} header "
+                         f"numbers in their JSON files = {_fmt_int(nb.get('total_numbers'))}, at most 16 bits per "
+                         "counted number" + (f" (the 32-bit tables {', '.join(f'`{w}`' for w in wide)} count two "
+                                            "numbers per element)" if wide else "")
+                         + ", plus the attribution text."
+                         + (f" Left out (not counted, never read by the model): "
+                            f"{', '.join(f'`{x}`' for x in lr['left_out'])}." if lr.get("left_out") else ""))
         else:
             L.append("")
-            L.append("No library is shipped with this export.")
+            L.append("No library is shipped with this export"
+                     + (f": {(rec.get('library') or {}).get('not_shipped')}." if (rec.get("library") or {}).get("not_shipped") else "."))
     else:
         L.append(f"Not computed: {acc.get('error', 'missing')}.")
     L.append("")
@@ -1191,8 +1413,9 @@ def model_card(rec: Mapping[str, Any]) -> str:
                  f"- execution plan {b.get('plan')}")
         L.append(f"- fallback ladder rung {lad.get('rung')}"
                  + (f": {', '.join(lad.get('groups') or [])} switched off" if lad.get("groups") else " (full configuration)"))
-        L.append(f"- canary: parity {b['canary'].get('parity')}, determinism {b['canary'].get('determinism')}, "
-                 f"safe run {b['canary'].get('safe')}, full run {b['canary'].get('full')}")
+        can = b.get("canary") or {}
+        L.append(f"- canary: parity {can.get('parity')}, determinism {can.get('determinism')}, "
+                 f"safe run {can.get('safe')}, full run {can.get('full')}")
     if facts.get("stages"):
         L.append("")
         L.append("| stage | status | planned | used | note |")
@@ -1222,6 +1445,9 @@ def model_card(rec: Mapping[str, Any]) -> str:
         L.append(f"- decoding choice on the dev split: `{dec.get('chosen')}` by exact scores "
                  f"{ {k: (round(v, 4) if isinstance(v, float) else v) for k, v in (dec.get('scores') or {}).items()} } "
                  f"over {dec.get('n_common')} common prompts of {dec.get('n_dev')}")
+        if "library" in dec:
+            L.append(f"- library decision ({(dec.get('library') or {}).get('rule')}): "
+                     f"{library_decision_text(dec.get('library'))}")
     else:
         L.append("- decoding choice: no record (the run's own `DecodeCfg` is the default)")
     jd = facts.get("judged")
@@ -1280,9 +1506,31 @@ def model_card(rec: Mapping[str, Any]) -> str:
     if libsrc.get("mode") not in (None, "none"):
         L.append("")
         L.append(f"Library ({libsrc.get('mode')}, digest {str(libsrc.get('digest'))[:16]}...): Simple English "
-                 "Wikipedia text (CC BY-SA 3.0 / GFDL) and question-answer pairs; per-article and per-entry "
-                 "attribution in `ATTRIBUTION.md`, `ATTRIBUTION.tsv` and `ATTRIBUTION_QA.tsv` of the library "
-                 "directory" + (" (copied next to this card as `LIBRARY_ATTRIBUTION.md`)." if libsrc.get("attribution") else "."))
+                 "Wikipedia text (CC BY-SA 3.0 / GFDL) and the question-answer pairs below; per-article and "
+                 "per-entry attribution in `ATTRIBUTION.md`, `ATTRIBUTION.tsv` and `ATTRIBUTION_QA.tsv` of the "
+                 "library directory" + (" (copied next to this card as `LIBRARY_ATTRIBUTION.md`)." if libsrc.get("attribution") else "."))
+        qa = lic.get("library_qa_sources") or libsrc.get("qa_sources") or []
+        if qa:
+            L.append("")
+            L.append("| question-answer source (stored in the library) | dataset | config / split | licence (dataset card) | permissive | entries |")
+            L.append("|---|---|---|---|---|---|")
+            for s in qa:
+                L.append(f"| {s.get('source')} | {s.get('repo')} | {s.get('config')} / {s.get('split')} | "
+                         f"{s.get('license')} | {s.get('permissive')} | {_fmt_int(s.get('entries')) if s.get('entries') is not None else '-'} |")
+        elif libsrc.get("qa_sources") == []:
+            L.append("")
+            L.append("The library stores no question-answer pairs.")
+        bs = libsrc.get("build_settings") or {}
+        L.append("")
+        L.append(f"Build settings recorded with the library: permissive only {bs.get('permissive_only')}, "
+                 f"question-answer sources asked for {bs.get('qa_sources')}, tokenizer sha256 "
+                 f"{str(bs.get('tokenizer_sha256'))[:16]}..." if bs else
+                 "No build-settings record came with the library (built outside the run's library task): its "
+                 "tokenizer and `LibraryCfg` were not checked against the run's.")
+    if lic.get("permissive_violations"):
+        L.append("")
+        L.append(f"**The run asked for permissive data only (`data.permissive_only`), but the library stores "
+                 f"question-answer sources without a clear licence: {', '.join(lic['permissive_violations'])}.**")
     if lic.get("evaluation_models"):
         L.append("")
         L.append("Models used for evaluation only (never trained on, never shipped):")
@@ -1386,9 +1634,12 @@ def verify_export(export_dir: str | Path, *, library: bool = True) -> list[str]:
     if library and (d / POINTER).exists():
         ptr = _read_json(d / POINTER) or {}
         path = Path(str(ptr.get("path", "")))
+        files = list(ptr["files"]) if isinstance(ptr.get("files"), Mapping) else None
         if not path.is_dir():
             problems.append(f"library pointer: {path} does not exist")
-        elif library_digest(path)["digest"] != ptr.get("digest"):
+        elif files is not None and any(not (path / f).is_file() for f in files):
+            problems.append(f"library pointer: {path} changed since the export (files missing)")
+        elif library_digest(path, files)["digest"] != ptr.get("digest"):
             problems.append(f"library pointer: {path} changed since the export (digest differs)")
     return problems
 
@@ -1442,6 +1693,14 @@ def export_run(out_dir: str | Path, *, checkpoint: str | Path | None = None,
         library = None
     if decode is None and man:
         decode = man.get("decode")
+    # the decode selection's library decision (scripts/run_24h.py stage_select): a library that
+    # did not pass its rule is neither shipped nor counted
+    lib_decision = dict((decode or {}).get("library") or {}) if isinstance(decode, Mapping) else {}
+    not_shipped = None
+    if library is not None and lib_decision.get("ship") is False:
+        not_shipped = f"the decode selection's library rule did not pass: {lib_decision.get('reason')}"
+        _say(log, f"export: the library is not shipped ({not_shipped})")
+        library = None
     _say(log, f"export: {ckpt} ({source} weights) -> {final}")
 
     # ------------------------------------------------------------- weights (essential)
@@ -1488,20 +1747,34 @@ def export_run(out_dir: str | Path, *, checkpoint: str | Path | None = None,
     # ------------------------------------------------------------- library, accounting, audit
     lib = None
     lib_rec: dict[str, Any] = {"mode": "none"}
+    if not_shipped:
+        lib_rec["not_shipped"] = not_shipped
     lib_digest_files: dict[str, str] = {}
+    lib_ship: list[str] = []
     if library is not None and library_mode != "none":
         try:
             from bes.library.retrieve import Library
 
             lib = Library.load(str(library))
-            dig = library_digest(library)
+            ship = library_files(library)
+            lib_ship = library_file_list(ship)
+            numbers = library_numbers(library, ship, lib.accounting())
+            if not numbers["ok"]:
+                raise ExportError(f"the library's tables do not match its accounting: {numbers['problems']}")
+            dig = library_digest(library, lib_ship)
+            every = {str(p.relative_to(library)) for p in Path(library).rglob("*") if p.is_file()}
             lib_rec = {"mode": library_mode, "source_path": str(Path(library).resolve()),
                        "digest": dig["digest"], "bytes": dig["bytes"], "files": len(dig["files"]),
-                       "meta_sha256": sha256_file(Path(library) / "library.json")}
+                       "meta_sha256": sha256_file(Path(library) / "library.json"),
+                       "shipped": ship, "numbers": numbers, "left_out": sorted(every - set(lib_ship)),
+                       "qa_sources": library_qa_sources(library),
+                       "build_settings": _read_json(Path(library) / LIBRARY_SETTINGS),
+                       "decision": lib_decision or None}
             lib_digest_files = dig["files"]
         except Exception as e:  # noqa: BLE001
             failed("library", e)
             lib, lib_rec = None, {"mode": "none", "error": f"{type(e).__name__}: {e}"}
+            lib_ship = []
     try:
         accounting = accounting_report(params16, cfg.model, lib)
     except Exception as e:  # noqa: BLE001
@@ -1511,7 +1784,8 @@ def export_run(out_dir: str | Path, *, checkpoint: str | Path | None = None,
         from bes.eval.proxy import prompts as prompt_set
 
         probes = probe_sequences(batches)
-        queries = [t for p in prompt_set.load() for t in p.turns]
+        # every user turn with the earlier turns of its prompt (bes.decode.respond retrieves so)
+        queries = [(t, tuple(p.turns[:i])) for p in prompt_set.load() for i, t in enumerate(p.turns)]
         readset = readset_report(params16, consts, cfg.model, tok, probes, lib=lib, queries=queries,
                                  windows=sorted({cfg.data.seq_len, cfg.data.seq_len_late}),
                                  include_critic=bool(cfg.decode.use_critic))
@@ -1525,8 +1799,14 @@ def export_run(out_dir: str | Path, *, checkpoint: str | Path | None = None,
     except Exception as e:  # noqa: BLE001
         failed("run facts", e)
         facts = {"run_dir": str(out), "error": f"{type(e).__name__}: {e}"}
+    if isinstance(decode, Mapping):                  # the choice this export applies (card, reports)
+        facts["decode"] = dict(decode)
     try:
-        licences = data_licences(cfg, out, man)
+        licences = data_licences(cfg, out, man, lib_rec.get("qa_sources") if lib is not None else None)
+        if licences.get("permissive_violations"):
+            errors.append({"part": "licences", "error": "the run asked for permissive data only, the shipped "
+                                                        "library stores question-answer sources without a clear "
+                                                        f"licence: {licences['permissive_violations']}"})
     except Exception as e:  # noqa: BLE001
         failed("licences", e)
         licences = {"error": f"{type(e).__name__}: {e}"}
@@ -1548,9 +1828,11 @@ def export_run(out_dir: str | Path, *, checkpoint: str | Path | None = None,
     use_lib = bool(settings.get("use_library", cfg.decode.use_library)) and lib is not None
     disclosures = {
         "library": ("shipped and on by default" if use_lib else
-                    "shipped but off by default" if lib is not None else "not shipped")
+                    "shipped but off by default" if lib is not None else
+                    f"not shipped ({not_shipped})" if not_shipped else "not shipped")
         + (f"; frozen and hashed before any prompt (digest {lib_rec.get('digest', '')[:16]}...), offline, "
            "counted in the stored numbers above" if lib is not None else "")
+        + (f"; library decision: {library_decision_text(lib_decision)}" if lib_decision else "")
         + (f"; decode selection variants measured on dev: {sorted(((decode or {}).get('scores') or {}).keys())}"
            if decode else "; no decode selection recorded"),
         "particles": f"K = {k} samples of this model per reply (particle decoding with exact potentials, "
@@ -1599,7 +1881,14 @@ def export_run(out_dir: str | Path, *, checkpoint: str | Path | None = None,
             raise ExportError("the copied tokenizer differs from the one the model was trained with")
         if lib is not None:
             if library_mode == "copy":
-                shutil.copytree(library, tmp / "library")
+                for rel in lib_ship:            # the counted tables, their JSON, attribution
+                    (tmp / "library" / rel).parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(Path(library) / rel, tmp / "library" / rel)
+                from bes.library.retrieve import Library
+
+                if Library.load(str(tmp / "library")).accounting() != lib.accounting() or \
+                        library_digest(tmp / "library")["digest"] != lib_rec["digest"]:
+                    raise ExportError("the copied library differs from the built one")
                 lib_rec["path"] = "library"
             else:
                 _write_json(tmp / POINTER, {"path": lib_rec["source_path"], "digest": lib_rec["digest"],
@@ -1833,5 +2122,6 @@ __all__ = ["FORMAT", "TOLERANCE_NATS", "ExportError", "LeafChoice", "choose_16bi
            "dequantize", "load_weights", "HeldoutFile", "HELDOUT_FILES", "heldout_batches",
            "heldout_loss", "check_16bit", "accounting_report", "readset_report", "run_facts",
            "data_licences", "model_card", "export_run", "verify_export", "load_export",
-           "Exported", "export_generator", "library_digest", "decode_settings",
-           "default_decode_overrides"]
+           "Exported", "export_generator", "library_digest", "library_files", "library_file_list",
+           "library_numbers", "library_qa_sources", "library_decision_text", "what_this_is",
+           "decode_settings", "default_decode_overrides"]

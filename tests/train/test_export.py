@@ -13,8 +13,10 @@ import ast
 import importlib.util
 import json
 import math
+import os
 import re
 import shutil
+import signal
 from pathlib import Path
 
 import numpy as np
@@ -399,6 +401,208 @@ def test_export_replaces_an_earlier_export_atomically(tiny, tmp_path):
     assert not [p for p in tmp_path.iterdir() if p.name.startswith((".tmp-", ".old-"))]
 
 
+# ======================================================================= the shipped library
+QA_ROWS = [("Who wrote Hamlet?", "William Shakespeare"), ("What is the capital of France?", "Paris"),
+           ("Who was Alan Turing?", "an English mathematician"), ("Who was Napoleon?", "a French emperor")]
+
+
+def _qa_library(path: Path, sources=("nq_open_train", "trivia_qa_train"), permissive: bool = False) -> Path:
+    """A tiny library with a question-answer layer whose entries come from registry sources, a
+    gate, and the attribution files of a real build."""
+    from bes.library import gate as G
+    from bes.library import qa as Q
+    from bes.library.index import IndexCfg
+    from bes.library.pack import PackCfg
+    from bes.library.retrieve import GateCfg, Library, RetrieveCfg
+
+    docs = [("Napoleon", "Napoleon was a French military leader and emperor."),
+            ("Paris", "Paris is the capital and largest city of France."),
+            ("DNA", "DNA is the molecule that carries the genetic information of living things."),
+            ("Hamlet", "Hamlet is a tragedy written by William Shakespeare.")]
+    pairs = [Q.QAPair(q, a, sources[i % len(sources)], i) for i, (q, a) in enumerate(QA_ROWS)]
+    store = Q.QAStore.build(pairs, Q.QACfg(min_cov_q=0.0), PackCfg(block_raw_bytes=128),
+                            meta={"permissive_only": permissive})
+    gate = G.GateModel.stored({"wiki": np.zeros(len(G.WIKI_FEATURES) + 1),
+                               "qa": np.zeros(len(G.QA_FEATURES) + 1)}, 0.5)
+    path.mkdir(parents=True, exist_ok=True)
+    Library.build(docs, out_dir=str(path), index_cfg=IndexCfg(budget_numbers=10**6),
+                  pack_cfg=PackCfg(block_raw_bytes=256, titles_per_block=4),
+                  cfg=RetrieveCfg(max_tokens=160, gate=GateCfg(min_score=0.5)),
+                  count_tokens=lambda s: len(s.split()), meta={"build": {"permissive_only": permissive}},
+                  qa=store, gate=gate)
+    (path / "ATTRIBUTION.md").write_text("# Attribution\n\nTest passages written for this test.\n")
+    (path / "ATTRIBUTION_QA.tsv").write_text(
+        "# question-answer layer: sources\n" + "".join(f"# {s}\n" for s in sorted(set(sources)))
+        + "entry\tsource\trow\n" + "".join(f"{e}\t{p.source}\t{p.row}\n" for e, p in enumerate(pairs)))
+    return path
+
+
+def _files_the_loader_reads(lib: Path, monkeypatch) -> tuple[set, object]:
+    """Independent reference of 'what the library is': every file under ``lib`` that
+    ``Library.load``, ``accounting``, ``read_bound`` and a few retrievals open."""
+    import builtins
+
+    from bes.library.retrieve import Library
+
+    seen: set[str] = set()
+    root = lib.resolve()
+
+    def note(f):
+        if isinstance(f, (str, os.PathLike)):
+            p = Path(os.fspath(f)).resolve()
+            if root in p.parents:
+                seen.add(str(p.relative_to(root)))
+
+    real_open, real_load = builtins.open, np.load
+    with monkeypatch.context() as m:
+        m.setattr(builtins, "open", lambda f, *a, **k: (note(f), real_open(f, *a, **k))[1])
+        m.setattr(np, "load", lambda f, *a, **k: (note(f), real_load(f, *a, **k))[1])
+        src = Library.load(str(lib))
+        src.accounting(), src.read_bound()
+        for q, _ in QA_ROWS:
+            src.retrieve(q)
+    return seen, src
+
+
+def test_export_ships_only_the_counted_library_tables(tiny, tmp_path, monkeypatch):
+    """tools-2: a library directory as a build leaves it (64-bit provenance arrays, a build
+    report, the library task's settings record) exports as exactly the files the library's own
+    loader reads, every one counted by its accounting, plus the attribution text. Before, the
+    whole directory was copied: 3,080,684 uncounted 16-bit numbers of provenance for the real
+    library, 101.33M shipped while the card said 'within both'."""
+    from bes.library.index import TruncatedIndex
+    from bes.library.qa import QAStore
+    from bes.library.retrieve import Library
+
+    run, _, _, _ = tiny
+    lib = _qa_library(tmp_path / "lib")
+    (lib / "provenance").mkdir()
+    np.save(lib / "provenance" / "pool_idx.npy", np.arange(1000, dtype=np.int64))
+    np.save(lib / "provenance" / "title_importance.npy", np.linspace(0.0, 1.0, 5))
+    (lib / "qa_clean.json").write_text(json.dumps({"kept": len(QA_ROWS)}))
+    (lib / "build_settings.json").write_text(json.dumps({"permissive_only": False, "tokenizer_sha256": "t"}))
+    loader_files, src = _files_the_loader_reads(lib, monkeypatch)
+    acc = src.accounting()
+    assert "qa.json" in loader_files and "gate_coef.npy" in loader_files       # the fixture is complete
+
+    res = E.export_run(run, final_dir=tmp_path / "x", library=lib, library_mode="copy", heldout_domains=(),
+                       log=lambda m: None)
+    d = Path(res["export_dir"])
+    shipped = {str(p.relative_to(d / "library")) for p in (d / "library").rglob("*") if p.is_file()}
+    assert shipped == loader_files | {"ATTRIBUTION.md", "ATTRIBUTION_QA.tsv"}
+    sums = (d / "SHA256SUMS").read_text()
+    assert "provenance" not in sums and "qa_clean" not in sums and "build_settings" not in sums
+    # every shipped number is counted: ceil(bytes / 2) of each table plus the header numbers the
+    # index and the qa layer keep in their JSON files is the library's total, and none is wider
+    # than 32 bits (a 32-bit table counts two 16-bit numbers)
+    tables = [np.load(d / "library" / f) for f in shipped if f.endswith(".npy")]
+    header = TruncatedIndex.HEADER_NUMBERS + QAStore.HEADER_NUMBERS
+    assert sum((a.nbytes + 1) // 2 for a in tables) + header == acc["total_numbers"]
+    assert all(a.dtype.itemsize <= 4 for a in tables)
+    rec = json.loads((d / "export.json").read_text())
+    assert rec["library"]["numbers"]["ok"] and rec["library"]["numbers"]["total_numbers"] == acc["total_numbers"]
+    assert rec["library"]["left_out"] == ["build_settings.json", "provenance/pool_idx.npy",
+                                          "provenance/title_importance.npy", "qa_clean.json"]
+    assert rec["accounting"]["library"]["accounting"]["total_numbers"] == acc["total_numbers"]
+    # the shipped copy loads, counts and answers as the built library does
+    copy = Library.load(str(d / "library"))
+    assert copy.accounting() == acc
+    for q, _ in QA_ROWS:
+        a, b = src.retrieve(q), copy.retrieve(q)
+        assert (a is None) == (b is None) and (a is None or a.text == b.text)
+    assert E.verify_export(d) == []
+    # the card: the qa sources with their licences, what was left out
+    card = (d / "MODEL_CARD.md").read_text()
+    assert "| trivia_qa_train | mandarjoshi/trivia_qa | rc.nocontext / train | unknown" in card
+    assert "| nq_open_train | google-research-datasets/nq_open | nq_open / train | cc-by-sa-3.0" in card
+    assert "Left out (not counted, never read by the model)" in card and "`provenance/pool_idx.npy`" in card
+    # pointer mode digests the shipped files only: provenance may change, a table may not
+    res = E.export_run(run, final_dir=tmp_path / "p", library=lib, library_mode="pointer", heldout_domains=(),
+                       log=lambda m: None)
+    p = Path(res["export_dir"])
+    assert set(json.loads((p / "library_pointer.json").read_text())["files"]) == shipped
+    np.save(lib / "provenance" / "pool_idx.npy", np.arange(7, dtype=np.int64))
+    assert E.verify_export(p) == []
+    (lib / "ATTRIBUTION_QA.tsv").write_text("changed\n")
+    assert any("changed since the export" in x for x in E.verify_export(p))
+
+
+def test_readset_audit_retrieves_later_turns_with_their_context():
+    """The read-set audit asks the library what the responder asks it: a later turn of a proxy
+    prompt is retrieved with the earlier user turns as its context (Library.retrieve(...,
+    context=...), as bes.decode.respond does)."""
+    calls = []
+
+    class FakeLib:
+        def retrieve(self, q, log=None, context=None):
+            calls.append((q, context))
+            return None
+
+        def read_bound(self):
+            return {"total": 10}
+
+    queries = [("Who was Napoleon?", ()), ("And his wife?", ("Who was Napoleon?",)), "Tell me about Paris."]
+    rs = E.readset_report(None, None, None, None, [], lib=FakeLib(), queries=queries)
+    assert calls == [("Who was Napoleon?", None), ("And his wife?", ["Who was Napoleon?"]),
+                     ("Tell me about Paris.", None)]
+    assert rs["library"]["queries"] == 3 and rs["library"]["read_bound"] == 10
+
+
+def test_export_leaves_out_a_library_the_decode_selection_did_not_keep(tiny, tmp_path):
+    """The library decision of the decode selection (scripts/run_24h.py): a library without a
+    significant factual gain is neither shipped nor counted, and the card says why with the
+    numbers (before: the export always shipped and counted a built library)."""
+    run, lib, _, _ = tiny
+    report = tmp_path / "proxy" / "reports" / "factual" / "run-factual.md"
+    report.parent.mkdir(parents=True)
+    report.write_text("# Factual questions\n")
+    report.with_suffix(".json").write_text("{}")
+    decision = {"ship": False, "rule": "ship the library only if ...",
+                "reason": "no significant factual gain (helped 2, hurt 1, p 1.0)",
+                "factual": {"n_questions": 20, "n_paired": 20, "fired": 7, "helped": 2, "hurt": 1, "p": 1.0,
+                            "lib_acc": 0.35, "nolib_acc": 0.3, "stopped_early": False, "report": str(report)},
+                "dev": {"on": 0.5, "off": 0.5, "n_common": 4}}
+    dec = {"chosen": "nolib", "overrides": E.default_decode_overrides(load_config(str(CONFIG), OVERRIDES))
+           + ["extra.use_library=false"], "scores": {"default": 0.5, "nolib": 0.5}, "n_common": 4,
+           "n_dev": 4, "library": decision}
+    res = E.export_run(run, final_dir=tmp_path / "x", library=lib, decode=dec, heldout_domains=(),
+                       reports={"proxy": str(report.parent.parent)}, log=lambda m: None)
+    d = Path(res["export_dir"])
+    assert res["library"] == "none" and not (d / "library").exists()
+    assert (d / "reports" / "proxy" / "factual" / "run-factual.md").is_file()    # the measurement
+    rec = json.loads((d / "export.json").read_text())
+    assert rec["accounting"]["library"] is None
+    assert rec["library"]["not_shipped"].startswith("the decode selection's library rule did not pass")
+    card = (d / "MODEL_CARD.md").read_text()
+    assert "No library is shipped with this export: the decode selection's library rule did not pass" in card
+    assert "helped 2, hurt 1 (sign test p = 1.0)" in card and "No written library ships with it" in card
+
+
+def test_model_card_opening_paragraph_is_built_from_the_record():
+    """tools-8: the first paragraph states what the shipped model has: no library, K = 1 and the
+    switched-off paths for a safe-rung, library-less, single-sample record (before: a fixed text
+    naming registers, the candidate tape, a library and particle decoding for every export)."""
+    model = {"d_model": 768, "n_blocks": 2, "n_loops": 8, "n_heads": 12, "head_dim": 64, "ffn_width": 3072,
+             "vocab_size": 8192, "max_seq": 2048}
+    off = {k: 0.0 for k in ("reg", "cand_in", "cand_out", "conf", "sink", "clock")}
+    rec = {"format": 1, "config": {"cfg": {"model": model}}, "check": {"ok": True},
+           "consts": {"enable": {**off, "kind": [0.0, 0.0], "src": [1.0] * 6}},
+           "run": {"benchmark": {"canary": {}, "ladder": {"rung": "safe", "groups": [
+               "sink", "conf", "ngram", "library", "tilt", "registers", "calc"]}}},
+           "library": {"mode": "none"}, "decode_choice": {"settings": {"particles": 1, "use_library": False}}}
+    para = E.model_card(rec).split("## What this is")[1].split("\n- checkpoint")[0]
+    assert "No written library ships with it" in para and "K = 1" in para
+    assert "particles steered" not in para and "retrieval gate" not in para and "Feature paths on" not in para
+    assert "Switched off: registers, candidate-tape input features" in para and "rung safe" in para
+    full = dict(rec, consts={"enable": {k: 1.0 for k in off}}, run={},
+                library={"mode": "copy", "digest": "ab" * 32},
+                decode_choice={"settings": {"particles": 6, "use_library": True}})
+    para = E.model_card(full).split("## What this is")[1].split("\n- checkpoint")[0]
+    assert "K = 6 particles steered by exact potentials" in para
+    assert "ships with it behind a calibrated retrieval gate, on by default" in para
+    assert "Switched off" not in para and "Feature paths on: registers" in para
+
+
 def test_export_cli_verify_and_exit_codes(exported, tmp_path):
     spec = importlib.util.spec_from_file_location("export_cli", REPO / "scripts" / "export.py")
     cli = importlib.util.module_from_spec(spec)
@@ -544,30 +748,157 @@ def test_notebook_progress_cell_reads_a_run_directory(exported, tiny, capsys):
     assert "training ledger: 4,096 tokens, 7 steps" in out
 
 
-def test_notebook_mirror_copies_and_prunes_checkpoints(tmp_path):
-    ns = _cell_namespace(NOTEBOOKS[0], {"RUN_DIR": str(tmp_path / "run"), "REPO_DIR": str(REPO),
-                                        "USE_DRIVE": True, "DRIVE_DIR": str(tmp_path / "drive")})
+def _nb_cell(path: Path, number: str) -> str:
+    """The code cell whose first line starts with ``# <number>.``."""
+    for src in _code_cells(json.loads(path.read_text())):
+        if src.startswith(f"# {number}."):
+            return src
+    raise KeyError(number)
+
+
+def _ckpt(root: Path, name: str, size: int = 10) -> None:
+    (root / name).mkdir(parents=True)
+    (root / name / "arrays.npz").write_bytes(b"x" * size)
+    (root / name / "manifest.json").write_text("{}")
+
+
+@pytest.mark.parametrize("path", NOTEBOOKS, ids=lambda p: p.name)
+def test_notebook_mirror_keeps_one_complete_checkpoint_and_reports_its_state(path, tmp_path, monkeypatch, capsys):
+    """tools-4: Drive receives the run's records, logs and the newest complete checkpoint, never
+    data (shards, caches, the proxy outputs); while training runs a new checkpoint is copied at
+    most once an hour; a failing Drive keeps the last complete checkpoint, and the status file,
+    shown by the progress cell, says so. Before: every checkpoint went to Drive and was deleted
+    there again (about 15 GB through the mount), errors reached only a log nobody read."""
+    ns = _cell_namespace(path, {"RUN_DIR": str(tmp_path / "run"), "REPO_DIR": str(REPO), "USE_DRIVE": True,
+                                "DRIVE_DIR": str(tmp_path / "drive")})
     mirror: dict = {"__name__": "mirror"}
     exec(compile(ns["MIRROR_CODE"], "mirror", "exec"), mirror)
     src, dst = tmp_path / "run", tmp_path / "drive"
-    for name in ("ckpt-000001-step-000000010", "ckpt-000002-step-000000020"):
-        (src / "train" / "ckpt" / name).mkdir(parents=True)
-        (src / "train" / "ckpt" / name / "arrays.npz").write_bytes(b"x" * 10)
-    (src / "jax_cache").mkdir()
-    (src / "jax_cache" / "big").write_bytes(b"y")
-    (src / "train" / "ckpt" / ".tmp-ckpt-000003").mkdir()
-    (src / "manifest.json").write_text("{}")
-    mirror["sync"](str(src), str(dst))
-    assert (dst / "manifest.json").exists() and not (dst / "jax_cache").exists()
-    assert sorted(p.name for p in (dst / "train" / "ckpt").iterdir()) == [
-        "ckpt-000001-step-000000010", "ckpt-000002-step-000000020"]
-    shutil.rmtree(src / "train" / "ckpt" / "ckpt-000001-step-000000010")      # pruned locally
-    mirror["sync"](str(src), str(dst))
-    assert [p.name for p in (dst / "train" / "ckpt").iterdir()] == ["ckpt-000002-step-000000020"]
-    # restore after a recycled machine
+    ck = src / "train" / "ckpt"
+    _ckpt(ck, "ckpt-000001-step-000000010")
+    _ckpt(ck, "ckpt-000002-step-000000020")
+    (src / "manifest.json").write_text(json.dumps({"created": 1.0}))
+    (src / "stages.json").write_text(json.dumps({"stages": {"train": {"status": "started"}}}))
+    (src / "train" / "ledger.json").write_text("{}")
+    for rel in ("jax_cache/big", "data/tok/climbmix/shard.bin", "proxy/cache/reply.json",
+                "train/ckpt/.tmp-ckpt-000003/arrays.npz", "train/reading_cache.npy", "logs/library.log"):
+        (src / rel).parent.mkdir(parents=True, exist_ok=True)
+        (src / rel).write_bytes(b"y")
+    Path(ns["LOG"]).write_text("run log\n")
+    pairs = [(str(src), str(dst)), (ns["LOG"], str(dst) + ".log")]
+    status: dict = {}
+    mirror["mirror_pass"](pairs, status, 3600.0, now=1000.0)
+    on_drive = sorted(str(p.relative_to(dst)) for p in dst.rglob("*") if p.is_file())
+    assert on_drive == ["logs/library.log", "manifest.json", "stages.json",
+                        "train/ckpt/ckpt-000002-step-000000020/arrays.npz",
+                        "train/ckpt/ckpt-000002-step-000000020/manifest.json", "train/ledger.json"]
+    assert Path(str(dst) + ".log").read_text() == "run log\n"
+    assert status["errors_last_pass"] == 0 and status["last_good_pass"] == 1000.0
+    assert status["checkpoints"] == {"train/ckpt": "ckpt-000002-step-000000020"}
+    names = lambda: sorted(p.name for p in (dst / "train" / "ckpt").iterdir())      # noqa: E731
+    _ckpt(ck, "ckpt-000003-step-000000030")
+    mirror["mirror_pass"](pairs, status, 3600.0, now=1600.0)           # within the hour: the old one stays
+    assert names() == ["ckpt-000002-step-000000020"]
+    mirror["mirror_pass"](pairs, status, 3600.0, now=4700.0)           # an hour later: replaced
+    assert names() == ["ckpt-000003-step-000000030"]
+    # Drive over quota once training is over (no hourly limit then): the complete one stays
+    _ckpt(ck, "ckpt-000004-step-000000040")
+    (src / "stages.json").write_text(json.dumps({"stages": {"train": {"status": "finished"}}}))
+
+    def quota(*a, **k):
+        raise OSError(122, "Disk quota exceeded")
+
+    with monkeypatch.context() as m:
+        m.setattr(shutil, "copy2", quota)
+        m.setattr(shutil, "copytree", quota)
+        mirror["mirror_pass"](pairs, status, 3600.0, now=4800.0)
+    assert names() == ["ckpt-000003-step-000000030"]
+    assert status["errors_last_pass"] >= 1 and "quota" in status["last_error"] and status["last_good_pass"] == 4700.0
+    Path(ns["MIRROR_STATUS"]).write_text(json.dumps(status))
+    report = "\n".join(ns["mirror_report"](now=4900.0))
+    assert "NOT running" in report and "Disk quota exceeded" in report and "WARNING" in report
+    assert "ckpt-000003-step-000000030" in report
+    ns["show_progress"]()
+    assert "Drive mirror NOT running" in capsys.readouterr().out
+    mirror["mirror_pass"](pairs, status, 3600.0, now=5000.0)           # Drive works again
+    assert names() == ["ckpt-000004-step-000000040"] and status["last_good_pass"] == 5000.0
+    # a Drive directory holding another run is never touched
+    other = tmp_path / "other"
+    other.mkdir()
+    (other / "manifest.json").write_text(json.dumps({"created": 2.0}))
+    st2: dict = {}
+    mirror["mirror_pass"]([(str(src), str(other))], st2, 0.0, now=6000.0)
+    assert "holds another run" in st2["last_error"] and sorted(p.name for p in other.iterdir()) == ["manifest.json"]
+    # restore on a recycled machine: the records and the newest checkpoint come back
     shutil.rmtree(src)
+    Path(ns["LOG"]).unlink()
     ns["restore_from_drive"]()
-    assert (src / "manifest.json").exists() and (src / "train" / "ckpt" / "ckpt-000002-step-000000020").is_dir()
+    assert (src / "manifest.json").exists() and (ck / "ckpt-000004-step-000000040" / "arrays.npz").is_file()
+    assert Path(ns["LOG"]).read_text() == "run log\n"
+
+
+@pytest.mark.parametrize("path", NOTEBOOKS, ids=lambda p: p.name)
+def test_notebook_start_cell_refuses_a_new_run_when_drive_holds_one(path, tmp_path):
+    """tools-3: on a recycled machine the local run directory is empty but Drive holds the run:
+    cell 6 refuses and points to cell 8 (before: it started a new run with a new budget whose
+    mirror replaced the old run on Drive, checkpoints included)."""
+    ns = _cell_namespace(path, {"RUN_DIR": str(tmp_path / "run"), "REPO_DIR": str(REPO), "USE_DRIVE": True,
+                                "DRIVE_DIR": str(tmp_path / "drive")})
+    (tmp_path / "drive").mkdir()
+    (tmp_path / "drive" / "manifest.json").write_text("{}")
+    started: list = []
+    ns["start_background"] = lambda *a, **k: started.append(a) or 1
+    ns["start_mirror"] = lambda *a, **k: started.append("mirror")
+    cell = _as_python(_nb_cell(path, "6"))
+    with pytest.raises(RuntimeError, match="cell 8"):
+        exec(compile(cell, "start", "exec"), ns)
+    assert started == []
+    (tmp_path / "drive" / "manifest.json").unlink()                   # nothing on Drive: it starts
+    exec(compile(cell, "start", "exec"), ns)
+    assert len(started) == 2 and started[-1] == "mirror"
+
+
+@pytest.mark.parametrize("path", NOTEBOOKS, ids=lambda p: p.name)
+def test_notebook_stop_cell_needs_its_explicit_flag(path, tmp_path, monkeypatch):
+    """tools-3: 'Run all' runs the stop cell too; it sends SIGTERM only when STOP_THE_RUN is set
+    in it (before: it stopped the run that cell 6 had just started)."""
+    ns = _cell_namespace(path, {"RUN_DIR": str(tmp_path / "run"), "REPO_DIR": str(REPO), "USE_DRIVE": False})
+    Path(ns["PID_FILE"]).parent.mkdir(parents=True, exist_ok=True)
+    Path(ns["PID_FILE"]).write_text(str(os.getpid()))                 # a live process
+    sent: list = []
+    real_kill = os.kill
+    monkeypatch.setattr(os, "kill", lambda pid, sig: real_kill(pid, 0) if sig == 0 else sent.append(sig))
+    cell = _as_python(_nb_cell(path, "9"))
+    assert ns["pid_alive"]()
+    exec(compile(cell, "stop", "exec"), ns)
+    assert sent == []
+    exec(compile(cell.replace("STOP_THE_RUN = False", "STOP_THE_RUN = True"), "stop", "exec"), ns)
+    assert sent == [signal.SIGTERM]
+
+
+@pytest.mark.parametrize("path", NOTEBOOKS, ids=lambda p: p.name)
+def test_notebook_runs_the_code_from_the_local_disk(path, tmp_path, monkeypatch):
+    """tools-1: a copy of the repository on Drive is copied to the local REPO_DIR without its data
+    and runs there; REPO_DIR itself on Drive is refused. Before: the copy on Drive was used as it
+    was, so every download, token shard, the library and the GGUF files went onto Drive."""
+    copy = tmp_path / "drive_copy"
+    (copy / "bes").mkdir(parents=True)
+    (copy / "bes" / "__init__.py").write_text("")
+    (copy / "data_cache" / "raw").mkdir(parents=True)
+    (copy / "data_cache" / "raw" / "big.parquet").write_bytes(b"z")
+    (copy / "runs" / "old").mkdir(parents=True)
+    local = tmp_path / "local"
+    ns = _cell_namespace(path, {"RUN_DIR": str(tmp_path / "run"), "REPO_DIR": str(local), "CODE_COPY": str(copy),
+                                "USE_DRIVE": False})
+    cell = _as_python(_nb_cell(path, "3"))
+    monkeypatch.chdir(tmp_path)
+    exec(compile(cell, "code", "exec"), ns)
+    assert Path(os.getcwd()).resolve() == local.resolve() and (local / "bes" / "__init__.py").is_file()
+    assert not (local / "data_cache").exists() and not (local / "runs").exists()
+    ns = _cell_namespace(path, {"RUN_DIR": str(tmp_path / "run"), "CODE_COPY": "", "USE_DRIVE": False,
+                                "REPO_DIR": "/content/drive/MyDrive/TuringAward2027"})
+    with pytest.raises(RuntimeError, match="local disk"):
+        exec(compile(cell, "code", "exec"), ns)
 
 
 # ======================================================================= documents
@@ -578,6 +909,40 @@ def test_requirements_pin_the_colab_dependencies_and_never_jax():
     for name in ("tiktoken", "rustbpe", "pyarrow", "huggingface_hub", "regex"):
         assert name in pkgs, name
     assert not any(k.startswith(("jax", "libtpu", "torch", "tensorflow")) for k in pkgs)
+
+
+def test_readme_states_the_accounting_of_the_code():
+    """tools-5: the README's headline numbers are what bes.budget gives for the shipped
+    configurations with the built library (``budget.V2_ASSETS``), and its strict-convention claim
+    carries its condition (before: 19.10M, the plan's placeholder ledger, and 'keeps both under
+    20M' without the distinct-token condition)."""
+    import functools
+
+    import jax
+
+    from bes import budget
+    from bes.model import model as M
+
+    def count(name):
+        cfg = load_config(str(REPO / "configs" / f"{name}.py"))
+        shapes = jax.eval_shape(functools.partial(M.init_params, cfg.model), jax.random.PRNGKey(0))
+        return budget.count(shapes, cfg.model, budget.V2_ASSETS)
+
+    v2 = budget.V2_ASSETS
+    final, strict = count("final"), count("strict")
+    read = v2.library_read + v2.index_read
+    text = (REPO / "README.md").read_text()
+    row = next(ln for ln in text.splitlines() if ln.startswith("| `configs/final.py`"))
+    assert f"{final.total:,} stored numbers" in row
+    assert f"{final.active_step / 1e6:.2f}M numbers read per generated token" in row
+    assert f"{(final.active_step - read) / 1e6:.2f}M on every other step" in row
+    first_over = next(d for d in range(400, 2049) if strict.active_strict(2048, d) > 20e6)
+    assert strict.active_strict(2048, 840) <= 20e6 < final.active_strict(2048, 840)
+    assert f"up to about {first_over - 1} distinct tokens" in row
+    assert f"{strict.active_strict(2048, 840) / 1e6:.2f}M at 840" in row
+    lib_row = next(ln for ln in text.splitlines() if ln.startswith("| Library `lib_v2`"))
+    assert f"{v2.library_numbers + v2.index_numbers:,} stored numbers" in lib_row and f"{read:,}" in lib_row
+    assert "19.10M" not in text and "5% less dense core" not in (REPO / "RUNBOOK.md").read_text()
 
 
 @pytest.mark.parametrize("name", ["RUNBOOK.md", "README.md"])

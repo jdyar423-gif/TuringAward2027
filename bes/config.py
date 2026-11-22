@@ -241,6 +241,16 @@ class RunCfg:
                                       # skip, guard re-based, alarm); 0 = no bound
     delete_raw_after_tokenize: bool = True  # delete a raw download this run fetched once its whole
                                       # token shard is committed (tests turn it off)
+    # -- appended by the run-tools track (review fixes: bes/train/supervisor.py, scripts/run_24h.py)
+    library_reuse_unrecorded: bool = True  # reuse a built library without the library task's
+                                      # build-settings record (built by hand) when the settings it
+                                      # records itself (permissive flag, stored qa sources) match;
+                                      # its tokenizer and LibraryCfg are then reported unverified.
+                                      # False: move such a library aside and rebuild it
+    factual_per_set: int = 100        # factual library on/off measurement of the decode selection:
+                                      # questions per evaluation split and head-entity probes
+                                      # (eval_limit, when set, replaces it)
+    factual_frac: float = 0.4         # share of the decode-selection slice given to that measurement
 
 
 # ----------------------------------------------------------------------------- decode

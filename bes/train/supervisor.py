@@ -431,6 +431,39 @@ def disk_need_gb(cfg: Cfg, tokenize_workers: int = 4) -> float:
     return float(disk_need(cfg, tokenize_workers)["total_gb"])
 
 
+#: Mount points of network drives the data must never be written to (Colab's Google Drive).
+DRIVE_PREFIXES: tuple[str, ...] = ("/content/drive",)
+
+
+def data_locations(cfg: Cfg, out: str | Path) -> dict[str, Path]:
+    """Where the run writes (absolute): the run directory, the data root (raw downloads, the
+    library's sources), the token shards, the library, the proxy outputs and the opponents'
+    models. All but the run directory are relative to the working directory or the code."""
+    locs = {"run": Path(out), "data": Path(cfg.run.data_dir), "tok": tok_root(cfg, out),
+            "library": Path(LibraryCfg().library_dir), "proxy": proxy_root(cfg, out)}
+    try:
+        from bes.eval.proxy.common import models_dir
+
+        locs["models"] = Path(models_dir())
+    except Exception:  # noqa: BLE001 - the harness is optional here
+        pass
+    return {k: Path(os.path.abspath(os.path.realpath(v))) for k, v in locs.items()}
+
+
+def on_drive(path: str | Path) -> bool:
+    """``path`` lies on a network drive of :data:`DRIVE_PREFIXES`."""
+    p = os.path.abspath(os.path.realpath(path))
+    return any(p == d or p.startswith(d.rstrip("/") + "/") for d in DRIVE_PREFIXES)
+
+
+def free_gb(path: str | Path) -> float:
+    """Free GB of the file system that holds ``path`` (its nearest existing parent)."""
+    p = Path(os.path.abspath(path))
+    while not p.exists() and p.parent != p:
+        p = p.parent
+    return shutil.disk_usage(p).free / GB
+
+
 def _committed_whole(entry: Mapping[str, Any] | None, path: str, size: int) -> bool:
     """The committed shard ``entry`` was made from the whole raw file ``path`` of ``size`` bytes
     (not cut at ``run.tokenize_max_records``)."""
@@ -696,6 +729,89 @@ def generator_overrides(man: Mapping[str, Any], extra: Sequence[str] = ()) -> st
 
 
 # ======================================================================= library readiness
+#: The library task's record of the settings a library was built with, written into the library
+#: directory after the build (``bes.export`` reads it into the model card and never ships it).
+LIBRARY_SETTINGS = "build_settings.json"
+
+
+def library_settings(cfg: Cfg) -> dict[str, Any]:
+    """The settings the run's library task builds a library with: ``permissive_only``
+    (``data.permissive_only``), the question-answer sources such a build stores (the store
+    sources of ``bes.library.sources``, those without a clear licence left out by a permissive
+    build), the SHA-256 of the tokenizer the passage lengths are measured with, and
+    ``LibraryCfg`` (as JSON)."""
+    from bes.library.sources import DEFAULT_QA_STORE, QA_SOURCES
+    from bes.tokenizer import load as load_tokenizer
+
+    perm = bool(cfg.data.permissive_only)
+    qa = [n for n in DEFAULT_QA_STORE
+          if QA_SOURCES[n].role == "store" and (QA_SOURCES[n].permissive or not perm)]
+    return {"permissive_only": perm, "qa_sources": sorted(qa),
+            "tokenizer_sha256": load_tokenizer().sha256,
+            "library_cfg": json.loads(json.dumps(dataclasses.asdict(LibraryCfg())))}
+
+
+def recorded_library_settings(path: str | Path) -> dict[str, Any]:
+    """What a built library records about its build: ``permissive_only`` (``library.json``
+    ``build``, else ``qa.json``; ``None`` when neither says), ``qa_stored`` (the sources of its
+    question-answer layer, ``qa.json``; ``[]`` without one) and, from the library task's record
+    :data:`LIBRARY_SETTINGS` (absent for a library built by hand with
+    ``scripts/build_library.py``: ``recorded`` False), the sources asked for, the tokenizer's
+    SHA-256 and ``LibraryCfg``."""
+    root = Path(path)
+    meta = read_json(root / "library.json") or {}
+    qa = read_json(root / "qa.json") if (root / "qa.json").exists() else None
+    stamp = read_json(root / LIBRARY_SETTINGS) if (root / LIBRARY_SETTINGS).exists() else None
+    perm = (meta.get("build") or {}).get("permissive_only")
+    if perm is None and qa is not None:
+        perm = qa.get("permissive_only")
+    return {"permissive_only": perm, "qa_stored": sorted((qa or {}).get("sources") or []),
+            "qa_sources": (stamp or {}).get("qa_sources"),
+            "tokenizer_sha256": (stamp or {}).get("tokenizer_sha256"),
+            "library_cfg": (stamp or {}).get("library_cfg"), "recorded": stamp is not None}
+
+
+def library_settings_mismatch(path: str | Path, want: Mapping[str, Any], *,
+                              allow_unrecorded: bool = False) -> list[str]:
+    """Why the library at ``path`` was not built with the run's settings ``want``
+    (:func:`library_settings`); ``[]`` when it was. Compared: the permissive flag, the stored
+    question-answer sources (a source the run does not allow always disqualifies), and from the
+    library task's record the sources asked for, the tokenizer and ``LibraryCfg``. A library
+    without that record is refused (its tokenizer and ``LibraryCfg`` are unknown) unless
+    ``allow_unrecorded`` (``run.library_reuse_unrecorded``); it must then store exactly the
+    run's sources."""
+    got = recorded_library_settings(path)
+    reasons = []
+    if got["permissive_only"] is None:
+        reasons.append("the library does not record whether it was built permissive-only")
+    elif bool(got["permissive_only"]) != bool(want["permissive_only"]):
+        reasons.append(f"built with permissive_only={bool(got['permissive_only'])}, the run has "
+                       f"permissive_only={bool(want['permissive_only'])}")
+    extra = sorted(set(got["qa_stored"]) - set(want["qa_sources"]))
+    if extra:
+        reasons.append(f"stores question-answer sources the run does not allow: {extra}")
+    if not got["recorded"]:
+        if not allow_unrecorded:
+            reasons.append(f"no {LIBRARY_SETTINGS}: built outside the run's library task, so its "
+                           "tokenizer and LibraryCfg are unknown (run.library_reuse_unrecorded=true "
+                           "reuses such a library)")
+        elif got["qa_stored"] != list(want["qa_sources"]):
+            reasons.append(f"stores the question-answer sources {got['qa_stored']}, the run builds "
+                           f"{list(want['qa_sources'])}")
+        return reasons
+    if got["qa_sources"] != list(want["qa_sources"]):
+        reasons.append(f"built from the question-answer sources {got['qa_sources']}, the run builds "
+                       f"{list(want['qa_sources'])}")
+    if got["tokenizer_sha256"] != want["tokenizer_sha256"]:
+        reasons.append(f"built with tokenizer {str(got['tokenizer_sha256'])[:12]}, the run's is "
+                       f"{str(want['tokenizer_sha256'])[:12]}")
+    if got["library_cfg"] != want["library_cfg"]:
+        a, b = got["library_cfg"] or {}, want["library_cfg"]
+        diff = sorted(k for k in set(a) | set(b) if a.get(k) != b.get(k))
+        reasons.append(f"built with another LibraryCfg (fields {diff})")
+    return reasons
+
+
 def library_self_check(path: str | Path, *, cap: int | None = None, max_read: int | None = None,
                        probes: Sequence[str] = ("What is DNA?", "Who was Napoleon?",
                                                 "Tell me about Paris."),
@@ -1439,20 +1555,36 @@ def _task_ended(paths: RunPaths, name: str) -> bool:
     return st.get("tasks", {}).get(name, {}).get("state") in ("finished", "failed")
 
 
+def _library_usable(lib_dir: Path, want: Mapping[str, Any], allow_unrecorded: bool) -> dict[str, Any]:
+    """:func:`library_self_check` plus :func:`library_settings_mismatch`: ``ok`` only when the
+    library works and was built with the run's settings."""
+    rep = library_self_check(lib_dir)
+    if rep["ok"]:
+        why = library_settings_mismatch(lib_dir, want, allow_unrecorded=allow_unrecorded)
+        if why:
+            rep = {**rep, "ok": False, "reasons": why}
+    return rep
+
+
 def task_library(paths: RunPaths, cfg: Cfg, cp: CorePlan, log: Callable[[str], None]) -> int:
-    """Self-check the configured library; build it with ``scripts/build_library.py`` when it is
-    missing or broken (and the configuration uses one); write the ready marker."""
+    """Use the configured library when it passes its self-check and was built with the run's
+    settings (:func:`library_settings`: permissive flag, question-answer sources, tokenizer,
+    ``LibraryCfg``); otherwise move it aside and build it with ``scripts/build_library.py``,
+    recording the settings in :data:`LIBRARY_SETTINGS` (when the configuration uses a library).
+    Writes the ready marker."""
     import runpy
 
     lib_dir = Path(LibraryCfg().library_dir)
     if not cfg.data.use_library:
         write_marker(paths, "library", path=None, reason="the configuration has no library")
         return 0
-    rep = library_self_check(lib_dir)
+    want = library_settings(cfg)
+    rep = _library_usable(lib_dir, want, bool(cfg.run.library_reuse_unrecorded))
     if not rep["ok"]:
         log(f"library: {lib_dir} not usable ({rep['reasons']}); building it")
         if lib_dir.exists():
-            aside = lib_dir.with_name(f"{lib_dir.name}.invalid-{int(time.time())}")
+            aside = lib_dir.with_name(f"{lib_dir.name}.aside-{time.strftime('%Y%m%d-%H%M%S')}-"
+                                      f"{os.urandom(3).hex()}")
             os.replace(lib_dir, aside)
             log(f"library: moved the old directory to {aside}")
         tmp = lib_dir.with_name(f"{lib_dir.name}.building")
@@ -1471,12 +1603,15 @@ def task_library(paths: RunPaths, cfg: Cfg, cp: CorePlan, log: Callable[[str], N
                 raise
         finally:
             sys.argv = old
+        atomic_write_json(tmp / LIBRARY_SETTINGS, _jsonable({**want, "argv": argv, "built": time.time(),
+                                                             "code": code_commit()}))
         os.replace(tmp, lib_dir)
-        rep = library_self_check(lib_dir)
+        rep = _library_usable(lib_dir, want, False)
     if not rep["ok"]:
-        log(f"library: self-check failed: {rep['reasons']}")
+        log(f"library: not usable after the build: {rep['reasons']}")
         return 1
-    write_marker(paths, "library", path=str(lib_dir), self_check=rep)
+    write_marker(paths, "library", path=str(lib_dir), self_check=rep,
+                 settings=recorded_library_settings(lib_dir))
     log(f"library: ready ({rep.get('n_wiki')} wiki passages, {rep.get('n_qa')} qa entries, "
         f"{rep.get('total_numbers')} numbers)")
     return 0

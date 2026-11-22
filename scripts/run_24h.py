@@ -53,6 +53,12 @@ from bes.train.ledger import atomic_write_json  # noqa: E402
 EXIT_OK, EXIT_FAILED, EXIT_INTERRUPTED = 0, 1, 3
 #: Share of the preference-optimisation slice for the health samples (start and candidates).
 HEALTH_TIME_FRAC = 0.25
+#: The library decision of the decode selection: significance level of the sign test of the
+#: factual questions (helped against hurt), the reply cap of its arms (a factual answer comes
+#: early; the whole reply budget would triple the cost) and questions per alternation of the arms.
+FACTUAL_ALPHA = 0.05
+FACTUAL_MAX_TOKENS = 256
+FACTUAL_CHUNK = 10
 
 
 def _say(msg: str) -> None:
@@ -77,6 +83,8 @@ class Run:
         self._sidecar_last_s = 0.0
         #: (plan key, {shape: (fingerprint, executable)}) compiled by the benchmark of this process
         self._programs: tuple[str, dict] | None = None
+        #: responses of samples.jsonl labelled again by the last _samples() (stale labels)
+        self.relabelled = 0
 
     # ------------------------------------------------------------------ helpers
     def log(self, msg: str) -> None:
@@ -106,19 +114,47 @@ class Run:
         return ecfg
 
     def library_ready(self):
-        """The built and self-checked library (the ready marker), else ``None``."""
+        """The built and self-checked library (the ready marker), else ``None`` (also while the
+        marker's library is not on this disk: being rebuilt, or moved aside)."""
         if not self.cfg.data.use_library:
             return None
-        mk = SV.read_marker(self.paths, "library")
-        if not mk or not mk.get("path"):
+        path = self.library_path()
+        if not path:
             return None
         from bes.library.retrieve import Library
 
-        return Library.load(str(mk["path"]))
+        try:
+            return Library.load(path)
+        except (OSError, ValueError, KeyError) as e:
+            self.log(f"library: the ready marker's library at {path} does not load ({type(e).__name__}: {e})")
+            return None
 
     def library_path(self) -> str:
+        """The ready marker's library directory when it is on this disk, else ``""``."""
         mk = SV.read_marker(self.paths, "library") or {}
-        return str(mk.get("path") or "")
+        path = str(mk.get("path") or "")
+        return path if path and (Path(path) / "library.json").is_file() else ""
+
+    def _wait_for_library(self, ctx: SV.StageContext, poll_s: float = 10.0):
+        """The library, waiting for the library task: a resumed training whose loader journal
+        planned blocks with the library (``_journal_used_library``) cannot go on without the same
+        library, and on a recycled machine the task builds it again first (the build is
+        deterministic). Raises when the task failed or the stage runs out of time."""
+        self.log("train: the training so far used library passages; waiting for the library task "
+                 "to make the library ready on this machine")
+        while True:
+            ctx.check()
+            lib = self.library_ready()
+            if lib is not None:
+                return lib
+            st = ((self.bg.status() if self.bg else {}) or {}).get("library") or {}
+            if st.get("state") == "failed":
+                raise RuntimeError("the training journal used the library and the library task failed on "
+                                   f"this machine: {st.get('error')}")
+            if ctx.now() > ctx.hard_deadline - 60.0:
+                raise RuntimeError("the training journal used the library and it was not ready before the "
+                                   "end of the training window")
+            time.sleep(poll_s)
 
     def tasks(self) -> list[SV.TaskSpec]:
         out, cp = self.paths.out, self.cp
@@ -188,13 +224,25 @@ class Run:
         self.cp = cp
         estimate = SV.disk_need(self.cfg, tokenize_workers=len(cp.tokenize))
         need = estimate["total_gb"]
-        if host["disk_free_gb"] < need:
-            msg = (f"free disk {host['disk_free_gb']:.1f} GB under {self.paths.out} is below the "
+        # the data goes where the data paths point (relative to the code), not under --out
+        locs = SV.data_locations(self.cfg, self.paths.out)
+        drive = {k: str(v) for k, v in locs.items() if SV.on_drive(v)}
+        if drive:
+            msg = (f"data paths on a network drive: {drive}; run the code from a copy on the local disk "
+                   "(RUNBOOK.md 1.1: downloads, shards and the library would fill the drive's quota)")
+            if dev.get("backend") == "tpu":
+                raise SV.PreflightError(msg)
+            warnings.append(msg)
+        free = {k: round(SV.free_gb(v), 1) for k, v in locs.items() if k in ("run", "data", "tok")}
+        where = min(free, key=free.get)
+        if free[where] < need:
+            msg = (f"free disk {free[where]:.1f} GB under {locs[where]} ({where}) is below the "
                    f"estimated need of {need:.1f} GB ({estimate['rule']}; raw files deleted after "
                    f"tokenisation: {estimate['delete_raw_after_tokenize']})")
             if dev.get("backend") == "tpu":
                 raise SV.PreflightError(msg + "; lower the caps (run.download_sources) or free disk")
             warnings.append(msg)
+        host = {**host, "data_free_gb": free, "data_locations": {k: str(v) for k, v in locs.items()}}
         if dev.get("backend") == "tpu" and host["ram_gb"] and host["ram_gb"] < 32:
             warnings.append(f"only {host['ram_gb']:.0f} GB of host memory")
         for w in warnings:
@@ -448,6 +496,9 @@ class Run:
                 self.log(f"train: restart from scratch; the previous training moved to {aside}")
             self.args.restart_training = False
         lib = self.library_ready()
+        if lib is None and self.cfg.data.use_library and \
+                _journal_used_library(self.paths.train / LoaderCfg.journal_name):
+            lib = self._wait_for_library(ctx)
         workers = int(bench.get("loader_workers") or self.cp.loader_workers)
         lcfg = dataclasses.replace(LoaderCfg(), workers=workers,
                                    horizon_tokens=float(bench["horizon_tokens"]) or LoaderCfg.horizon_tokens)
@@ -666,7 +717,9 @@ class Run:
                     continue
                 user = msgs[-1]["content"]
                 spec, _ = resp.compile_spec(user)
-                passage = resp.retrieve(user) if d.use_library else None
+                # as Responder.reply retrieves: the earlier user turns are the context
+                history = [m["content"] for m in msgs[:-1] if m["role"] == "user"]
+                passage = resp.retrieve(user, history) if d.use_library else None
                 try:
                     prompt, _fit = respond.fit_prompt(resp.chat, msgs,
                                                       None if passage is None else passage.text, budget)
@@ -685,17 +738,13 @@ class Run:
                                  program=program, tok=tok, ess_frac=d.ess_frac,
                                  resample_at=d.resample_at, unit_max_tokens=d.unit_max_tokens,
                                  no_repeat_ngram=d.no_repeat_ngram, max_copy_run=d.max_copy_run)
-                parts = []
-                for p in res.particles:
-                    text = resp.chat.display(p.tokens).strip()
-                    lab = SV.label_sample(user, text, p.finish, item["reference"])
-                    parts.append({"tokens": [int(x) for x in p.tokens if int(x) != END],
-                                  "text": text[:2000], "finish": p.finish, "origin": "particle",
-                                  **lab})
+                parts = [_labelled_part(user, [int(x) for x in p.tokens if int(x) != END], p.finish,
+                                        item["reference"], "particle", resp.chat.display)
+                         for p in res.particles]
                 ref = _reference_response(item, tok)
                 if ref is not None:            # the data set's own reply, labelled the same way
-                    lab = SV.label_sample(user, ref["text"], "stop", item["reference"])
-                    parts.append({**ref, "finish": "stop", "origin": "reference", **lab})
+                    parts.append(_labelled_part(user, ref["tokens"], "stop", item["reference"],
+                                                "reference", resp.chat.display))
                 scores = [q["score"] for q in parts]
                 n_pairs += min(sum(1 for s in scores if s > min(scores)),
                                sum(1 for s in scores if s < max(scores)))
@@ -717,6 +766,11 @@ class Run:
                 "pool": len(prompts), "partial": n_total < len(prompts), "checkpoint": info["path"]}
 
     def _samples(self) -> list[dict]:
+        """The sampling records, every response's label checked against the text of its own
+        tokens (:func:`_scored_samples`; a stale label is computed again and counted in
+        ``self.relabelled``)."""
+        from bes.data.chat_format import display_text
+
         path = self.paths.post / "samples.jsonl"
         out = []
         if path.exists():
@@ -725,6 +779,11 @@ class Run:
                     out.append(json.loads(line))
                 except ValueError:
                     pass                         # a torn last line
+        tok = self.tok()
+        out, self.relabelled = _scored_samples(out, lambda ids: display_text(ids, tok))
+        if self.relabelled:
+            self.log(f"samples: {self.relabelled} responses labelled again from their tokens (their "
+                     "stored label was not the label of their own text)")
         return out
 
     def stage_critic(self, ctx: SV.StageContext) -> dict:
@@ -753,6 +812,7 @@ class Run:
         keep = {k: rep[k] for k in ("rho_heldout", "rho_train", "use_critic", "n_heldout_groups",
                                     "n_train_groups", "loss_start", "loss_end", "n_invalid_rows")
                 if k in rep}
+        keep["relabelled"] = self.relabelled
         atomic_write_json(self.paths.post / "critic_report.json", SV._jsonable(rep))
         self.log(f"critic: held-out rho {rep.get('rho_heldout')}, gate passed: {rep.get('use_critic')} "
                  "(the decoder has no critic path; recorded only)")
@@ -812,10 +872,11 @@ class Run:
         pref = dataclasses.replace(PrefCfg(), seq_len=t, pairs_per_micro=ppm,
                                    cache_gb=min(PrefCfg.cache_gb, 1.0))
         sampled = []
-        for s in self._samples():
+        for s in self._samples():               # labels checked against their tokens' text
             toks = [p["tokens"] for p in s["particles"]]
             sampled += prefs.pairs_from_scores(s["prompt"], toks, [p["score"] for p in s["particles"]],
                                                source="sampled")
+        relabelled = self.relabelled
         groups: dict[str, list] = {"sampled": sampled}
         ratio: dict[str, float] = {"sampled": 0.0}
         uf = SV.tok_root(ecfg, self.paths.out) / "tok" / "ultrafeedback"
@@ -873,7 +934,7 @@ class Run:
         out = {"accepted": bool(rep["accepted"]), "lr": rep.get("lr"), "reason": rep.get("reason"),
                "n_train_pairs": rep.get("n_train_pairs"), "n_heldout_pairs": rep.get("n_heldout_pairs"),
                "pairs_sampled": len(sampled), "pairs_by_source": split.stats,
-               "from_checkpoint": info["path"]}
+               "labels_recomputed": relabelled, "from_checkpoint": info["path"]}
         atomic_write_json(self.paths.post / "prefopt_report.json", SV._jsonable(rep))
         if rep["accepted"]:
             root = self.paths.post / "ckpt"
@@ -919,15 +980,18 @@ class Run:
         ps = prompt_set.load()
         todo = prompt_set.select(ps, "dev", None, ecfg.run.eval_limit or None)
         base = _decode_settings(ecfg)
+        has_lib = bool(self.library_path()) and ecfg.decode.use_library
         variants = [("default", base)]
         if ecfg.decode.particles > 1:
             variants.append(("k1", base + ["extra.particles=1"]))
-        if self.library_path() and ecfg.decode.use_library:
+        if has_lib:
             variants.append(("nolib", base + ["extra.use_library=false"]))
         variants.append(("noband", base + ["extra.band=false"]))
+        # the factual library measurement (_library_decision) gets its share after the variants
+        fact_s = float(ecfg.run.factual_frac) * max(0.0, ctx.deadline - ctx.now()) if has_lib else 0.0
         results = {}
         for i, (name, ov) in enumerate(variants):
-            left = ctx.deadline - ctx.now()
+            left = ctx.deadline - fact_s - ctx.now()
             minutes = left / 60.0 / (len(variants) - i)
             if minutes <= 0.05 or ctx.stop_requested():
                 results[name] = {"skipped": "no time left"}
@@ -947,18 +1011,125 @@ class Run:
         common = set.intersection(*(set(v["per_prompt"]) for v in ran.values())) if ran else set()
         scores = {k: (sum(v["per_prompt"][p] for p in common) / len(common) if common else None)
                   for k, v in ran.items()}
-        best = "default"
-        if common:
-            best = max(scores, key=lambda k: (scores[k], k == "default"))
-        chosen = dict(variants)[best]
+        # the decoding settings other than the library: highest mean exact score, ties keep the
+        # default; the library is decided on its own evidence (it cannot win by a tie)
+        cands = {k: v for k, v in scores.items() if k != "nolib" and v is not None}
+        best = max(cands, key=lambda k: (cands[k], k == "default")) if common and cands else "default"
+        chosen = list(dict(variants)[best])
+        lib = self._library_decision(ctx, ecfg, gen, root, base, scores, len(common))
+        if has_lib and not lib["ship"]:
+            chosen = [o for o in chosen if not o.startswith("extra.use_library=")] + ["extra.use_library=false"]
+            best = "nolib" if best == "default" else f"{best}+nolib"
         out = {"chosen": best, "overrides": chosen, "scores": scores, "n_common": len(common),
                "n_dev": len(todo), "checkpoint": str(ckpt), "weights": source,
                "runs": {k: {kk: vv for kk, vv in v.items() if kk != "per_prompt"} for k, v in results.items()},
-               "rule": "highest mean exact score (math correct, constraints satisfied, not degenerate) "
-                       "over the dev prompts every variant answered; ties keep the default"}
+               "library": lib,
+               "rule": "decoding settings: highest mean exact score (math correct, constraints satisfied, "
+                       "not degenerate) over the dev prompts every variant answered, ties keep the "
+                       "default; the library: the rule of library.rule (not shipped: switched off)"}
         self.man = SV.update_manifest(self.paths.out, decode=out)
-        self.log(f"select: decode variant {best} (scores {scores} on {len(common)} common prompts)")
-        return {k: out[k] for k in ("chosen", "scores", "n_common", "n_dev")}
+        self.log(f"select: decode variant {best} (scores {scores} on {len(common)} common prompts); "
+                 f"library {'shipped' if lib['ship'] else 'not shipped'}: {lib['reason']}")
+        return {**{k: out[k] for k in ("chosen", "scores", "n_common", "n_dev")},
+                "library": {k: lib.get(k) for k in ("ship", "reason", "factual", "factual_error", "dev")}}
+
+    def _library_decision(self, ctx: SV.StageContext, ecfg, gen, root: Path, base: list[str],
+                          scores: Mapping[str, Any], n_common: int) -> dict:
+        """Whether the library ships (plan section 2, ``docs/EVAL_PROTOCOL.md`` sections 8 and
+        10): only when the factual questions answered with the library on and off
+        (``bes.eval.proxy.factual``, :meth:`_factual`) show a significant gain (more helped than
+        hurt, exact two-sided sign test below :data:`FACTUAL_ALPHA`) and the dev prompts show
+        no loss (mean exact score with the library on at least as high as off). No measurement,
+        no gain: not shipped."""
+        dec: dict[str, Any] = {"rule": f"ship the library only if the factual questions show a significant "
+                                       f"gain (helped > hurt, exact two-sided sign test p < {FACTUAL_ALPHA}) "
+                                       "and the dev prompts show no loss (mean exact score with the library "
+                                       "on >= off over the prompts every variant answered)",
+                               "ship": False, "factual": None, "dev": None}
+        if not self.library_path():
+            return {**dec, "reason": "no library was built"}
+        if not ecfg.decode.use_library:
+            return {**dec, "reason": "decode.use_library is off"}
+        on, off = scores.get("default"), scores.get("nolib")
+        dec["dev"] = {"on": on, "off": off, "n_common": n_common}
+        summary = None
+        try:
+            summary, extra = self._factual(ctx, ecfg, gen, root, base)
+        except Exception as e:  # noqa: BLE001 - no measurement: no evidence of a gain
+            dec["factual_error"] = f"{type(e).__name__}: {e}"
+            self.log(f"select: the factual library measurement did not run: {dec['factual_error']}")
+        if summary is not None:
+            o = summary["overall"]
+            dec["factual"] = {"n_questions": summary["n_questions"], "n_paired": summary["n_paired"],
+                              "fired": summary["fired"]["n"], "helped": o["helped"], "hurt": o["hurt"],
+                              "p": o["sign_test_p"], "lib_acc": o["lib_acc"], "nolib_acc": o["nolib_acc"],
+                              "stopped_early": summary["stopped_early"],
+                              "not_fired_identical": summary["not_fired_identical"],
+                              "not_fired": summary["not_fired"]["n"],
+                              "by_set": {s: {k: v["all"][k] for k in ("n", "helped", "hurt", "sign_test_p")}
+                                         for s, v in summary["by_set"].items()},
+                              "lib_run": summary["lib_run"], "nolib_run": summary["nolib_run"], **extra}
+        gain = summary is not None and summary["overall"]["helped"] > summary["overall"]["hurt"] \
+            and summary["overall"]["sign_test_p"] < FACTUAL_ALPHA
+        no_loss = on is not None and off is not None and on >= off
+        dec["ship"] = bool(gain and no_loss)
+        why = []
+        if summary is None:
+            why.append("no factual measurement")
+        elif not gain:
+            o = summary["overall"]
+            why.append(f"no significant factual gain (helped {o['helped']}, hurt {o['hurt']}, p {o['sign_test_p']})")
+        if on is None or off is None:
+            why.append("the dev variants with and without the library did not both run")
+        elif not no_loss:
+            why.append(f"dev exact score lower with the library ({on:.4f} < {off:.4f})")
+        dec["reason"] = "; ".join(why) if why else (
+            f"factual gain helped {summary['overall']['helped']} against hurt {summary['overall']['hurt']} "
+            f"(p {summary['overall']['sign_test_p']}), dev exact score {on:.4f} with the library, {off:.4f} without")
+        return dec
+
+    def _factual(self, ctx: SV.StageContext, ecfg, gen, root: Path, base: list[str]) -> tuple[dict, dict]:
+        """``python -m bes.eval.proxy factual`` in this process for the decode selection: the
+        fixed question set (``run.factual_per_set`` per evaluation split and head-entity probes;
+        ``run.eval_limit`` replaces it), both arms of the run's own generator with the run's
+        decode settings and replies capped at :data:`FACTUAL_MAX_TOKENS` tokens, until the
+        stage's deadline. The questions on which the gate fires come first (elsewhere both arms
+        give the same reply, so they cannot tip the sign test). Returns the report's summary and
+        what the record adds (question file, notes)."""
+        from bes.eval.proxy import __main__ as cli
+        from bes.eval.proxy import factual as F
+        from bes.eval.proxy.run_ours import CallableBackend
+
+        if (ctx.deadline - ctx.now()) / 60.0 <= 0.05 or ctx.stop_requested():
+            raise RuntimeError("no time left in the decode selection's slice")
+        n = int(ecfg.run.eval_limit or ecfg.run.factual_per_set)
+        lib_dir, cache = self.library_path(), Path(ecfg.run.data_dir) / "library"
+        notes = []
+        try:
+            path, qs = F.prepare(root, per_set=n, n_probes=n, seed=ecfg.run.seed, cache_dir=cache,
+                                 library_dir=lib_dir, log=self.log)
+        except ValueError as e:                 # the probes need the library's title importance
+            path, qs = F.prepare(root, per_set=n, n_probes=0, seed=ecfg.run.seed,
+                                 sets=tuple(s for s in F.SETS if s != "probe"), cache_dir=cache,
+                                 library_dir=lib_dir, log=self.log)
+            notes.append(f"no head-entity probes: {e}")
+        lib = self.library_ready()
+        fired = {q.id for q in qs if lib is not None and lib.retrieve(q.q) is not None}
+        qs = sorted(qs, key=lambda q: q.id not in fired)            # stable: fired questions first
+        ov = [o for o in base if not o.startswith(("extra.use_library=", "max_tokens="))]
+        ov.append(f"max_tokens={min(ecfg.decode.max_new_tokens, FACTUAL_MAX_TOKENS)}")
+        specs = [cli.build_spec("ours", preset, ov, f"select-factual-{arm}", 0, None, None, 1, None,
+                                "bes.decode.respond:our_generator", {}, gen.key)
+                 for preset, arm in (("default", "lib"), ("nolib", "nolib"))]
+        minutes = (ctx.deadline - ctx.now()) / 60.0
+        if minutes <= 0.05 or ctx.stop_requested():
+            raise RuntimeError("no time left in the decode selection's slice after building the questions")
+        summary = F.run_factual(qs, specs[0], specs[1], root, backend=CallableBackend(gen), minutes=minutes,
+                                chunk=FACTUAL_CHUNK, name=f"{self.paths.out.name}-factual", log=self.log)
+        return summary, {"questions": str(path), "gate_fires_on": len(fired), "order": "gate-fired questions first",
+                         "max_tokens": min(ecfg.decode.max_new_tokens, FACTUAL_MAX_TOKENS),
+                         "report": str(root / "reports" / "factual" / f"{self.paths.out.name}-factual.md"),
+                         "notes": notes}
 
     def stage_judge(self, ctx: SV.StageContext) -> dict:
         from bes.eval.proxy import __main__ as cli
@@ -1058,17 +1229,20 @@ class Run:
                         step=int(info.get("step") or 0), config_hash=config_hash(ecfg),
                         meta={"weights": source, "from": str(ckpt)}, keep=1)
         dst = saved.path
-        acc = _accounting(ecfg, dst, self.library_path())
+        # a library the decode selection did not keep is neither shipped nor counted
+        shipped = "" if ((man.get("decode") or {}).get("library") or {}).get("ship") is False \
+            else self.library_path()
+        acc = _accounting(ecfg, dst, shipped)
         atomic_write_json(final / "config.json", SV._jsonable({
             "config": man["config"], "overrides": SV.run_overrides(man),
             "horizon_tokens": SV.horizon_of(man), "config_hash": config_hash(ecfg),
             "cfg": to_dict(ecfg), "decode_choice": man.get("decode"), "weights": source,
-            "library": self.library_path() or None}))
+            "library": shipped or None}))
         atomic_write_json(final / "accounting.json", SV._jsonable(acc))
         note = (f"bes/export.py (export_run) is not available ({why}); this directory holds the "
                 f"checkpoint ({source} weights), the configuration and the accounting report only. "
                 f"The tokenizer is assets/tokenizer/ of the repository; the library is "
-                f"{self.library_path() or 'none'}; reports: {reports}.")
+                f"{shipped or 'none'}; reports: {reports}.")
         (final / "EXPORT_NOTE.txt").write_text(note + "\n")
         self.log(f"export: {note}")
         return {"exported": True, "by": "fallback", "checkpoint": str(dst), "weights": source,
@@ -1080,10 +1254,29 @@ def _assistant() -> int:
     return ASSISTANT
 
 
+def _journal_used_library(path: Path) -> bool:
+    """The loader journal at ``path`` planned a block with a library (a loader reopening it
+    must have the same library: ``bes.data.loader``)."""
+    if not path.exists():
+        return False
+    with open(path, errors="replace") as f:
+        for line in f:
+            if '"library"' not in line:
+                continue
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue                         # a torn last line
+            if rec.get("type") == "block" and rec.get("library") is not None:
+                return True
+    return False
+
+
 def _reference_response(item: Mapping[str, Any], tok) -> dict | None:
     """The data set's own reply to a sampling prompt as ``{"tokens", "text"}`` (assistant
-    content without the role token and ``END``), or ``None``: a hindsight constraint was
-    verified on it, a GSM8K reply carries the reference answer."""
+    content without the role token and ``END``; ``text`` is the whole display text of those
+    tokens), or ``None``: a hindsight constraint was verified on it, a GSM8K reply carries the
+    reference answer."""
     from bes.data.chat_format import display_text, render_turn
 
     content = item.get("reply")
@@ -1094,7 +1287,49 @@ def _reference_response(item: Mapping[str, Any], tok) -> dict | None:
     except (ValueError, TypeError):
         return None
     body = [int(x) for x in ids[1:-1]]
-    return {"tokens": body, "text": display_text(body, tok).strip()[:2000]} if body else None
+    return {"tokens": body, "text": display_text(body, tok).strip()} if body else None
+
+
+#: characters of a sampled response kept in ``samples.jsonl`` for reading (the label is computed
+#: on the whole text of its tokens, never on this cut)
+SAMPLE_TEXT_CHARS = 2000
+
+
+def _text_sha1(text: str) -> str:
+    import hashlib
+
+    return hashlib.sha1(text.encode("utf-8", "surrogatepass")).hexdigest()
+
+
+def _labelled_part(user: str, tokens: Sequence[int], finish: str, reference: str | None, origin: str,
+                   display) -> dict:
+    """One response of a sampling record: ``tokens`` (what a preference pair is built from)
+    and the exact label (``SV.label_sample``) of their whole display text ``display(tokens)``;
+    ``text`` keeps the first :data:`SAMPLE_TEXT_CHARS` characters for reading and
+    ``text_sha1`` identifies the text that was scored (:func:`_scored_samples` checks it)."""
+    text = display(list(tokens)).strip()
+    lab = SV.label_sample(user, text, finish, reference)
+    return {"tokens": [int(x) for x in tokens], "text": text[:SAMPLE_TEXT_CHARS], "text_chars": len(text),
+            "text_sha1": _text_sha1(text), "finish": finish, "origin": origin, **lab}
+
+
+def _scored_samples(samples: Sequence[Mapping[str, Any]], display) -> tuple[list[dict], int]:
+    """``samples`` with every response's label guaranteed to be the label of the text of its
+    own tokens: a response whose ``text_sha1`` is missing (a record written before labels were
+    tied to the tokens) or differs from ``display(tokens)`` is labelled again from its tokens.
+    Returns ``(samples, number of responses labelled again)``."""
+    out, n = [], 0
+    for s in samples:
+        parts = []
+        for p in s["particles"]:
+            text = display(list(p["tokens"])).strip()
+            if p.get("text_sha1") != _text_sha1(text):
+                p = _labelled_part(s["user"], p["tokens"], p.get("finish", "stop"), s.get("reference"),
+                                   p.get("origin", "particle"), display)
+                n += 1
+            parts.append(p)
+        out.append({**s, "particles": parts})
+    return out, n
 
 
 def _decode_settings(ecfg) -> list[str]:

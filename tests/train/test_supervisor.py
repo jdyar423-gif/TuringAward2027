@@ -304,6 +304,89 @@ def test_library_self_check(tmp_path):
         assert rep["probe_hits"] >= 1 and rep["total_numbers"] <= 64_000_000
 
 
+def _settings_library(path: Path, sources: tuple[str, ...], permissive: bool) -> Path:
+    """A tiny working library (rule gate) with a qa layer whose entries come from ``sources`` and
+    the permissive flag a build records in ``library.json``."""
+    from bes.library import qa as Q
+    from bes.library.index import IndexCfg
+    from bes.library.pack import PackCfg
+    from bes.library.retrieve import GateCfg, Library, RetrieveCfg
+
+    docs = [("DNA", "DNA is the molecule that carries genetic information."),
+            ("Napoleon", "Napoleon was a French military leader and emperor."),
+            ("Paris", "Paris is the capital city of France.")]
+    rows = [("Who wrote Hamlet?", "William Shakespeare"), ("What is the capital of Peru?", "Lima"),
+            ("Who painted the Mona Lisa?", "Leonardo da Vinci")]
+    pairs = [Q.QAPair(q, a, sources[i % len(sources)], i) for i, (q, a) in enumerate(rows)]
+    store = Q.QAStore.build(pairs, Q.QACfg(min_cov_q=0.0), PackCfg(block_raw_bytes=128),
+                            meta={"permissive_only": permissive})
+    path.mkdir(parents=True, exist_ok=True)
+    Library.build(docs, str(path), index_cfg=IndexCfg(budget_numbers=8000, n_bits=10, max_list=32),
+                  cfg=RetrieveCfg(gate=GateCfg(min_score=0.5)), count_tokens=lambda s: len(s.split()),
+                  meta={"build": {"permissive_only": permissive}}, qa=store)
+    return path
+
+
+def test_library_task_rebuilds_a_library_built_with_other_settings(tmp_path, monkeypatch):
+    """library-3 / tools-6: a permissive-only run finds the library a non-permissive run (the
+    canary) left behind; it is moved aside and rebuilt with --permissive-only, the rebuilt one
+    records its settings, and a library whose recorded tokenizer or LibraryCfg differ is rebuilt
+    too. Before: any library that passed the self-check was used as it was (TriviaQA and
+    WebQuestions entries, licence unknown, in a permissive-only run)."""
+    import runpy
+
+    from bes.config import LibraryCfg
+
+    monkeypatch.chdir(tmp_path)                       # LibraryCfg.library_dir is relative: here
+    lib_dir = Path(LibraryCfg().library_dir)
+    _settings_library(lib_dir, ("nq_open_train", "trivia_qa_train", "web_questions_train"), permissive=False)
+    out = tmp_path / "run"
+    SV.write_manifest(out, {"budget": {"t0": time.time()}})
+    paths = SV.RunPaths(out)
+    perm = load_config(str(ROOT / "configs" / "smoke.py"), ["data.permissive_only=true"])
+    builds: list[list[str]] = []
+
+    def fake_build(path, run_name=None):                # scripts/build_library.py, as the task calls it
+        argv = list(sys.argv)
+        builds.append(argv)
+        dest = Path(argv[argv.index("--out") + 1])
+        permissive = "--permissive-only" in argv
+        _settings_library(dest, ("nq_open_train",) if permissive else
+                          ("nq_open_train", "trivia_qa_train", "web_questions_train"), permissive)
+
+    monkeypatch.setattr(runpy, "run_path", fake_build)
+    cp = SV.core_plan(2)
+    assert SV.task_library(paths, perm, cp, print) == 0
+    assert len(builds) == 1 and "--permissive-only" in builds[0]
+    aside = [p for p in lib_dir.parent.iterdir() if p.name.startswith("lib_v2.aside-")]
+    assert len(aside) == 1 and SV.recorded_library_settings(aside[0])["permissive_only"] is False
+    got = SV.recorded_library_settings(lib_dir)
+    assert got["recorded"] and got["permissive_only"] is True and got["qa_stored"] == ["nq_open_train"]
+    assert got["tokenizer_sha256"] == SV.library_settings(perm)["tokenizer_sha256"]
+    mk = SV.read_marker(paths, "library")
+    assert mk["path"] == str(lib_dir) and mk["settings"]["qa_stored"] == ["nq_open_train"]
+    # the same settings again: used as it is
+    assert SV.task_library(paths, perm, cp, print) == 0 and len(builds) == 1
+    # a recorded tokenizer or LibraryCfg that differs from the run's: rebuilt
+    rec = json.loads((lib_dir / SV.LIBRARY_SETTINGS).read_text())
+    (lib_dir / SV.LIBRARY_SETTINGS).write_text(json.dumps({**rec, "tokenizer_sha256": "0" * 64}))
+    assert any("tokenizer" in r for r in SV.library_settings_mismatch(lib_dir, SV.library_settings(perm)))
+    assert SV.task_library(paths, perm, cp, print) == 0 and len(builds) == 2
+    rec = json.loads((lib_dir / SV.LIBRARY_SETTINGS).read_text())
+    (lib_dir / SV.LIBRARY_SETTINGS).write_text(json.dumps({**rec, "library_cfg": {**rec["library_cfg"],
+                                                                                   "gate_precision": 0.1}}))
+    assert any("LibraryCfg (fields ['gate_precision'])" in r
+               for r in SV.library_settings_mismatch(lib_dir, SV.library_settings(perm)))
+    assert SV.task_library(paths, perm, cp, print) == 0 and len(builds) == 3
+    # a library built by hand (no record): reused when what it records matches, unless refused
+    (lib_dir / SV.LIBRARY_SETTINGS).unlink()
+    assert SV.task_library(paths, perm, cp, print) == 0 and len(builds) == 3
+    strict = load_config(str(ROOT / "configs" / "smoke.py"), ["data.permissive_only=true",
+                                                               "run.library_reuse_unrecorded=false"])
+    assert SV.task_library(paths, strict, cp, print) == 0 and len(builds) == 4
+    assert (lib_dir / SV.LIBRARY_SETTINGS).is_file()
+
+
 # ------------------------------------------------------------------- sample labels
 def test_label_sample_scores():
     lab = SV.label_sample("Explain gravity in exactly two sentences.",
@@ -664,6 +747,240 @@ def test_run_24h_sampling_prompts_come_from_the_held_out_split_first(tmp_path, m
     assert items[0]["messages"][-1]["content"].startswith("Tell me about cats") or \
         items[0]["kind"] == "constraint"
     assert items[3]["id"] == "smoltalk_constraints/0/0" and "plus" in items[3]["messages"][-1]["content"]
+
+
+def _long_constraint_reply() -> tuple[str, str]:
+    """A user message with an 'exactly 7 paragraphs' constraint and a reply of more than 2000
+    characters that satisfies it, its seventh paragraph after character 2000."""
+    import random
+
+    words = ("stone tower raven moon gate hall candle shadow wind chapel ivy lantern bell crypt banner "
+             "river forest mist owl thunder rain iron oak velvet portrait staircase cellar wolf frost ember").split()
+    rng = random.Random(0)
+    paras = []
+    for _ in range(7):
+        paras.append(" ".join(
+            "The {} near the {} watched the {} while the {} and the {} waited by the {}.".format(*rng.sample(words, 6))
+            for _ in range(5)))
+    reply = "\n\n".join(paras)
+    assert len(reply) > 2000 and reply.index(paras[6]) > 2000
+    return "Describe a gothic castle at night in exactly 7 paragraphs.", reply
+
+
+def test_run_24h_sampling_labels_every_response_on_the_text_of_its_tokens(tmp_path, monkeypatch):
+    """data-2: the data set's own reply is labelled on the whole text of the tokens a preference
+    pair is built from. Before: on its first 2000 characters, so a correct reply of 7 paragraphs
+    scored 0 and became the rejected side against a particle that scored 1."""
+    import types
+
+    from bes.config import END
+    from bes.data import prefs
+    from bes.data.chat_format import display_text
+    from bes.decode import lm as LM
+    from bes.decode import smc
+    from bes.model import generate as G
+    from bes.tokenizer import load as load_tokenizer
+
+    R = _run24()
+    cfg = load_config(str(ROOT / "configs" / "smoke.py"))
+    tok = load_tokenizer()
+    user, reply = _long_constraint_reply()
+    short7 = "\n\n".join(f"Paragraph {i} of the castle." for i in range(1, 8))
+    item = {"id": "smoltalk_constraints/0/0", "source": "smoltalk_constraints", "heldout": False,
+            "messages": [{"role": "user", "content": user}], "reference": None, "kind": "constraint",
+            "reply": reply}
+    particles = [types.SimpleNamespace(tokens=tok.encode(short7) + [END], finish="stop"),
+                 types.SimpleNamespace(tokens=tok.encode("One paragraph only.") + [END], finish="stop")]
+    from bes.decode import respond
+
+    monkeypatch.setattr(G, "jitted", lambda model_cfg: "decoder")
+    monkeypatch.setattr(LM, "OurLM", lambda *a, **k: object())
+    monkeypatch.setattr(smc, "decode", lambda lm, prompt, **kw: types.SimpleNamespace(particles=particles))
+    asked = []                                          # retrieval as Responder.reply does it
+    monkeypatch.setattr(respond.Responder, "retrieve",
+                        lambda self, text, history=None: asked.append((text, history)) or None)
+    run = R.Run.__new__(R.Run)
+    run.cfg, run.paths, run._tok, run.sup, run.relabelled = cfg, SV.RunPaths(tmp_path), tok, None, 0
+    run.man = {}
+    run.effective = lambda: cfg
+    run.latest_params = lambda ecfg, prefer_post=True: (None, None, {"path": "ckpt", "step": 1}, None, "train")
+    run.library_ready = lambda: None
+    run._sample_prompts = lambda limit: [item]
+    ctx = types.SimpleNamespace(should_stop=lambda: False, check=lambda: None)
+    run.stage_sample(ctx)
+    rec = json.loads((tmp_path / "post" / "samples.jsonl").read_text().splitlines()[0])
+    ref = next(p for p in rec["particles"] if p["origin"] == "reference")
+    full = display_text(ref["tokens"], tok).strip()
+    assert ref["score"] == SV.label_sample(user, full, "stop")["score"] == 1.0
+    assert [p["score"] for p in rec["particles"]] == [1.0, 0.0, 1.0]
+    assert asked == [(user, [])]                         # the earlier user turns (none here)
+    assert len(full) > 2000 and len(ref["text"]) == 2000 and ref["text_chars"] == len(full)
+    for p in rec["particles"]:                         # every score is the label of its own tokens
+        assert p["text_sha1"] == R._text_sha1(display_text(p["tokens"], tok).strip())
+        assert p["score"] == SV.label_sample(user, display_text(p["tokens"], tok).strip(), p["finish"])["score"]
+    pairs = prefs.pairs_from_scores(rec["prompt"], [p["tokens"] for p in rec["particles"]],
+                                    [p["score"] for p in rec["particles"]], source="sampled")
+    assert pairs and all(list(q.rejected) != ref["tokens"] for q in pairs)
+
+
+def test_run_24h_stale_sample_labels_are_computed_again_from_the_tokens():
+    """data-2: a record written before labels were tied to the tokens (no text_sha1; the reference
+    scored on a 2000-character cut) is labelled again from its tokens before any pair is built."""
+    from bes.data import prefs
+    from bes.data.chat_format import display_text
+    from bes.tokenizer import load as load_tokenizer
+
+    R = _run24()
+    tok = load_tokenizer()
+    user, reply = _long_constraint_reply()
+    ids = tok.encode(reply)
+    good = tok.encode("\n\n".join(f"Paragraph {i}." for i in range(1, 8)))
+    old = {"user": user, "reference": None, "prompt": [1, 2, 3], "particles": [
+        {"tokens": good, "score": 1.0, "finish": "stop", "origin": "particle"},
+        {"tokens": ids, "score": 0.0, "finish": "stop", "origin": "reference", "text": reply[:2000]}]}
+    show = lambda t: display_text(t, tok)                                   # noqa: E731
+    assert prefs.pairs_from_scores(old["prompt"], [p["tokens"] for p in old["particles"]],
+                                   [p["score"] for p in old["particles"]])          # the wrong pair
+    fixed, n = R._scored_samples([old], show)
+    assert n == 2 and [p["score"] for p in fixed[0]["particles"]] == [1.0, 1.0]
+    assert not prefs.pairs_from_scores(old["prompt"], [p["tokens"] for p in fixed[0]["particles"]],
+                                       [p["score"] for p in fixed[0]["particles"]])
+    again, n = R._scored_samples(fixed, show)          # labels that match their tokens are kept
+    assert n == 0 and again == fixed
+
+
+def _decision_run(R, tmp_path, cfg, lib):
+    run = R.Run.__new__(R.Run)
+    run.cfg, run.paths, run.sup, run.man = cfg, SV.RunPaths(tmp_path / "run"), None, {}
+    run.log = lambda m: None
+    run.library_path = lambda: "lib" if lib is not None else ""
+    run.library_ready = lambda: lib
+    return run
+
+
+def _ctx(deadline: float):
+    import types
+
+    return types.SimpleNamespace(deadline=deadline, now=time.time, stop_requested=lambda: False)
+
+
+def test_run_24h_library_ships_only_on_a_significant_factual_gain_without_a_dev_loss(tmp_path, monkeypatch):
+    """The decode selection's library decision (plan section 2, EVAL_PROTOCOL sections 8 and 10)
+    with the real factual measurement (bes.eval.proxy.factual) driven by its stand-in
+    generator: shipped only when the library helps significantly more questions than it hurts
+    and the dev exact score does not drop; no measurement means no library (before: chosen by a
+    dev exact score that cannot see retrieval, ties kept the library)."""
+    import types
+
+    from bes.eval.proxy import factual as F
+
+    R = _run24()
+    cfg = load_config(str(ROOT / "configs" / "smoke.py"))
+    qs = [F.Question(F.question_id("popqa", f"Who founded city {i}?"), "popqa", f"Who founded city {i}?",
+                     (f"founder {i}",)) for i in range(30)]
+    qfile = tmp_path / "questions.jsonl"
+    F.save_questions(qfile, qs, {"test": True})
+
+    def measure(behaviour: dict, scores: dict, name: str):
+        (tmp_path / f"{name}.json").write_text(json.dumps(behaviour))
+        gen = F.standin_factual(str(qfile), behaviour=str(tmp_path / f"{name}.json"), key=f"standin-{name}")
+        monkeypatch.setattr(F, "prepare", lambda root, **kw: (qfile, list(qs)))
+        lib = types.SimpleNamespace(retrieve=lambda q: "passage" if behaviour[q]["fires"] else None)
+        run = _decision_run(R, tmp_path / name, cfg, lib)
+        return run._library_decision(_ctx(time.time() + 600), cfg, gen, tmp_path / name / "proxy",
+                                     R._decode_settings(cfg), scores, 4)
+
+    # the library answers 20 questions the model cannot, misleads on 2 (one it knew): shipped
+    helps = {q.q: {"memory": False, "fires": i < 21, "misleads": i == 20} for i, q in enumerate(qs)}
+    helps[qs[29].q] = {"memory": True, "fires": True, "misleads": True}      # hurt: right only without
+    dec = measure(helps, {"default": 0.6, "nolib": 0.6, "k1": 0.5}, "helps")
+    assert dec["ship"] is True, dec["reason"]
+    fa = dec["factual"]
+    assert fa["n_paired"] == 30 and fa["helped"] == 20 and fa["hurt"] == 1 and fa["p"] < 0.05
+    assert fa["fired"] == 22 and fa["order"] == "gate-fired questions first"
+    assert (tmp_path / "helps" / "proxy" / "reports" / "factual" / "run-factual.md").is_file()
+    # the same factual gain but a lower dev exact score with the library: not shipped
+    dec = measure(helps, {"default": 0.55, "nolib": 0.6}, "devloss")
+    assert dec["ship"] is False and "dev exact score lower with the library" in dec["reason"]
+    # a small gain is no evidence: not shipped (ties never keep the library)
+    small = {q.q: {"memory": False, "fires": i < 3, "misleads": i == 2} for i, q in enumerate(qs)}
+    dec = measure(small, {"default": 0.6, "nolib": 0.6}, "small")
+    assert dec["ship"] is False and "no significant factual gain (helped 2, hurt 0" in dec["reason"]
+    # no measurement (it fails, or no time is left): not shipped, the error is recorded
+    run = _decision_run(R, tmp_path / "fail", cfg, types.SimpleNamespace(retrieve=lambda q: None))
+    monkeypatch.setattr(F, "prepare", lambda root, **kw: (_ for _ in ()).throw(OSError("no evaluation files")))
+    dec = run._library_decision(_ctx(time.time() + 600), cfg, None, tmp_path, [], {"default": 1.0, "nolib": 0.0}, 4)
+    assert dec["ship"] is False and "no evaluation files" in dec["factual_error"]
+    dec = run._library_decision(_ctx(time.time() - 1), cfg, None, tmp_path, [], {"default": 1.0, "nolib": 0.0}, 4)
+    assert dec["ship"] is False and "no time left" in dec["factual_error"]
+    # no library at all
+    dec = _decision_run(R, tmp_path / "none", cfg, None)._library_decision(_ctx(time.time() + 600), cfg, None,
+                                                                          tmp_path, [], {}, 0)
+    assert dec == {**dec, "ship": False, "reason": "no library was built"}
+
+
+def test_run_24h_preflight_refuses_data_on_a_network_drive(tmp_path, monkeypatch):
+    """tools-1: the preflight measures and checks where the data goes (the data root, the token
+    shards, the library, relative to the code), not only the run directory: on a TPU a data path
+    on the Drive mount stops the run before anything is written there (before: the check looked
+    at --out only, which sat on the local disk while 72-111 GB went to Drive)."""
+    import types
+
+    R = _run24()
+    drive = tmp_path / "drive"
+    monkeypatch.setattr(SV, "DRIVE_PREFIXES", (str(drive),))
+    tpu = {"backend": "tpu", "jax": SV.PINNED_JAX, "devices": [{"kind": "TPU v6 lite"}]}
+    monkeypatch.setattr(SV, "device_report", lambda: tpu)
+    cfg = load_config(str(ROOT / "configs" / "smoke.py"), [f"run.data_dir={drive / 'data_cache'}"])
+    run = R.Run.__new__(R.Run)
+    run.args, run.cfg, run.paths, run.sup = types.SimpleNamespace(allow_cpu=False), cfg, SV.RunPaths(tmp_path / "run"), None
+    SV.write_manifest(run.paths.out, {"budget": {"t0": time.time()}})
+    assert SV.on_drive(drive / "data_cache" / "tok") and not SV.on_drive(tmp_path / "run")
+    with pytest.raises(SV.PreflightError, match="network drive"):
+        run.stage_preflight(None)
+    monkeypatch.setattr(SV, "device_report", lambda: {**tpu, "backend": "cpu", "devices": [{"kind": "cpu"}]})
+    run.args.allow_cpu = True
+    out = run.stage_preflight(None)                   # a CPU rehearsal: a warning, recorded
+    assert any("network drive" in w for w in out["warnings"])
+    man = SV.read_manifest(run.paths.out)
+    assert set(man["host"]["data_free_gb"]) == {"run", "data", "tok"} and man["disk_need_gb"] > 0
+
+
+def test_run_24h_resumed_training_waits_for_the_library_its_journal_used(tmp_path):
+    """The Drive mirror holds no data (tools-1), so on a recycled machine the library is built
+    again; a training whose loader journal planned blocks with the library waits for it instead of
+    failing (a loader cannot reopen such a journal without the same library), and a ready marker
+    whose library is not on this disk is 'not ready', not an error."""
+    import types
+
+    R = _run24()
+    journal = tmp_path / "loader_journal.jsonl"
+    assert R._journal_used_library(journal) is False
+    journal.write_text(json.dumps({"type": "header", "settings": {}}) + "\n"
+                       + json.dumps({"type": "block", "id": 0, "library": None}) + "\n")
+    assert R._journal_used_library(journal) is False
+    with open(journal, "a") as f:
+        f.write(json.dumps({"type": "block", "id": 1, "library": {"n_passages": 3}}) + "\n" + '{"type": "blo')
+    assert R._journal_used_library(journal) is True
+    run = R.Run.__new__(R.Run)
+    run.cfg, run.paths, run.sup = load_config(str(ROOT / "configs" / "smoke.py")), SV.RunPaths(tmp_path / "run"), None
+    SV.write_marker(run.paths, "library", path=str(tmp_path / "gone"))       # the old machine's library
+    assert run.library_path() == "" and run.library_ready() is None
+    calls = {"n": 0}
+    lib = object()
+
+    def ready():
+        calls["n"] += 1
+        return lib if calls["n"] >= 3 else None
+
+    run.library_ready = ready
+    run.bg = types.SimpleNamespace(status=lambda: {"library": {"state": "running"}})
+    ctx = types.SimpleNamespace(check=lambda: None, now=time.time, hard_deadline=time.time() + 600)
+    assert run._wait_for_library(ctx, poll_s=0.01) is lib and calls["n"] == 3
+    run.library_ready = lambda: None
+    run.bg = types.SimpleNamespace(status=lambda: {"library": {"state": "failed", "error": "exit code 1"}})
+    with pytest.raises(RuntimeError, match="library task failed"):
+        run._wait_for_library(ctx, poll_s=0.01)
 
 
 def test_run_24h_helpers(tmp_path):

@@ -71,12 +71,9 @@ forward and both backward kernels: the per-example grid is `(6, 2, 2)` at `T = 1
 
 ## Known pitfalls
 
-1. **Import name of the splash module.** `bes/model/attention.py` selects the splash path with
-   `from bes.model import splash`; the module is `bes/model/attention_splash.py`. Until that line
-   reads `from bes.model import attention_splash as splash`, anything that runs
-   `attn_impl="splash"` must call `bes.model.attention_splash.register_alias()` first (the
-   compile-only tool does; `tests/model/test_splash.py` holds a strict xfail that flips when the
-   import is fixed).
+1. **Import name of the splash module** (fixed). `bes/model/attention.py` imports
+   `bes.model.attention_splash` lazily when `attn_impl="splash"`; the old alias
+   (`attention_splash.register_alias()`) is no longer needed.
 2. **Interpret mode on the compile host.** `splash_interpret="auto"` means "interpret unless the
    default backend is a TPU". On a CPU host that compiles for the TPU topology the default
    backend is the CPU, so the compile-only tool forces `splash_interpret="false"`; on the TPU VM
@@ -84,9 +81,10 @@ forward and both backward kernels: the per-example grid is `(6, 2, 2)` at `T = 1
 3. **The dense `xla` attention materialises `[B, H, T, T]` float32 logits and probabilities** per
    block and loop. It compiles and fits at the training shapes with remat (table below) but is
    meant for tests; train with splash.
-4. **Remat.** `configs/final.py` sets `remat=True`. With `remat=False` (the `ModelCfg` default,
-   still used by `configs/no_library.py`) neither training shape compiles: the compiler needs
-   32.93 GB of temporaries (table below). Tune the policy on the chip.
+4. **Remat.** `configs/final.py`, `configs/strict.py` and `configs/no_library.py` set
+   `remat=True`. With `remat=False` (the `ModelCfg` default) and the full micro-batch neither
+   training shape compiles: the compiler needs 32.93 GB of temporaries (table below); half the
+   micro-batch fits (addendum). Tune the policy on the chip.
 5. **Decoding reads the whole cache every step.** The cache is
    `[n_loops, n_blocks, B, H, Tmax, head_dim]` for keys and values in bf16:
    `2 * 8 * 2 * 6 * 128 * 2 bytes = 48 KiB` per row and slot, i.e. 0.75 GiB for `B = 8`,
@@ -108,9 +106,13 @@ forward and both backward kernels: the per-example grid is `(6, 2, 2)` at `T = 1
    `attention_splash.make_kernel` therefore builds kernels under
    `jax.ensure_compile_time_eval()` (regression test in `tests/model/test_splash.py`).
 10. **Compile time.** One program of the final model takes minutes on two CPU cores (table). The
-   training process compiles both shapes up front; enable the persistent compilation cache
-   (`jax.config.update("jax_compilation_cache_dir", ...)`) so that a restart does not pay again,
-   and check on the chip that the cache is hit.
+   group learning rates are run-time inputs of the compiled step, so the trainer reuses the
+   steps the start-up benchmark compiled in the same process (`train: set-up (compile 2 shapes,
+   2 reused from the benchmark, ...)`), and `scripts/run_24h.py` enables the persistent
+   compilation cache under `RUN_DIR/jax_cache` (guarded: an option this JAX does not know, or a
+   backend that does not use the cache, is logged and the run goes on without it;
+   `manifest.json` `jax_cache` says which). Whether a restart actually hits the cache on the TPU
+   VM is not known yet: check the set-up time of a resumed run.
 
 ## Compile-only check
 

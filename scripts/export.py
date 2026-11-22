@@ -7,6 +7,12 @@ a model card written from measured facts.
     python scripts/export.py --checkpoint DIR --config configs/smoke.py --final-dir OUT
     python scripts/export.py --verify runs/final/final                # SHA-256 of every file
 
+A library that the run's decode selection did not keep (``manifest.json`` ``decode.library.ship``
+false: no significant gain on the factual questions, or a loss on the dev prompts) is neither
+shipped nor counted, also when ``--library`` names it; ``export.json`` ``library.not_shipped``
+says why. The library directory ships only its counted tables, their JSON files and its
+attribution text (``bes.export.library_files``).
+
 Exit status: 0 when the export verifies and the 16-bit weights passed the held-out check;
 2 when the check failed or could not run (both weight files are kept: read MODEL_CARD.md);
 1 on an error (nothing is replaced: an earlier export stays as it was).
