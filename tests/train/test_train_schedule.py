@@ -232,13 +232,15 @@ def test_shapes_of_the_configs():
 
 
 def test_stage_fields_and_regimes():
-    s0, s1, s2 = (S.stage_at(p, FINAL) for p in (0.2, 0.6, 0.95))
-    assert s0.shape == (8, 32, 1024) and s1.shape == s2.shape == (8, 16, 2048)
+    assert FINAL.data.late_from == 0.67            # the last third of the run is at 2048 tokens
+    s0, s1, s2 = (S.stage_at(p, FINAL) for p in (0.2, 0.7, 0.95))
+    assert s0.shape == S.stage_at(0.6, FINAL).shape == (8, 32, 1024)
+    assert s1.shape == s2.shape == (8, 16, 2048)
     assert {s.tokens_per_step for s in (s0, s1, s2)} == {262144}
     assert (s0.assistant_only, s1.assistant_only, s2.assistant_only) == (False, False, True)
     assert len({s0.regime, s1.regime, s2.regime}) == 3
-    assert S.stage_at(0.6, FINAL).regime == S.stage_at(0.7, FINAL).regime  # chat ramp is continuous
-    assert s1.lr == S.lr_factor(0.6, FINAL.optim) and s1.chat_frac == S.chat_frac_at(0.6, FINAL.data)
+    assert S.stage_at(0.7, FINAL).regime == S.stage_at(0.8, FINAL).regime  # chat ramp is continuous
+    assert s1.lr == S.lr_factor(0.7, FINAL.optim) and s1.chat_frac == S.chat_frac_at(0.7, FINAL.data)
     assert S.stage_at(2.0, FINAL).p == 1.0
     assert set(s1.to_dict()) >= {"p", "lr", "seq_len", "chat_frac", "assistant_only"}
 

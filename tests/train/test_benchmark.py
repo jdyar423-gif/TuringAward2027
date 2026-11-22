@@ -33,7 +33,7 @@ def test_plans_are_config_overrides():
     assert (cfg.model.remat, cfg.optim.micro_seqs, cfg.model.table_grad) == (False, 16, "take")
     assert B.Plan.from_dict(json.loads(json.dumps(base.to_dict()))) == base
     assert B.seq_lens(FINAL) == (1024, 2048)
-    assert B.time_shares(FINAL) == {1024: 0.5, 2048: 0.5}
+    assert B.time_shares(FINAL) == pytest.approx({1024: 0.67, 2048: 0.33})     # data.late_from = 0.67
     assert B.plan_valid(FINAL, B.Plan("xla", False, 3, "onehot")).startswith("invalid shape")
 
 
@@ -74,7 +74,7 @@ def test_search_order_and_selection_with_a_failed_compile():
     assert len(failed) == 1 and "RESOURCE_EXHAUSTED" in failed[0].reason
     sel = B.select_plan(ms, (1024, 2048), B.time_shares(FINAL))
     assert sel["plan"] == B.Plan("splash", True, 32, "take")
-    assert sel["expected_tps"] == pytest.approx(0.5 * 320e3 + 0.5 * 290e3)
+    assert sel["expected_tps"] == pytest.approx(0.67 * 320e3 + 0.33 * 290e3)
     assert sel["per_seq_len"][1024]["plan"] == "splash-remat1-ms32-take"
     # the dense plan was measured at the base length only (slower there)
     assert {c["plan"] for c in sel["candidates"]} == {"splash-remat1-ms32-onehot",
