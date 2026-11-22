@@ -4,6 +4,15 @@
 
 這個倉庫是 BES-100M-A20M：一個總共至多 1 億個儲存數字（每個數字至多 16 位元，含權重、查表與藏書）、每產生一個 token 至多讀取 2,000 萬個數字的語言模型，設計成在單顆 TPU v6e 上於 24 小時內從零訓練完成。核心原理是「後驗 ∝ 先驗 × 證據」，在三個尺度上能精確算的就精確算：注意力頭帶校準匯點（信心通道在微型消融中增益不足 1%，最終配置關閉）；主機端精確計算的 n-gram 計數頭與候選帶進入輸出律；整段回覆以少量粒子加精確勢函數做 Feynman–Kac 解碼；另附一個門控、離線、凍結的書寫藏書，是否隨模型出貨由訓練後的事實題對照（藏書開與關各答一次）決定。所有程式都在 CPU 容器上開發、測試與彩排，**目前沒有任何數字是在 TPU 上量到的**（`docs/TPU_NOTES.md`）。正式的 24 小時訓練請照 `RUNBOOK.md` 使用 `notebooks/colab_v6e_24h.ipynb`；計畫原文在 `docs/PLAN.md`，核准後的修訂在 `docs/CHANGES.md`。
 
+### 在 Colab 直接開啟
+
+| Notebook | 用途 | 直連 |
+|---|---|---|
+| `notebooks/colab_v6e_24h.ipynb` | 正式的 24 小時訓練（TPU v6e-1） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jdyar423-gif/TuringAward2027/blob/claude%2Fmodest-carson-yi2d9g/notebooks/colab_v6e_24h.ipynb) |
+| `notebooks/colab_v5e_smoke.ipynb` | 30 分鐘的管線檢查（免費層 TPU，預期 v5e-1；不計入 24 小時） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jdyar423-gif/TuringAward2027/blob/claude%2Fmodest-carson-yi2d9g/notebooks/colab_v5e_smoke.ipynb) |
+
+兩個連結都從本倉庫的 `claude/modest-carson-yi2d9g` 分支載入 notebook（Colab 的網址把分支名當成單一路徑段，所以分支名裡的斜線寫成 `%2F`）。打開後不必改任何參數就能開始：第 1 格已填好本倉庫與分支，notebook 的中繼資料已指定 TPU 型號（v6e-1；管線檢查為 v5e-1）。連線前仍請在「執行階段 → 變更執行階段類型」確認硬體（第 2 格遇到不符的裝置會停下），再依 `RUNBOOK.md` 第 2 節的順序執行：第 1、1b、2 到 5 格，然後第 6 格。這兩個 notebook 還沒有在 Colab 上實際執行過。
+
 ## What this is
 
 A language model with at most 100M stored numbers (each at most 16 bits: weights, lookup tables,
@@ -82,6 +91,8 @@ has no such record: it is reused when what it records itself matches, unless
 
 The real run: `RUNBOOK.md` (what to do before, during and after the 24 hours) and
 `notebooks/colab_v6e_24h.ipynb`; a 30-minute free-tier check: `notebooks/colab_v5e_smoke.ipynb`.
+Both open in Colab from the links near the top of this file, with this repository, its branch
+and the TPU type already filled in.
 The code and every data file stay on the runtime's local disk (about 72 GB for the default plan:
 raw downloads are deleted once tokenised); Google Drive receives only the run's records, logs, the
 newest checkpoint and the export. Along the way the run keeps a hashed 0.3% of every chat, rag

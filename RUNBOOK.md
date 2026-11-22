@@ -20,7 +20,7 @@ the accounting, 9 known unknowns, 10 honest expectations, 11 where things are.
 | about **72 GB of local disk** on the runtime (`/content`) | downloads (44 GB at the registry caps), token shards (61 GB), the library, checkpoints, the compilation cache | the estimate and its rule are in `manifest.json` (`disk_need`); a raw download is deleted once its whole token shard is committed (without that: 114 GB). The preflight stops the run on a TPU when the free disk under any data path is below the estimate, or when a data path is on Drive |
 | Google Drive with about **10 GB free**, or less if you empty its trash during the run | the mirror: the run's records, logs, the newest checkpoint and the export | optional but strongly advised: a recycled runtime loses the local disk. Drive holds at most about 1.3 GB at a time for `configs/final.py`: records, ledgers, the loader journal, samples and logs (under 0.3 GB), the newest training checkpoint (0.35 GB: parameters 138 MB, optimiser moments 216 MB; two while one replaces the other), the post-DPO weights (0.14 GB) and the export (about 0.25 GB with the library). Files replaced or deleted through the Colab Drive mount go to the Drive trash and keep counting against the quota until it is emptied (reported by users, not tested here): with one checkpoint copy per hour that is about 20 x 0.35 GB = 7 GB over 19 hours of training, plus rewritten logs and ledgers. Empty the trash (drive.google.com, Trash) every few hours, or keep about 10 GB free. **No data goes to Drive** (no downloads, shards, library or models) |
 | Hugging Face account and a read token | downloads of data, library sources and GGUF files | not strictly required (every file used is public and ungated), but it raises rate limits; entered at run time, never stored |
-| access to this repository | the notebook clones it (`REPO_URL`, `BRANCH`) | a private repository: put a copy on Drive and give it as `CODE_COPY` in cell 1. Cell 3 copies the code to the local `REPO_DIR` without `data_cache/` and `runs/` and runs it there. Never point `REPO_DIR` at Drive (cell 3 refuses): every data path of the run is relative to the code |
+| access to this repository | the notebook clones it (`REPO_URL`, `BRANCH`: cell 1 already names this repository, which is public, and its branch) | a private copy or fork: put a copy on Drive and give it as `CODE_COPY` in cell 1. Cell 3 copies the code to the local `REPO_DIR` without `data_cache/` and `runs/` and runs it there. Never point `REPO_DIR` at Drive (cell 3 refuses): every data path of the run is relative to the code |
 | about 25 hours of attention budget | the run itself (24 h) plus installation (up to 20 min) and the evaluation afterwards | the run needs no attention between the first 40 minutes and the end, except a look every few hours |
 
 **Colab session limits.** The 24-hour budget is wall time from the moment `scripts/run_24h.py`
@@ -46,6 +46,7 @@ budget).
    built with the run's settings (a library built by hand with `scripts/build_library.py` is used
    when what it records itself matches; `README.md`), else it builds it again in the background.
 3. **Free-tier smoke notebook** (optional, not part of the budget): `notebooks/colab_v5e_smoke.ipynb`
+   ([open it in Colab](https://colab.research.google.com/github/jdyar423-gif/TuringAward2027/blob/claude%2Fmodest-carson-yi2d9g/notebooks/colab_v5e_smoke.ipynb))
    runs the same pipeline with `configs/smoke.py` and a 30-minute budget on whatever TPU the free
    tier gives (v5e expected). It shows that installation, downloads, compilation on a real TPU,
    the background tasks and the export work on Colab.
@@ -76,12 +77,18 @@ Overrides and the budget are fixed when the run starts: a resume refuses differe
 
 ## 2. Starting the run
 
-Open `notebooks/colab_v6e_24h.ipynb` in Colab on a TPU v6e-1 runtime and run cells 1, 1b and 2 to
-5, then **cell 6 to start a new run** (or cell 8 to continue one: section 5):
+Open `notebooks/colab_v6e_24h.ipynb` in Colab
+([direct link](https://colab.research.google.com/github/jdyar423-gif/TuringAward2027/blob/claude%2Fmodest-carson-yi2d9g/notebooks/colab_v6e_24h.ipynb))
+on a TPU v6e-1 runtime and run cells 1, 1b and 2 to 5, then **cell 6 to start a new run** (or cell 8
+to continue one: section 5). The link loads the notebook from this repository's branch (a Colab
+link takes the branch as one path segment, so the slash in the branch name is written `%2F`).
+The notebook's metadata names the v6e-1 TPU, so Colab should offer that runtime; look at
+Runtime > Change runtime type before you connect, because cell 2 stops on any other device. None
+of this was tried on Colab itself.
 
 | cell | what it does | what you must see |
 |---|---|---|
-| 1 | parameters: `REPO_URL`, `BRANCH` (or `CODE_COPY`, a copy of the repository, e.g. on Drive), `REPO_DIR` (local), `RUN_DIR`, `USE_DRIVE`, `DRIVE_DIR`, `CONFIG`, `BUDGET_MINUTES` | |
+| 1 | parameters: `REPO_URL`, `BRANCH` (both already filled in; or `CODE_COPY`, a copy of the repository, e.g. on Drive), `REPO_DIR` (local), `RUN_DIR`, `USE_DRIVE`, `DRIVE_DIR`, `CONFIG`, `BUDGET_MINUTES` | |
 | 1b | helper functions (start in the background, the Drive mirror and its status, progress) | nothing |
 | 2 | runtime check in a separate process | `backend: tpu`, one `TPU v6 lite` device; a warning if jax is not 0.11.1 (it is not changed) or the local disk has under 80 GB free |
 | 3 | mounts Drive (when `USE_DRIVE` or `CODE_COPY` is on Drive); copies `CODE_COPY` to `REPO_DIR` without `data_cache/` and `runs/`, or clones `REPO_URL`; refuses a `REPO_DIR` on Drive | the commit hash |

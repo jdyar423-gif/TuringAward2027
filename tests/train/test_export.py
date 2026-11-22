@@ -901,6 +901,39 @@ def test_notebook_runs_the_code_from_the_local_disk(path, tmp_path, monkeypatch)
         exec(compile(cell, "code", "exec"), ns)
 
 
+def _colab_link(repo_url: str, branch: str, name: str) -> str:
+    from urllib.parse import quote
+
+    owner_repo = repo_url.removeprefix("https://github.com/").strip("/")
+    return f"https://colab.research.google.com/github/{owner_repo}/blob/{quote(branch, safe='')}/notebooks/{name}"
+
+
+@pytest.mark.parametrize("path, tpu", list(zip(NOTEBOOKS, ("V6E1", "V5E1"))),
+                         ids=lambda v: v.name if isinstance(v, Path) else v)
+def test_notebook_opens_from_its_colab_link_without_edits(path, tpu):
+    """A notebook opened from its "open in Colab" link clones the repository and branch the link
+    loaded it from, on the TPU it is written for. Colab reads the branch as one path segment and
+    percent-decodes it, so a branch name with a slash is written with %2F; the runtime it offers
+    comes from ``metadata.accelerator`` and ``metadata.colab.gpuType`` (V6E1: v6e-1, V5E1: v5e-1)."""
+    nb = json.loads(path.read_text())
+    ns: dict = {}
+    exec(compile(_as_python(_code_cells(nb)[0]), "params", "exec"), ns)
+    assert re.fullmatch(r"https://github\.com/[\w.-]+/[\w.-]+", ns["REPO_URL"]) and ns["BRANCH"]
+    assert ns["CODE_COPY"] == ""                                        # the clone is what runs
+    links = {p.name: _colab_link(ns["REPO_URL"], ns["BRANCH"], p.name) for p in NOTEBOOKS}
+    link = links[path.name]
+    assert "/" not in link.split("/blob/")[1].split("/notebooks/")[0]   # the branch: one segment
+    first = nb["cells"][0]
+    assert first["cell_type"] == "markdown" and f'href="{link}"' in "".join(first["source"])
+    assert nb["metadata"]["accelerator"] == "TPU" and nb["metadata"]["colab"]["gpuType"] == tpu
+    for doc in ("README.md", "RUNBOOK.md"):
+        text = (REPO / doc).read_text()
+        assert f"]({link})" in text, (doc, link)
+        # every Colab link of the document opens a notebook of this repository at this branch
+        found = set(re.findall(r"https://colab\.research\.google\.com/github/[^\s)\"'<>]+", text))
+        assert found <= set(links.values()), found
+
+
 # ======================================================================= documents
 def test_requirements_pin_the_colab_dependencies_and_never_jax():
     lines = [ln.split("#")[0].strip() for ln in (REPO / "requirements-colab.txt").read_text().splitlines()]
