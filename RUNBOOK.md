@@ -150,30 +150,52 @@ executions and interactions", "the CLI runs no keep-alive daemon"), and the run 
 process. Consequences:
 
 - Ctrl-C, a closed terminal or a dropped connection only detach `start`; the supervisor and the
-  run go on (`start --detach` returns at once). Look at the run with `status`.
-- While the supervisor runs, every other `colab exec` on the session waits behind it. The wrapper
-  therefore talks to the runtime through files (`colab upload`, `colab download`), which do not
+  run go on (`start --detach` returns once the supervisor has written its first status). Look at
+  the run with `status`.
+- While the supervisor runs, **do not use `colab exec`, `colab repl` or `colab restart-kernel` on
+  the session**. The first two wait behind the supervisor without a word, whatever their
+  `--timeout`; the third, which the CLI itself recommends for a "wedged kernel", restarts the
+  kernel the supervisor runs in, and nothing keeps the runtime alive after that. The wrapper
+  talks to the runtime through files instead (`colab upload`, `colab download`), which do not
   use the kernel: `/content/bes_cli/status.txt` (rewritten every minute), `ctl` (commands),
-  `export/` (the export in parts).
+  `export/` (the export in parts). `colab ls`, `colab download` and `colab ssh -s bes24h -- CMD`
+  look at the runtime without the kernel as well.
+- If the supervisor is gone while the run runs (`status` warns: its report is stale, or it says
+  that it left), `start` again: with a run that is running it only supervises.
 - When the supervisor leaves, the kernel is idle and Colab takes the runtime back, with its disk.
   It leaves 2 hours after a complete run (`--hold-minutes`), 4 hours after a run that ended
-  incomplete and was not continued, or when you send `release`.
+  incomplete and was not continued, when you send `release`, and in any case 40 hours after the
+  last start, continuation or command.
+- The CLI keeps its sessions in a file on the machine that created them
+  (`~/.config/colab-cli/sessions.json`): **use the wrapper from that machine**. From another one
+  the session looks missing; `status` then says so, and `start` refuses to create a second
+  runtime while the account has one this machine does not know (`--new-runtime` overrides).
 
 | command | what it does |
 |---|---|
-| `start` | signs in, creates the session's runtime when it does not exist (`--smoke`: session `bes-smoke`, v5e-1, the smoke notebook; `--cpu`: a CPU runtime with `ALLOW_CPU`, a rehearsal of this route), sends the program. Options: `--detach`, `--drive` (mounts Drive first with `colab drivemount`, which needs you; then the mirror of section 4 runs) or `--no-drive`, `--hf-token-file FILE`, `--budget-minutes N`, `--action auto\|start\|resume`, `--auto-resume N`, `--hold-minutes M`. It does not send the program when a supervisor already holds the session |
+| `start` | signs in, creates the session's runtime when it does not exist (`--smoke`: session `bes-smoke`, v5e-1, the smoke notebook; `--cpu`: a CPU runtime with `ALLOW_CPU`, a rehearsal of this route), sends the program, and reports what the runtime's status file says afterwards (it fails when no supervisor is running then: the exit status of `colab exec` does not tell). Options: `--detach`, `--drive` (mounts Drive first with `colab drivemount`, which needs you; then the mirror of section 4 runs) or `--no-drive`, `--hf-token-file FILE`, `--budget-minutes N`, `--action auto\|start\|resume`, `--auto-resume N`, `--hold-minutes M`, `--part-mb N`. It does not send the program when a supervisor already holds the session |
 | `status` | prints the supervisor's state and the report of cell 7; warns when no supervisor is writing it |
-| `send stop` | SIGTERM to the run: it writes a checkpoint and exits; the supervisor keeps the runtime |
+| `send stop` | SIGTERM to the run: it writes a checkpoint and exits; the supervisor keeps the runtime. A run that has not exited after 30 minutes gets a second SIGTERM (it exits at once on it), and 5 minutes later its processes are killed |
 | `send resume` | continues the run (cell 8) |
-| `send package` | packages `RUN_DIR/final` again for `fetch` (done by itself when the run is complete) |
+| `send package` | packages `RUN_DIR/final` again for `fetch` (done by itself when the run is complete); `--part-mb 4` for smaller parts |
 | `send release` | ends the supervisor once the run is not running: the runtime goes back to Colab |
-| `fetch --to DIR` | downloads the export in 16 MB parts, checks each part and the whole archive by SHA-256, unpacks it to `DIR/final` |
+| `fetch --to DIR` | downloads the export in 16 MB parts, checks each part and the whole archive by SHA-256, unpacks it to `DIR/final`. A part that does not come through is reported with the CLI's own message; finished parts are kept |
 | `url` | `colab url`: a browser link that attaches the Colab page to the same runtime |
-| `down --yes` | `colab stop`: gives the runtime back now; its disk is lost |
+| `down --yes` | `colab stop`: gives the runtime back now; its disk is lost. It says so when nothing was stopped |
 
-The supervisor continues a run that died by itself twice (`--auto-resume`), at least a minute
-apart; it does not continue a run you stopped. A run still running 3 hours after its own
-deadline is stopped once. Every line it prints is also in `/content/bes_cli/supervisor.log`.
+`send` refuses when no supervisor is running (a command left on the runtime would be dropped by
+the next one).
+
+The supervisor reads completion the way the run does: a failed stage that is not essential
+(everything after training) is over, and the status names it. It continues a run that ended
+incomplete twice (`--auto-resume`), at least a minute apart, and not a run you stopped; when it
+does not continue, it still packages an export the run wrote on its way out. A run still running
+3 hours after its own deadline (or after the start of the attempt, when that was later) is asked
+to stop, and a complete run whose process has not exited after 10 minutes is killed. A program
+that starts more than 30 minutes after it was sent has waited behind another execution and
+leaves without touching anything (so do not let the clocks of your machine and the runtime
+differ by that much). Every line the supervisor prints is also in
+`/content/bes_cli/supervisor.log`.
 
 **Differences from the notebook.** No Hugging Face prompt: pass `--hf-token-file` (the file is
 uploaded, read into the run's environment and removed; `--env HF_TOKEN=...` would be written into

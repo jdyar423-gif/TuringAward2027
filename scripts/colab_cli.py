@@ -3,7 +3,7 @@
     pip install google-colab-cli          # https://github.com/googlecolab/google-colab-cli (Linux, macOS)
     python scripts/colab_cli.py start --smoke      # 30 minutes on a v5e-1 TPU: do this first
     python scripts/colab_cli.py start              # the 24-hour run on a v6e-1 TPU
-    python scripts/colab_cli.py status             # the progress report, from any terminal
+    python scripts/colab_cli.py status             # the progress report
     python scripts/colab_cli.py url                # a browser link that attaches Colab to the same runtime
     python scripts/colab_cli.py send stop          # stop | resume | package | release
     python scripts/colab_cli.py fetch --to export  # the exported model, checked by SHA-256
@@ -19,8 +19,13 @@ Read its docstring for the files it keeps under ``/content/bes_cli`` and what th
 
 ``start`` stays attached and prints the supervisor's lines. Ctrl-C, a closed terminal or a lost
 connection only detach it: the run and its supervisor go on. ``--detach`` starts it in the
-background at once. While the supervisor runs, every other ``colab exec`` on the session waits
-behind it, so this wrapper talks to the runtime through files (``colab upload``/``download``).
+background. While the supervisor runs, every other ``colab exec`` on the session waits behind
+it (and ``colab restart-kernel`` would kill it), so this wrapper talks to the runtime through
+files (``colab upload``/``download``).
+
+The Colab CLI keeps its sessions in a file on the machine that created them: use this wrapper
+from that machine. From another one the session looks missing, and ``start`` refuses to create a
+second runtime while the account has one this machine does not know (``--new-runtime`` overrides).
 
 Without this wrapper the same thing is two commands; see ``RUNBOOK.md`` section 2.1.
 ``COLAB_BIN`` names another ``colab`` executable, ``COLAB_CLI_ARGS`` adds global options to
@@ -33,6 +38,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import shlex
 import shutil
 import subprocess
@@ -53,28 +59,42 @@ STALE_S = 240.0                     # a status older than this: no supervisor is
 INSTALL = ("the `colab` command was not found. Install the Colab CLI (Linux or macOS, Python 3.12+):\n"
            "    pip install google-colab-cli        (or: uv tool install google-colab-cli)\n"
            "    https://github.com/googlecolab/google-colab-cli")
-
-
+ADC = ("    gcloud auth application-default login --scopes=openid,"
+       "https://www.googleapis.com/auth/cloud-platform,"
+       "https://www.googleapis.com/auth/userinfo.email,"
+       "https://www.googleapis.com/auth/colaboratory\n"
+       "then set COLAB_CLI_ARGS=--auth=adc for this wrapper.")
 NO_KEYRING = ("The Colab CLI could not keep its sign-in: this machine has no keyring it can use (a server, WSL,\n"
               "a container), so every command asks to sign in again. Either give it a file store with\n"
               "    pip install keyrings.alt        (same environment as google-colab-cli; plaintext, owner-only)\n"
-              "or use Application Default Credentials: sign in once with\n"
-              "    gcloud auth application-default login --scopes=openid,"
-              "https://www.googleapis.com/auth/cloud-platform,"
-              "https://www.googleapis.com/auth/userinfo.email,"
-              "https://www.googleapis.com/auth/colaboratory\n"
-              "then set COLAB_CLI_ARGS=--auth=adc for this wrapper.")
+              "or use Application Default Credentials: sign in once with\n" + ADC)
+LOCKED_KEYRING = ("The Colab CLI could not read its sign-in: this machine's keyring is locked (usual over SSH).\n"
+                  "Unlock it, or make the CLI use a file store: `pip install keyrings.alt` next to the CLI and\n"
+                  "set PYTHON_KEYRING_BACKEND=keyrings.alt.file.PlaintextKeyring, or use Application Default\n"
+                  "Credentials: sign in once with\n" + ADC)
+_TOKEN = re.compile(r"(colab-runtime-proxy-token=)[^&\s'\"]+")
+_SESSION = re.compile(r"^\[(.+?)\] (\S+) \| Hardware: (\S+)")
 
 
 class Failed(Exception):
     """A step did not work; the message says what to do."""
 
 
+def text_of(p: subprocess.CompletedProcess) -> str:
+    """What a `colab` command printed, without the runtime's token (the CLI puts it in error URLs)."""
+    return _TOKEN.sub(r"\1REDACTED", (p.stdout + p.stderr).strip())
+
+
 def explain(what: str, p: subprocess.CompletedProcess) -> str:
     """The message for a `colab` command that failed, with the usual causes spelled out."""
-    out = (p.stdout + p.stderr).strip()
-    if "keyring" in out.lower():
+    out = text_of(p)
+    low = out.lower()
+    if "is locked" in low and "keyring" in low:
+        return f"{what} failed.\n{LOCKED_KEYRING}"
+    if "keyring" in low:
         return f"{what} failed.\n{NO_KEYRING}"
+    if "default credentials" in low:
+        return f"{what} failed: no usable Application Default Credentials. Sign in with\n{ADC}"
     if "authorization code" in out or "To authorize colab-cli" in out or "EOFError" in out:
         return (f"{what} failed because the Colab CLI wants you to sign in: run `colab sessions` in this terminal "
                 "(it prints a link and asks for the code Google shows), then repeat the command.")
@@ -106,20 +126,64 @@ class Colab:
         """Run with this terminal (prompts and output are yours)."""
         return subprocess.call(self.argv(*args))
 
-    def exists(self) -> bool:
+    def status_line(self) -> str | None:
+        """The line of `colab status -s NAME` for a session this machine's CLI knows; None when it
+        says the session is not found. Anything else is an error: guessing "not found" would
+        create a second runtime."""
         p = self.quiet("status", "-s", self.session)
         if p.returncode != 0:
             raise Failed(explain("`colab status`", p))
-        return f"[{self.session}] " in p.stdout
+        for line in p.stdout.splitlines():
+            if line.startswith(f"[{self.session}] "):
+                return line
+        if f"Session '{self.session}' not found" in p.stdout:
+            return None
+        raise Failed(f"`colab status -s {self.session}` answered something this wrapper does not understand "
+                     f"(another version of the Colab CLI?):\n{text_of(p)[-800:]}")
+
+    def exists(self) -> bool:
+        return self.status_line() is not None
+
+    def sessions(self) -> list[dict]:
+        """The runtimes of the account as `colab sessions` lists them: name ('?' for one this
+        machine's CLI does not know), endpoint, hardware."""
+        p = self.quiet("sessions")
+        if p.returncode != 0:
+            raise Failed(explain("`colab sessions`", p))
+        rows = [_SESSION.match(line.strip()) for line in p.stdout.splitlines()]
+        return [{"name": m.group(1), "endpoint": m.group(2), "hardware": m.group(3)} for m in rows if m]
 
     def download(self, remote: str, local: Path) -> bool:
+        """True when the file arrived, False when it does not exist on the runtime. Every other
+        failure is raised with the CLI's own message: it is not the same as "not there"."""
         p = self.quiet("download", "-s", self.session, remote, str(local), timeout=1800.0)
-        return p.returncode == 0 and local.is_file()
+        if p.returncode == 0 and local.is_file():
+            return True
+        if "File or directory not found" in p.stdout + p.stderr:
+            return False
+        raise Failed(explain(f"the download of {remote}", p))
 
     def upload(self, local: Path, remote: str) -> None:
         p = self.quiet("upload", "-s", self.session, str(local), remote)
         if p.returncode != 0:
             raise Failed(explain(f"the upload to {remote}", p))
+
+
+def unknown_runtimes(colab: Colab) -> list[dict]:
+    return [r for r in colab.sessions() if r["name"] == "?"]
+
+
+def missing(colab: Colab) -> str:
+    """Why this machine cannot see the session, for a message."""
+    others = unknown_runtimes(colab)
+    if not others:
+        return (f"session '{colab.session}' does not exist: Colab reclaimed its runtime, or it was never created "
+                "(`colab sessions` lists what the account has)")
+    listed = ", ".join(f"{r['endpoint']} ({r['hardware']})" for r in others)
+    return (f"session '{colab.session}' is not in this machine's Colab CLI state, but the account has "
+            f"{len(others)} runtime(s) this machine does not know: {listed}. If one of them is the run, it was "
+            "started from another machine (or with another --config): use the wrapper there. A runtime nobody "
+            "needs can be stopped in the Colab web page (Manage sessions).")
 
 
 def remote_status(colab: Colab) -> tuple[dict | None, str]:
@@ -144,9 +208,15 @@ def supervisor_age(info: dict | None) -> float | None:
     return time.time() - float(info["time"])
 
 
+def running(info: dict | None) -> bool:
+    age = supervisor_age(info)
+    return age is not None and age < STALE_S
+
+
 def environment(args: argparse.Namespace, preset: dict) -> list[str]:
-    """The ``--env KEY=VALUE`` arguments of ``colab exec`` for these options."""
-    env = {"BES_NOTEBOOK": preset["notebook"], "BES_ACTION": args.action}
+    """The ``--env KEY=VALUE`` arguments of ``colab exec`` for these options. BES_SENT_AT lets the
+    program see that it waited behind another execution (it then leaves without acting)."""
+    env = {"BES_NOTEBOOK": preset["notebook"], "BES_ACTION": args.action, "BES_SENT_AT": f"{time.time():.0f}"}
     if args.repo_url:
         env["BES_REPO_URL"] = args.repo_url
     if args.branch is not None:
@@ -161,10 +231,34 @@ def environment(args: argparse.Namespace, preset: dict) -> list[str]:
         env["BES_AUTO_RESUME"] = str(args.auto_resume)
     if args.hold_minutes is not None:
         env["BES_HOLD_MINUTES"] = f"{args.hold_minutes:g}"
+    if args.part_mb is not None:
+        env["BES_PART_MB"] = f"{args.part_mb:g}"
     out: list[str] = []
     for k, v in env.items():
         out += ["--env", f"{k}={v}"]
     return out
+
+
+def after_start(colab: Colab, hints: str) -> int:
+    """What the runtime says once `colab exec` has returned (its exit status does not: it is 0 for
+    a program that failed in the kernel and 1 for a connection that merely dropped)."""
+    info, _ = remote_status(colab)
+    if info is None:
+        print(f"== no supervisor status on '{colab.session}': the program did not get as far as writing one. "
+              "The runtime is idle and still charged until Colab reclaims it: fix the cause and start again, "
+              "or give it back (down --yes).", file=sys.stderr)
+        return 1
+    note = f" ({info.get('note')})" if info.get("note") else ""
+    if running(info):
+        print(f"== detached from '{colab.session}'; the supervisor is running: {info.get('state')}{note}\n{hints}")
+        return 0
+    if info.get("state") == "released" and "failed" not in str(info.get("note")):
+        print(f"== the supervisor of '{colab.session}' has left{note}. Nothing keeps the runtime alive now.")
+        return 0
+    print(f"== no supervisor is running on '{colab.session}': last state {info.get('state')}{note}. The runtime is "
+          "idle and still charged until Colab reclaims it: fix the cause and start again, or give it back "
+          "(down --yes).", file=sys.stderr)
+    return 1
 
 
 def cmd_start(args: argparse.Namespace) -> int:
@@ -173,23 +267,32 @@ def cmd_start(args: argparse.Namespace) -> int:
     colab = Colab(session)
     if not PROGRAM.is_file():
         raise Failed(f"{PROGRAM} is missing")
+    flag = " --smoke" if args.smoke else ""
     print(f"== signing in if needed, and the sessions of this account (`{' '.join(colab.argv('sessions'))}`)")
     if colab.shown("sessions") != 0:
-        raise Failed("`colab sessions` failed: sign in first (it prints a link and asks for the code Google shows)")
-    if colab.exists():
+        raise Failed("`colab sessions` failed (see above): sign in first; it prints a link and asks for the code "
+                     "Google shows")
+    line = colab.status_line()
+    if line is not None:
         print(f"== session '{session}' exists: using it")
+        if "BUSY" in line and PROGRAM.name in line:
+            print(f"a `colab exec` of the supervisor is attached to '{session}' from this machine: not sending "
+                  f"another one, it would only wait behind it.\nprogress: python scripts/colab_cli.py status{flag}")
+            return 0
         age = supervisor_age(remote_status(colab)[0])
         if age is not None and age < STALE_S:
-            print(f"a supervisor is already running on '{session}' (status written {age:.0f} s ago): not starting "
-                  f"another one, it would only wait behind it.\nprogress: python {Path(__file__).name} status"
-                  + (" --smoke" if args.smoke else ""))
+            print(f"a supervisor is already running on '{session}' (status written {age:.0f} s ago): not sending "
+                  f"another one, it would only wait behind it.\nprogress: python scripts/colab_cli.py status{flag}")
             return 0
     else:
+        others = unknown_runtimes(colab)
+        if others and not args.new_runtime:
+            raise Failed(missing(colab) + "\nNot creating another runtime next to it. If you do want a second one, "
+                         "repeat with --new-runtime.")
         new = ["new", "-s", session] + ([] if args.cpu else ["--tpu", args.tpu or preset["tpu"]])
         print(f"== creating the runtime (`{' '.join(colab.argv(*new))}`): compute units are charged from now on")
         if colab.shown(*new) != 0:
-            raise Failed("the runtime was not created (the message above says why: no entitlement for this TPU, "
-                         "too many sessions, or no capacity right now)")
+            raise Failed("the runtime was not created: the Colab CLI's message above says why")
     if args.hf_token_file:
         token = Path(args.hf_token_file).expanduser()
         if not token.is_file():
@@ -201,7 +304,6 @@ def cmd_start(args: argparse.Namespace) -> int:
         if colab.shown("drivemount", "-s", session) != 0:
             raise Failed("Drive was not mounted; start again without --drive to run without the mirror")
     run = colab.argv("exec", "-s", session, "--timeout", "0", "-f", str(PROGRAM), *environment(args, preset))
-    flag = " --smoke" if args.smoke else ""
     hints = (f"  progress:  python scripts/colab_cli.py status{flag}\n"
              f"  browser:   python scripts/colab_cli.py url{flag}\n"
              f"  give back: python scripts/colab_cli.py down{flag} --yes   (the runtime's disk is lost)")
@@ -210,28 +312,37 @@ def cmd_start(args: argparse.Namespace) -> int:
         with open(log, "ab") as f:
             proc = subprocess.Popen(run, stdout=f, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
                                     start_new_session=True)
-        print(f"== started in the background (local pid {proc.pid}, its output in {log})\n{hints}")
+        print(f"== sent in the background (local pid {proc.pid}, its output in {log}); waiting for the supervisor's "
+              "first status")
+        sent, end = time.time(), time.time() + args.wait
+        while time.time() < end:
+            info, _ = remote_status(colab)
+            if running(info) and float(info.get("supervisor_started") or 0) >= sent - STALE_S:
+                print(f"== the supervisor is running: {info.get('state')}\n{hints}")
+                return 0
+            if proc.poll() is not None:
+                return after_start(colab, hints)
+            time.sleep(min(3.0, max(0.1, args.wait / 20)))
+        print(f"== no status from the supervisor within {args.wait:.0f} s (the kernel may still be starting): "
+              f"look at {log} and at `status`.\n{hints}")
         return 0
     print(f"== starting (`{' '.join(run)}`)\n   Ctrl-C only detaches this terminal: the run and its supervisor go on.\n")
     try:
-        code = subprocess.call(run)
+        subprocess.call(run)
     except KeyboardInterrupt:
-        code = 130
-    print(f"\n== detached from '{session}' (exit status {code}). If the supervisor was running, it still is:\n{hints}\n"
-          "   If the start failed before the run began, the runtime is idle and still charged until Colab\n"
-          "   reclaims it: fix the cause and start again, or give it back.")
-    return 0
+        pass
+    print()
+    return after_start(colab, hints)
 
 
 def cmd_status(args: argparse.Namespace) -> int:
     colab = Colab(args.session or PRESETS["smoke" if args.smoke else "final"]["session"])
     if not colab.exists():
-        raise Failed(f"session '{colab.session}' does not exist any more (Colab reclaimed it, or it was never "
-                     "created): `colab sessions` lists what this account has")
+        raise Failed(missing(colab))
     info, text = remote_status(colab)
     if info is None:
-        raise Failed(f"no supervisor status on '{colab.session}' yet ({REMOTE}/status.json): the start may still "
-                     "be cloning, or it was never started here")
+        raise Failed(f"no supervisor status on '{colab.session}' ({REMOTE}/status.json does not exist): the program "
+                     "has not started there (a start that is still connecting, or none at all)")
     print(text.rstrip() or json.dumps(info, indent=1))
     age = supervisor_age(info)
     if age is None:
@@ -247,11 +358,17 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 def cmd_send(args: argparse.Namespace) -> int:
     colab = Colab(args.session or PRESETS["smoke" if args.smoke else "final"]["session"])
+    if not colab.exists():
+        raise Failed(missing(colab))
+    if not running(remote_status(colab)[0]) and not args.force:
+        raise Failed(f"no supervisor is running on '{colab.session}' (see `status`): nothing was sent. A command "
+                     "left there would only be dropped by the next supervisor. `start` again first.")
+    text = args.word + (f" {args.part_mb:g}" if args.word == "package" and args.part_mb is not None else "")
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "ctl"
-        path.write_text(args.word + "\n", encoding="utf-8")
+        path.write_text(text + "\n", encoding="utf-8")
         colab.upload(path, f"{REMOTE}/ctl")
-    print(f"sent '{args.word}' to the supervisor of '{colab.session}'; it acts within its next round (15 s) "
+    print(f"sent '{text}' to the supervisor of '{colab.session}'; it acts within its next round (15 s) "
           "and says so in the status")
     return 0
 
@@ -264,23 +381,49 @@ def _sha256(path: Path) -> str:
     return h.hexdigest()
 
 
+def _extract(tar_path: Path, to: Path) -> None:
+    """Unpack the export: regular files and directories under ``final/`` only (works on a Python
+    without tarfile's extraction filters as well)."""
+    with tarfile.open(tar_path) as tar:
+        members = tar.getmembers()
+        for m in members:
+            parts = Path(m.name).parts
+            if not (m.isfile() or m.isdir()) or m.name.startswith("/") or ".." in parts or parts[:1] != ("final",):
+                raise Failed(f"the export archive holds something unexpected ({m.name!r}); not unpacked")
+        if hasattr(tarfile, "data_filter"):
+            tar.extractall(to, members=members, filter="data")
+        else:
+            tar.extractall(to, members=members)
+
+
 def cmd_fetch(args: argparse.Namespace) -> int:
     colab = Colab(args.session or PRESETS["smoke" if args.smoke else "final"]["session"])
+    if not colab.exists():
+        raise Failed(missing(colab))
     to = Path(args.to).resolve()
     parts_dir = to / ".parts"
     parts_dir.mkdir(parents=True, exist_ok=True)
     index = parts_dir / "parts.json"
     if not colab.download(f"{REMOTE}/export/parts.json", index):
-        raise Failed("the export is not packaged on the runtime yet: `send package` asks the supervisor for it "
+        raise Failed("the export is not packaged on the runtime: `send package` asks the supervisor for it "
                      "(it packages by itself when the run is complete); then fetch again")
     meta = json.loads(index.read_text(encoding="utf-8"))
+    smaller = ("If a part is too large for the runtime's file interface, ask for smaller ones and fetch again:\n"
+               "    python scripts/colab_cli.py send package --part-mb 4")
     for i, part in enumerate(meta["parts"]):
         local = parts_dir / part["name"]
         if local.is_file() and _sha256(local) == part["sha256"]:
             continue
         print(f"part {i + 1}/{len(meta['parts'])}: {part['name']} ({part['bytes'] / 1e6:.1f} MB)")
-        if not colab.download(f"{REMOTE}/export/{part['name']}", local) or _sha256(local) != part["sha256"]:
-            raise Failed(f"{part['name']} did not arrive intact; run fetch again (finished parts are kept)")
+        try:
+            arrived = colab.download(f"{REMOTE}/export/{part['name']}", local)
+        except Failed as e:
+            raise Failed(f"{e}\n{smaller}\nFinished parts are kept in {parts_dir}.") from None
+        if not arrived:
+            raise Failed(f"{part['name']} is not on the runtime any more (the export was packaged again?): "
+                         "run fetch again")
+        if _sha256(local) != part["sha256"]:
+            raise Failed(f"{part['name']} did not arrive intact; run fetch again (finished parts are kept).\n{smaller}")
     tar_path = parts_dir / "final.tar"
     whole = hashlib.sha256()
     with open(tar_path, "wb") as out:
@@ -290,8 +433,7 @@ def cmd_fetch(args: argparse.Namespace) -> int:
             out.write(data)
     if whole.hexdigest() != meta["sha256"]:
         raise Failed("the joined export does not match its SHA-256; run fetch again")
-    with tarfile.open(tar_path) as tar:
-        tar.extractall(to, filter="data")
+    _extract(tar_path, to)
     shutil.rmtree(parts_dir)
     print(f"export in {to / 'final'} ({meta['bytes'] / 1e6:.1f} MB, SHA-256 of the archive verified).\n"
           f"check its files:  python scripts/export.py --verify {to / 'final'}")
@@ -308,7 +450,14 @@ def cmd_down(args: argparse.Namespace) -> int:
     if not args.yes:
         raise Failed(f"this stops the runtime of '{colab.session}': its disk, the run directory and anything not "
                      "on Drive or fetched are lost. Repeat with --yes if that is what you want.")
-    return colab.shown("stop", "-s", colab.session)
+    p = colab.quiet("stop", "-s", colab.session)
+    out = text_of(p)
+    if p.returncode != 0:
+        raise Failed(explain("`colab stop`", p))
+    if "not found" in out:               # the CLI exits 0 for a session it does not know: nothing was stopped
+        raise Failed("nothing was stopped: " + missing(colab))
+    print(out)
+    return 0
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -336,12 +485,19 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--branch", default=None, help="clone another branch")
     p.add_argument("--auto-resume", type=int, default=None, help="automatic continuations of a run that died (2)")
     p.add_argument("--hold-minutes", type=float, default=None, help="keep the runtime this long after the run (120)")
-    p.add_argument("--detach", action="store_true", help="start in the background and return")
+    p.add_argument("--part-mb", type=float, default=None, help="size of the export's parts for fetch (16)")
+    p.add_argument("--new-runtime", action="store_true",
+                   help="create the runtime although the account has one this machine does not know")
+    p.add_argument("--detach", action="store_true", help="send in the background and return once the supervisor "
+                                                         "has written its first status")
+    p.add_argument("--wait", type=float, default=90.0, help="with --detach: seconds to wait for that status")
     p.add_argument("--log", default=None, help="with --detach: the local file for the output")
     p.set_defaults(fn=cmd_start)
     common(sub.add_parser("status", help="print the supervisor's progress report")).set_defaults(fn=cmd_status)
     p = common(sub.add_parser("send", help="send a command to the supervisor"))
     p.add_argument("word", choices=COMMANDS)
+    p.add_argument("--part-mb", type=float, default=None, help="with package: megabytes per part")
+    p.add_argument("--force", action="store_true", help="send although no supervisor seems to be running")
     p.set_defaults(fn=cmd_send)
     p = common(sub.add_parser("fetch", help="download the packaged export and verify it"))
     p.add_argument("--to", default="colab_export", help="local directory (default colab_export)")
