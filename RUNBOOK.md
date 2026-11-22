@@ -354,7 +354,9 @@ one-hour canary) measures most of it.
 - **Colab and Drive**: download speed from Hugging Face, the disk (about 72 GB needed by the
   default plan), the build time of llama-cpp-python, whether install + 24 hours fits one runtime,
   and whether files replaced or deleted through the Drive mount fill the Drive trash as reported
-  (section 1.1).
+  (section 1.1). The "open in Colab" links were not opened on Colab either: how Colab reads the
+  branch from the link and the TPU type from the notebook's metadata was read from the script of
+  its notebook app (`docs/CHANGES.md` section 15).
 - **The recipe**: the learning-rate transfer rule is extrapolated from its authors' sweep to about
   2e10 tokens (`docs/CHANGES.md` section 6); the evidence gates E2 and E4 had not been run when
   this was written (`docs/E2_ABLATIONS.md`, `docs/E4_PROBES.md`); E5 was measured on a 1M-token

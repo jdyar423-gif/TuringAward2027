@@ -146,3 +146,10 @@
 - 依事先寫定的後果，未通過的機制應關閉。**暫存器是我沒有照做的一項**：它在 E4 不通過，在 E2 只有以對話損失為準才過 1%（+1.1%，混合損失 +0.8%）。我保留它的理由只有 E2 的對話損失；正式解碼的數量約束由主機端的精確勢函數強制，不靠模型輸入的暫存器。這是偏離事先規則的判斷，嚴格照規則的話應以 `--override model.use_reg=false` 關閉（降級階梯第 6 級也會關閉它）。
 
 **最終配置（`configs/final.py`）**：候選帶、暫存器、候選輸入、value embedding、匯點開啟；信心通道與結構時鐘關閉；最後三分之一以 2048 tokens 訓練；TPU 上開啟重算（開機基準另測不重算的方案）；解碼時溫度只作用於網路、自我證據 ×0.25、回覆上限 768 tokens、不設複製上限。
+
+## 15. 從連結直接在 Colab 開啟 notebook
+
+- **改動**：兩個 notebook 的第一格是「Open in Colab」連結；第 1 格的 `REPO_URL` 與 `BRANCH` 已填好本倉庫（公開）與分支 `claude/modest-carson-yi2d9g`（先前是空字串，第 3 格會停下要求填寫）；中繼資料加上 TPU 型號（`metadata.colab.gpuType`：24 小時 notebook 為 `V6E1`，管線檢查為 `V5E1`）。`README.md` 與 `RUNBOOK.md` 放了同樣的連結，`tests/train/test_export.py` 檢查三處連結與第 1 格實際 clone 的倉庫、分支一致。
+- **連結的寫法**：分支名含斜線。Colab 的 notebook 程式把 `/github/<owner>/<repo>/blob/` 之後的**一個**路徑段當成分支並做百分號解碼，它自己產生這類網址時也用 `encodeURIComponent`，所以連結寫成 `blob/claude%2Fmodest-carson-yi2d9g/notebooks/…`。它載入檔案的位址是 `raw.githubusercontent.com/<owner>/<repo>/<branch>/<path>`，直接寫斜線時分支會被誤判為 `claude`，但拼出來的位址相同。
+- **依據與限度**：以上兩點（分支的解析、`gpuType` 的讀取與 `V6E1`→「v6e-1 TPU」、`V5E1`→「v5e-1 TPU」的對應）是 2026-11-22 讀 Colab 當時的前端腳本得到的，**不是在 Colab 上開啟 notebook 驗證的**；Colab 改版後可能不同。在這個容器裡實際做過的只有：用出貨的第 1、1b、3 格對推上去的分支執行 clone（取得正確的 commit 與後續各格需要的檔案），以及確認上述 raw 位址回傳的就是倉庫裡的兩個 notebook。
+- **分支改名或合併後**：連結、第 1 格的 `BRANCH` 與 notebook 第一格要一起改；上述測試會指出不一致之處。
