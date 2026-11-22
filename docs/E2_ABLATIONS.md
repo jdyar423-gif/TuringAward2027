@@ -56,6 +56,8 @@ g = relative held-out loss difference (arm - ref) / ref on `mix`; positive = the
 | `lr_feature_x3` | setting | feature-group learning rate 0.03 instead of 0.01 | -0.11% | -0.57% | -0.51% | 0.42% | 0.84% | **keep default** | -0.51% vs reference (margin 0.84%) |
 | `mass_offset_4` | setting | initial tape log-mass -4 instead of -6 | -0.49% | +0.00% | +0.23% | 0.42% | 0.84% | **keep default** | +0.23% vs reference (margin 0.84%) |
 | `mass_offset_8` | setting | initial tape log-mass -8 instead of -6 | +0.27% | +0.11% | -0.07% | 0.42% | 0.84% | **keep default** | -0.07% vs reference (margin 0.84%) |
+| `matrix_lr_x0.33` | setting | matrix learning rate x0.33 | +0.74% | +1.17% | +1.88% | 0.42% | 0.84% | **keep default** | +1.88% vs reference (margin 0.84%) |
+| `matrix_lr_x3` | setting | matrix learning rate x3 (the data rule asks for about x9 at a 1M-token horizon) | -0.13% | -0.09% | -0.66% | 0.42% | 0.84% | **keep default** | -0.66% vs reference (margin 0.84%) |
 | `muon` | setting | Muon + NorMuon + cautious decay instead of MuonH | -0.54% | -0.36% | -0.24% | 0.42% | 0.84% | **keep default** | -0.24% vs reference (margin 0.84%) |
 | `src5_train_0` | setting | no masses from the assistant turn being written, during training | +2.40% | +2.28% | +1.95% | 0.42% | 0.84% | **keep default** | +1.95% vs reference (margin 0.84%) |
 | `src5_train_025` | setting | self-evidence masses x0.25 during training (as the decoder applies them) | +0.02% | +0.05% | +0.07% | 0.42% | 0.84% | **keep default** | +0.07% vs reference (margin 0.84%) |
@@ -72,6 +74,8 @@ g = relative held-out loss difference (arm - ref) / ref on `mix`; positive = the
 | `lr_feature_x3` | -0.49% ± 0.09% | -0.56% ± 0.10% | -0.58% ± 0.10% |
 | `mass_offset_4` | +0.21% ± 0.08% | +0.29% ± 0.10% | +0.30% ± 0.11% |
 | `mass_offset_8` | -0.10% ± 0.07% | +0.01% ± 0.09% | +0.04% ± 0.11% |
+| `matrix_lr_x0.33` | +1.74% ± 0.07% | +2.35% ± 0.14% | +2.32% ± 0.13% |
+| `matrix_lr_x3` | -0.66% ± 0.11% | -0.68% ± 0.09% | -0.64% ± 0.12% |
 | `muon` | -0.12% ± 0.06% | -0.65% ± 0.13% | -0.66% ± 0.11% |
 | `no_clock` | +0.29% ± 0.06% | +0.38% ± 0.08% | +0.31% ± 0.07% |
 | `no_conf` | +0.68% ± 0.08% | +0.77% ± 0.11% | +0.83% ± 0.12% |
@@ -115,6 +119,8 @@ Training MFLOP per token is analytic (`microbench.flops_per_token`); seconds per
 | `lr_feature_x3` | 4,402,372 | 36.6 | 612 | 1714 | 0.4114 | 1.440 | 0.023, 0.026 | 0 |
 | `mass_offset_4` | 4,402,372 | 36.6 | 627 | 1709 | 0.4179 | 1.750 | 0.025, 0.021 | 0 |
 | `mass_offset_8` | 4,402,372 | 36.6 | 607 | 1710 | 0.4218 | 1.697 | 0.027, 0.023 | 0 |
+| `matrix_lr_x0.33` | 4,402,372 | 36.6 | 770 | 1733 | 0.4302 | 1.864 | 0.029, 0.022 | 0 |
+| `matrix_lr_x3` | 4,402,372 | 36.6 | 594 | 1764 | 0.4183 | 1.521 | 0.022, 0.024 | 0 |
 | `muon` | 4,402,372 | 36.6 | 599 | 1763 | 0.4100 | 1.663 | 0.026, 0.022 | 0 |
 | `no_clock` | 4,402,372 | 36.6 | 604 | 1669 | 0.4196 | 1.607 | 0.028, 0.022 | 0 |
 | `no_conf` | 4,402,372 | 36.6 | 594 | 1691 | 0.4151 | 1.733 | 0.028, 0.019 | 0 |
@@ -133,8 +139,6 @@ Training MFLOP per token is analytic (`microbench.flops_per_token`); seconds per
 
 ## Not run (yet)
 
-- `matrix_lr_x3` (setting, seed 0): optim.lr_matrix=0.042 — matrix learning rate x3 (the data rule asks for about x9 at a 1M-token horizon)
-- `matrix_lr_x0.33` (setting, seed 0): optim.lr_matrix=0.0047 — matrix learning rate x0.33
 - `sink_prior`: skipped — no configuration hook initialises `sink_logit` (bes.model.model.init_params sets it to 0 and ModelCfg has no field for it); not run
 
 ## Limits
