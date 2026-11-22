@@ -8,9 +8,53 @@ Each exact mechanism must turn a task the plain network cannot do reliably at th
 
 Tasks (`bes/eval/probes.py`): **copy** a string of 20 random single-token words given earlier in the conversation; **count** exactly N bullet items or sentences, N = 1..8 (checked with `constraints.verify` of the compiled user turn); **fence** close every code fence before ending (one or two blocks, half without a language tag); **arith** `a op b` with 2-4 digit operands and op in + - *, answered through a calculator span whose result the host forces, versus the model's own digits. About 30 % of the training rows are probe conversations (the four tasks in equal numbers), the rest web 52.5 % and chat 17.5 %. Greedy decoding with the incremental exact features.
 
-## Status
+## Setup
 
-**Not run yet.** Launch `scripts/run_probes.py --tokens N --out runs/e4`, then regenerate this file with `--report`.
+- 1,000,000 training tokens per arm, shape (2, 4, 512), model `configs/micro/bench.py` (4,402,372 parameters); realised target-token shares chat 15.6%, probe_calc 29.4%, web 54.9%.
+
+## Results
+
+| probe | mechanism | on (trained, `probe_ref`) | off (trained without) | verdict (trained) | off (switch on `probe_ref`) | verdict (switch) |
+|---|---|---|---|---|---|---|
+| **copy** | candidate tape | 100.0% [96%, 100%] (96/96) | 0.0% [0%, 4%] (0/96) | **pass** | 0.0% [0%, 4%] (0/96) (`tape_off`) | pass |
+| **count** | countdown registers | 65.6% [56%, 74%] (63/96) | 57.3% [47%, 67%] (55/96) | **fail (on 66% <= 90%, off 57% >= 50%)** | 4.2% [2%, 10%] (4/96) (`reg_off`) | fail (on 66% <= 90%) |
+| **fence** | registers (fence state) | 100.0% [96%, 100%] (96/96) | 100.0% [96%, 100%] (96/96) | **fail (off 100% >= 50%)** | 100.0% [96%, 100%] (96/96) (`reg_off`) | fail (off 100% >= 50%) |
+| **arith** | calculator span, forced result | 56.2% [46%, 66%] (54/96) | 0.0% [0%, 4%] (0/96) | **fail (on 56% <= 90%)** | 0.0% [0%, 4%] (0/96) (`no_forcing`) | fail (on 56% <= 90%) |
+
+## Every arm on every probe (default decoding)
+
+| arm | copy | count | fence | arith |
+|---|---|---|---|---|
+| `probe_ref` | 100.0% [96%, 100%] (96/96) | 65.6% [56%, 74%] (63/96) | 100.0% [96%, 100%] (96/96) | 56.2% [46%, 66%] (54/96) |
+| `probe_no_tape` | 0.0% [0%, 4%] (0/96) | 100.0% [96%, 100%] (96/96) | 100.0% [96%, 100%] (96/96) | 0.0% [0%, 4%] (0/96) |
+| `probe_no_reg` | 100.0% [96%, 100%] (96/96) | 57.3% [47%, 67%] (55/96) | 100.0% [96%, 100%] (96/96) | 29.2% [21%, 39%] (28/96) |
+| `probe_no_calc` | 100.0% [96%, 100%] (96/96) | 67.7% [58%, 76%] (65/96) | 100.0% [96%, 100%] (96/96) | 0.0% [0%, 4%] (0/96) |
+
+### count by N (`probe_ref`)
+
+| N | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|
+| correct | 12/12 | 12/12 | 9/12 | 6/12 | 6/12 | 6/12 | 6/12 | 6/12 |
+
+### count by N (`probe_no_reg`)
+
+| N | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|---|---|
+| correct | 12/12 | 10/12 | 12/12 | 9/12 | 2/12 | 4/12 | 6/12 | 0/12 |
+
+## Failure examples
+
+- `probe_no_calc` default/arith: `"The answer is 6865 + 667 = 180."` {'calc': True, 'expected': '7532', 'expr': '6865 + 667'}
+- `probe_no_calc` default/count: `"- violin\n- violin"` {'n': 3, 'unit': 'items'}
+- `probe_no_reg` default/arith: `"The answer is 20. The answer is20. The answer is20. The answer is 2 sentences about the sun."` {'calc': True, 'expected': '-1833', 'expr': '4830 - 6663'}
+- `probe_no_reg` default/count: `"- banana\n- banana\n- banana\n- banana"` {'n': 5, 'unit': 'items'}
+- `probe_no_tape` default/arith: `"The answer is 834 + 924 = 1758."` {'calc': True, 'expected': '7532', 'expr': '6865 + 667'}
+- `probe_no_tape` default/copy: `"The code is: gir evaluating pers pers pers pers pers pers pers pers pers pers pers pers pers pers pers pers pers pers"` {}
+- `probe_ref` default/arith: `"The answer is 98\nprint(count)\n```\n\nThe answer is98\nprint(count)\n```\n\nThe answer is98\nprint(count)\n```\n\nThe"` {'calc': True, 'expected': '-8488', 'expr': '426 - 8914'}
+- `probe_ref` default/count: `"- violin\n- violin"` {'n': 3, 'unit': 'items'}
+- `probe_ref` no_forcing/arith: `"The answer is 6865 + 667 = is 6865 + 667 is 6865 + 667."` {'calc': True, 'expected': '7532', 'expr': '6865 + 667'}
+- `probe_ref` reg_off/count: `"- Canada\n- Canada"` {'n': 1, 'unit': 'items'}
+- `probe_ref` tape_off/copy: `"The code is:\nRepeat the code."` {}
 
 ## Arms
 
@@ -18,3 +62,9 @@ Tasks (`bes/eval/probes.py`): **copy** a string of 20 random single-token words 
 - `probe_no_tape` (probe, seed 0): model.use_cand_in=false, model.use_cand_out=false — trained without the candidate tape (copy off)
 - `probe_no_reg` (probe, seed 0): model.use_reg=false — trained without register embeddings (count and fence off; clocks kept)
 - `probe_no_calc` (probe, seed 0): (reference settings) — arithmetic answers in plain digits, no calculator span (arith off)
+
+## Notes
+
+- The `no_forcing` view decodes the reference without host forcing: the model never trained on the result tokens (weight 0 under the loss rule), so this view shows what forcing replaces, not what a model trained on its own digits does (`probe_no_calc`).
+- `probe_no_reg` keeps the structural clocks (line and sentence indices as rotary positions); only the register embeddings, including the countdowns, are removed.
+- Micro scale (d=128, a few hundred steps): a mechanism that passes here is a step function at this size; the plain network of the final model is larger and trains far longer, so the `off` accuracies there will be higher.
