@@ -199,6 +199,10 @@ program covers the ladder from the full model down to the plain looped transform
 | 7 | + calculator spans (no model switch: recorded only) | |
 | safe | every feature path off (`configs/safe.py`) | `reg:0 cand_in:0 cand_out:0 conf:0 sink:0 clock:0 kind:0` |
 
+In `configs/final.py` the confidence channel and the structural clocks are already off (they
+stayed under the 1% bar in the micro ablations, `docs/CHANGES.md` section 14), so rung 2 and the
+clock part of rung 6 change nothing there; the rung numbers are kept so that logs stay comparable.
+
 Which rung the run is on:
 
     python -c "import json; print(json.load(open('RUN_DIR/manifest.json'))['benchmark']['ladder'])"

@@ -192,3 +192,8 @@ Halving the micro-batch (and doubling the number of micro-batches, so the tokens
 262,144) fits in device memory without rematerialisation and avoids recomputing every loop body in
 the backward pass. Which of the two plans is faster on the chip is unknown; the start-up benchmark
 times both and keeps the faster one (`optim.micro_seqs=16, model.remat=False` against the default).
+
+After the configuration was frozen (`configs/final.py`: clocks and confidence channel off), the
+same compile-only check was repeated: train step at T=1024 (A=8, B=32) and at T=2048 (A=8, B=16),
+both 4.21 GiB peak with rematerialisation, compile 320 s and 306 s; decode (8 streams, 2048
+slots) 1.66 GiB. No scatter in any program.
