@@ -2,7 +2,7 @@
 
 ## 摘要（繁體中文）
 
-這個倉庫是 BES-100M-A20M：一個總共至多 1 億個儲存數字（每個數字至多 16 位元，含權重、查表與藏書）、每產生一個 token 至多讀取 2,000 萬個數字的語言模型，設計成在單顆 TPU v6e 上於 24 小時內從零訓練完成。核心原理是「後驗 ∝ 先驗 × 證據」，在三個尺度上能精確算的就精確算：注意力頭帶校準匯點與信心通道；主機端精確計算的 n-gram 計數頭與候選帶進入輸出律；整段回覆以少量粒子加精確勢函數做 Feynman–Kac 解碼；另附一個門控、離線、凍結的書寫藏書，是否隨模型出貨由訓練後的事實題對照（藏書開與關各答一次）決定。所有程式都在 CPU 容器上開發、測試與彩排，**目前沒有任何數字是在 TPU 上量到的**（`docs/TPU_NOTES.md`）。正式的 24 小時訓練請照 `RUNBOOK.md` 使用 `notebooks/colab_v6e_24h.ipynb`；計畫原文在 `docs/PLAN.md`，核准後的修訂在 `docs/CHANGES.md`。
+這個倉庫是 BES-100M-A20M：一個總共至多 1 億個儲存數字（每個數字至多 16 位元，含權重、查表與藏書）、每產生一個 token 至多讀取 2,000 萬個數字的語言模型，設計成在單顆 TPU v6e 上於 24 小時內從零訓練完成。核心原理是「後驗 ∝ 先驗 × 證據」，在三個尺度上能精確算的就精確算：注意力頭帶校準匯點（信心通道在微型消融中增益不足 1%，最終配置關閉）；主機端精確計算的 n-gram 計數頭與候選帶進入輸出律；整段回覆以少量粒子加精確勢函數做 Feynman–Kac 解碼；另附一個門控、離線、凍結的書寫藏書，是否隨模型出貨由訓練後的事實題對照（藏書開與關各答一次）決定。所有程式都在 CPU 容器上開發、測試與彩排，**目前沒有任何數字是在 TPU 上量到的**（`docs/TPU_NOTES.md`）。正式的 24 小時訓練請照 `RUNBOOK.md` 使用 `notebooks/colab_v6e_24h.ipynb`；計畫原文在 `docs/PLAN.md`，核准後的修訂在 `docs/CHANGES.md`。
 
 ## What this is
 
@@ -13,8 +13,9 @@ open models.
 
 **The idea in one paragraph.** Every step of the model is "posterior proportional to prior times
 evidence", computed exactly wherever that is possible: inside attention, each head's calibrated
-sink makes softmax attention an exact Bayesian estimate and a constant value channel reads out its
-confidence; at the output, exact in-context n-gram counts computed on the host (a candidate tape
+sink makes softmax attention an exact Bayesian estimate (a constant value channel that reads out
+its confidence exists but stayed under the 1% bar in the ablations and is off in the final
+configuration); at the output, exact in-context n-gram counts computed on the host (a candidate tape
 with Pitman-Yor statistics) enter a closed-form output law next to the network's distribution;
 over a whole reply, a few particles of the same model are steered by exact potentials (registers,
 compiled constraints, a calculator) and chosen by a satisficing rule. A written library (Simple
@@ -51,7 +52,8 @@ on it); nothing has run on a TPU.
 | Particle decoding, measured on an opponent model as a stand-in: prompts with every constraint satisfied 66% (plain) -> 91% (filter) -> 98% (exact potentials), about 4x the compute | `docs/E9_DECODING.md` |
 | Compile-only for v6e: train step peak 4.21 GiB with rematerialisation; without it the full micro-batch does not fit (32.93 GB of temporaries), half of it does (17.03 GiB) | `docs/TPU_NOTES.md` |
 | Proxy blind test harness; Falcon-H1-Tiny-90M-Instruct on the dev half: math 66.7%, constraint prompts fully satisfied 78.7% | `docs/EVAL_PROTOCOL.md` |
-| Evidence gates E2 and E4: not run yet (the reports say where they stand) | `docs/E2_ABLATIONS.md`, `docs/E4_PROBES.md` |
+| Gate E2, paired micro ablations (21 arms, 1M tokens each): removing the candidate tape costs 11% of the loss (19% on assistant tokens); value embeddings 1.5%; registers and candidate input features about 1.1% each on chat; confidence channel 0.7% and structural clocks 0.3% (both under the pre-registered 1% bar and switched off in `configs/final.py`); other settings within noise | `docs/E2_ABLATIONS.md`, `docs/CHANGES.md` section 14 |
+| Gate E4, step-function probes on the micro model: copying a 20-token string 100% with the tape and 0% without; arithmetic through a calculator span 56% against 0%; exact counts 66% (the tape arms count through the tape's bucketed features; the arm without the tape reaches 100% with the countdown registers) - only the copy probe meets the pre-registered rule | `docs/E4_PROBES.md`, `docs/CHANGES.md` section 14 |
 | Rejected after testing: exact Gaussian-process attention, scale-recursive loops and others | `docs/NEGATIVE_RESULTS.md` |
 
 ## Running it
