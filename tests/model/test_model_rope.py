@@ -19,8 +19,22 @@ def test_plain_rope_frequencies_when_no_clock_planes():
     assert np.all(table[1:] == 0)
 
 
-def test_final_plane_layout():
+def test_final_config_uses_plain_rope():
+    """The frozen configuration switches the structural clocks off (docs/CHANGES.md section 14):
+    all 63 planes rotate with the token position."""
     cfg = config_model("final")
+    assert cfg.clock_planes == 0
+    assert rope_clocks.plane_layout(cfg) == (63, 63, 0)
+    table = rope_clocks.freq_table(cfg)
+    assert table.shape == (1 + N_CLOCKS, 63)
+    assert np.all(table[0] > 0) and np.all(table[1:] == 0)
+
+
+def test_clock_plane_layout():
+    """The layout with 15 clock planes (the configuration before the gates): 48 position planes
+    and 5 planes per structural clock."""
+    import dataclasses
+    cfg = dataclasses.replace(config_model("final"), clock_planes=15)
     n_planes, n_pos, per = rope_clocks.plane_layout(cfg)
     assert (n_planes, n_pos, per) == (63, 48, 5)
     table = rope_clocks.freq_table(cfg)
