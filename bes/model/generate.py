@@ -13,6 +13,12 @@ Cache (a dict of arrays, static shapes, compiled once per ``(B, Tmax)``)::
     next_pos  int32 [B]         default position of the next token of each row
     cur_seg   int32 [B]         default segment id of the next token of each row
 
+and, only with selective attention (``cfg.sel_attn``)::
+
+    sel       float32 [n_loops, n_blocks, B, Tmax]   selection accumulated by every query so far
+              (``sum_i S[i, j]`` of ``bes.model.attention.selective_logits`` per key slot ``j``)
+    bos       bool [B, Tmax]    the slot holds a BOS token (a key selection never masks)
+
 A key is visible to a query when ``pos_k <= pos_q`` and ``seg_k == seg_q``; slots are only an
 address, so gaps of padding or empty slots are harmless. Every call appends ``Tq`` slots at
 ``t`` (``prefill``: a chunk ``[B, Tq]``; ``decode_step``: one token per row) and returns the
@@ -24,6 +30,17 @@ distribution only; with a candidate tape the scores are its normalised log-proba
 are padding: they are written with ``seg = -1`` and never seen by real queries, which gives
 left-padded ragged prompts and fixed-size prefill chunks (one compilation for any prompt
 length).
+
+The v9 write-side paths need no cache state of their own: the value gain ``gain/v`` is inside
+the cached values; the output gain ``gain/o``, the FFN gain ``gain/ffn``, the token neurons
+(rows of the chunk's tokens, ``model.token_rows``) and the head-wise output gate (the loop index
+is fed through the loop scan) act at the new positions only. Selective attention carries the
+selection of the earlier queries in ``sel``: for queries at slots ``t .. t + Tq - 1``,
+``F[i, j] = sel[j] + sum_{i' < i in the chunk} S[i', j]``, then ``sel[j] += sum_i S[i, j]``
+(the new slots start at 0). Prefill in any chunking followed by single-token steps reproduces
+the full-sequence forward as long as positions strictly increase from slot to slot within a
+segment (as in every stream the host loops build; with two equal positions the earlier query
+sees the later key in the full forward, but in the cache that key does not exist yet).
 
 Feature rows (``reg``, ``clock``, ``cand_tok``, ``cand_feat``) follow ``docs/SPEC.md`` 2: the row
 of position ``t`` describes the state after consuming token ``t`` and its candidate tape lists
@@ -51,7 +68,7 @@ import numpy as np
 from bes.config import CAND_SLOTS, END, N_CAND_FEAT, N_CLOCKS, N_REG, special_id
 from bes.model import controller, head
 from bes.model import model as M
-from bes.model.attention import NEG_INF
+from bes.model.attention import NEG_INF, selective_logits
 from bes.model.layers import act_dtype, hi, rmsnorm
 
 FEATURE_KEYS = ("reg", "clock", "cand_tok", "cand_feat")
@@ -66,15 +83,22 @@ TMAX_ROUND = 128
 def init_cache(cfg, batch: int, tmax: int, dtype=None) -> dict:
     """Empty cache for ``batch`` rows and ``tmax`` slots (see the module docstring).
 
-    dtype: dtype of the keys and values (default: the activation dtype of ``cfg``)."""
+    dtype: dtype of the keys and values (default: the activation dtype of ``cfg``). The
+    selective-attention entries ``sel`` (``hi(act_dtype)``: float32, the dtype of the logits it
+    accumulates) and ``bos`` exist only with ``cfg.sel_attn``; no other v9 path has cache
+    state."""
     dt = jnp.dtype(dtype) if dtype is not None else act_dtype(cfg)
     shape = (cfg.n_loops, cfg.n_blocks, batch, cfg.n_heads, tmax, cfg.head_dim)
-    return {"k": jnp.zeros(shape, dt), "v": jnp.zeros(shape, dt),
-            "seg": jnp.full((batch, tmax), -1, jnp.int32),
-            "pos": jnp.zeros((batch, tmax), jnp.int32),
-            "t": jnp.zeros((), jnp.int32),
-            "next_pos": jnp.zeros((batch,), jnp.int32),
-            "cur_seg": jnp.zeros((batch,), jnp.int32)}
+    cache = {"k": jnp.zeros(shape, dt), "v": jnp.zeros(shape, dt),
+             "seg": jnp.full((batch, tmax), -1, jnp.int32),
+             "pos": jnp.zeros((batch, tmax), jnp.int32),
+             "t": jnp.zeros((), jnp.int32),
+             "next_pos": jnp.zeros((batch,), jnp.int32),
+             "cur_seg": jnp.zeros((batch,), jnp.int32)}
+    if cfg.sel_attn:
+        cache["sel"] = jnp.zeros((cfg.n_loops, cfg.n_blocks, batch, tmax), hi(act_dtype(cfg)))
+        cache["bos"] = jnp.zeros((batch, tmax), jnp.bool_)
+    return cache
 
 
 def cache_capacity(cache: dict) -> int:
@@ -86,32 +110,47 @@ def reorder_cache(cache: dict, idx) -> dict:
     """Rows ``idx`` of a cache: row ``j`` of the result is row ``idx[j]`` of ``cache``.
 
     idx: int ``[B_out]`` (any length: duplicates a row, e.g. ``zeros(K)`` turns a one-row
-    prefill into ``K`` particles, or resamples ``K`` particles). A gather on the batch axis.
+    prefill into ``K`` particles, or resamples ``K`` particles). A gather on the batch axis
+    of every entry (``sel`` and ``bos`` too, when present).
     """
     idx = jnp.asarray(idx, jnp.int32).reshape(-1)
-    out = {name: jnp.take(cache[name], idx, axis=2, mode="clip") for name in ("k", "v")}
-    for name in ("seg", "pos", "next_pos", "cur_seg"):
-        out[name] = jnp.take(cache[name], idx, axis=0, mode="clip")
+    out = {name: jnp.take(cache[name], idx, axis=2, mode="clip")
+           for name in ("k", "v", "sel") if name in cache}
+    for name in ("seg", "pos", "next_pos", "cur_seg", "bos"):
+        if name in cache:
+            out[name] = jnp.take(cache[name], idx, axis=0, mode="clip")
     out["t"] = cache["t"]
     return out
 
 
 # -------------------------------------------------------------------------- attention
 def attend_cache(q: jax.Array, kc: jax.Array, vc: jax.Array, seg_q: jax.Array,
-                 seg_k: jax.Array, pos_q: jax.Array, pos_k: jax.Array) -> jax.Array:
+                 seg_k: jax.Array, pos_q: jax.Array, pos_k: jax.Array, *,
+                 sel: jax.Array | None = None, maskable_k: jax.Array | None = None,
+                 q_slot: jax.Array | None = None, prior: jax.Array | None = None):
     """Dense masked softmax of new queries over cached keys (same semantics as
     ``attention.attend_xla``).
 
     q: ``[B, Tq, H, hd]``; kc, vc: ``[B, H, Tk, hd]`` (the cache layout); seg_*/pos_*: int
     ``[B, T*]``. Logits and softmax in float32 (scale 1: the gain lives in q).
-    Returns ``float32[B, Tq, H, hd]``.
+    sel: selective-attention switch ``float32[]`` or None (off); with it, maskable_k:
+    ``bool[B, Tk]`` the slots selection may mask (not BOS, not padding or empty), q_slot: int
+    ``[Tq]`` the slot of each query (its own key), prior: ``float32[B, Tk]`` the selection of
+    the earlier queries (``cache["sel"]`` of this loop and block, zero at the new slots);
+    ``attention.selective_logits`` subtracts ``sel * (prior + selection of the earlier queries
+    of the chunk)`` from the logits.
+    Returns ``(y float32[B, Tq, H, hd], s_sum float32[B, Tk] or None)``: ``s_sum`` is the
+    selection ``sum_i S[i, j]`` of these queries (what the cache adds to ``prior``).
     """
     ft = hi(q.dtype)
     logits = jnp.einsum("bqhd,bhkd->bhqk", q, kc, preferred_element_type=ft)
     mask = (pos_k[:, None, :] <= pos_q[:, :, None]) & (seg_k[:, None, :] == seg_q[:, :, None])
     logits = jnp.where(mask[:, None], logits, NEG_INF)
+    s_sum = None
+    if sel is not None:
+        logits, s_sum = selective_logits(logits, mask, maskable_k, q_slot, sel, prior)
     p = jax.nn.softmax(logits, axis=-1)
-    return jnp.einsum("bhqk,bhkd->bqhd", p.astype(vc.dtype), vc, preferred_element_type=ft)
+    return jnp.einsum("bhqk,bhkd->bqhd", p.astype(vc.dtype), vc, preferred_element_type=ft), s_sum
 
 
 # ---------------------------------------------------------------------------- extend
@@ -126,9 +165,17 @@ def extend(params: dict, consts: dict, cache: dict, feats: dict, cfg, temperatur
     ``cur_seg``; negative = padding), ``pos [B, Tq]`` (default: ``next_pos + arange(Tq)``),
     ``reg [B, Tq, N_REG]``, ``clock [B, Tq, N_CLOCKS]``, ``cand_tok [B, Tq, K]``,
     ``cand_feat [B, Tq, K, N_CAND_FEAT]``. The slots ``[t, t + Tq)`` must fit in the cache
-    (checked by the host loops; ``dynamic_update_slice`` would clamp the start index).
+    (checked by the host loops; ``dynamic_update_slice`` would clamp the start index). The
+    cache's defaults for the next call are set from each row's last valid slot (``next_pos`` its
+    position + 1, ``cur_seg`` its segment), so a chunk may end in padding; a row whose chunk is all
+    padding keeps them.
     temperature: sampling temperature ``T > 0`` of the scores (a float or a float32 scalar;
     it tempers the network's distribution only, see ``model.logits_from_hidden``).
+    The chunk's tokens read their token gain rows (``model.gain_rows``, phase of loop ``r`` from
+    ``model.loop_phases``) and token-neuron rows (``model.token_rows``) and every block gets the
+    loop index (output gate); with ``sel_attn`` the slots of the chunk get ``bos`` and a zero
+    selection before the loop, and every loop and block updates its ``sel`` row (module
+    docstring).
     Returns ``(logits float32[B, V], hidden float32[B, d], cache)`` at the chunk's last
     position: ``logits`` are the scores of ``model.logits_from_hidden`` (``softmax`` = the
     output law ``p_T``, with the masses of that position's candidate row).
@@ -151,44 +198,72 @@ def extend(params: dict, consts: dict, cache: dict, feats: dict, cfg, temperatur
     ctx = M.make_ctx(consts, full, cfg)
     e = M.embed(params, consts, full, cfg)
     ve_all = M.value_embeddings(params, tokens, cfg)
+    gains = M.gain_rows(params, consts, tokens, cfg)
+    tok_rows = M.token_rows(params, consts, tokens, cfg)
     blocks = M.block_params(params, cfg)
     seg_k = jax.lax.dynamic_update_slice(cache["seg"], jnp.where(valid, seg, -1), (0, t0))
     pos_k = jax.lax.dynamic_update_slice(cache["pos"], pos, (0, t0))
+    names = ("k", "v", "sel") if cfg.sel_attn else ("k", "v")
+    carried = {name: cache[name] for name in names}          # updated by every loop and block
+    if cfg.sel_attn:
+        bos_k = jax.lax.dynamic_update_slice(cache["bos"], ctx.bos, (0, t0))
+        maskable = ~bos_k & (seg_k >= 0)
+        q_slot = t0 + jnp.arange(tq, dtype=jnp.int32)
+        fresh = jnp.zeros(carried["sel"].shape[:3] + (tq,), carried["sel"].dtype)
+        carried["sel"] = jax.lax.dynamic_update_slice(carried["sel"], fresh, (0, 0, 0, t0))
     lp = params["lanes"]
     xs: dict[str, Any] = {"alpha": lp["alpha"], "mix": lp["mix"], "beta": lp["beta"],
                           "g": params["loop"]["g"],
                           "r": jnp.arange(cfg.n_loops, dtype=jnp.int32)}
     if ve_all is not None:
         xs["ve"] = ve_all
+    if gains is not None and cfg.gain_phases > 1:
+        xs["phase"] = jnp.asarray(M.loop_phases(cfg))
 
     def step(carry, x):
-        lanes, ck, cv = carry
-        box = {"k": ck, "v": cv}
+        lanes, box = carry[0], dict(carry[1])
         r = x["r"]
         u = controller.combine(x["alpha"], lanes, dt)
         for i, pb in enumerate(blocks):
             def hook(q, k, v, i=i):
                 zero = jnp.zeros((), jnp.int32)
-                start = (r, jnp.asarray(i, jnp.int32), zero, zero, t0, zero)
+                blk = jnp.asarray(i, jnp.int32)
+                start = (r, blk, zero, zero, t0, zero)
                 for name, new in (("k", k), ("v", v)):
                     upd = jnp.swapaxes(new, 1, 2).astype(box[name].dtype)[None, None]
                     box[name] = jax.lax.dynamic_update_slice(box[name], upd, start)
                 kc = jax.lax.dynamic_index_in_dim(box["k"], r, 0, keepdims=False)[i]
                 vc = jax.lax.dynamic_index_in_dim(box["v"], r, 0, keepdims=False)[i]
-                return attend_cache(q, kc, vc, ctx.seg, seg_k, ctx.pos, pos_k), None
-            u, _ = M.block(pb, u, ctx, x.get("ve") if i == 0 else None, cfg, attend_fn=hook)
+                if not cfg.sel_attn:
+                    return attend_cache(q, kc, vc, ctx.seg, seg_k, ctx.pos, pos_k)[0], None
+                prior = jax.lax.dynamic_index_in_dim(box["sel"], r, 0, keepdims=False)[i]
+                y, s_sum = attend_cache(q, kc, vc, ctx.seg, seg_k, ctx.pos, pos_k, sel=ctx.sel,
+                                        maskable_k=maskable, q_slot=q_slot, prior=prior)
+                upd = (prior + s_sum.astype(prior.dtype))[None, None]
+                box["sel"] = jax.lax.dynamic_update_slice(box["sel"], upd, (r, blk, zero, zero))
+                return y, None
+            u, _ = M.block(pb, u, ctx, x.get("ve") if i == 0 else None, cfg, attend_fn=hook,
+                           gain=M.block_gain(gains, i, x.get("phase")), loop=r,
+                           tok=None if tok_rows is None else tok_rows[i])
         s = rmsnorm(u, x["g"], out_dtype=dt)
-        return (controller.update(x["mix"], x["beta"], lanes, s, dt), box["k"], box["v"]), None
+        return (controller.update(x["mix"], x["beta"], lanes, s, dt), box), None
 
     lanes0 = jnp.broadcast_to(e[None], (cfg.n_lanes,) + e.shape)
-    (lanes, ck, cv), _ = jax.lax.scan(step, (lanes0, cache["k"], cache["v"]), xs)
+    (lanes, carried), _ = jax.lax.scan(step, (lanes0, carried), xs)
     hidden = head.final_hidden(lanes, params["head"]["g"])[:, -1]           # [B, d] float32
     tail = {k: a[:, -1] for k, a in _features(full, ("cand_tok", "cand_feat")).items()}
     logits = M.logits_from_hidden(params, consts, hidden, tail, cfg, temperature)
-    last = valid[:, -1]
-    new_cache = {"k": ck, "v": cv, "seg": seg_k, "pos": pos_k, "t": t0 + tq,
-                 "next_pos": jnp.where(last, pos[:, -1] + 1, cache["next_pos"]),
-                 "cur_seg": jnp.where(last, seg[:, -1], cache["cur_seg"])}
+    # the defaults of the next call follow each row's last valid slot (a chunk may end in padding)
+    slot = jnp.arange(tq, dtype=jnp.int32)
+    last = jnp.max(jnp.where(valid, slot[None], -1), axis=1)                 # -1: all padding
+    at = slot[None] == last[:, None]
+    new_cache = {**carried, "seg": seg_k, "pos": pos_k, "t": t0 + tq,
+                 "next_pos": jnp.where(last >= 0, jnp.sum(jnp.where(at, pos, 0), axis=1) + 1,
+                                       cache["next_pos"]),
+                 "cur_seg": jnp.where(last >= 0, jnp.sum(jnp.where(at, seg, 0), axis=1),
+                                      cache["cur_seg"])}
+    if cfg.sel_attn:
+        new_cache["bos"] = bos_k
     return logits, hidden, new_cache
 
 

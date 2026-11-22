@@ -74,6 +74,7 @@ import dataclasses
 import hashlib
 import json
 import re
+import warnings
 import zipfile
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
@@ -89,7 +90,8 @@ REPO = Path(__file__).resolve().parents[2]
 #: 2: temperature on the network only, self-evidence weight applied, feasibility check and
 #: structural rerun, copy cap on LIBRARY passages only, token-local potentials, smooth mass cap.
 #: 3: a reply that used its whole token budget is reported with finish reason "length".
-RESPOND_VERSION = "3"
+#: 4: a checkpoint whose consts have an older layout keeps its stored switches (load_checkpoint).
+RESPOND_VERSION = "4"
 #: count constraints the feasibility check may drop (``bes.exact.constraints.COUNT_UNITS``)
 COUNT_FIELDS = ("words", "sentences", "items", "paragraphs", "lines")
 _DECODE_FIELDS = {f.name: f for f in dataclasses.fields(DecodeCfg)}
@@ -505,14 +507,16 @@ def code_hash() -> str:
 
 
 def find_checkpoint(path: str | Path) -> Path:
-    """A checkpoint directory (with ``manifest.json``), or the newest complete one under a
-    checkpoint root (``<run>/ckpt``) or a run directory."""
+    """A checkpoint directory (with ``manifest.json`` and ``arrays.npz``), or the newest complete
+    one under a checkpoint root, a trainer directory (``<dir>/ckpt``) or a run directory of
+    ``scripts/run_24h.py`` (``<run>/train/ckpt``; its own ``manifest.json`` is the run's, not a
+    checkpoint's)."""
     from bes.train import checkpoint as ck
 
     p = Path(path)
-    if (p / ck.MANIFEST).exists():
+    if (p / ck.MANIFEST).exists() and (p / ck.ARRAYS).exists():
         return p
-    for root in (p, p / "ckpt"):
+    for root in (p, p / "ckpt", p / "train" / "ckpt"):
         if root.is_dir():
             info = ck.latest(root)
             if info is not None:
@@ -535,9 +539,14 @@ def checkpoint_fingerprint(path: str | Path) -> str:
 def load_checkpoint(path: str | Path, model_cfg) -> tuple[dict, dict, dict[str, Any]]:
     """``(params, consts, info)`` of a trainer checkpoint (``bes.train.checkpoint``: the tree
     ``{"state": TrainState(step, params, opt_state, consts), "rng"}``). The parameters must
-    match ``bes.model.model.init_params(model_cfg)`` in paths, shapes and dtypes; the stored
-    consts are used when they have the structure of ``make_consts(model_cfg)``, else the
-    defaults."""
+    match ``bes.model.model.init_params(model_cfg)`` in paths, shapes and dtypes. The stored
+    consts are used as they are when they have the structure of ``make_consts(model_cfg)``
+    (``info["consts"] = "stored"``). Consts of another layout (a checkpoint written before a
+    switch existed) keep their stored switches by name, rebuilt with ``make_consts``; every
+    switch they lack takes its default (``"merged"``); a stored switch this configuration does
+    not have (or of another shape) is ignored with a warning. No stored consts: the defaults
+    (``"default"``). ``info["consts_filled"]`` lists the switches at their default because the
+    checkpoint holds no value for them, ``info["consts_dropped"]`` the ignored ones."""
     import jax
     import jax.numpy as jnp
 
@@ -562,14 +571,24 @@ def load_checkpoint(path: str | Path, model_cfg) -> tuple[dict, dict, dict[str, 
     params = jax.tree.map(jnp.asarray, params)
     default = M.make_consts(model_cfg)
     stored = state.get("consts")
-    consts = default
+    want = default["enable"]
+    consts, source, filled, dropped = default, "default", sorted(want), []
     if stored is not None and jax.tree.structure(stored) == jax.tree.structure(default) and all(
             np.shape(a) == np.shape(b) for a, b in zip(jax.tree.leaves(stored),
                                                      jax.tree.leaves(default))):
-        consts = jax.tree.map(jnp.asarray, stored)
+        consts, source, filled = jax.tree.map(jnp.asarray, stored), "stored", []
+    elif isinstance(stored, Mapping) and isinstance(stored.get("enable"), Mapping):
+        kept = {k: np.asarray(v, np.float32) for k, v in stored["enable"].items()
+                if k in want and np.shape(v) == np.shape(want[k])}
+        dropped = sorted(set(stored["enable"]) - set(kept))
+        filled = sorted(set(want) - set(kept))
+        consts, source = M.make_consts(model_cfg, **kept), "merged"
+        if dropped:
+            warnings.warn(f"{ckpt}: stored runtime switches {dropped} do not exist in this "
+                          "configuration (or have another shape); they are ignored", stacklevel=2)
     info = {"path": str(ckpt), "step": man.get("step"), "seq": man.get("seq"),
-            "config_hash": man.get("config_hash"),
-            "consts": "stored" if consts is not default else "default"}
+            "config_hash": man.get("config_hash"), "consts": source, "consts_filled": filled,
+            "consts_dropped": dropped}
     return params, consts, info
 
 

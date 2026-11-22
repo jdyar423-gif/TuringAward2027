@@ -84,7 +84,7 @@ def _tiny_library(path: Path) -> Path:
     return path
 
 
-def _write_run(root: Path, params, cfg) -> Path:
+def _write_run(root: Path, params, cfg, overrides=OVERRIDES, consts=None) -> Path:
     import jax
 
     from bes.config import config_hash
@@ -94,7 +94,8 @@ def _write_run(root: Path, params, cfg) -> Path:
 
     tree = {"state": {"step": np.int32(7), "params": params,
                       "opt_state": {"m": jax.tree.map(np.zeros_like, params["head"])},
-                      "consts": M.make_consts(cfg.model)}, "rng": jax.random.PRNGKey(1)}
+                      "consts": M.make_consts(cfg.model) if consts is None else consts},
+            "rng": jax.random.PRNGKey(1)}
     ck.save(root / "train" / "ckpt", tree, step=7, config_hash=config_hash(cfg))
     led = Ledger.start(t0=1000.0, now=1000.0)
     led.switch("train", 1060.0)
@@ -102,7 +103,7 @@ def _write_run(root: Path, params, cfg) -> Path:
     led.switch("ckpt", 1900.0)
     led.close(1901.0)
     led.save(root / "train" / "ledger.json")
-    man = {"format": 1, "config": str(CONFIG), "config_abs": str(CONFIG), "overrides": OVERRIDES,
+    man = {"format": 1, "config": str(CONFIG), "config_abs": str(CONFIG), "overrides": list(overrides),
            "budget": {"t0": 1000.0, "deadline": 4600.0, "budget_s": 3600.0},
            "code": {"commit": "test", "dirty": False}, "config_hash": config_hash(cfg), "resumes": []}
     (root / "manifest.json").write_text(json.dumps(man))
@@ -576,6 +577,84 @@ def test_export_leaves_out_a_library_the_decode_selection_did_not_keep(tiny, tmp
     card = (d / "MODEL_CARD.md").read_text()
     assert "No library is shipped with this export: the decode selection's library rule did not pass" in card
     assert "helped 2, hurt 1 (sign test p = 1.0)" in card and "No written library ships with it" in card
+
+
+#: the v9 paths on the smoke model (``configs/v9.py`` at a size the CPU exports in seconds)
+V9_OVERRIDES = OVERRIDES + ["model.gain_o=true", "model.attn_gate=true", "model.tok_neurons=2",
+                            "model.tok_dim=16", "model.table_grad=sorted"]
+
+
+def test_export_of_a_v9_style_model_states_the_page_ledger(tmp_path):
+    """A model with the v9 paths (token neurons, output gains, the attention gate; trained-like
+    non-zero pages): the export's accounting and the card carry the ledger rows "gain" and "page"
+    with their numbers (bes.budget), the opening paragraph names the pages and the paths; the
+    16-bit check passes. The smoke model's export has rows of zeros there and no page text."""
+    from bes import budget
+
+    cfg = load_config(str(CONFIG), V9_OVERRIDES)
+    params = _params(cfg)
+    rng = np.random.default_rng(11)
+    for name in ("val", "key"):
+        params["page"][name] = rng.normal(0.0, 0.1, params["page"][name].shape).astype(np.float32)
+    params["gain"]["o"] = rng.normal(0.0, 0.05, params["gain"]["o"].shape).astype(np.float32)
+    run = _write_run(tmp_path / "run", params, cfg, V9_OVERRIDES)
+    res = E.export_run(run, library_mode="none", heldout_rows=4, download_heldout=False,
+                       heldout_records={"web": WEB, "chat": CHAT}, log=lambda m: None)
+    d = Path(res["export_dir"])
+    rec = json.loads((d / "export.json").read_text())
+    assert rec["check"]["ok"] is True and E.verify_export(d) == []
+    ledger = budget.count(params, cfg.model).ledger()
+    rows = {r["row"]: (r["total"], r["step"]) for r in rec["accounting"]["rows"]}
+    assert rows["gain"] == ledger["gain"] and rows["page"] == ledger["page"]
+    v, nb, d_model = cfg.model.vocab_size, cfg.model.n_blocks, cfg.model.d_model
+    assert rows["gain"] == (v * nb * cfg.model.n_heads * cfg.model.head_dim,
+                            nb * cfg.model.n_heads * cfg.model.head_dim)
+    assert rows["page"][0] == 2 * v * nb * 2 * 16 + 2 * nb * d_model * 16
+    card = (d / "MODEL_CARD.md").read_text()
+    assert f"| gain | {rows['gain'][0]:,} | {rows['gain'][1]:,} |" in card
+    assert f"| page | {rows['page'][0]:,} | {rows['page'][1]:,} |" in card
+    para = card.split("## What this is")[1].split("\n- checkpoint")[0]
+    assert "owns a page of 2 private feed-forward neurons per block in a 16-dimensional space" in para
+    assert "gains on the attention outputs" in para and "head-wise gate" in para
+    assert "token neurons" in para and "per-token gains" in para and "selective attention" not in para
+    assert E.load_export_config(d / "config.py").model == cfg.model
+
+
+def test_export_of_a_checkpoint_from_before_the_v9_switches_keeps_its_rung(tmp_path):
+    """A checkpoint whose consts have the layout before the v9 switches (no gain, sel, gate,
+    page) and store a fallback rung (sink:0): the export ships the stored switch, records which
+    switches are at their defaults and that the consts were merged, rebuilds them exactly; the
+    card says the sinks are switched off and names no absent path."""
+    from bes.model import model as M
+
+    cfg = _cfg()
+    rung = M.make_consts(cfg.model, sink=0.0)
+    old = {**rung, "enable": {k: v for k, v in rung["enable"].items()
+                              if k not in ("gain", "sel", "gate", "page")}}
+    run = _write_run(tmp_path / "run", _params(cfg), cfg, consts=old)
+    res = E.export_run(run, library_mode="none", heldout_rows=4, download_heldout=False,
+                       heldout_records={"web": WEB, "chat": CHAT}, log=lambda m: None)
+    d = Path(res["export_dir"])
+    rec = json.loads((d / "export.json").read_text())
+    c = rec["consts"]
+    assert c["enable"]["sink"] == 0.0 and c["enable"]["conf"] == 1.0 and c["rebuilt_exactly"] is True
+    assert c["source"] == "merged" and c["defaults"] == ["gain", "gate", "page", "sel"] and c["ignored"] == []
+    assert not rec["errors"] and E.verify_export(d) == []
+    para = (d / "MODEL_CARD.md").read_text().split("## What this is")[1].split("\n- checkpoint")[0]
+    assert "Switched off: calibrated attention sinks" in para and "stored no switch value" not in para
+    # the card names an unset switch of a path the model has, not one of an absent path
+    rec2 = dict(rec, consts=dict(c, defaults=["sink", "gain"]))
+    para = E.model_card(rec2).split("## What this is")[1].split("\n- checkpoint")[0]
+    assert "stored no switch value for calibrated attention sinks" in para and "per-token gains" not in para
+
+
+def test_existing_exports_have_rows_of_zeros_for_the_pages(exported):
+    d, _, _ = exported
+    rec = json.loads((d / "export.json").read_text())
+    rows = {r["row"]: (r["total"], r["step"]) for r in rec["accounting"]["rows"]}
+    assert rows["gain"] == (0, 0) and rows["page"] == (0, 0)
+    card = (d / "MODEL_CARD.md").read_text()
+    assert "| gain | 0 | 0 |" in card and "owns a page" not in card and "head-wise gate" not in card
 
 
 def test_model_card_opening_paragraph_is_built_from_the_record():

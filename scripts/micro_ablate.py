@@ -12,7 +12,12 @@ prints the expected time per arm.
     python scripts/micro_ablate.py --arms ref,no_tape --tokens 60000 --out runs/e2_smoke
 
 Arms are declarative (:data:`E2_ARMS`): configuration overrides, training-time switches, seed
-and kind (how the report judges them; ``bes.eval.microbench.decide``).
+and kind (how the report judges them; ``bes.eval.microbench.decide``). The v9 arms (kind
+``add_new``, ``docs/V9.md``) add one path of ``configs/v9.py`` to the reference at the micro width:
+token neurons in a neuron space of a quarter of ``d_model`` (as 192 of 768), output gains, the
+attention gate, selective attention, and the v9 page (the first three together).
+
+    python scripts/micro_ablate.py --arms ref,v9_pages --tokens 20000 --out runs/e2_v9_smoke
 """
 from __future__ import annotations
 
@@ -61,6 +66,10 @@ from bes.eval.microbench import Arm  # noqa: E402
 
 _BASE = load_config(str(mb.BENCH_CONFIG))
 _VE, _LRF = _BASE.model.ve_dim, _BASE.optim.lr_feature
+#: the v9 token neurons at the micro width: 8 per token and block, neuron space d_model / 4
+_RHO, _DK = 8, _BASE.model.d_model // 4
+#: the page of configs/v9.py at the micro width
+_PAGES = ("model.gain_o=true", f"model.tok_neurons={_RHO}", f"model.tok_dim={_DK}")
 
 #: The E2 queue, in the order it runs (reference and its seed replicate first).
 E2_ARMS: tuple[Arm, ...] = (
@@ -99,6 +108,25 @@ E2_ARMS: tuple[Arm, ...] = (
         component="self-evidence masses x0.25 during training (as the decoder applies them)"),
     Arm("src5_train_0", switches=(("src_5", 0.0),), kind="setting",
         component="no masses from the assistant turn being written, during training"),
+    # -- v9 (docs/V9.md): one new path of configs/v9.py at a time, then the v9 page together
+    Arm("gain_o", ("model.gain_o=true",), kind="add_new",
+        component="per-token gains on the attention output channels of the token's own position "
+                  "(gain/o, before W_o)"),
+    Arm("tok_neurons", (f"model.tok_neurons={_RHO}", f"model.tok_dim={_DK}"), kind="add_new",
+        component=f"token neurons: {_RHO} private ReLU^2 neurons per token and block in a shared "
+                  f"{_DK}-dimensional space (page/*)"),
+    Arm("attn_gate", ("model.attn_gate=true",), kind="add_new",
+        component="head-wise attention output gate 1 + (2 sigmoid(x W_g / d + b_loop) - 1)"),
+    Arm("sel_attn", ("model.sel_attn=true",), kind="add_new",
+        component="selective attention (earlier queries mask keys for later ones; dense path)"),
+    Arm("v9_pages", _PAGES, kind="add_new",
+        component="the v9 page of configs/v9.py: token neurons + output gains"),
+    Arm("v9_pages_gate", _PAGES + ("model.attn_gate=true",), kind="add_new",
+        component="the v9 page + the attention gate"),
+    Arm("v9_pages_decay", _PAGES + ("optim.gain_decay=0.1", "optim.page_decay=0.1"), kind="add_new",
+        component="the v9 page with a decoupled decay of 0.1 on both tables"),
+    Arm("v9_pages_lr03", _PAGES + ("optim.lr_gain=0.003", "optim.lr_page=0.0012"), kind="add_new",
+        component="the v9 page with the learning rates of the gain and page groups divided by 3.3"),
 )
 #: Arms the task list names that the queue cannot run, with the reason.
 SKIPPED: tuple[tuple[str, str], ...] = (
@@ -280,7 +308,8 @@ def main() -> int:
         if state == "todo" and sec == sec:
             total += sec
         eta = f"~{sec / 60:6.1f} min" if sec == sec else "  (no probe)"
-        print(f"  {name:18s} {a.kind:16s} {state:5s} {eta}  {what}", flush=True)
+        print(f"  {name:18s} {a.kind:16s} {state:5s} {eta}  {what}"
+              + (f"  [{a.component}]" if a.component else ""), flush=True)
     for name, reason in SKIPPED:
         print(f"  {name:18s} skipped: {reason}", flush=True)
     if probe:

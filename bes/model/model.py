@@ -26,6 +26,25 @@ Input dictionaries (``feats``): ``tokens`` int ``[B, T]`` (required) and optiona
 ``[B, T]`` (default 0), ``pos`` ``[B, T]`` (default ``arange(T)``), ``reg`` ``[B, T, N_REG]``,
 ``clock`` ``[B, T, N_CLOCKS]``, ``cand_tok`` ``[B, T, K]`` and ``cand_feat``
 ``[B, T, K, N_CAND_FEAT]``. A missing optional feature behaves like a disabled path.
+
+Token gain pages (``gain_ffn``, ``gain_o``, ``gain_v``; zero-initialised tables ``gain/*`` of
+shape ``[V, P, n_blocks, width]``, ``P = gain_phases``): the input token of a position reads one
+row per table (:func:`gain_rows`, like ``emb/ve``); in loop ``r`` (phase ``p = r P // n_loops``)
+block ``i`` multiplies the value channels of the position (``x @ W_v``), its attention output
+channels before ``W_o`` and its first ``gain_ffn`` FFN neurons (after ``relu(.)^2``) by
+``1 + enable["gain"] * row[p, i]``, in ``hi(act_dtype)``. Selective attention (``sel_attn``):
+``bes.model.attention.selective_logits`` with the switch ``enable["sel"]``.
+
+Head-wise attention output gate (``attn_gate``; zero-initialised ``core/attn/gate_w
+[n_blocks, d, H]`` and ``core/attn/gate_b [n_loops, n_blocks, H]``): in loop ``r`` block ``i``
+multiplies the output of head ``h`` by ``1 + enable["gate"] (2 sigmoid(x W_g[i][:, h] / d +
+b_g[r, i, h]) - 1)`` (``bes.model.attention.head_gate``; the loop index reaches the block through
+the scan's ``xs``). Token neurons (``tok_neurons = rho``, ``tok_dim = dk``): every vocabulary id
+owns ``rho`` private ReLU^2 neurons per block in a ``dk``-dimensional space shared by all tokens
+(dense ``page/pin [n_blocks, d, dk]``, ``page/pout [n_blocks, dk, d]``); the keys ``page/key`` and
+the zero-initialised values ``page/val`` (``[V, n_blocks, rho, dk]``) of the input token of a
+position are gathered once per forward (:func:`token_rows`) and block ``i`` adds
+``enable["page"] * layers.token_neurons(x, ...)`` to its feed-forward output.
 """
 from __future__ import annotations
 
@@ -40,8 +59,8 @@ from bes.config import CAND_FEATS, REG_FIELDS, special_id
 from bes.model import (attention, controller, head, oracle_io, predictive, rope_clocks, sinks,
                        tables)
 from bes.model.critic import critic  # noqa: F401  (re-exported for other tracks)
-from bes.model.layers import (F32, act_dtype, hi, leaf_key, mlp, normal_init, rmsnorm,
-                              uniform_init)
+from bes.model.layers import (F32, PhaseGain, act_dtype, hi, leaf_key, mlp, normal_init, rmsnorm,
+                              token_neurons, uniform_init)
 
 N_KINDS = dict(CAND_FEATS)["kind"]
 N_SRC = dict(CAND_FEATS)["src"]
@@ -49,7 +68,9 @@ ROLE_FIELD = [name for name, _ in REG_FIELDS].index("role")
 N_ROLES = dict(REG_FIELDS)["role"]
 #: names of the scalar runtime switches in ``consts["enable"]`` (plus the vectors ``kind``
 #: and ``src``)
-SWITCHES = ("reg", "cand_in", "cand_out", "conf", "sink", "clock")
+SWITCHES = ("reg", "cand_in", "cand_out", "conf", "sink", "clock", "gain", "sel", "gate", "page")
+#: gain tables in the order of :func:`gain_widths`
+GAIN_TABLES = ("ffn", "o", "v")
 
 
 def bos_id(cfg) -> int:
@@ -68,8 +89,18 @@ def check_cfg(cfg) -> None:
         raise ValueError("n_lanes, n_loops and n_blocks must be >= 1")
     if cfg.attn_impl not in ("xla", "splash"):
         raise ValueError(f"unknown attn_impl {cfg.attn_impl!r}")
-    if cfg.table_grad not in ("onehot", "take"):
+    if cfg.table_grad not in ("onehot", "take", "sorted"):
         raise ValueError(f"unknown table_grad {cfg.table_grad!r}")
+    if cfg.sorted_chunk < 1:
+        raise ValueError(f"sorted_chunk={cfg.sorted_chunk} must be >= 1")
+    if not 0 <= cfg.gain_ffn <= cfg.d_ffn:
+        raise ValueError(f"gain_ffn={cfg.gain_ffn} must be in [0, d_ffn={cfg.d_ffn}]")
+    if not 1 <= cfg.gain_phases <= cfg.n_loops:
+        raise ValueError(f"gain_phases={cfg.gain_phases} must be in [1, n_loops={cfg.n_loops}]")
+    if cfg.sel_attn and cfg.attn_impl != "xla":
+        raise ValueError("sel_attn needs the dense attention path (attn_impl='xla')")
+    if cfg.tok_neurons < 0 or cfg.tok_dim < 1:
+        raise ValueError(f"tok_neurons={cfg.tok_neurons} must be >= 0 and tok_dim={cfg.tok_dim} >= 1")
 
 
 # ------------------------------------------------------------------------- parameters
@@ -80,8 +111,15 @@ def init_params(cfg, key: jax.Array) -> dict:
     every matrix uniform with std ``1/sqrt(fan_in)`` (all non-zero), RMSNorm gains 1, cyclic
     lanes, value embeddings like ``W_v``, value gate uniform(0, 0.02), query gain
     ``sqrt(dc)`` (the reference scale ``q.k / sqrt(dims)`` of RMS-normalised vectors).
-    Feature tables (registers, candidate tables, trust features and trust biases) and the sink
-    scalars are zero; the critic output weights are zero.
+    Feature tables (registers, candidate tables, trust features and trust biases), the token
+    gain tables ``gain/{ffn,o,v}`` ``[V, gain_phases, n_blocks, width]`` (only those whose flag is
+    on, :func:`gain_widths`) and the sink scalars are zero; the critic output weights are zero.
+    With ``attn_gate`` the gate parameters ``core/attn/gate_w [n_blocks, d, H]`` and
+    ``core/attn/gate_b [n_loops, n_blocks, H]`` are zero (gate exactly 1). With ``tok_neurons``
+    the projections ``page/pin [n_blocks, d, dk]`` and ``page/pout [n_blocks, dk, d]`` are
+    uniform (fan-in ``d`` and ``dk``; non-zero, as MuonH needs), the keys ``page/key
+    [V, n_blocks, rho, dk]`` N(0, 1) (used RMS-normalised) and the values ``page/val`` (same
+    shape) zero, so the token neurons add exactly zero at initialisation.
     """
     check_cfg(cfg)
     v, d, nh, hd = cfg.vocab_size, cfg.d_model, cfg.n_heads, cfg.head_dim
@@ -120,6 +158,9 @@ def init_params(cfg, key: jax.Array) -> dict:
         attn["ve_gate"] = jax.random.uniform(
             leaf_key(key, "core/attn/ve_gate"),
             (min(attention.VE_GATE_CHANNELS, d), cfg.ve_dim // hd), F32, 0.0, 0.02)
+    if cfg.attn_gate:
+        attn["gate_w"] = zeros((nb, d, nh))
+        attn["gate_b"] = zeros((nl, nb, nh))
     params["core"] = {
         "attn": attn,
         "mlp": {"w_up": uni("core/mlp/w_up", (nb, d, cfg.d_ffn), d),
@@ -139,25 +180,49 @@ def init_params(cfg, key: jax.Array) -> dict:
                            "bias": {name: zeros((card,)) for name, card in CAND_FEATS}}
     params["critic"] = {"w1": uni("critic/w1", (d, cfg.critic_hidden), d),
                         "w2": zeros((cfg.critic_hidden,))}
+    widths = gain_widths(cfg)
+    if widths:
+        params["gain"] = {name: zeros((v, cfg.gain_phases, nb, w)) for name, w in widths.items()}
+    if cfg.tok_neurons:
+        rho, dk = cfg.tok_neurons, cfg.tok_dim
+        params["page"] = {"pin": uni("page/pin", (nb, d, dk), d),
+                          "pout": uni("page/pout", (nb, dk, d), dk),
+                          "key": normal_init(leaf_key(key, "page/key"), (v, nb, rho, dk), 1.0),
+                          "val": zeros((v, nb, rho, dk))}
     return params
+
+
+def gain_widths(cfg) -> dict[str, int]:
+    """``{table: width per block}`` of the gain tables whose flag is on, in :data:`GAIN_TABLES`
+    order: ``ffn`` (``gain_ffn``), ``o`` and ``v`` (``n_heads * head_dim``)."""
+    hw = cfg.n_heads * cfg.head_dim
+    flags = {"ffn": (cfg.gain_ffn > 0, cfg.gain_ffn), "o": (cfg.gain_o, hw), "v": (cfg.gain_v, hw)}
+    return {name: flags[name][1] for name in GAIN_TABLES if flags[name][0]}
 
 
 def make_consts(cfg, **switches) -> dict:
     """Non-trainable inputs: rotary frequencies and the runtime feature switches.
 
     Keyword switches (0/1 floats or bools): ``reg``, ``cand_in``, ``cand_out``, ``conf``,
-    ``sink``, ``clock`` (multiplies the clock values; 0 leaves the clock planes unrotated);
+    ``sink``, ``clock`` (multiplies the clock values; 0 leaves the clock planes unrotated),
+    ``gain`` (multiplies the token gain rows: 0 gives gains of exactly 1), ``sel`` (multiplies
+    the selective-attention offsets), ``gate`` (multiplies the deviation of the attention output
+    gate from 1), ``page`` (multiplies the output of the token neurons);
     ``kind`` (a scalar or a sequence of ``N_KINDS`` per candidate kind) or ``kind_<i>``.
     ``src`` (a scalar or a sequence of ``N_SRC``) or ``src_<i>``: non-negative multipliers of
     the output-law masses of the candidates whose ``src`` feature is ``i`` (default 1; e.g.
     ``src_5=0.25`` down-weights evidence from the text being generated).
-    Defaults: on when the static ``cfg.use_*`` flag (``clock_planes > 0`` for ``clock``) is
-    on. A switch never re-enables a path whose static flag is off.
+    Defaults: on when the static ``cfg.use_*`` flag (``clock_planes > 0`` for ``clock``, any
+    gain table for ``gain``, ``sel_attn`` for ``sel``, ``attn_gate`` for ``gate``,
+    ``tok_neurons > 0`` for ``page``) is on. A switch never re-enables a path whose static flag
+    is off.
     Returns ``{"rope_freq": float32[1 + N_CLOCKS, P], "enable": {name: float32 scalar,
     "kind": float32[N_KINDS], "src": float32[N_SRC]}}``.
     """
     values = {"reg": cfg.use_reg, "cand_in": cfg.use_cand_in, "cand_out": cfg.use_cand_out,
-              "conf": cfg.use_conf, "sink": cfg.use_sink, "clock": cfg.clock_planes > 0}
+              "conf": cfg.use_conf, "sink": cfg.use_sink, "clock": cfg.clock_planes > 0,
+              "gain": bool(gain_widths(cfg)), "sel": cfg.sel_attn, "gate": cfg.attn_gate,
+              "page": cfg.tok_neurons > 0}
     vectors = {"kind": np.ones(N_KINDS, np.float32), "src": np.ones(N_SRC, np.float32)}
     for name, value in switches.items():
         stem, _, idx = name.partition("_")
@@ -190,7 +255,9 @@ def _feat(feats: dict, name: str):
 
 
 def make_ctx(consts: dict, feats: dict, cfg) -> attention.Ctx:
-    """Rotary tables, sink indicator, confidence switch, segments and positions."""
+    """Rotary tables, sink indicator, confidence switch, segments and positions; with
+    ``sel_attn`` also the BOS positions (``tokens == bos_id``, whatever the sink switch) and
+    the selective-attention switch; with ``attn_gate`` the switch of the output gate."""
     tokens = jnp.asarray(feats["tokens"])
     b, t = tokens.shape
     pos = _feat(feats, "pos")
@@ -202,7 +269,11 @@ def make_ctx(consts: dict, feats: dict, cfg) -> attention.Ctx:
     cos, sin = rope_clocks.cos_sin(rope_clocks.angles(pos, clock, consts["rope_freq"], en["clock"]))
     sink = sinks.sink_indicator(tokens, bos_id(cfg), en["sink"]) if cfg.use_sink else None
     conf = en["conf"] if cfg.use_conf else None
-    return attention.Ctx(cos, sin, sink, conf, seg.astype(jnp.int32), pos.astype(jnp.int32))
+    bos = tokens == bos_id(cfg) if cfg.sel_attn else None
+    sel = jnp.asarray(en["sel"], F32) if cfg.sel_attn else None
+    gate = jnp.asarray(en["gate"], F32) if cfg.attn_gate else None
+    return attention.Ctx(cos, sin, sink, conf, seg.astype(jnp.int32), pos.astype(jnp.int32),
+                         bos, sel, gate)
 
 
 def _cand(feats: dict):
@@ -220,7 +291,8 @@ def embed(params: dict, consts: dict, feats: dict, cfg) -> jax.Array:
     dt = act_dtype(cfg)
     en = consts["enable"]
     tokens = jnp.asarray(feats["tokens"])
-    pre = tables.big_lookup(params["emb"]["tok"], tokens, mode=cfg.table_grad, dtype=dt)
+    pre = tables.big_lookup(params["emb"]["tok"], tokens, mode=cfg.table_grad, dtype=dt,
+                            chunk=cfg.sorted_chunk)
     reg = _feat(feats, "reg")
     if cfg.use_reg and reg is not None:
         pre = pre + tables.reg_embed(params["emb"]["reg"], reg, en["reg"], dt)
@@ -238,13 +310,105 @@ def value_embeddings(params: dict, tokens: jax.Array, cfg) -> jax.Array | None:
     table = params["emb"]["ve"]
     nv, nl, w = table.shape
     rows = tables.big_lookup(table.reshape(nv, nl * w), tokens, mode=cfg.table_grad,
-                             dtype=act_dtype(cfg))
+                             dtype=act_dtype(cfg), chunk=cfg.sorted_chunk)
     rows = rows.reshape(tokens.shape + (nl, w))
     return jnp.moveaxis(rows, -2, 0).astype(act_dtype(cfg))
 
 
+def gain_rows(params: dict, consts: dict, tokens: jax.Array, cfg) -> dict[str, jax.Array] | None:
+    """Token gain rows of the input tokens, scaled by the ``gain`` switch, or None when no gain
+    table is configured.
+
+    tokens: int ``[B, T]``. Returns ``{table: [P, n_blocks, B, T, width]}`` in ``hi(act_dtype)``
+    (float32; float64 only in the float64 tests) for the tables of :func:`gain_widths`: one
+    lookup per token and table (``tables.big_lookup`` of the ``[V, P * n_blocks * width]``
+    view, ``cfg.table_grad``). The rows are loop-invariant: the loop scan closes over them and
+    :func:`block_gain` picks a phase and block inside the step, so their cotangents accumulate
+    over the loops in this dtype.
+    """
+    widths = gain_widths(cfg)
+    if not widths:
+        return None
+    ft = hi(act_dtype(cfg))
+    on = jnp.asarray(consts["enable"]["gain"], ft)
+    tokens = jnp.asarray(tokens)
+    out = {}
+    for name in widths:
+        table = params["gain"][name]
+        nv, p, nb, w = table.shape
+        rows = tables.big_lookup(table.reshape(nv, p * nb * w), tokens, mode=cfg.table_grad,
+                                 dtype=act_dtype(cfg), chunk=cfg.sorted_chunk)
+        rows = rows.astype(ft).reshape(tokens.shape + (p, nb, w))
+        out[name] = on * jnp.moveaxis(rows, (-3, -2), (0, 1))
+    return out
+
+
+def loop_phases(cfg) -> np.ndarray:
+    """``int32[n_loops]``: the gain phase ``(r * gain_phases) // n_loops`` of every loop ``r``."""
+    return (np.arange(cfg.n_loops) * cfg.gain_phases // cfg.n_loops).astype(np.int32)
+
+
+def block_gain(gains: dict[str, jax.Array] | None, i: int,
+               phase: jax.Array | None = None) -> dict[str, Any] | None:
+    """Gain rows of block ``i`` at one loop phase: ``{table: [B, T, width]}`` or None.
+
+    gains: from :func:`gain_rows`; phase: ``int32[]`` (traced, e.g. :func:`loop_phases` fed
+    through the scan's ``xs``), or None for phase 0 (``gain_phases = 1``: a static slice of the
+    closed-over rows, loop-invariant). With a phase the entries are ``layers.PhaseGain`` (the
+    closed-over rows, the phase and ``i``): the product selects the rows itself
+    (``layers.gain_product``), so the backward pass keeps no per-loop copy of them.
+    """
+    if not gains:
+        return None
+    if phase is None:
+        return {name: a[0, i] for name, a in gains.items()}
+    return {name: PhaseGain(a, phase, i) for name, a in gains.items()}
+
+
+def token_rows(params: dict, consts: dict, tokens: jax.Array, cfg) -> list[dict] | None:
+    """Prepared token-neuron rows of the input tokens, or None when ``tok_neurons`` is 0.
+
+    tokens: int ``[B, T]``. One lookup per token and table (``tables.big_lookup`` of the
+    ``[V, n_blocks * rho * dk]`` views of ``page/key`` and ``page/val``, ``cfg.table_grad``);
+    then per block ``i`` the keys are RMS-normalised over ``dk`` (``layers.rmsnorm``, unit RMS)
+    and keys and values are cast to the activation dtype. Returns one dict per block:
+    ``{"key": [B, T, rho, dk], "val": [B, T, rho, dk], "on": float32 []}`` (``on`` is the
+    ``page`` switch, which :func:`block` applies to the token neurons' output). The rows are
+    loop-invariant: the loop scan closes over them, so they are gathered, normalised and cast
+    once per forward and no float32 copy is alive inside the loop (one array per block: a block
+    reads its rows without a slice, and their cotangents accumulate over the loops in the
+    activation dtype, as for every closed-over value of the scan). With ``cfg.remat`` the key
+    preparation is rematerialised in the backward pass, so the float32 gathered keys (the input
+    the normalisation's gradient needs) are not kept from the forward to the backward.
+    """
+    if not cfg.tok_neurons:
+        return None
+    dt = act_dtype(cfg)
+    tokens = jnp.asarray(tokens)
+
+    def gather(table, tokens):                    # [V, nb, rho, dk] -> [B, T, nb, rho, dk]
+        nv, nb, rho, dk = table.shape
+        flat = tables.big_lookup(table.reshape(nv, nb * rho * dk), tokens, mode=cfg.table_grad,
+                                 dtype=dt, chunk=cfg.sorted_chunk)
+        return flat.reshape(tokens.shape + (nb, rho, dk))
+
+    def keys_of(table, tokens):
+        rows = gather(table, tokens)
+        return [rmsnorm(rows[:, :, i], out_dtype=dt) for i in range(cfg.n_blocks)]
+
+    keys = (jax.checkpoint(keys_of) if cfg.remat else keys_of)(params["page"]["key"], tokens)
+    vals = gather(params["page"]["val"], tokens)
+    on = jnp.asarray(consts["enable"]["page"], F32)
+    return [{"key": keys[i], "val": vals[:, :, i].astype(dt), "on": on} for i in range(cfg.n_blocks)]
+
+
 def block_params(params: dict, cfg) -> list[dict]:
-    """Per-block parameter dicts with matrices cast to the activation dtype (outside the scan)."""
+    """Per-block parameter dicts with matrices cast to the activation dtype (outside the scan).
+
+    With ``attn_gate`` the attention entry also holds ``gate_w [d, H]`` and ``gate_b
+    [n_loops, H]`` (float32, indexed by the loop inside the scan); with ``tok_neurons`` the
+    block holds the projections ``pin [d, dk]`` and ``pout [dk, d]``.
+    """
     dt = act_dtype(cfg)
     core = params["core"]
     pa_all, pm, pn = core["attn"], core["mlp"], core["norm"]
@@ -257,26 +421,46 @@ def block_params(params: dict, cfg) -> list[dict]:
             pa["sink_value"] = pa_all["sink_value"][i]
         if i == 0 and "ve_gate" in pa_all:
             pa["ve_gate"] = pa_all["ve_gate"]
-        out.append({"attn": pa, "wo": pa_all["wo"][i].astype(dt),
-                    "w_up": pm["w_up"][i].astype(dt), "w_down": pm["w_down"][i].astype(dt),
-                    "g1": pn["g1"][i], "g2": pn["g2"][i]})
+        if cfg.attn_gate:
+            pa["gate_w"] = pa_all["gate_w"][i]
+            pa["gate_b"] = pa_all["gate_b"][:, i]
+        pb = {"attn": pa, "wo": pa_all["wo"][i].astype(dt),
+              "w_up": pm["w_up"][i].astype(dt), "w_down": pm["w_down"][i].astype(dt),
+              "g1": pn["g1"][i], "g2": pn["g2"][i]}
+        if cfg.tok_neurons:
+            pb["pin"] = params["page"]["pin"][i].astype(dt)
+            pb["pout"] = params["page"]["pout"][i].astype(dt)
+        out.append(pb)
     return out
 
 
 def block(pb: dict, u: jax.Array, ctx: attention.Ctx, ve: jax.Array | None, cfg,
-          attend_fn=None):
-    """``u += attn(rmsnorm(u) * g1); u += mlp(rmsnorm(u) * g2)``.
+          attend_fn=None, gain: dict[str, Any] | None = None,
+          loop: jax.Array | int | None = None, tok: dict[str, jax.Array] | None = None):
+    """``u += attn(rmsnorm(u) * g1); u += mlp(x) + token_neurons(x)`` with ``x = rmsnorm(u) * g2``.
 
     pb: one entry of :func:`block_params`; u: ``[B, T, d]`` (activation dtype); ve: this loop's
     value embedding for block 0, else None; attend_fn: optional attention override (see
-    ``attention.attention``). Returns ``(u, aux)`` (by default aux is the mean sink mass).
+    ``attention.attention``; the output gate and the token gains apply to its result too);
+    gain: this block's token gain rows at this loop's phase (:func:`block_gain`: ``{"ffn":
+    [B, T, gain_ffn], "o": [B, T, H*hd], "v": [B, T, H*hd]}``, the tables present) or None;
+    loop: int32 ``[]`` loop index (traced, fed through the scan's ``xs``), required with
+    ``attn_gate``; tok: this block's token-neuron rows (entry ``i`` of :func:`token_rows`),
+    required with ``tok_neurons``. Returns ``(u, aux)`` (by default aux is the mean sink mass).
     """
     dt = act_dtype(cfg)
+    g = gain or {}
     x = rmsnorm(u, pb["g1"], out_dtype=dt)
-    a, aux = attention.attention(pb["attn"], pb["wo"], x, ctx, ve, cfg, attend_fn)
+    a, aux = attention.attention(pb["attn"], pb["wo"], x, ctx, ve, cfg, attend_fn,
+                                 gain_v=g.get("v"), gain_o=g.get("o"), loop=loop)
     u = (u.astype(hi(dt)) + a).astype(dt)
     x = rmsnorm(u, pb["g2"], out_dtype=dt)
-    u = (u.astype(hi(dt)) + mlp(x, pb["w_up"], pb["w_down"], dt)).astype(dt)
+    f = mlp(x, pb["w_up"], pb["w_down"], dt, gain=g.get("ffn"))
+    if cfg.tok_neurons:
+        if tok is None:
+            raise ValueError("tok_neurons > 0: block needs its token-neuron rows (token_rows)")
+        f = f + token_neurons(x, pb["pin"], pb["pout"], tok["key"], tok["val"], tok["on"], dt)
+    u = (u.astype(hi(dt)) + f).astype(dt)
     return u, aux
 
 
@@ -288,18 +472,26 @@ def forward(params: dict, consts: dict, feats: dict, cfg) -> tuple[jax.Array, di
     ctx = make_ctx(consts, feats, cfg)
     e = embed(params, consts, feats, cfg)
     ve_all = value_embeddings(params, jnp.asarray(feats["tokens"]), cfg)
+    gains = gain_rows(params, consts, jnp.asarray(feats["tokens"]), cfg)
+    tok = token_rows(params, consts, jnp.asarray(feats["tokens"]), cfg)
     blocks = block_params(params, cfg)
     lp = params["lanes"]
     xs: dict[str, Any] = {"alpha": lp["alpha"], "mix": lp["mix"], "beta": lp["beta"],
                           "g": params["loop"]["g"]}
     if ve_all is not None:
         xs["ve"] = ve_all
+    if gains is not None and cfg.gain_phases > 1:
+        xs["phase"] = jnp.asarray(loop_phases(cfg))
+    if cfg.attn_gate:
+        xs["loop"] = jnp.arange(cfg.n_loops, dtype=jnp.int32)
 
     def step(lanes, x):
         u = controller.combine(x["alpha"], lanes, dt)
         masses = []
         for i, pb in enumerate(blocks):
-            u, m = block(pb, u, ctx, x.get("ve") if i == 0 else None, cfg)
+            u, m = block(pb, u, ctx, x.get("ve") if i == 0 else None, cfg,
+                         gain=block_gain(gains, i, x.get("phase")), loop=x.get("loop"),
+                         tok=None if tok is None else tok[i])
             masses.append(m)
         s = rmsnorm(u, x["g"], out_dtype=dt)
         return controller.update(x["mix"], x["beta"], lanes, s, dt), jnp.stack(masses)

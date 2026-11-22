@@ -155,6 +155,62 @@ def test_every_reply_shares_one_compiled_decoder(model):
     assert lm.capacity == lm2.capacity == 16
 
 
+def test_ourlm_with_the_v9_paths_matches_the_full_forward(model):
+    """A model with every v9 path (token gains, selective attention, whose selection the cache
+    carries and reordering copies, the head-wise output gate, token neurons) behind OurLM: the
+    rows of the prefill, of every step and after a resampling are the log-probabilities of the
+    full forward over each particle's history (exact-layer features of the final sequence), and
+    the decode consts keep every v9 switch."""
+    from bes.decode.lm import decode_consts
+    from bes.exact.features import exact_features
+
+    tok, base_cfg, base_params = model
+    cfg = dataclasses.replace(base_cfg, gain_ffn=64, gain_o=True, gain_v=True, gain_phases=2,
+                              sel_attn=True, attn_gate=True, tok_neurons=4, tok_dim=32)
+    params = jax.tree.map(np.array, M.init_params(cfg, jax.random.PRNGKey(0)))
+    params["head"], params["trust"] = base_params["head"], base_params["trust"]
+    rng = np.random.default_rng(2)
+    for leaf in (*params["gain"].values(), params["page"]["val"], params["core"]["attn"]["gate_w"],
+                 params["core"]["attn"]["gate_b"]):
+        leaf += 0.3 * rng.standard_normal(leaf.shape).astype(np.float32)
+    consts = M.make_consts(cfg)
+    lm = OurLM(params, consts, cfg, tok, max_steps=8)
+    for name in ("gain", "sel", "gate", "page"):
+        assert float(lm.consts["enable"][name]) == 1.0
+    np.testing.assert_array_equal(np.asarray(decode_consts(M.make_consts(cfg, sel=0.0), 0.5)["enable"]["sel"]), 0.0)
+    prompt = _self_repeating_prompt(tok)
+    k = 3
+    logp = lm.prefill(prompt, k)
+    assert set(lm.cache) >= {"sel", "bos"}
+    hist, rows = [[] for _ in range(k)], [[logp[j]] for j in range(k)]
+    first = np.argsort(-logp[0])[:k]
+    for s in range(4):
+        toks = first if s == 0 else np.argmax(logp, -1)
+        for j in range(k):
+            hist[j].append(int(toks[j]))
+        logp = lm.step(toks)
+        for j in range(k):
+            rows[j].append(logp[j])
+        if s == 1:                                   # resample: particle j continues anc[j]
+            anc = np.array([2, 0, 0])
+            lm.reorder(anc)
+            hist, rows, logp = [list(hist[a]) for a in anc], [list(rows[a]) for a in anc], logp[anc]
+    fwd = jax.jit(M.logits_fn, static_argnames="cfg")
+    n = len(prompt)
+    for j in range(k):
+        seq = np.asarray(list(prompt) + hist[j], np.int32)[None]
+        feats = {kk: np.asarray(v) for kk, v in exact_features(seq, None, tok).items()}
+        feats["tokens"] = seq
+        want = S.log_softmax(np.asarray(fwd(params, lm.consts, feats, cfg=cfg))[0])[n - 1:]
+        np.testing.assert_allclose(np.stack(rows[j]), want, atol=1e-4)
+    off = M.make_consts(cfg, sel=0.0)
+    seq = np.asarray(list(prompt) + hist[0], np.int32)[None]
+    feats = {kk: np.asarray(v) for kk, v in exact_features(seq, None, tok).items()}
+    feats["tokens"] = seq
+    assert np.max(np.abs(np.asarray(fwd(params, decode_consts(off, 0.25), feats, cfg=cfg))
+                         - np.asarray(fwd(params, lm.consts, feats, cfg=cfg)))) > 1e-3
+
+
 def test_stand_in_models_keep_the_decoder_temperature():
     tok_size = 20
     lm = TableLM.random(tok_size, order=1, seed=0)

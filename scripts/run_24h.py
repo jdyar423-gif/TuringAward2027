@@ -333,27 +333,43 @@ class Run:
 
         base_plan = B.Plan.of(cfg)
         canary_s = [0.0]                    # time kept for the canary, known after one measurement
+        results = self.paths.bench / "results.jsonl"
+        known = B.load_results(results)     # an earlier attempt's measurements (reused)
+        ok_at: dict[str, set] = {}          # plan key -> lengths it ran at
+        for key, t in known:
+            ok_at.setdefault(key, set()).add(t)
 
         def measure(plan, t):
             ctx.check()                     # a stop request ends the benchmark between plans
-            if plan != base_plan and canary_s[0] and ctx.now() + canary_s[0] > ctx.hard_deadline:
+            # until some plan runs at every length nothing is held back for the canary: without
+            # a plan there is no canary (the search's essential candidates)
+            have_plan = any(len(v) == len(lens) for v in ok_at.values())
+            if plan != base_plan and have_plan and canary_s[0] and \
+                    ctx.now() + canary_s[0] > ctx.hard_deadline:
                 return B.Measurement(plan, t, False, "benchmark hard cap: the rest is kept for "
                                                      "the canary")
             m = real_measure(plan, t)
+            if m.ok:
+                ok_at.setdefault(plan.key, set()).add(t)
             if m.ok and not canary_s[0]:
                 # safe + full runs (a ladder may add more) and the two loss compiles
                 canary_s[0] = 3 * cfg.run.canary_steps * m.step_s + 2 * m.compile_s + 30.0
             return m
 
-        results = self.paths.bench / "results.jsonl"
         soft = ctx.started + 0.65 * ctx.slice_s
         ms = B.search(cfg, measure, clock=ctx.now, soft_deadline=soft,
                       hard_deadline=ctx.hard_deadline, mode=cfg.run.bench_plans,
-                      platform=backend, known=B.load_results(results),
+                      platform=backend, known=known,
                       record=lambda m: B.append_result(results, m), log=self.log)
-        sel = B.select_plan(ms, lens, B.time_shares(cfg))
+        min_speed = cfg.run.sel_min_speed
+        sel = B.select_plan(ms, lens, B.time_shares(cfg), min_speed)
         plan = sel["plan"]
         self.log(f"benchmark: chosen plan {plan.key} ({sel['expected_tps']:,.0f} tok/s expected)")
+        if "sel_attn" in sel:
+            d = sel["sel_attn"]
+            self.log(f"benchmark: selective attention {'kept' if d['kept'] else 'switched off'}: "
+                     f"{d['sel_plan']} {d['sel_tps'] or 0:,.0f} tok/s, without it {d['plain_plan']} "
+                     f"{d['plain_tps'] or 0:,.0f} tok/s ({d['reason']})")
         programs = real_measure.programs         # the measured plans' compiled steps
         canary_batches = {t: batches[t] for t in lens}
 
@@ -376,10 +392,12 @@ class Run:
             # at some shape: train with the dense attention
             self.log(f"benchmark: WARNING {problem}; falling back to the dense attention")
             warnings.append(problem)
-            dense = next((c["plan"] for c in sel["candidates"] if c["plan"].startswith("xla-")), None)
-            if dense is not None:
-                plan = next(m.plan for m in ms if m.plan.key == dense)
-            else:
+            dense = None
+            try:                    # the best measured dense plan (selective attention ruled)
+                dense = B.select_plan([m for m in ms if m.plan.attn_impl == "xla"], lens,
+                                      B.time_shares(cfg), min_speed)
+                plan = dense["plan"]
+            except B.BenchmarkError:
                 plan = plan.flip_attn()
                 extra = [real_measure(plan, t) for t in lens]
                 for m in extra:
@@ -387,8 +405,10 @@ class Run:
                 ms = list(ms) + extra
                 if not all(m.ok for m in extra):
                     raise B.BenchmarkError(f"the dense fallback {plan.key} does not run: "
-                                           f"{[m.reason for m in extra]}")
-            sel = B.select_plan([m for m in ms if m.plan == plan], lens, B.time_shares(cfg))
+                                           f"{[m.reason for m in extra]}") from None
+            sel = B.select_plan([m for m in ms if m.plan == plan], lens, B.time_shares(cfg), min_speed)
+            if dense is not None and "sel_attn" in dense:
+                sel["sel_attn"] = dense["sel_attn"]
             can = run_canary(plan)            # a CanaryError here: the run cannot train
         # the chosen plan's compiled steps go to the trainer of this process; the rest is freed
         self._programs = (plan.key, B.plan_programs(programs, plan))
@@ -422,6 +442,8 @@ class Run:
                  "train_seconds_planned": train_s, "horizon_tokens": hz["horizon_tokens"],
                  "backend": backend, "memory_limit_bytes": mlim, "warnings": warnings,
                  "time": time.time()}
+        if "sel_attn" in sel:                 # the selective-attention decision and its numbers
+            bench["sel_attn"] = sel["sel_attn"]
         if can["ladder"]["rung"] != 0:
             self.log(f"benchmark: FALLBACK LADDER rung {can['ladder']['rung']}: "
                      f"{can['ladder']['groups']} switched off")

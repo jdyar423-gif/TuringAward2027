@@ -53,6 +53,7 @@ def test_group_learning_rates():
     assert lrs["norm"] == pytest.approx(0.005 * w)
     assert lrs["scalar"] == pytest.approx(0.01 * w)
     assert lrs["feature"] == pytest.approx(0.01 * w)             # 30x below the embedding rate
+    assert lrs["gain"] == pytest.approx(0.01 * w) and lrs["page"] == pytest.approx(0.004 * w)
     assert set(lrs) == set(GROUPS) and set(ADAM_GROUPS) < set(lrs)
     assert group_lrs(make_cfg(width_scale_matrix=True))["matrix"] == pytest.approx(0.014 * w)
     assert group_lrs(make_cfg(d_model=128, lr_width_ref=512))["embed"] == pytest.approx(0.3 * 2.0)

@@ -99,8 +99,9 @@ REF_VIEWS: tuple[tuple[str, tuple[tuple[str, float], ...]], ...] = (
     ("reg_off", (("reg", 0.0),)),
     ("sink_off", (("sink", 0.0),)),
 )
-#: kinds of arms (they decide how the report judges them)
-KINDS = ("reference", "replicate", "remove_evidence", "remove_new", "setting", "probe")
+#: kinds of arms (they decide how the report judges them; ``add_new``: a new component added to
+#: the reference, such as the v9 token pages)
+KINDS = ("reference", "replicate", "remove_evidence", "remove_new", "setting", "probe", "add_new")
 
 #: sample files (relative to the samples directory) and the column read
 SOURCES: dict[str, dict[str, Any]] = {
@@ -733,12 +734,19 @@ def peak_rss_mb() -> float:
 
 def flops_per_token(cfg: Cfg) -> dict[str, float]:
     """Analytic matmul FLOPs per token (forward; training = 3 x forward + one more core forward
-    with ``remat``). Attention scores count the causal half of a row of ``data.seq_len``."""
+    with ``remat``). Attention scores count the causal half of a row of ``data.seq_len``. The
+    v9 token neurons count their two projections and the ``rho`` key products and value sums,
+    the attention gate its ``d x H`` logits; token gains and selective attention are
+    element-wise (no matmul)."""
     m = cfg.model
     t = cfg.data.seq_len
     d, nh, hd = m.d_model, m.n_heads, m.head_dim
     dc = hd - m.bias_dims
     block = 2 * (2 * d * nh * dc + d * nh * hd + nh * hd * d + 2 * d * m.d_ffn)
+    if m.tok_neurons:
+        block += 2 * (2 * d * m.tok_dim + 2 * m.tok_neurons * m.tok_dim)
+    if m.attn_gate:
+        block += 2 * d * nh
     attn = 2 * 2 * nh * hd * (t + 1) / 2
     core = m.n_loops * m.n_blocks * (block + attn)
     head = 2 * (d * m.head_rank + m.head_rank * m.vocab_size)
@@ -1046,6 +1054,12 @@ def decide(kind: str, g_last: float, g_early: float | None, se_last: float,
         if g_last < -margin:
             return "adopt", f"{-g_last:.2%} lower loss (> margin {margin:.2%})"
         return "keep default", f"{g_last:+.2%} vs reference (margin {margin:.2%})"
+    if kind == "add_new":
+        if g_last > margin:
+            return "harm", f"{g_last:.2%} higher loss with it (> margin {margin:.2%}): switch it off"
+        if g_last < -margin:
+            return "gain", f"{-g_last:.2%} lower loss with it (> margin {margin:.2%})"
+        return "not resolved", f"{g_last:+.2%} vs reference (margin {margin:.2%})"
     return "-", ""
 
 
@@ -1222,6 +1236,10 @@ def e2_report(records: Sequence[dict], *, arms: Sequence[Arm] = (), ref_name: st
         "- `remove_new` arms (a new component removed): **keep** if g_last >= 1% and g_last >= "
         "0.5 x g_early, else **switch off**;\n"
         "- `setting` arms (an alternative value): **adopt** if g < -margin, else **keep default**;\n"
+        "- `add_new` arms (a new component added to the reference, such as the v9 token pages): "
+        "**harm** if g > margin (switch it off), **gain** if g < -margin, else **not resolved**: a "
+        "row of a token-keyed table is visited about 120 times on average in a 1M-token micro run "
+        "(8,192 token types), so such an arm can show harm, not the benefit at scale;\n"
         "- margin = max(2 x SE_pair, 0.5%); SE_pair = max(|g| of the seed replicate against the "
         "reference, the paired held-out sampling SE of the arm). The seed replicate changes both "
         "the data order and the initialisation, so it bounds the paired noise from above; with one "
@@ -1282,7 +1300,8 @@ def e2_report(records: Sequence[dict], *, arms: Sequence[Arm] = (), ref_name: st
     header = ["arm", "kind", "component"] + [f"g @ {t:,}" for t in pts] + [
         "SE_pair", "margin", "decision", "reason"]
     trows = []
-    order = {k: i for i, k in enumerate(("replicate", "remove_new", "remove_evidence", "setting", "probe"))}
+    order = {k: i for i, k in enumerate(("replicate", "remove_new", "remove_evidence", "setting",
+                                         "add_new", "probe"))}
     for r in sorted(rows, key=lambda r: (order.get(r["kind"], 9), r["name"])):
         trows.append([f"`{r['name']}`", r["kind"], r["component"]] + [_pct(r["rel"][t]) for t in pts]
                      + [f"{100 * r['se_pair']:.2f}%", f"{100 * r['margin']:.2f}%", f"**{r['decision']}**",

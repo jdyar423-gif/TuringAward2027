@@ -88,6 +88,9 @@ _LOOKUP_READS: list[tuple[str, int, str]] = [
     ("cand/in_feat/*", CAND_SLOTS, "window"),
     ("trust/feat/*", CAND_SLOTS, "window"),
     ("trust/bias/*", CAND_SLOTS, "window"),      # rows of width 1 (one scalar per feature value)
+    ("gain/*", 1, "tokens"),            # one [gain_phases * n_blocks * width] row per token
+    ("page/key", 1, "tokens"),          # one [n_blocks * tok_neurons * tok_dim] row per token
+    ("page/val", 1, "tokens"),          # (the projections page/pin, page/pout are dense)
 ]
 
 #: rows of the plan's ledger (section 4) and the leaves they hold
@@ -96,8 +99,10 @@ _LEDGER_ROWS: list[tuple[str, tuple[str, ...]]] = [
     ("head", ("head/proj", "head/out")),
     ("emb", ("emb/tok",)),
     ("ve", ("emb/ve",)),
+    ("gain", ("gain/*",)),
+    ("page", ("page/*",)),
 ]
-LEDGER_ORDER = ("core", "head", "small", "emb", "ve", "tables", "library", "index")
+LEDGER_ORDER = ("core", "head", "small", "emb", "ve", "gain", "page", "tables", "library", "index")
 
 
 @dataclass(frozen=True)
@@ -170,11 +175,26 @@ def _lookup_rule(path: str) -> tuple[int, str]:
     raise KeyError(f"lookup leaf {path!r} has no read rule in bes.budget")
 
 
+def _gain_width(cfg: Any, path: str) -> int | None:
+    """Row width of a gain table ``[V, gain_phases, n_blocks, width]`` (None: not a gain table)."""
+    per = {"gain/ffn": cfg.gain_ffn, "gain/o": cfg.n_heads * cfg.head_dim,
+           "gain/v": cfg.n_heads * cfg.head_dim}.get(path)
+    return None if per is None else cfg.gain_phases * cfg.n_blocks * per
+
+
+def _page_width(cfg: Any, path: str) -> int | None:
+    """Row width of a token-neuron table ``[V, n_blocks, tok_neurons, tok_dim]`` (None: not one)."""
+    if path not in ("page/key", "page/val"):
+        return None
+    return cfg.n_blocks * cfg.tok_neurons * cfg.tok_dim
+
+
 def count(params: Any, cfg: Any = None, assets: Any = None) -> Budget:
     """Count a parameter tree (arrays or shape structs) plus the shipped assets.
 
-    cfg: the ``ModelCfg`` (used for a consistency check of the value-embedding table);
-    assets: :class:`Assets`, a dict of its fields, or None (no library, no index).
+    cfg: the ``ModelCfg`` (used for a consistency check of the value-embedding, gain and
+    token-neuron tables); assets: :class:`Assets`, a dict of its fields, or None (no library,
+    no index).
     """
     items: list[Item] = []
     for path, leaf in leaves_with_paths(params):
@@ -190,6 +210,11 @@ def count(params: Any, cfg: Any = None, assets: Any = None) -> Budget:
         width = size // rows
         if cfg is not None and path == "emb/ve" and width != cfg.n_loops * cfg.ve_dim:
             raise ValueError(f"emb/ve row width {width} != n_loops * ve_dim")
+        if cfg is not None and path.startswith("gain/") and width != _gain_width(cfg, path):
+            raise ValueError(f"{path} row width {width} does not match gain_phases, n_blocks and "
+                             "the gain width of the configuration")
+        if cfg is not None and path.startswith("page/") and width != _page_width(cfg, path):
+            raise ValueError(f"{path} row width {width} != n_blocks * tok_neurons * tok_dim")
         items.append(Item(path, row, "lookup", size, min(reads, rows) * width,
                           rows=rows, width=width, reads=reads, strict=rule))
     a = Assets.from_any(assets)

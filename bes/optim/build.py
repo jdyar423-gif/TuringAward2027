@@ -5,8 +5,11 @@ Group set-up follows ``kschwethelm/looped-lm-scaling`` ``nanochat/gpt.py``
 optimiser with ``lr_matrix``; embeddings, unembedding, norm gains and the hyper-connection scalars
 go to Adam with their own learning rates multiplied by ``(d_model / d_ref) ** -0.5`` (lines
 634-649). The ``feature`` group (zero-initialised feature tables of this model: registers,
-candidate input, trust biases) is an extra Adam group with its own, much lower rate. As in that
-file the width factor is *not* applied to the matrix group unless
+candidate input, trust biases) is an extra Adam group with its own, much lower rate; so is the
+``gain`` group (the zero-initialised per-token gain tables ``gain/*``), which may also carry a
+decoupled weight decay towards gain 1 (a zero table), and the ``page`` group (the
+zero-initialised token-neuron values ``page/val``) with its own rate and decay. As in that file
+the width factor is *not* applied to the matrix group unless
 ``OptimCfg.width_scale_matrix`` is set. The training script multiplies every group's learning rate
 by one schedule factor (``scripts/base_train.py`` lines 612-616); here that factor is ``lr_scale``.
 
@@ -25,15 +28,19 @@ feature   Adam                        ``lr_feature * w``
 norm      Adam                        ``lr_norm * w``
 scalar    Adam                        ``lr_scalar * w``
 frozen    none (never moves)          --
+gain      Adam, decay ``gain_decay``  ``lr_gain * w``
+page      Adam, decay ``page_decay``  ``lr_page * w``
 ========  ==========================  ========================================================
 
 with ``w = (d_model / lr_width_ref) ** -0.5``. On top of the table, :func:`group_lrs` applies the
 reference's transfer rule: every group x ``(tokens_per_step / batch_ref_tokens) ** batch_exponent``
 and the matrix group x ``(horizon_tokens / data_ref_tokens) ** data_exponent`` (no data correction
 while ``horizon_tokens`` is 0). Adam: betas ``(adam_b1, adam_b2)``, eps
-``adam_eps``, no weight decay. If ``grad_clip > 0`` the gradients of all non-frozen leaves are
-clipped jointly to that global norm inside :meth:`Optimizer.update` (the training step must not
-clip again).
+``adam_eps``, no weight decay except in the ``gain`` and ``page`` groups (``p <- p (1 - lr decay)``
+before the step with ``decay = gain_decay`` / ``page_decay``, ``bes.optim.adam.update``; a decay
+of 0 skips the multiply). If
+``grad_clip > 0`` the gradients of all non-frozen leaves are clipped jointly to that global norm
+inside :meth:`Optimizer.update` (the training step must not clip again).
 
 All per-leaf decisions (group, learning rate, shapes) are made once in :func:`build`; ``init`` and
 ``update`` are pure functions of arrays and can be jit-compiled, differentiated and donated.
@@ -56,8 +63,8 @@ import numpy as np
 from bes.config import Cfg, OptimCfg
 from bes.optim import adam, muon_normuon, muonh
 
-GROUPS = ("matrix", "embed", "unembed", "feature", "norm", "scalar", "frozen")
-ADAM_GROUPS = ("embed", "unembed", "feature", "norm", "scalar")
+GROUPS = ("matrix", "embed", "unembed", "feature", "norm", "scalar", "frozen", "gain", "page")
+ADAM_GROUPS = ("embed", "unembed", "feature", "norm", "scalar", "gain", "page")
 KINDS = ("muonh", "muon")
 NS_DTYPES = ("float32", "bfloat16")
 
@@ -148,6 +155,8 @@ def group_lrs(cfg: Cfg) -> dict[str, float]:
         "norm": o.lr_norm * w * b,
         "scalar": o.lr_scalar * w * b,
         "frozen": 0.0,
+        "gain": o.lr_gain * w * b,
+        "page": o.lr_page * w * b,
     }
 
 
@@ -268,6 +277,10 @@ class Optimizer:
                 new_p, new_slot = muon_normuon.update(
                     p, g, slot, lr, mu, o.muon_beta2, o.weight_decay * jnp.asarray(wd_scale),
                     ns_steps=o.ns_steps, ns_dtype=self.ns_dtype, layout=self.layout)
+            elif lp.group in ("gain", "page"):
+                decay = o.gain_decay if lp.group == "gain" else o.page_decay
+                new_p, new_slot = adam.update(p, g, slot, lr, count, b1=o.adam_b1, b2=o.adam_b2,
+                                              eps=o.adam_eps, weight_decay=float(decay))
             else:
                 new_p, new_slot = adam.update(p, g, slot, lr, count, b1=o.adam_b1, b2=o.adam_b2,
                                               eps=o.adam_eps)

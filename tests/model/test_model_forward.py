@@ -159,7 +159,9 @@ def test_make_consts_switches():
     cfg = tiny_cfg()
     c = M.make_consts(cfg)
     assert set(c["enable"]) == set(M.SWITCHES) | {"kind", "src"}
-    assert all(float(c["enable"][s]) == 1.0 for s in M.SWITCHES)
+    v9 = ("gain", "sel", "gate", "page")            # paths statically absent from this model
+    assert all(float(c["enable"][s]) == 1.0 for s in M.SWITCHES if s not in v9)
+    assert all(float(c["enable"][s]) == 0.0 for s in v9)
     assert np.asarray(c["enable"]["src"]).tolist() == [1.0] * 8
     c = M.make_consts(cfg, kind_4=0, sink=False, src_5=0.25)
     assert np.asarray(c["enable"]["kind"]).tolist() == [1, 1, 1, 1, 0, 1, 1, 1]

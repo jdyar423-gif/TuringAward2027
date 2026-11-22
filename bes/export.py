@@ -946,6 +946,8 @@ def run_facts(out_dir: str | Path, cfg=None, reports: Mapping[str, str] | None =
             "measurements": [{k: m.get(k) for k in ("plan", "seq_len", "ok", "reason", "compile_s",
                                                     "step_s", "tokens_per_s", "peak_bytes")}
                              for m in bench.get("measurements") or []]}
+        if bench.get("sel_attn"):               # the selective-attention decision, when there was one
+            facts["benchmark"]["sel_attn"] = bench["sel_attn"]
     if ledger:
         secs = ledger.get("seconds") or {}
         facts["ledger"] = {"tokens": ledger.get("tokens"), "steps": ledger.get("steps"),
@@ -1158,7 +1160,36 @@ def _secs(x: Any) -> str:
 _FEATURE_NAMES = (("reg", "registers"), ("cand_in", "candidate-tape input features (n-gram count heads)"),
                   ("cand_out", "candidate-tape masses in the output law"),
                   ("sink", "calibrated attention sinks"), ("conf", "the confidence channel"),
-                  ("clock", "structural clocks"))
+                  ("clock", "structural clocks"), ("gain", "per-token gains"),
+                  ("sel", "selective attention"), ("gate", "the head-wise attention output gate"),
+                  ("page", "token neurons"))
+#: Switches of the paths that exist only when a ``ModelCfg`` flag is on (the v9 paths,
+#: ``docs/V9.md``): the card names them only for a model that has them.
+_PATH_FLAGS = {"gain": ("gain_ffn", "gain_o", "gain_v"), "sel": ("sel_attn",),
+               "gate": ("attn_gate",), "page": ("tok_neurons",)}
+
+
+def _has_path(model: Mapping[str, Any], key: str) -> bool:
+    flags = _PATH_FLAGS.get(key)
+    return flags is None or any(bool(model.get(f)) for f in flags)
+
+
+def _pages_text(m: Mapping[str, Any]) -> str:
+    """The v9 token pages and the attention gate of a model configuration, or ``""``."""
+    parts = []
+    if m.get("tok_neurons"):
+        parts.append(f"{m['tok_neurons']} private feed-forward neurons per block in a "
+                     f"{m.get('tok_dim')}-dimensional space shared by all tokens")
+    gains = [name for name, flag in (("feed-forward neurons", m.get("gain_ffn")),
+                                     ("attention outputs", m.get("gain_o")),
+                                     ("values", m.get("gain_v"))) if flag]
+    if gains:
+        parts.append("gains on the " + ", ".join(gains) + " of the positions that hold it")
+    s = (" Every vocabulary id owns a page of " + " and ".join(parts) + ", read once per token "
+         "(`docs/V9.md`).") if parts else ""
+    if m.get("attn_gate"):
+        s += " A head-wise gate scales the output of every attention head."
+    return s
 
 
 def _switch_on(v: Any) -> bool | None:
@@ -1181,15 +1212,23 @@ def what_this_is(rec: Mapping[str, Any]) -> str:
     s = (f"A looped transformer: d_model {m.get('d_model')}, {m.get('n_blocks')} shared blocks applied "
          f"{m.get('n_loops')} times, {m.get('n_heads')} heads of {m.get('head_dim')}, feed-forward width "
          f"{ffn}, vocabulary {m.get('vocab_size')}, context {m.get('max_seq')} tokens (`docs/PLAN.md`).")
+    s += _pages_text(m)
     en = (rec.get("consts") or {}).get("enable") or {}
-    on = [name for key, name in _FEATURE_NAMES if _switch_on(en.get(key))]
-    off = [name for key, name in _FEATURE_NAMES if _switch_on(en.get(key)) is False]
+    on = [name for key, name in _FEATURE_NAMES if _has_path(m, key) and _switch_on(en.get(key))]
+    off = [name for key, name in _FEATURE_NAMES
+           if _has_path(m, key) and _switch_on(en.get(key)) is False]
     if not en:
         s += " The runtime switches of the weights were not recorded."
     if on:
         s += " Feature paths on: " + ", ".join(on) + "."
     if off:
         s += " Switched off: " + ", ".join(off) + "."
+    unset = set((rec.get("consts") or {}).get("defaults") or ())
+    filled = [name for key, name in _FEATURE_NAMES if _has_path(m, key) and key in unset]
+    if filled:
+        s += (" The checkpoint stored no switch value for " + ", ".join(filled)
+              + " (written before the switch existed, or without its switches): the configuration's "
+                "default is used.")
     lad = ((rec.get("run") or {}).get("benchmark") or {}).get("ladder") or {}
     if lad.get("groups"):
         s += f" The canary put the run on fallback ladder rung {lad.get('rung')} ({', '.join(lad['groups'])} off)."
@@ -1413,6 +1452,12 @@ def model_card(rec: Mapping[str, Any]) -> str:
                  f"- execution plan {b.get('plan')}")
         L.append(f"- fallback ladder rung {lad.get('rung')}"
                  + (f": {', '.join(lad.get('groups') or [])} switched off" if lad.get("groups") else " (full configuration)"))
+        sa = b.get("sel_attn")
+        if sa:
+            tps = {k: _fmt_int(round(sa.get(k) or 0)) for k in ("sel_tps", "plain_tps")}
+            L.append(f"- selective attention {'kept' if sa.get('kept') else 'switched off'} by the "
+                     f"start-up benchmark: {sa.get('sel_plan')} {tps['sel_tps']} tokens/s, without it "
+                     f"{sa.get('plain_plan')} {tps['plain_tps']} tokens/s ({sa.get('reason')})")
         can = b.get("canary") or {}
         L.append(f"- canary: parity {can.get('parity')}, determinism {can.get('determinism')}, "
                  f"safe run {can.get('safe')}, full run {can.get('full')}")
@@ -1705,6 +1750,9 @@ def export_run(out_dir: str | Path, *, checkpoint: str | Path | None = None,
 
     # ------------------------------------------------------------- weights (essential)
     params32, consts, info = respond.load_checkpoint(ckpt, cfg.model)
+    if info.get("consts_filled") or info.get("consts_dropped"):
+        _say(log, f"export: runtime switches of the checkpoint ({info['consts']}): at their defaults "
+                  f"{info.get('consts_filled')}, ignored {info.get('consts_dropped')}")
     arrays16, choices = quantize(params32)
     params16 = dequantize(arrays16, choices, cfg.model)
     rebuilt = M.make_consts(cfg.model, **enable_switches(consts))
@@ -1915,7 +1963,9 @@ def export_run(out_dir: str | Path, *, checkpoint: str | Path | None = None,
             "weights": {**dtype_summary(choices), "sha256": sha256_file(tmp / WEIGHTS16),
                         "float32_kept": keep32,
                         "sha256_float32": sha256_file(tmp / WEIGHTS32) if keep32 else None},
-            "consts": {"enable": enable_switches(consts), "rebuilt_exactly": consts_ok},
+            "consts": {"enable": enable_switches(consts), "rebuilt_exactly": consts_ok,
+                       "source": info.get("consts"), "defaults": list(info.get("consts_filled") or []),
+                       "ignored": list(info.get("consts_dropped") or [])},
             "tokenizer": {"sha256": tok.sha256, "path": "tokenizer"},
             "library": lib_rec, "check": check, "heldout": heldout_info,
             "accounting": accounting, "readset": readset, "run": facts, "licences": licences,
@@ -1924,6 +1974,10 @@ def export_run(out_dir: str | Path, *, checkpoint: str | Path | None = None,
         if not consts_ok:
             errors.append({"part": "consts", "error": "the checkpoint's runtime switches are not rebuilt "
                                                       "exactly from the configuration; enable values stored"})
+        if info.get("consts_dropped"):
+            errors.append({"part": "consts", "error": "runtime switches stored in the checkpoint that this "
+                                                      f"configuration does not have were ignored: "
+                                                      f"{info['consts_dropped']}"})
         main = [WEIGHTS16] + ([WEIGHTS32] if keep32 else []) + [WEIGHTS_JSON, "config.json",
                                                                 "tokenizer/tokenizer.json"]
         rec["main_files"] = [{"path": f, "bytes": (tmp / f).stat().st_size, "sha256": sha256_file(tmp / f)}

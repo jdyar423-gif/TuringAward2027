@@ -65,7 +65,8 @@ budget).
   about 918 distinct tokens by the budget's upper bound, real 2048-token text held at most 837:
   feed-forward width 3072 -> 2688 and critic head 256 -> 128, 1.28M fewer numbers read per token,
   6.7% of the dense read; `docs/ACCOUNTING.md`), `configs/no_library.py` (no written library),
-  `configs/safe.py` (every feature path switched off: the most conservative use of the 24 hours).
+  `configs/safe.py` (every feature path switched off: the most conservative use of the 24 hours),
+  `configs/v9.py` (no library; token pages instead: section 1.4).
 - **Licences.** ClimbMix (the main web source) is CC BY-NC 4.0 upstream; `--override
   data.permissive_only=true` replaces it by FineWeb-Edu (`docs/DATA_SOURCES.md` section 4) and
   builds the library without the question-answer sources whose licence is unknown (TriviaQA,
@@ -75,6 +76,55 @@ budget).
 - **Budget** (see 1.1) and the **Drive mirror** (`USE_DRIVE`).
 
 Overrides and the budget are fixed when the run starts: a resume refuses different ones.
+
+### 1.4 The v9 configuration
+
+`configs/v9.py` is `configs/no_library.py` with the value embedding back at 128 and the stored
+numbers of the library spent on one page per vocabulary id (design and evidence: `docs/V9.md`;
+98.0M stored numbers, 19.6M read per token in the standard accounting convention; the strict
+one is above 20M, on real documents a median of 23.8M at T = 1024 and 26.7M at T = 2048:
+`docs/ACCOUNTING.md`). It starts with the same commands and `--config configs/v9.py`, in run
+and Drive directories of its own: in notebook cell 1 set `CONFIG = "configs/v9.py"`,
+`RUN_DIR = "/content/runs/v9"` and `DRIVE_DIR = "/content/drive/MyDrive/bes_runs/v9"` (with the
+`final` directories, a run of `configs/final.py` already there stops the start, `--resume`
+refuses the other configuration and the mirror copies nothing into another run's directory);
+Colab CLI: `start --config configs/v9.py --drive-dir /content/drive/MyDrive/bes_runs/v9`.
+What is different:
+
+- **No library.** The library task writes its marker at once; training never waits for a
+  library, and the decode selection records "no library was built".
+- **Token pages.** Every vocabulary id owns 8 private feed-forward neurons per block (`page/*`)
+  and gains on its attention outputs (`gain/o`). At initialisation the model computes exactly
+  what it would without them (zero values and gains), and each has a runtime switch. The
+  head-wise attention gate (`model.attn_gate=true`) and selective attention
+  (`model.sel_attn=true` with `model.attn_impl=xla`) are implemented and off (`docs/V9.md`
+  sections 8 and 9).
+- **Table gradient.** The start-up benchmark measures the configured plan
+  `splash-remat1-ms32-sorted` and challenges it with the `onehot` and `take` gradients of the
+  vocabulary tables (cheapest first); a mode wins only by measured tokens/s. If the configured
+  plan fails at a length, the proven modes are measured even past the benchmark's time budget.
+  The challenges themselves run only within that budget (new candidates start before 65% of
+  `run.benchmark_min = 15` minutes, and none that would leave too little of the
+  `run.benchmark_cap_min = 25` for the canary). A v9 train step compiled in 322 to 375 s on one
+  CPU core of the development container (`docs/V9.md` section 10; `configs/final.py`: 306 to
+  320 s on two cores, `docs/TPU_NOTES.md`): on a host that compiles as slowly, the configured
+  plan's two programs use the budget, the remat flip and the other table modes are logged as
+  skipped ("benchmark time budget used up") and the run trains with `sorted` unmeasured against
+  them. To have them measured, give the benchmark more time (for example `run.benchmark_min=45`
+  and `run.benchmark_cap_min=55`, half an hour less training) or set the mode yourself
+  (`model.table_grad=onehot`): `--override` of `scripts/run_24h.py`, or, from the notebook or the
+  Colab CLI, a configuration file that sets them (as `configs/v9_safe.py` derives from v9).
+  Compile-only for v6e (8 micro-batches, remat, splash): the train step peaks at 7.01 GiB with
+  `sorted` and 7.17 GiB with `onehot`, at T=1024 (B=32) and at T=2048 (B=16), with no scatter in
+  either; the decode step (8 rows, 2048 slots) at 1.89 GiB.
+- **Sizes.** A training checkpoint is 1.11 GB (parameters 0.39, optimiser moments 0.72) instead of
+  0.35 GB: the Drive mirror holds about 3.5 GB at a time and its trash grows by 1.1 GB per hourly
+  copy (keep about 25 GB free, or empty the trash every few hours). The preflight's disk estimate
+  counts the pages in every checkpoint (3 GB more than for `configs/final.py`).
+- **Fallback.** Ladder rungs 3 and 4 switch off the token gains and the token neurons (section 6;
+  rungs 1 and 2, the gate and selective attention, are off in v9 and change nothing).
+  `configs/v9_safe.py` is the same parameter tree with every switch off; `configs/final.py` is
+  the configuration with the library.
 
 ## 2. Starting the run
 
@@ -335,18 +385,24 @@ program covers the ladder from the full model down to the plain looped transform
 | rung | switched off (cumulative) | switches |
 |---|---|---|
 | 0 | nothing: the full configuration | |
-| 1 | attention sink | `sink:0` |
-| 2 | + confidence channel | `conf:0` |
-| 3 | + n-gram count heads (candidate-tape input features) | `cand_in:0` |
-| 4 | + library passages in training rows | `data.library_frac_base=0`, `data.library_frac_chat=0` |
-| 5 | + candidate tilt (candidate masses in the output law) | `cand_out:0` |
-| 6 | + registers and structural clocks | `reg:0 clock:0` |
-| 7 | + calculator spans (no model switch: recorded only) | |
-| safe | every feature path off (`configs/safe.py`) | `reg:0 cand_in:0 cand_out:0 conf:0 sink:0 clock:0 kind:0` |
+| 1 | head-wise attention output gate (v9 option) | `gate:0` |
+| 2 | + selective attention (v9 option) | `sel:0` |
+| 3 | + token gains (v9 pages) | `gain:0` |
+| 4 | + token neurons (v9 pages) | `page:0` |
+| 5 | + attention sink | `sink:0` |
+| 6 | + confidence channel | `conf:0` |
+| 7 | + n-gram count heads (candidate-tape input features) | `cand_in:0` |
+| 8 | + library passages in training rows | `data.library_frac_base=0`, `data.library_frac_chat=0` |
+| 9 | + candidate tilt (candidate masses in the output law) | `cand_out:0` |
+| 10 | + registers and structural clocks | `reg:0 clock:0` |
+| 11 | + calculator spans (no model switch: recorded only) | |
+| safe | every feature path off (`configs/safe.py`, `configs/v9_safe.py`) | `reg:0 cand_in:0 cand_out:0 conf:0 sink:0 clock:0 gain:0 sel:0 gate:0 page:0 kind:0` |
 
-In `configs/final.py` the confidence channel and the structural clocks are already off (they
-stayed under the 1% bar in the micro ablations, `docs/CHANGES.md` section 14), so rung 2 and the
-clock part of rung 6 change nothing there; the rung numbers are kept so that logs stay comparable.
+Rungs 1 to 4 are the paths of `configs/v9.py` (section 1.4); `configs/final.py` has none of them,
+and its confidence channel and structural clocks are already off (they stayed under the 1% bar
+in the micro ablations, `docs/CHANGES.md` section 14). A rung that changes no switch of the
+configuration is not run again by the canary (it records the run before it, which failed); the
+rung numbers are the same for every configuration so that logs stay comparable.
 
 Which rung the run is on:
 
@@ -356,7 +412,7 @@ prints `{"rung": k, "groups": [...], "switches": "...", "overrides": [...]}` (ru
 empty). The log says `benchmark: FALLBACK LADDER rung k: [...] switched off` when it is not 0, cell
 7 prints it, and the export's `MODEL_CARD.md` states it in its first paragraph. To choose a rung
 yourself, start a new run with `--override run.switches="sink:0 conf:0"` (plus the data overrides
-of rung 4 and above). Whether the particle decoder and the library ship is decided after training
+of rung 8 and above). Whether the particle decoder and the library ship is decided after training
 by the decode selection (section 4) and does not touch the weights.
 
 ## 7. After the run

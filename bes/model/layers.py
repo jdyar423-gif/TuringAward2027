@@ -1,9 +1,11 @@
-"""Basic layers: dtype policy, RMSNorm, matmul helper, ReLU^2 MLP and initialisers.
+"""Basic layers: dtype policy, RMSNorm, matmul helper, ReLU^2 MLP, token neurons and initialisers.
 
 Parts are ported from kschwethelm/looped-lm-scaling, ``nanochat/gpt.py`` (MIT licence):
 RMSNorm with a learnable scale (eps 1e-6), the bias-free ReLU^2 MLP and the uniform
 initialisation with bound ``sqrt(3) / sqrt(fan_in)`` (same standard deviation as a normal
-initialisation, without outliers).
+initialisation, without outliers). The token neurons (:func:`token_neurons`) are a ReLU^2 layer
+whose keys and values are rows of the position's token (closest published form: L3 "Large
+Lookup Layers", Tseng and De Sa, ICML 2026, arXiv 2601.21461), with normalised keys.
 
 Conventions used throughout ``bes.model``:
 
@@ -21,6 +23,7 @@ from __future__ import annotations
 
 import math
 import zlib
+from typing import NamedTuple
 
 import jax
 import jax.numpy as jnp
@@ -69,15 +72,98 @@ def mm(x: jax.Array, w: jax.Array, dtype, out_dtype=None) -> jax.Array:
     return y.astype(out_dtype if out_dtype is not None else acc)
 
 
-def mlp(x: jax.Array, w_up: jax.Array, w_down: jax.Array, dtype) -> jax.Array:
+class PhaseGain(NamedTuple):
+    """Token gain rows of one block at a loop phase known only at run time (``gain_phases > 1``;
+    ``bes.model.model.block_gain``).
+
+    rows: ``[P, n_blocks, B, T, width]`` the gathered rows of every phase and block (closed over
+    by the loop scan); phase: int32 ``[]`` (traced, fed through the scan's ``xs``); block: the
+    static block index. :func:`gain_product` slices ``rows[phase, block]`` itself.
+    """
+    rows: jax.Array
+    phase: jax.Array
+    block: int
+
+    @property
+    def shape(self) -> tuple[int, ...]:
+        """Shape ``[B, T, width]`` of the selected rows."""
+        return tuple(self.rows.shape[2:])
+
+
+def gain_product(x: jax.Array, gain, dtype) -> jax.Array:
+    """``x * (1 + gain)`` in ``dtype`` (``hi(act_dtype)``: ``1 + delta`` is not representable in
+    bfloat16 for small deltas; ``x * (1 + 0) = x`` exactly).
+
+    x: ``[..., n]``; gain: ``[..., n]`` delta rows (float32), or a :class:`PhaseGain`. For the
+    latter the slice ``rows[phase, block]`` and the product form one ``jax.checkpoint`` region:
+    the backward pass recomputes the slice from the closed-over rows instead of keeping a copy of
+    it for every loop (without remat a traced slice is a per-loop residual of the product, with
+    one phase the slice is static and loop-invariant). Same values either way.
+    """
+    if isinstance(gain, PhaseGain):
+        i = gain.block
+
+        def scaled(x, rows, phase):
+            g = jax.lax.dynamic_index_in_dim(rows, phase, 0, keepdims=False)[i]
+            return x.astype(dtype) * (1.0 + g.astype(dtype))
+        return jax.checkpoint(scaled, prevent_cse=False)(x, gain.rows, gain.phase)
+    return x.astype(dtype) * (1.0 + gain.astype(dtype))
+
+
+def mlp(x: jax.Array, w_up: jax.Array, w_down: jax.Array, dtype, gain=None) -> jax.Array:
     """``W_down relu(W_up x)^2`` without biases.
 
-    x: ``[..., d]``; w_up: ``[d, d_ffn]``; w_down: ``[d_ffn, d]``. Returns ``hi(dtype)``
-    (float32) ``[..., d]``.
+    x: ``[..., d]``; w_up: ``[d, d_ffn]``; w_down: ``[d_ffn, d]``. gain: optional ``[..., n]``
+    multiplicative deltas (``n <= d_ffn``, float32 rows) or a :class:`PhaseGain` of that shape:
+    the first ``n`` neurons are multiplied by ``1 + gain`` in ``hi(dtype)``, before the cast to
+    ``dtype`` (:func:`gain_product`). Returns ``hi(dtype)`` (float32) ``[..., d]``.
     """
     h = mm(x, w_up, dtype)
-    h = jnp.square(jax.nn.relu(h)).astype(dtype)
-    return mm(h, w_down, dtype)
+    h = jnp.square(jax.nn.relu(h))
+    if gain is not None:
+        n = gain.shape[-1]
+        h = (gain_product(h, gain, h.dtype) if n == h.shape[-1] else
+             jnp.concatenate([gain_product(h[..., :n], gain, h.dtype), h[..., n:]], axis=-1))
+    return mm(h.astype(dtype), w_down, dtype)
+
+
+def token_preact(x: jax.Array, pin: jax.Array, key: jax.Array, dtype) -> jax.Array:
+    """Pre-activations of the private neurons of each position's token.
+
+    x: ``[B, T, d]`` normalised input of the feed-forward sub-layer; pin: ``[d, dk]``; key:
+    ``[B, T, rho, dk]`` the token's keys, already RMS-normalised over ``dk`` (activation dtype).
+    ``a[b, t, j] = <rmsnorm(x @ pin)[b, t], key[b, t, j]> / sqrt(dk)``: the projection
+    accumulates in ``hi(dtype)``, is normalised to unit RMS and cast to ``dtype``; the
+    contraction has ``dtype`` operands and ``hi(dtype)`` accumulation. Both factors have unit
+    RMS, so ``|a| <= sqrt(dk)``, ``a`` does not depend on the scale of a key, and ``a`` is
+    about ``N(0, 1)`` for random keys. Returns ``hi(dtype)`` ``[B, T, rho]``.
+    """
+    dk = pin.shape[-1]
+    z = rmsnorm(mm(x, pin, dtype), out_dtype=dtype)
+    a = jnp.einsum("...c,...jc->...j", z, key.astype(dtype), preferred_element_type=hi(dtype))
+    return a * (1.0 / math.sqrt(dk))
+
+
+def token_neurons(x: jax.Array, pin: jax.Array, pout: jax.Array, key: jax.Array,
+                  val: jax.Array, on: jax.Array | float, dtype) -> jax.Array:
+    """Token neurons: ``rho`` private ReLU^2 neurons of the position's token in a shared
+    ``dk``-dimensional neuron space (``ModelCfg.tok_neurons``, ``tok_dim``).
+
+        a = token_preact(x, pin, key)                # [B, T, rho]
+        o = sum_j relu(a_j)^2 val_j                  # [B, T, dk]
+        y = on * (o @ pout)                          # [B, T, d]
+
+    x: ``[B, T, d]`` (the input of ``W_up``); pin ``[d, dk]``, pout ``[dk, d]``: the block's
+    shared projections; key, val: ``[B, T, rho, dk]`` the rows of the position's token
+    (``bes.model.model.token_rows``, activation dtype); on: the ``page`` switch (``0 * y`` is
+    exactly zero, so the switch at 0 or ``val = 0`` adds nothing). ``relu(a)^2`` in
+    ``hi(dtype)``; the value contraction and ``@ pout`` have ``dtype`` operands and ``hi(dtype)``
+    accumulation. Returns ``hi(dtype)`` (float32) ``[B, T, d]``.
+    """
+    ft = hi(dtype)
+    s = jnp.square(jax.nn.relu(token_preact(x, pin, key, dtype)))
+    o = jnp.einsum("...j,...jc->...c", s.astype(dtype), val.astype(dtype), preferred_element_type=ft)
+    return jnp.asarray(on, ft) * mm(o, pout, dtype)
 
 
 def softcap(z: jax.Array, cap: float) -> jax.Array:

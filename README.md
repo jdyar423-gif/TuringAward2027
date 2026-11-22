@@ -2,7 +2,7 @@
 
 ## 摘要（繁體中文）
 
-這個倉庫是 BES-100M-A20M：一個總共至多 1 億個儲存數字（每個數字至多 16 位元，含權重、查表與藏書）、每產生一個 token 至多讀取 2,000 萬個數字的語言模型，設計成在單顆 TPU v6e 上於 24 小時內從零訓練完成。核心原理是「後驗 ∝ 先驗 × 證據」，在三個尺度上能精確算的就精確算：注意力頭帶校準匯點（信心通道在微型消融中增益不足 1%，最終配置關閉）；主機端精確計算的 n-gram 計數頭與候選帶進入輸出律；整段回覆以少量粒子加精確勢函數做 Feynman–Kac 解碼；另附一個門控、離線、凍結的書寫藏書，是否隨模型出貨由訓練後的事實題對照（藏書開與關各答一次）決定。所有程式都在 CPU 容器上開發、測試與彩排，**目前沒有任何數字是在 TPU 上量到的**（`docs/TPU_NOTES.md`）。正式的 24 小時訓練請照 `RUNBOOK.md` 使用 `notebooks/colab_v6e_24h.ipynb`；計畫原文在 `docs/PLAN.md`，核准後的修訂在 `docs/CHANGES.md`。
+這個倉庫是 BES-100M-A20M：一個總共至多 1 億個儲存數字（每個數字至多 16 位元，含權重、查表與藏書）、每產生一個 token 至多讀取 2,000 萬個數字的語言模型，設計成在單顆 TPU v6e 上於 24 小時內從零訓練完成。核心原理是「後驗 ∝ 先驗 × 證據」，在三個尺度上能精確算的就精確算：注意力頭帶校準匯點（信心通道在微型消融中增益不足 1%，最終配置關閉）；主機端精確計算的 n-gram 計數頭與候選帶進入輸出律；整段回覆以少量粒子加精確勢函數做 Feynman–Kac 解碼；另附一個門控、離線、凍結的書寫藏書，是否隨模型出貨由訓練後的事實題對照（藏書開與關各答一次）決定。所有程式都在 CPU 容器上開發、測試與彩排，**目前沒有任何數字是在 TPU 上量到的**（`docs/TPU_NOTES.md`）。正式的 24 小時訓練請照 `RUNBOOK.md` 使用 `notebooks/colab_v6e_24h.ipynb`；計畫原文在 `docs/PLAN.md`，核准後的修訂在 `docs/CHANGES.md`。另有不含藏書的替代配置 `configs/v9.py`（每個詞元一頁：私有前饋神經元與注意力輸出增益，外加逐頭的注意力輸出閘門；設計見 `docs/V9.md`），啟動指令相同，只需改用 `--config configs/v9.py`（`RUNBOOK.md` 第 1.4 節）。
 
 ### 在 Colab 直接開啟
 
@@ -82,6 +82,7 @@ on it); nothing has run on a TPU.
 | Temperature on the network only: with the full decoder on a tape-trained micro model at T = 0.5, repeated 4-gram rate 0.717 -> 0.207 and prompt copying 22.5% -> 2.0%; gate E5 (1M-token reference arm, 48 held-out chat prompts): with the defaults the repetition and loop rates are within error of the model trained without the tape (no loops) | `docs/CHANGES.md` sections 10 and 12, `docs/E5_SELF_GENERATION.md` |
 | Particle decoding, measured on an opponent model as a stand-in: prompts with every constraint satisfied 66% (plain) -> 91% (filter) -> 98% (exact potentials), about 4x the compute | `docs/E9_DECODING.md` |
 | Compile-only for v6e: train step peak 4.21 GiB with rematerialisation; without it the full micro-batch does not fit (32.93 GB of temporaries), half of it does (17.03 GiB) | `docs/TPU_NOTES.md` |
+| Compile-only for v6e, `configs/v9.py`: train step peak 7.01 GiB with the "sorted" table gradient, 7.17 GiB with "onehot" (T=1024 and T=2048, remat), no scatter in either; decode step 1.89 GiB | `RUNBOOK.md` section 1.4 |
 | Proxy blind test harness; Falcon-H1-Tiny-90M-Instruct on the dev half: math 66.7%, constraint prompts fully satisfied 78.7% | `docs/EVAL_PROTOCOL.md` |
 | Gate E2, paired micro ablations (21 arms, 1M tokens each): removing the candidate tape costs 11% of the loss (19% on assistant tokens); value embeddings 1.5%; registers and candidate input features about 1.1% each on chat; confidence channel 0.7% and structural clocks 0.3% (both under the pre-registered 1% bar and switched off in `configs/final.py`); other settings within noise | `docs/E2_ABLATIONS.md`, `docs/CHANGES.md` section 14 |
 | Gate E4, step-function probes on the micro model: copying a 20-token string 100% with the tape and 0% without; arithmetic through a calculator span with the forced result 56% at 1M tokens and 99% at 2M, 0% without forcing; exact counts do not show the step expected of the countdown registers (79% with them, 93% in the arm trained without them at 2M tokens), so that mechanism fails its probe and the registers are kept only for their effect on chat loss (stated as a deviation) | `docs/E4_PROBES.md`, `docs/E4_PROBES_2M.md`, `docs/CHANGES.md` section 14 |
@@ -113,6 +114,12 @@ has no such record: it is reused when what it records itself matches, unless
 
 The real run: `RUNBOOK.md` (what to do before, during and after the 24 hours) and
 `notebooks/colab_v6e_24h.ipynb`; a 30-minute free-tier check: `notebooks/colab_v5e_smoke.ipynb`.
+The alternative without the library, `configs/v9.py` (a page per vocabulary id: private
+feed-forward neurons and gains on the attention outputs;
+98.0M stored numbers, 19.6M read per token in the standard convention; the strict one is above
+20M, on real documents a median of 23.8M at T = 1024 and 26.7M at T = 2048, at most 28.2M;
+`docs/V9.md`), starts with the same commands and `--config configs/v9.py` (`RUNBOOK.md`
+section 1.4).
 Both open in Colab from the links near the top of this file, with this repository, its branch
 and the TPU type already filled in.
 From a terminal instead of a browser tab: `python scripts/colab_cli.py start` uses the Colab

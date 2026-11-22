@@ -84,7 +84,7 @@ def test_optimiser_groups_of_the_model_leaves(name):
         assert (lp.group == "feature") == lp.path.startswith(FEATURE), lp.path
         if lp.path.startswith("trust/feat/"):
             assert lp.group == "unembed", lp.path
-    assert {lp.group for lp in opt.plan} == set(roles.GROUPS)
+    assert {lp.group for lp in opt.plan} == set(roles.GROUPS) - {"gain", "page"}   # no page tables here
 
 
 def test_final_budget_reproduces_the_plan_ledger():

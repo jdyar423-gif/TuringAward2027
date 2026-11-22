@@ -104,6 +104,7 @@ class ModelCfg:
     act_dtype: str = "float32"   # "bfloat16" on TPU
     remat: bool = False
     table_grad: str = "onehot"   # vocabulary-table gradients: "onehot" (chunked matmul) | "take" (scatter-add)
+                                 # | "sorted" (matmul over sorted chunks, sorted_chunk rows each)
     loss_chunk: int = 8192       # rows of float32 [rows, V] logits per cross-entropy chunk
     splash_block_q: int = 512    # splash attention query tile (clipped to the padded length)
     splash_block_kv: int = 512   # splash attention key/value tile
@@ -113,6 +114,26 @@ class ModelCfg:
     mass_offset: float = 6.0     # output law: log-mass a_k = bias + <h A, c_k> - mass_offset
     mass_log_cap: float = 10.0   # output law: m_k = exp(soft_cap(a_k, mass_log_cap)) * mask_k * src_scale
     ffn_width: int = 0           # feed-forward width; 0 = d_model * ffn_mult
+    # -- appended by the v9 core track (bes/model/{model,attention,layers,tables}.py): token gain
+    #    pages (zero-initialised tables gain/*, one row per vocabulary id), selective attention
+    gain_ffn: int = 0            # FFN neurons per block (the first gain_ffn) with a per-token gain;
+                                 # 0 = off; <= d_ffn
+    gain_o: bool = False         # per-token gain on the n_heads*head_dim attention output channels
+                                 # of the token's own position, before W_o
+    gain_v: bool = False         # per-token gain on the n_heads*head_dim value channels of the
+                                 # token's own position (x @ W_v, before the value embedding)
+    gain_phases: int = 1         # gain rows per token for P consecutive groups of loops: loop r
+                                 # uses phase (r * P) // n_loops; 1 <= P <= n_loops
+    sel_attn: bool = False       # selective attention (dense path only: attn_impl "xla")
+    sorted_chunk: int = 512      # rows per chunk of the "sorted" table gradient
+    # -- appended by the v9 extras track (bes/model/{model,attention,layers}.py): head-wise
+    #    attention output gate, token neurons (private feed-forward neurons of every token)
+    attn_gate: bool = False      # head-wise attention output gate 1 + (2 sigmoid(x W_g / d + b_r) - 1)
+                                 # (zero-initialised core/attn/gate_w, core/attn/gate_b: exactly 1
+                                 # at initialisation)
+    tok_neurons: int = 0         # rho: private feed-forward neurons per token and block (tables
+                                 # page/key, page/val; projections page/pin, page/pout); 0 = off
+    tok_dim: int = 192           # dk: width of the neuron space shared by all tokens
 
     @property
     def d_ffn(self) -> int:
@@ -159,6 +180,13 @@ class OptimCfg:
                                      # effective non-embedding parameters)
     data_exponent: float = -0.32     # matrix group: lr x (horizon_tokens / data_ref_tokens) ** exponent
     horizon_tokens: float = 0.0      # expected training tokens of this run; 0 = no data correction
+    # -- appended by the v9 core track (bes/optim/build.py)
+    lr_gain: float = 0.01        # Adam "gain" group: the per-token gain tables gain/*
+    gain_decay: float = 0.0      # decoupled weight decay of the "gain" group (towards gain 1, i.e.
+                                 # a zero table); 0 = none
+    # -- appended by the v9 extras track (bes/optim/build.py)
+    lr_page: float = 0.004       # Adam "page" group: the token-neuron values page/val
+    page_decay: float = 0.0      # decoupled weight decay of the "page" group; 0 = none
 
 
 # ------------------------------------------------------------------------------- data
@@ -251,6 +279,9 @@ class RunCfg:
                                       # questions per evaluation split and head-entity probes
                                       # (eval_limit, when set, replaces it)
     factual_frac: float = 0.4         # share of the decode-selection slice given to that measurement
+    # -- appended by the v9 core track (read by bes/train/benchmark.py)
+    sel_min_speed: float = 0.85       # the start-up benchmark keeps selective attention (dense path)
+                                      # iff its tokens/s is at least this times the best plan without it
 
 
 # ----------------------------------------------------------------------------- decode

@@ -35,25 +35,58 @@ def test_plans_are_config_overrides():
     assert B.seq_lens(FINAL) == (1024, 2048)
     assert B.time_shares(FINAL) == pytest.approx({1024: 0.67, 2048: 0.33})     # data.late_from = 0.67
     assert B.plan_valid(FINAL, B.Plan("xla", False, 3, "onehot")).startswith("invalid shape")
+    # a configuration without selective attention: the plan never mentions it
+    assert base.sel is None and len(base.overrides()) == 4 and base.flip_attn().sel is None
+    assert B.Plan.from_dict({k: v for k, v in base.to_dict().items() if k != "sel"}) == base
+    assert base.with_table("sorted").apply(FINAL).model.table_grad == "sorted"
+    assert B.TABLE_MODES == ("sorted", "onehot", "take")
+
+
+def test_v9_plan_and_plans_with_selective_attention():
+    v9 = load_config(str(ROOT / "configs" / "v9.py"))
+    assert B.Plan.of(v9) == B.Plan("splash", True, 32, "sorted") and B.Plan.of(v9).sel is None
+    assert B.plan_valid(v9, B.Plan.of(v9)) == ""
+    # selective attention (dense path only): the flash plan of such a configuration runs without it
+    sel_cfg = dataclasses.replace(v9, model=dataclasses.replace(v9.model, attn_impl="xla",
+                                                                sel_attn=True))
+    base = B.Plan.of(sel_cfg)
+    assert base == B.Plan("xla", True, 32, "sorted", True) and base.key == "xla-remat1-ms32-sorted-sel"
+    flash = base.flip_attn()
+    assert flash == B.Plan("splash", True, 32, "sorted", False)
+    assert flash.key == "splash-remat1-ms32-sorted"
+    assert flash.flip_attn() == base
+    m = flash.apply(sel_cfg).model
+    assert (m.attn_impl, m.sel_attn) == ("splash", False) and B.plan_valid(sel_cfg, flash) == ""
+    twin = base.without_sel()
+    assert twin.key == "xla-remat1-ms32-sorted" and not twin.apply(sel_cfg).model.sel_attn
+    assert base.apply(sel_cfg).model.sel_attn and "model.sel_attn=true" in base.overrides()
+    assert B.Plan.from_dict(json.loads(json.dumps(flash.to_dict()))) == flash
+    # never selective attention on the flash path, never turned on for a configuration without it
+    assert "dense attention path" in B.plan_valid(sel_cfg, B.Plan("splash", True, 32, "sorted", True))
+    assert "dense attention path" in B.plan_valid(sel_cfg, B.Plan("splash", True, 32, "sorted"))
+    assert "no selective attention" in B.plan_valid(v9, base)
 
 
 # ------------------------------------------------------------ search with stand-ins
-def standin_measure(table, calls):
-    """``table[(plan key, T)] = tokens/s`` or an error string (a failed compile)."""
+def standin_measure(table, calls, cfg=FINAL, default=1000.0):
+    """``table[(plan key, T)] = tokens/s`` or an error string (a failed compile); other plans
+    run at ``default`` tokens/s."""
     def measure(plan, t):
         calls.append((plan.key, t))
-        v = table.get((plan.key, t), 1000.0)
+        v = table.get((plan.key, t), default)
         if isinstance(v, str):
             return B.Measurement(plan, t, False, v)
-        return B.Measurement(plan, t, True, shape=S.micro_shape(plan.apply(FINAL), t),
-                             compile_s=60.0, step_s=262144 / v, tokens_per_s=v, steps=20)
+        shape = S.micro_shape(plan.apply(cfg), t)
+        return B.Measurement(plan, t, True, shape=shape, compile_s=60.0,
+                             step_s=shape[0] * shape[1] * shape[2] / v, tokens_per_s=v, steps=20)
     return measure
 
 
-def run_search(table, mode="full", platform="tpu", soft=1e9, hard=1e9, known=None, now=0.0):
+def run_search(table, mode="full", platform="tpu", soft=1e9, hard=1e9, known=None, now=0.0,
+               cfg=FINAL, default=1000.0):
     calls = []
-    ms = B.search(FINAL, standin_measure(table, calls), clock=lambda: now, soft_deadline=soft,
-                  hard_deadline=hard, mode=mode, platform=platform, known=known)
+    ms = B.search(cfg, standin_measure(table, calls, cfg, default), clock=lambda: now,
+                  soft_deadline=soft, hard_deadline=hard, mode=mode, platform=platform, known=known)
     return ms, calls
 
 
@@ -66,8 +99,10 @@ def test_search_order_and_selection_with_a_failed_compile():
         ("xla-remat1-ms32-take", 1024): 250e3,
     }
     ms, calls = run_search(table)
+    # the other table modes cheapest first: "sorted" (slower here: base length only), then "take"
     assert calls == [("splash-remat1-ms32-onehot", 1024), ("splash-remat1-ms32-onehot", 2048),
                      ("splash-remat0-ms16-onehot", 1024),
+                     ("splash-remat1-ms32-sorted", 1024),
                      ("splash-remat1-ms32-take", 1024), ("splash-remat1-ms32-take", 2048),
                      ("xla-remat1-ms32-take", 1024)]
     failed = [m for m in ms if not m.ok]
@@ -127,6 +162,156 @@ def test_cpu_reduced_mode_time_budget_and_cache():
     ms, calls = run_search({}, known=known)
     assert ("splash-remat1-ms32-onehot", 1024) not in calls
     assert any(m.cached for m in ms)
+
+
+V9 = load_config(str(ROOT / "configs" / "v9.py"))
+
+
+def test_search_challenges_the_v9_plan_with_the_other_table_modes():
+    """configs/v9.py ("sorted"): the one-hot and the scatter-add modes challenge it, cheapest
+    first, and a mode only wins by measured tokens/s."""
+    table = {("splash-remat1-ms32-sorted", 1024): 300e3, ("splash-remat1-ms32-sorted", 2048): 280e3,
+             ("splash-remat0-ms16-sorted", 1024): "RESOURCE_EXHAUSTED",
+             ("splash-remat1-ms32-onehot", 1024): 250e3, ("splash-remat1-ms32-take", 1024): 200e3}
+    ms, calls = run_search(table, cfg=V9)
+    assert calls == [("splash-remat1-ms32-sorted", 1024), ("splash-remat1-ms32-sorted", 2048),
+                     ("splash-remat0-ms16-sorted", 1024), ("splash-remat1-ms32-onehot", 1024),
+                     ("splash-remat1-ms32-take", 1024), ("xla-remat1-ms32-sorted", 1024)]
+    assert B.select_plan(ms, (1024, 2048), B.time_shares(V9))["plan"] == B.Plan.of(V9)
+    # the one-hot mode faster at both lengths: it is measured at both and chosen
+    table[("splash-remat1-ms32-onehot", 1024)] = 320e3
+    table[("splash-remat1-ms32-onehot", 2048)] = 290e3
+    ms, calls = run_search(table, cfg=V9)
+    assert ("splash-remat1-ms32-onehot", 2048) in calls and ("xla-remat1-ms32-onehot", 1024) in calls
+    sel = B.select_plan(ms, (1024, 2048), B.time_shares(V9))
+    assert sel["plan"].table_grad == "onehot" and "sel_attn" not in sel
+
+
+@pytest.mark.parametrize("failing, expected", [
+    # the configured mode fails at the long length only: the one-hot mode is measured at both
+    # lengths although the time budget is used up, and runs
+    ({("splash-remat1-ms32-sorted", 2048): "RESOURCE_EXHAUSTED"},
+     [("splash-remat1-ms32-sorted", 1024), ("splash-remat1-ms32-sorted", 2048),
+      ("splash-remat1-ms32-onehot", 1024), ("splash-remat1-ms32-onehot", 2048)]),
+    # every table mode fails at the base length: then the attention flip
+    ({("splash-remat1-ms32-sorted", 1024): "compile error", ("splash-remat1-ms32-sorted", 2048): "x",
+      ("splash-remat1-ms32-onehot", 1024): "compile error", ("splash-remat1-ms32-take", 1024): "x"},
+     [("splash-remat1-ms32-sorted", 1024), ("splash-remat1-ms32-sorted", 2048),
+      ("splash-remat1-ms32-onehot", 1024), ("splash-remat1-ms32-take", 1024),
+      ("xla-remat1-ms32-sorted", 1024), ("xla-remat1-ms32-sorted", 2048)]),
+    # two faults: the flash kernel and the configured mode both fail on the chip: the dense
+    # attention with the one-hot mode (both flipped) runs
+    ({("splash-remat1-ms32-sorted", 1024): "Mosaic error", ("splash-remat1-ms32-sorted", 2048): "x",
+      ("splash-remat1-ms32-onehot", 1024): "Mosaic error", ("splash-remat1-ms32-take", 1024): "x",
+      ("xla-remat1-ms32-sorted", 1024): "sorted: runtime failure"},
+     [("splash-remat1-ms32-sorted", 1024), ("splash-remat1-ms32-sorted", 2048),
+      ("splash-remat1-ms32-onehot", 1024), ("splash-remat1-ms32-take", 1024),
+      ("xla-remat1-ms32-sorted", 1024), ("xla-remat1-ms32-onehot", 1024),
+      ("xla-remat1-ms32-onehot", 2048)]),
+])
+def test_a_failing_configured_plan_makes_its_proven_flips_essential(failing, expected):
+    """Past the soft deadline only essential candidates are measured: when the configured plan
+    fails at some length, its table-mode flips, then its attention flip, then both flips
+    together are, until one plan runs at every length, so a run configured with a new mode
+    never ends without a plan while a proven combination works."""
+    ms, calls = run_search(failing, cfg=V9, soft=0.0, hard=1e9, now=1.0)
+    assert calls == expected
+    sel = B.select_plan(ms, (1024, 2048), B.time_shares(V9))
+    assert sel["plan"].key == expected[-1][0]
+    skipped = [m for m in ms if (m.plan.key, m.seq_len) not in calls]
+    assert skipped and all("time budget" in m.reason for m in skipped)
+    # past the hard deadline not even the essential candidates are measured
+    _, calls = run_search(failing, cfg=V9, soft=0.0, hard=0.0, now=1.0)
+    assert calls == []
+    # within the time budget the rest of the search goes on as usual
+    _, calls = run_search(failing, cfg=V9)
+    assert calls[:len(expected)] == expected and len(calls) > len(expected)
+
+
+def test_a_challenger_is_compared_with_plans_that_can_be_chosen():
+    """The configured plan is the fastest at the base length but fails at the long one: a
+    challenger faster than the plans that ran at every length is measured at the long length
+    too (and chosen), although it is slower than the failed plan at the base length."""
+    table = {("splash-remat1-ms32-sorted", 1024): 1000.0,
+             ("splash-remat1-ms32-sorted", 2048): "RESOURCE_EXHAUSTED at 2048",
+             ("splash-remat1-ms32-onehot", 1024): 800.0, ("splash-remat1-ms32-onehot", 2048): 800.0,
+             ("splash-remat1-ms32-take", 1024): 950.0, ("splash-remat1-ms32-take", 2048): 950.0}
+    ms, calls = run_search(table, cfg=V9, default=100.0)
+    assert ("splash-remat1-ms32-take", 2048) in calls
+    assert B.select_plan(ms, (1024, 2048), B.time_shares(V9))["plan"].key == "splash-remat1-ms32-take"
+    # a challenger slower than the complete plan is still measured at the base length only
+    assert ("splash-remat0-ms16-sorted", 1024) in calls and ("splash-remat0-ms16-sorted", 2048) not in calls
+
+
+def _sel_cfg() -> Cfg:
+    """A tiny configuration with selective attention (dense path)."""
+    cfg = tiny_cfg()
+    return dataclasses.replace(cfg, model=dataclasses.replace(cfg.model, sel_attn=True))
+
+
+@pytest.mark.parametrize("splash_tps, kept", [(300.0, True), (340.0, False)])
+def test_selective_attention_is_kept_only_within_the_speed_rule(splash_tps, kept):
+    """With selective attention the flash plan runs without it; the dense plan with it is kept
+    iff its expected tokens/s is at least run.sel_min_speed (0.85) times the best plan without
+    it, and the selection reports the decision and both numbers."""
+    cfg = _sel_cfg()
+    lens = B.seq_lens(cfg)
+    base = B.Plan.of(cfg)
+    assert base.sel and base.attn_impl == "xla" and lens == (16, 32)
+    flash = base.flip_attn()
+    table = {(base.key, 16): 280.0, (base.key, 32): 280.0,
+             (flash.key, 16): splash_tps, (flash.key, 32): splash_tps,
+             (base.without_sel().key, 16): 290.0, (base.without_sel().key, 32): 290.0}
+    ms, calls = run_search(table, cfg=cfg, default=1.0)    # remat and table-mode flips: slow
+    assert (flash.key, 32) in calls                         # the flash plan ran at every length
+    assert not flash.apply(cfg).model.sel_attn and base.apply(cfg).model.sel_attn
+    sel = B.select_plan(ms, lens, B.time_shares(cfg), cfg.run.sel_min_speed)
+    dec = sel["sel_attn"]
+    assert dec["kept"] is kept and dec["min_speed"] == 0.85
+    assert dec["sel_plan"] == base.key and dec["sel_tps"] == pytest.approx(280.0)
+    assert dec["plain_plan"] == flash.key and dec["plain_tps"] == pytest.approx(splash_tps)
+    assert dec["ratio"] == pytest.approx(280.0 / splash_tps)
+    assert sel["plan"] == (base if kept else flash)
+    # the dense plan without selective attention is the comparison on a host without the flash
+    # kernel (here 280 / 290 = 0.97: kept)
+    ms, calls = run_search(table, cfg=cfg, platform="cpu", default=1.0)
+    assert (base.without_sel().key, 32) in calls and not any(k == flash.key and m.ok for k, m in
+                                                             ((m.plan.key, m) for m in ms))
+    dec = B.select_plan(ms, lens, B.time_shares(cfg))["sel_attn"]
+    assert dec["kept"] and dec["plain_plan"] == base.without_sel().key
+
+
+def test_selective_attention_switched_off_on_the_dense_path_and_when_nothing_else_runs():
+    cfg = _sel_cfg()
+    base = B.Plan.of(cfg)
+    twin = base.without_sel()
+    # on a CPU host (reduced mode): the dense plan without it, measured, is much faster
+    ms, calls = run_search({(base.key, 16): 100.0, (base.key, 32): 100.0, (twin.key, 16): 200.0,
+                            (twin.key, 32): 200.0}, cfg=cfg, mode="reduced", platform="cpu",
+                           default=1.0)
+    assert (twin.key, 16) in calls and (twin.key, 32) in calls
+    sel = B.select_plan(ms, (16, 32), B.time_shares(cfg))
+    assert sel["plan"] == twin and not sel["sel_attn"]["kept"]
+    assert not twin.apply(cfg).model.sel_attn and twin.apply(cfg).model.attn_impl == "xla"
+    # no plan without it ran at every length: kept as configured
+    only = [m for m in ms if m.plan == base]
+    dec = B.select_plan(only, (16, 32), B.time_shares(cfg))["sel_attn"]
+    assert dec["kept"] and dec["plain_plan"] is None and "kept as configured" in dec["reason"]
+    # the plan with it never ran at every length: the best plan without it, said so
+    fail = [B.Measurement(base, 16, False, "x"), B.Measurement(twin, 16, True, tokens_per_s=5.0),
+            B.Measurement(twin, 32, True, tokens_per_s=5.0)]
+    sel = B.select_plan(fail, (16, 32), B.time_shares(cfg))
+    assert sel["plan"] == twin and not sel["sel_attn"]["kept"]
+    # a fault of the selective path (every plan with it fails) on a CPU host (no flash kernel):
+    # the essential flips end with the dense plan without it, which runs
+    bug = "bug in the selective path"
+    ms, calls = run_search({(base.key, 16): bug, (base.with_table("sorted").key, 16): bug,
+                            (base.with_table("take").key, 16): bug, (twin.key, 16): 50.0,
+                            (twin.key, 32): 50.0}, cfg=cfg, platform="cpu", soft=0.0, now=1.0)
+    assert calls == [(base.key, 16), (base.key, 32), (base.with_table("sorted").key, 16),
+                     (base.with_table("take").key, 16), (twin.key, 16), (twin.key, 32)]
+    assert any("needs a TPU" in m.reason for m in ms if m.plan == base.flip_attn())
+    assert B.select_plan(ms, (16, 32), B.time_shares(cfg))["plan"] == twin
 
 
 def test_results_file_round_trip(tmp_path):
@@ -263,8 +448,47 @@ def test_real_measurement_and_canary_on_a_tiny_model(monkeypatch):
 
     monkeypatch.setattr(B, "loss_drops", fake)
     can = B.canary(cfg, B.Plan.of(cfg), canary_batches, steps=8)
-    assert can["ladder"]["rung"] == 1 and can["ladder"]["groups"] == ["sink"]
-    assert can["ladder"]["switches"] == "sink:0" and can["rungs"]["1"]["ok"]
+    # rungs 1-4 (gate, sel, gain, page) switch off paths this model does not have: not run again
+    assert can["ladder"]["rung"] == 5
+    assert can["ladder"]["groups"] == ["gate", "sel", "gain", "page", "sink"]
+    assert can["ladder"]["switches"] == "gate:0 sel:0 gain:0 page:0 sink:0" and can["rungs"]["5"]["ok"]
+    assert all(can["rungs"][str(k)]["same_as"] == "the full configuration" for k in (1, 2, 3, 4))
+    assert len(seen) == 3                          # safe, full, rung 5
+
+
+def test_canary_ladder_of_a_v9_model(monkeypatch):
+    """A tiny model with the v9 paths (output gains, the attention gate, token neurons, the
+    "sorted" table gradient): safe and full learn the motif; when the full configuration and
+    rung 1 (gate off) fail, rung 2 (selective attention, absent here) is not run again and rung 3
+    (token gains off) is tried and chosen."""
+    pytest.importorskip("jax")
+    from bes.model import model as MM
+
+    cfg = tiny_cfg()
+    cfg = dataclasses.replace(cfg, model=dataclasses.replace(
+        cfg.model, gain_o=True, attn_gate=True, tok_neurons=2, tok_dim=8, table_grad="sorted",
+        sorted_chunk=16))
+    lens = B.seq_lens(cfg)
+    batches = {lens[0]: motif_batches(cfg, 8, lens[0], seed=1),
+               lens[1]: motif_batches(cfg, 2, lens[1], seed=2)}
+    can = B.canary(cfg, B.Plan.of(cfg), batches, steps=8)
+    assert can["plan"] == "xla-remat0-ms4-sorted"
+    assert can["safe"]["ok"] and can["full"]["ok"] and can["ladder"]["rung"] == 0
+    assert can["safe"]["switches"] == MM.switches_off()
+    real = B.loss_drops
+    seen = []
+
+    def fake(losses, min_drop=0.02, tail=None):
+        seen.append(1)
+        return len(seen) not in (2, 3) and real(losses, min_drop, tail)   # full and rung 1 fail
+
+    monkeypatch.setattr(B, "loss_drops", fake)
+    can = B.canary(cfg, B.Plan.of(cfg), batches, steps=8)
+    assert can["ladder"]["rung"] == 3 and can["ladder"]["groups"] == ["gate", "sel", "gain"]
+    assert can["ladder"]["switches"] == "gate:0 sel:0 gain:0"
+    assert not can["rungs"]["1"]["ok"] and "losses" in can["rungs"]["1"]          # rung 1 ran
+    assert can["rungs"]["2"]["same_as"] == "rung 1" and can["rungs"]["3"]["ok"]
+    assert len(seen) == 4                            # safe, full, rung 1, rung 3
 
 
 def test_canary_runs_every_shape_and_fails_on_skipped_updates(monkeypatch):
@@ -296,7 +520,8 @@ def test_canary_runs_every_shape_and_fails_on_skipped_updates(monkeypatch):
     assert not full["ok"] and full["skipped"] == 2 and full["shapes"]["4x2x32"]["skipped"] == 2
     assert all(isinstance(x, float) for x in full["losses"])     # the base length is fine
     assert safe["ok"] and safe["skipped"] == 0
-    assert can["ladder"]["rung"] == 1 and can["ladder"]["switches"] == "sink:0"
+    assert can["ladder"]["rung"] == 5
+    assert can["ladder"]["switches"] == "gate:0 sel:0 gain:0 page:0 sink:0"
     monkeypatch.setattr(MM, "loss_fn", lambda *a: faulty(*a, every=True))
     with pytest.raises(B.CanaryError, match="safe configuration"):
         B.canary(cfg, B.Plan.of(cfg), batches, steps=8)

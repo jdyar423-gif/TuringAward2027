@@ -8,6 +8,7 @@ with ``bes.train.checkpoint``.
 from __future__ import annotations
 
 import dataclasses
+import json
 import string
 from pathlib import Path
 
@@ -314,6 +315,62 @@ def test_our_generator_follows_the_harness_contract(tmp_path):
         R.load_checkpoint(tmp_path, dataclasses.replace(cfg.model, head_rank=32))
     with pytest.raises(FileNotFoundError):
         R.find_checkpoint(tmp_path / "missing")
+
+
+def test_find_checkpoint_in_a_run_directory_of_the_supervisor(tmp_path):
+    """A run directory of scripts/run_24h.py holds the run's own manifest.json next to
+    train/ckpt: it is not a checkpoint; the trainer's newest checkpoint under it is found and
+    loads."""
+    from bes.config import load_config
+
+    config = str(REPO / "configs" / "smoke.py")
+    cfg = load_config(config, ["model.n_loops=2"])
+    run = tmp_path / "run"
+    (run / "train").mkdir(parents=True)
+    (run / "manifest.json").write_text(json.dumps({"format": 1, "config": config}))
+    _save_smoke(run / "train" / "ckpt", 1, cfg)
+    newest = _save_smoke(run / "train" / "ckpt", 2, cfg).path
+    assert R.find_checkpoint(run) == newest
+    assert R.find_checkpoint(run / "train") == R.find_checkpoint(newest) == newest
+    assert R.load_checkpoint(run, cfg.model)[2]["step"] == 2
+    with pytest.raises(FileNotFoundError):
+        R.find_checkpoint(tmp_path / "missing")
+
+
+def test_a_checkpoint_from_before_a_switch_existed_keeps_its_stored_switches(tmp_path):
+    """Consts in the layout of an older code version (no gain, sel, gate, page entries) that
+    store a fallback rung (sink:0, cand_out:0): the stored switches are kept by name and the
+    missing ones take their defaults, recorded in ``info``; a stored switch this code does not
+    have is ignored with a warning and recorded."""
+    import jax
+
+    from bes.config import config_hash, load_config
+    from bes.export import consts_equal
+    from bes.model import model as M
+    from bes.train import checkpoint as ck
+
+    cfg = load_config(str(REPO / "configs" / "smoke.py"), ["model.n_loops=2"])
+    params = jax.tree.map(np.asarray, M.init_params(cfg.model, jax.random.PRNGKey(0)))
+    rung = M.make_consts(cfg.model, sink=0.0, cand_out=0.0)
+    new = ("gain", "sel", "gate", "page")
+    old = {**rung, "enable": {k: v for k, v in rung["enable"].items() if k not in new}}
+
+    def save(consts, root):
+        tree = {"state": {"step": np.int32(3), "params": params, "consts": consts},
+                "rng": jax.random.PRNGKey(1)}
+        return ck.save(root, tree, step=3, config_hash=config_hash(cfg)).path
+
+    _, consts, info = R.load_checkpoint(save(old, tmp_path / "old"), cfg.model)
+    assert float(consts["enable"]["sink"]) == 0.0 and float(consts["enable"]["cand_out"]) == 0.0
+    assert consts_equal(consts, rung)
+    assert info["consts"] == "merged" and info["consts_filled"] == sorted(new)
+    assert info["consts_dropped"] == []
+    alien = {**old, "enable": {**old["enable"], "retired": np.float32(0.0)}}
+    with pytest.warns(UserWarning, match="retired"):
+        _, consts, info = R.load_checkpoint(save(alien, tmp_path / "alien"), cfg.model)
+    assert consts_equal(consts, rung) and info["consts_dropped"] == ["retired"]
+    _, consts, info = R.load_checkpoint(save(rung, tmp_path / "now"), cfg.model)
+    assert info["consts"] == "stored" and info["consts_filled"] == [] and consts_equal(consts, rung)
 
 
 # ------------------------------------------------------------ self-evidence weight

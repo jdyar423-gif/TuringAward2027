@@ -21,6 +21,9 @@ Command line (on a CPU host, or on the TPU VM itself)::
     python -m bes.train.aot --config configs/final.py --programs loss,decode \\
         --impl xla,splash --shapes 1024x32,2048x16 --remat on --json aot.json
     python -m bes.train.aot --override model.n_loops=1 ...      # a reduced model first
+    python -m bes.train.aot --config configs/v9.py --programs train,decode,prefill \\
+        --impl splash --shapes 1024x32,2048x16 --remat on      # "sorted" table gradient
+    python -m bes.train.aot --config configs/v9.py --override model.table_grad=onehot ...
 
 The exit status is 1 when any program fails to compile or its peak exceeds ``--limit-gib``.
 An in-process guard aborts the run when the host process exceeds ``--max-rss-gb``.
@@ -203,6 +206,7 @@ class AotResult:
                 f"out {self.memory.get('output_size_in_bytes', 0) / GIB:.2f}, "
                 f"alias {self.memory.get('alias_size_in_bytes', 0) / GIB:.2f}) "
                 f"flops {flops:.3e} scatter {self.hlo_ops.get('scatter', 0)} "
+                f"gather {self.hlo_ops.get('gather', 0)} "
                 f"while {self.hlo_ops.get('while', 0)} mosaic {self.hlo_ops.get('mosaic_kernel', 0)} "
                 f"host-rss {self.host_rss_gb:.2f} GB")
 
@@ -327,10 +331,13 @@ def parse_pairs(text: str) -> list[tuple[int, int]]:
 
 
 def model_variant(mcfg, impl: str, remat: bool):
-    """The model configuration compiled for the TPU (never Pallas interpret mode)."""
+    """The model configuration compiled for the TPU (never Pallas interpret mode). Selective
+    attention (``sel_attn``) needs the dense path: the flash variant runs without it, as a
+    ``"splash"`` execution plan of ``bes.train.benchmark`` does."""
     if impl == "splash":
         from bes.model import attention_splash
         attention_splash.register_alias()
+        mcfg = dataclasses.replace(mcfg, sel_attn=False)
     return dataclasses.replace(mcfg, attn_impl=impl, remat=remat, splash_interpret="false")
 
 

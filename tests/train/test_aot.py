@@ -86,6 +86,43 @@ def test_program_builders_on_cpu():
         assert res.peak_bytes > 0
 
 
+def _tiny_v9(cfg, table_grad="sorted"):
+    """The v9 paths on the tiny model: token neurons, output gains, the attention gate."""
+    return dataclasses.replace(_tiny_model(cfg), gain_o=True, attn_gate=True, tok_neurons=2,
+                               tok_dim=16, table_grad=table_grad, sorted_chunk=32)
+
+
+def test_v9_training_programs_on_cpu():
+    """The loss and train programs of a v9-style model (token neurons, output gains, the
+    attention gate) compile on CPU with the "sorted" and the "onehot" table gradient, and
+    neither contains a scatter (the "take" mode, the XLA scatter-add, does)."""
+    cfg = _cfg("smoke")
+    cpu = jax.devices("cpu")[0]
+    ops = {}
+    for mode in ("sorted", "onehot", "take"):
+        mcfg = _tiny_v9(cfg, mode)
+        for name, (fn, args) in {"loss": aot.loss_program(mcfg, 2, 16),
+                                 "train": aot.train_program(dataclasses.replace(cfg, model=mcfg),
+                                                            2, 2, 16)}.items():
+            res = aot.compile_program(name, fn, args, cpu)
+            assert res.ok, (mode, name, res.error)
+            ops[mode, name] = res.hlo_ops["scatter"] + res.stablehlo_ops["scatter"]
+    assert all(ops[m, n] == 0 for m in ("sorted", "onehot") for n in ("loss", "train")), ops
+    assert ops["take", "train"] > 0, ops
+
+
+def test_v9_generation_programs_on_cpu():
+    """decode_step and prefill of the v9-style model compile on CPU (the gate needs the loop
+    index, the token neurons the rows of the chunk's tokens: bes.model.generate passes them)."""
+    cfg = _cfg("smoke")
+    mcfg = _tiny_v9(cfg)
+    cpu = jax.devices("cpu")[0]
+    for name, (fn, args) in {"decode": aot.decode_program(mcfg, 3, 32),
+                             "prefill": aot.prefill_program(mcfg, 1, 8, 32)}.items():
+        res = aot.compile_program(name, fn, args, cpu)
+        assert res.ok, (name, res.error)
+
+
 def test_rss_guard_is_inert_below_its_limit():
     with aot.RssGuard(1e6, period_s=0.01) as g:
         assert g.current_gb() > 0
@@ -97,6 +134,12 @@ def test_model_variant_never_uses_interpret_mode():
     m = aot.model_variant(_cfg("final").model, "splash", True)
     assert m.attn_impl == "splash" and m.remat and m.splash_interpret == "false"
     assert "bes.model.splash" in sys.modules      # the alias for the core's import
+    # selective attention needs the dense path: the flash variant runs without it
+    sel = dataclasses.replace(_cfg("v9").model, attn_impl="xla", sel_attn=True)
+    assert not aot.model_variant(sel, "splash", True).sel_attn
+    assert aot.model_variant(sel, "xla", True).sel_attn
+    v9 = aot.model_variant(_cfg("v9").model, "splash", True)
+    assert (v9.attn_impl, v9.sel_attn, v9.table_grad, v9.tok_neurons) == ("splash", False, "sorted", 8)
 
 
 needs_tpu_compiler = pytest.mark.skipif(not HAS_LIBTPU, reason="libtpu is not installed")
@@ -135,3 +178,47 @@ def test_tpu_compile_of_the_final_shapes():
         assert res.ok, res.error
         assert aot.within_limit(res), res.row()
         assert res.hlo_ops["scatter"] == 0, res.row()
+
+
+#: host memory guard of the v9 compiles (the compiler process; the container has 15 GB)
+V9_RSS_GB = 9.0
+
+
+@pytest.mark.slow
+@needs_tpu_compiler
+@pytest.mark.parametrize("t, b", [(1024, 32), (2048, 16)], ids=["T1024xB32", "T2048xB16"])
+def test_tpu_compile_of_the_v9_train_step(t, b):
+    """configs/v9.py (bf16, splash attention, remat, A = 8 micro-batches): the whole train step
+    with the "sorted" and with the "onehot" table gradient, both below 28 GiB, and neither has a
+    scatter, in the lowered StableHLO or in the optimised HLO (two compiles of several minutes
+    each on one core; ``-s`` prints the rows)."""
+    cfg = _cfg("v9")
+    dev = aot.tpu_device()
+    res = {}
+    with aot.RssGuard(V9_RSS_GB):
+        for mode in ("sorted", "onehot"):
+            c = dataclasses.replace(cfg, model=dataclasses.replace(cfg.model, table_grad=mode))
+            got = aot.run(c, ["train"], ["splash"], [(t, b)], [True], decode=[], device=dev,
+                          log=lambda s, m=mode: print(f"{m}: {s}", flush=True))
+            assert len(got) == 1
+            res[mode] = got[0]
+    for mode, r in res.items():
+        assert r.ok, (mode, r.error)
+        assert aot.within_limit(r), r.row()
+        assert r.hlo_ops["mosaic_kernel"] > 0, r.row()          # the flash kernels
+        assert r.stablehlo_ops["scatter"] == 0 and r.hlo_ops["scatter"] == 0, (mode, r.row())
+
+
+@pytest.mark.slow
+@needs_tpu_compiler
+def test_tpu_compile_of_the_v9_decode_programs():
+    """configs/v9.py: decode_step with 8 rows and 2048 cache slots and the prefill of one
+    256-token chunk, both below 28 GiB."""
+    cfg = _cfg("v9")
+    with aot.RssGuard(V9_RSS_GB):
+        results = aot.run(cfg, ["decode", "prefill"], [], [], [], decode=[(8, 2048)],
+                          device=aot.tpu_device(), log=lambda s: print(s, flush=True))
+    assert [r.program for r in results] == ["decode", "prefill"]
+    for res in results:
+        assert res.ok, res.error
+        assert aot.within_limit(res), res.row()

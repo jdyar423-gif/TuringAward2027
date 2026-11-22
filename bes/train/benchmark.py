@@ -6,12 +6,16 @@ Execution plans
 A plan (:class:`Plan`) is a set of configuration overrides applied before the trainer and the
 loader are built: ``model.attn_impl`` (the flash kernel ``"splash"`` or dense ``"xla"``),
 ``model.remat`` together with ``optim.micro_seqs`` (rematerialisation on with the configured
-micro-batch, off with half of it so that it fits), and ``model.table_grad`` (``"onehot"`` or
-``"take"``). ``bes.train.schedule.micro_shape`` turns ``micro_seqs`` into the compiled shapes:
-with 262,144 tokens per step and ``seq_len = 1024``, ``micro_seqs = 32`` gives ``(8, 32, 1024)``
-and ``(8, 16, 2048)``, ``micro_seqs = 16`` gives ``(16, 16, 1024)`` and ``(16, 8, 2048)``. Every
-plan has the same tokens per step, so the loader's batches of the configured plan serve every
-plan after a reshape of the two leading axes (row ``m`` of a step stays row ``m``).
+micro-batch, off with half of it so that it fits), ``model.table_grad`` (``"onehot"``,
+``"take"`` or ``"sorted"``) and, for a configuration with selective attention
+(``model.sel_attn``), whether this plan keeps it: selective attention needs the dense path, so a
+flash plan of such a configuration runs without it (``Plan.sel``; :func:`plan_valid` refuses a
+plan that would combine them). ``bes.train.schedule.micro_shape`` turns ``micro_seqs`` into the
+compiled shapes: with 262,144 tokens per step and ``seq_len = 1024``, ``micro_seqs = 32`` gives
+``(8, 32, 1024)`` and ``(8, 16, 2048)``, ``micro_seqs = 16`` gives ``(16, 16, 1024)`` and
+``(16, 8, 2048)``. Every plan has the same tokens per step, so the loader's batches of the
+configured plan serve every plan after a reshape of the two leading axes (row ``m`` of a step
+stays row ``m``).
 
 Measurement (:func:`make_measure`): build the train state and the step of
 ``bes.train.train.make_train_step`` for the plan, lower and compile it for the step shape (compile
@@ -25,21 +29,41 @@ benchmark does not measure a plan twice. The compiled steps of the plans that ra
 trainer, which use them instead of compiling the same program again.
 
 Search (:func:`search`), within the benchmark's time budget (no new candidate after the soft
-deadline, except the configured plan, and nothing after the hard deadline):
+deadline, except the essential ones, and nothing after the hard deadline):
 
-1. the configured plan at every sequence length of the run;
-2. the rematerialisation flip (off with half the micro-batch, or on with twice it);
-3. the table-gradient flip of the best plan so far;
-4. the attention flip of the best plan so far (the flash kernel needs a TPU: on a CPU host it
-   is recorded as skipped).
+1. the configured plan at every sequence length of the run (essential);
+2. only if it fails at some length: its table-gradient flips (:data:`TABLE_MODES` order), then
+   its attention flip (and, with selective attention, the dense plan without it), then both
+   flips together (the other attention path, or the plan without selective attention, with each
+   other table-gradient mode), each at every length, essential (measured after the soft deadline
+   too) until one plan runs at every length, so that a configuration with a new mode never ends
+   without a plan while a proven combination works;
+3. the rematerialisation flip (off with half the micro-batch, or on with twice it);
+4. the best plan so far with each other table-gradient mode, cheapest first (:data:`TABLE_MODES`);
+5. the attention flip of the best plan so far (the flash kernel needs a TPU: on a CPU host it
+   is recorded as skipped);
+6. with selective attention: the best plan with it, without it (the dense twin).
 
-A flipped candidate is measured at the base length first and at the long length only if it is
-faster there. ``mode = "reduced"`` (CPU rehearsals) stops after step 2.
+A candidate is measured at the base length first and at the long length only if it is faster
+there than the best plan of its kind (with or without selective attention) that can still be
+chosen (no failed or skipped length). ``mode = "reduced"`` (CPU rehearsals) stops after step 3
+(and step 6).
+
+Table-gradient modes, cheapest first. For ``m`` looked-up rows of width ``W`` from a table of ``R``
+rows: ``"sorted"`` sorts the ``m`` row indices and does ``2 m C W`` multiply-adds (``C =
+model.sorted_chunk``; at ``R = 8192``, ``C = 512`` that is 1/16 of the one-hot work); ``"onehot"``
+does ``2 m R W`` on the matrix units (for the tables of ``configs/v9.py``, ``W = 9,536`` in all,
+5.1e12 per micro-batch of 32,768 positions, about 15% of the model's own training work); ``"take"``,
+XLA's scatter-add, has no matmul, but its speed depends on how the TPU compiler serialises the
+updates of repeated rows and no measurement of it exists, so it is tried last.
 
 Selection (:func:`select_plan`): per sequence length the fastest valid plan; for the run the plan
 valid at every length with the largest expected throughput ``sum_T share_T * tps_T``, where
 ``share_T`` is the wall-time share of length ``T`` (``late_from`` and ``1 - late_from``: progress
-is linear in wall time).
+is linear in wall time). With selective attention (``model.sel_attn``): the best plan with it is
+kept iff its expected throughput is at least ``run.sel_min_speed`` times that of the best plan
+without it (no such plan: kept); the decision and both numbers are in the result
+(``sel_attn``) and in the benchmark report.
 
 Canary (:func:`canary`) on the chosen plan, with real batches:
 
@@ -55,8 +79,10 @@ Canary (:func:`canary`) on the chosen plan, with real batches:
   a skipped update at any shape fails. Switches are runtime inputs of the compiled step, so
   every run reuses one program per shape.
   If the full configuration fails and the safe one passes, the rungs of
-  ``bes.train.supervisor.LADDER`` (feature groups off one at a time, cumulatively, in the order
-  of plan section 6) are tried until one passes; that rung is used for the run. If the safe
+  ``bes.train.supervisor.LADDER`` (feature groups off one at a time, cumulatively: the v9 paths
+  first, then the order of plan section 6) are tried until one passes; that rung is used for the
+  run. A rung that changes no switch of the configuration (its paths are absent or already off)
+  is not run again: it repeats the run before it, whose failure it records. If the safe
   configuration fails the run cannot train: :class:`CanaryError`.
 
 Host pipeline (:func:`host_rate`): loader rows per second against the rows the device consumes
@@ -81,10 +107,13 @@ from typing import Any, Callable, Mapping, Sequence
 
 import numpy as np
 
-from bes.config import Cfg, apply_overrides
+from bes.config import Cfg, RunCfg, apply_overrides
 from bes.train import schedule
 
 GIB = 2 ** 30
+#: table-gradient modes (``ModelCfg.table_grad``) in the order the search tries them, cheapest
+#: first (module docstring)
+TABLE_MODES = ("sorted", "onehot", "take")
 
 
 class BenchmarkError(RuntimeError):
@@ -98,25 +127,35 @@ class CanaryError(RuntimeError):
 # ------------------------------------------------------------------------------ plans
 @dataclass(frozen=True)
 class Plan:
-    """One execution plan (module docstring)."""
+    """One execution plan (module docstring).
+
+    sel: selective attention of a configuration that has it (``model.sel_attn``): ``True`` on
+    (dense path only), ``False`` off; ``None`` for a configuration without it (the plan leaves
+    ``model.sel_attn`` alone, and its key and overrides are those of the four other fields).
+    """
 
     attn_impl: str
     remat: bool
     micro_seqs: int
     table_grad: str
+    sel: bool | None = None
 
     @classmethod
     def of(cls, cfg: Cfg) -> "Plan":
         return cls(cfg.model.attn_impl, bool(cfg.model.remat), int(cfg.optim.micro_seqs),
-                   cfg.model.table_grad)
+                   cfg.model.table_grad, True if cfg.model.sel_attn else None)
 
     @property
     def key(self) -> str:
-        return f"{self.attn_impl}-remat{int(self.remat)}-ms{self.micro_seqs}-{self.table_grad}"
+        return (f"{self.attn_impl}-remat{int(self.remat)}-ms{self.micro_seqs}-{self.table_grad}"
+                + ("-sel" if self.sel else ""))
 
     def overrides(self) -> list[str]:
-        return [f"model.attn_impl={self.attn_impl}", f"model.remat={str(self.remat).lower()}",
-                f"optim.micro_seqs={self.micro_seqs}", f"model.table_grad={self.table_grad}"]
+        out = [f"model.attn_impl={self.attn_impl}", f"model.remat={str(self.remat).lower()}",
+               f"optim.micro_seqs={self.micro_seqs}", f"model.table_grad={self.table_grad}"]
+        if self.sel is not None:
+            out.append(f"model.sel_attn={str(self.sel).lower()}")
+        return out
 
     def apply(self, cfg: Cfg) -> Cfg:
         return apply_overrides(cfg, self.overrides())
@@ -126,7 +165,9 @@ class Plan:
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "Plan":
-        return cls(str(d["attn_impl"]), bool(d["remat"]), int(d["micro_seqs"]), str(d["table_grad"]))
+        sel = d.get("sel")
+        return cls(str(d["attn_impl"]), bool(d["remat"]), int(d["micro_seqs"]), str(d["table_grad"]),
+                   None if sel is None else bool(sel))
 
     def flip_remat(self) -> "Plan":
         """Remat off with half the micro-batch, or on with twice it."""
@@ -135,10 +176,22 @@ class Plan:
         return dataclasses.replace(self, remat=True, micro_seqs=self.micro_seqs * 2)
 
     def flip_table(self) -> "Plan":
+        """The one-hot mode, or ``"take"`` from the one-hot mode."""
         return dataclasses.replace(self, table_grad="take" if self.table_grad == "onehot" else "onehot")
 
+    def with_table(self, mode: str) -> "Plan":
+        return dataclasses.replace(self, table_grad=mode)
+
     def flip_attn(self) -> "Plan":
-        return dataclasses.replace(self, attn_impl="xla" if self.attn_impl == "splash" else "splash")
+        """The other attention path. The flash kernel has no selective attention: with a
+        configuration that has it, the flash plan runs without it and the dense plan with it."""
+        if self.attn_impl == "splash":
+            return dataclasses.replace(self, attn_impl="xla", sel=None if self.sel is None else True)
+        return dataclasses.replace(self, attn_impl="splash", sel=None if self.sel is None else False)
+
+    def without_sel(self) -> "Plan":
+        """The same plan without selective attention (a configuration that has it)."""
+        return dataclasses.replace(self, sel=False)
 
 
 @dataclass
@@ -190,12 +243,48 @@ def time_shares(cfg: Cfg) -> dict[int, float]:
 
 
 def plan_valid(cfg: Cfg, plan: Plan) -> str:
-    """``""`` when the plan's shapes exist for ``cfg``, else the reason."""
+    """``""`` when the plan's shapes exist for ``cfg`` and its model configuration is
+    consistent, else the reason: selective attention runs on the dense path only, and a plan
+    never turns it on for a configuration without it."""
+    if plan.sel and not cfg.model.sel_attn:
+        return "the configuration has no selective attention to keep"
     try:
-        schedule.shapes(plan.apply(cfg))
+        pcfg = plan.apply(cfg)
+        schedule.shapes(pcfg)
     except ValueError as e:
         return f"invalid shape: {e}"
+    if pcfg.model.sel_attn and pcfg.model.attn_impl != "xla":
+        return "selective attention needs the dense attention path (attn_impl xla)"
     return ""
+
+
+def _choose(ordered: Sequence[Any], score: Callable[[Any], float], plan_of: Callable[[Any], Plan],
+            min_speed: float) -> tuple[Any, dict[str, Any] | None]:
+    """The first of ``ordered`` (non-empty, best first); when some plan has selective attention,
+    the first of those iff its score is at least ``min_speed`` times that of the first without
+    it.
+
+    Returns ``(item, decision)``; ``decision`` is None without selective-attention plans, else
+    ``{"kept", "min_speed", "sel_plan", "sel_tps", "plain_plan", "plain_tps", "ratio",
+    "reason"}`` (the scores as ``*_tps``)."""
+    s = next((x for x in ordered if plan_of(x).sel), None)
+    if s is None:
+        return ordered[0], None
+    n = next((x for x in ordered if not plan_of(x).sel), None)
+    dec: dict[str, Any] = {"min_speed": float(min_speed), "sel_plan": plan_of(s).key,
+                           "sel_tps": float(score(s)), "plain_plan": None, "plain_tps": None,
+                           "ratio": None}
+    if n is None:
+        dec.update(kept=True, reason="no plan without selective attention ran at every length: "
+                                     "kept as configured")
+        return s, dec
+    ratio = float(score(s)) / max(1e-12, float(score(n)))
+    kept = ratio >= min_speed
+    dec.update(plain_plan=plan_of(n).key, plain_tps=float(score(n)), ratio=ratio, kept=kept,
+               reason=(f"{ratio:.3f} of the throughput of the best plan without it "
+                       f"({'>=' if kept else '<'} {min_speed:g}): "
+                       + ("kept" if kept else "switched off")))
+    return (s if kept else n), dec
 
 
 # ----------------------------------------------------------------------------- search
@@ -212,6 +301,7 @@ def search(cfg: Cfg, measure: Measure, *, clock: Callable[[], float], soft_deadl
     say = log or (lambda msg: None)
     lens = seq_lens(cfg)
     base = Plan.of(cfg)
+    min_speed = float(cfg.run.sel_min_speed)
     results: dict[tuple[str, int], Measurement] = {}
     known = dict(known or {})
 
@@ -248,35 +338,79 @@ def search(cfg: Cfg, measure: Measure, *, clock: Callable[[], float], soft_deadl
             say(f"benchmark: {plan.key} T={t}: FAILED ({m.reason})")
         return m
 
-    def best_at(t: int) -> Measurement | None:
-        ok = [m for (key, tt), m in results.items() if tt == t and m.ok]
-        return max(ok, key=lambda m: m.tokens_per_s) if ok else None
+    def complete(plan: Plan) -> bool:
+        return all((plan.key, t) in results and results[(plan.key, t)].ok for t in lens)
+
+    def by_speed(ms: Sequence[Measurement]) -> list[Measurement]:
+        return sorted(ms, key=lambda m: -m.tokens_per_s)       # stable: the first fastest first
+
+    def failed(plan: Plan) -> bool:
+        return any(key == plan.key and not m.ok for (key, _), m in results.items())
+
+    def best_at(t: int, sel: bool | None = None, choosable: bool = False) -> Measurement | None:
+        # choosable: only plans without a failed (or skipped) length, the plans the selection
+        # can still take
+        ok = [m for (key, tt), m in results.items()
+              if tt == t and m.ok and (sel is None or bool(m.plan.sel) == sel)
+              and not (choosable and failed(m.plan))]
+        return by_speed(ok)[0] if ok else None
 
     def best_plan() -> Plan:
-        # the fastest plan at the base length among those measured at every length, else the
-        # fastest at the base length
-        complete = [m for m in (results.get((p.key, lens[0])) for p in _plans(results))
-                    if m is not None and m.ok and all(results.get((m.plan.key, t)) is not None
-                                                      and results[(m.plan.key, t)].ok for t in lens)]
-        if complete:
-            return max(complete, key=lambda m: m.tokens_per_s).plan
+        # the plan the selection rule takes at the base length among those measured at every
+        # length (selective attention within run.sel_min_speed of the best plan without it),
+        # else the fastest at the base length
+        full = [results[(p.key, lens[0])] for p in _plans(results) if complete(p)]
+        if full:
+            return _choose(by_speed(full), lambda m: m.tokens_per_s, lambda m: m.plan,
+                           min_speed)[0].plan
         b = best_at(lens[0])
         return base if b is None else b.plan
 
     def challenge(plan: Plan) -> None:
-        cur = best_at(lens[0])
+        # against the fastest plan of its kind that can still be chosen: a plan that failed at
+        # some length cannot, so it must not keep a faster complete candidate from the long length
+        cur = best_at(lens[0], bool(plan.sel), choosable=True)
         m = run(plan, lens[0])
         if m.ok and (cur is None or m.tokens_per_s > cur.tokens_per_s):
             for t in lens[1:]:
                 run(plan, t)
 
+    def sel_twin() -> None:
+        # the best plan with selective attention, without it: the comparison of the selection
+        # rule on a host without the flash kernel, or when the flash plans fail
+        if base.sel is None:
+            return
+        full = [results[(p.key, lens[0])] for p in _plans(results) if p.sel and complete(p)]
+        best = by_speed(full)[0] if full else best_at(lens[0], True)
+        challenge((base if best is None else best.plan).without_sel())
+
     for t in lens:
         run(base, t, essential=True)
+    if not complete(base):
+        # the configured plan does not run at every length: the proven modes become essential,
+        # each axis alone, then both together (the flash kernel and the configured table mode
+        # can fail on the same chip)
+        others = [m for m in TABLE_MODES if m != base.table_grad]
+        flips = [base.with_table(m) for m in others]
+        flips += [base.flip_attn()] + ([base.without_sel()] if base.sel else [])
+        flips += [base.flip_attn().with_table(m) for m in others]
+        flips += [base.without_sel().with_table(m) for m in others] if base.sel else []
+        for alt in flips:
+            if any(complete(p) for p in _plans(results)):
+                break
+            for t in lens:
+                if not run(alt, t, essential=True).ok:
+                    break
     challenge(base.flip_remat())
     if mode != "reduced":
-        challenge(best_plan().flip_table())
+        for table in TABLE_MODES:
+            best = best_plan()
+            if table != best.table_grad:
+                challenge(best.with_table(table))
         challenge(best_plan().flip_attn())
+        sel_twin()
     else:
+        sel_twin()
         alt = best_plan().flip_attn()
         if alt.attn_impl == "splash" and platform != "tpu":
             run(alt, lens[0])          # recorded as skipped (needs a TPU)
@@ -291,9 +425,12 @@ def _plans(results: Mapping[tuple[str, int], Measurement]) -> list[Plan]:
 
 
 def select_plan(measurements: Sequence[Measurement], lens: Sequence[int],
-                shares: Mapping[int, float]) -> dict[str, Any]:
-    """The plan for the run (module docstring): ``{"plan", "per_seq_len", "expected_tps",
-    "candidates"}``; raises :class:`BenchmarkError` when no plan is valid at every length."""
+                shares: Mapping[int, float],
+                sel_min_speed: float = RunCfg.sel_min_speed) -> dict[str, Any]:
+    """The plan for the run (module docstring): ``{"plan", "plan_key", "per_seq_len",
+    "expected_tps", "candidates"}``, plus ``"sel_attn"`` (the decision of :func:`_choose`) when a
+    measured plan has selective attention; raises :class:`BenchmarkError` when no plan is valid
+    at every length."""
     by: dict[str, dict[int, Measurement]] = {}
     for m in measurements:
         by.setdefault(m.plan.key, {})[m.seq_len] = m
@@ -313,9 +450,16 @@ def select_plan(measurements: Sequence[Measurement], lens: Sequence[int],
         raise BenchmarkError("no execution plan compiled and ran at every sequence length "
                              f"{list(lens)}: {reasons[:8]}")
     cands.sort(key=lambda c: (-c[0], c[1]))
-    exp, key, plan = cands[0]
-    return {"plan": plan, "plan_key": key, "per_seq_len": per_len, "expected_tps": exp,
-            "candidates": [{"plan": k, "expected_tps": e} for e, k, _ in cands]}
+    (exp, key, plan), dec = _choose(cands, lambda c: c[0], lambda c: c[2], sel_min_speed)
+    out = {"plan": plan, "plan_key": key, "per_seq_len": per_len, "expected_tps": exp,
+           "candidates": [{"plan": k, "expected_tps": e} for e, k, _ in cands]}
+    if dec is not None:
+        out["sel_attn"] = dec
+    elif any(m.plan.sel for m in measurements):
+        out["sel_attn"] = {"kept": False, "min_speed": float(sel_min_speed), "sel_plan": None,
+                           "sel_tps": None, "plain_plan": key, "plain_tps": exp, "ratio": None,
+                           "reason": "no plan with selective attention ran at every length"}
+    return out
 
 
 # ------------------------------------------------------------------------ measurement
@@ -625,9 +769,26 @@ def canary(cfg: Cfg, plan: Plan,
     out["full"] = run_steps(run_sw, "full configuration")
     tried: dict[int, dict] = {}
 
+    def enable_of(switches: Mapping[str, float]) -> dict[str, Any]:
+        en = M.make_consts(mcfg, **switches)["enable"]
+        return {k: np.asarray(v).tolist() for k, v in en.items()}
+
+    # the switch values of the last configuration that ran (and failed: the ladder goes on)
+    last = {"label": "the full configuration", "enable": enable_of(run_sw)}
+
     def try_rung(k: int) -> bool:
         sw, _, groups = ladder_rung(k)
+        en = enable_of({**run_sw, **sw})
+        if en == last["enable"]:
+            # the rung's paths are absent or already off: the same program and inputs as the
+            # run before it, which failed
+            tried[k] = {"ok": False, "same_as": last["label"], "switches": {**run_sw, **sw},
+                        "note": f"changes no switch of this configuration: not run again "
+                                f"(the same run as {last['label']})"}
+            say(f"canary: rung {k} ({'+'.join(groups)} off) changes no switch: not run again")
+            return False
         tried[k] = run_steps({**run_sw, **sw}, f"rung {k} ({'+'.join(groups)} off)")
+        last.update(label=f"rung {k}", enable=en)
         return tried[k]["ok"]
 
     rung, _ = choose_rung(out["full"]["ok"], out["safe"]["ok"], try_rung, len(LADDER))

@@ -186,10 +186,16 @@ def test_switches_and_the_ladder():
         SV.parse_switches("sink=0")
     assert SV.format_switches({"sink": 0.0, "src_5": 0.25}) == "sink:0 src_5:0.25"
     groups = [g for g, _, _ in SV.LADDER]
-    assert groups == ["sink", "conf", "ngram", "library", "tilt", "registers", "calc"]
+    # the v9 paths first (attention gate, selective attention, token gains, token neurons), then
+    # plan section 6
+    assert groups == ["gate", "sel", "gain", "page", "sink", "conf", "ngram", "library", "tilt",
+                      "registers", "calc"]
     assert SV.ladder_rung(0) == ({}, [], [])
     sw, ov, g = SV.ladder_rung(4)
-    assert g == groups[:4] and sw == {"sink": 0.0, "conf": 0.0, "cand_in": 0.0}
+    assert g == groups[:4] and sw == {"gate": 0.0, "sel": 0.0, "gain": 0.0, "page": 0.0} and ov == []
+    sw, ov, g = SV.ladder_rung(8)
+    assert g == groups[:8] and sw == {"gate": 0.0, "sel": 0.0, "gain": 0.0, "page": 0.0,
+                                      "sink": 0.0, "conf": 0.0, "cand_in": 0.0}
     assert ov == ["data.library_frac_base=0", "data.library_frac_chat=0"]
     sw, _, _ = SV.ladder_rung(len(SV.LADDER))
     M = pytest.importorskip("bes.model.model")
@@ -197,11 +203,12 @@ def test_switches_and_the_ladder():
     safe = SV.safe_switches()
     assert set(M.SWITCHES) <= set(sw) | {"kind"} and all(v == 0 for v in sw.values())
     assert set(safe) == set(M.SWITCHES) | {"kind"}
-    cfg = load_config(str(ROOT / "configs" / "safe.py"))
-    assert SV.parse_switches(cfg.run.switches) == safe
-    assert cfg.data.library_frac_base == 0 and cfg.data.library_frac_chat == 0
-    final = load_config(str(ROOT / "configs" / "final.py"))
-    assert cfg.model == final.model and cfg.optim == final.optim      # same graph, same tree
+    for name, base in (("safe", "final"), ("v9_safe", "v9")):
+        cfg = load_config(str(ROOT / "configs" / f"{name}.py"))
+        assert SV.parse_switches(cfg.run.switches) == safe, name
+        assert cfg.data.library_frac_base == 0 and cfg.data.library_frac_chat == 0
+        ref = load_config(str(ROOT / "configs" / f"{base}.py"))
+        assert cfg.model == ref.model and cfg.optim == ref.optim      # same graph, same tree
 
 
 def test_effective_configuration_round_trip():
@@ -223,6 +230,58 @@ def test_effective_configuration_round_trip():
     rung0 = dict(man, benchmark=dict(man["benchmark"], ladder={"rung": 0, "switches": None,
                                                                 "overrides": []}))
     assert not any(o.startswith("run.switches") for o in SV.run_overrides(rung0))
+
+
+def test_a_v9_run_never_asks_for_the_library(tmp_path, monkeypatch):
+    """configs/v9.py has no library (it derives from configs/no_library.py): the library task
+    writes its marker without building one, the run's library accessors answer without looking
+    for one, the library gate passes every stage with the library fractions at 0, and the
+    effective configuration of a v9 benchmark result (plan, ladder rung) keeps the v9 model. Of
+    the v9 rungs, the configuration has the token gains and the token neurons (no gate, no
+    selective attention: their rungs change nothing for it)."""
+    import runpy
+
+    import numpy as np
+
+    from bes.train import benchmark as B
+
+    M = pytest.importorskip("bes.model.model")
+    v9 = ROOT / "configs" / "v9.py"
+    cfg = load_config(str(v9))
+    assert not cfg.data.use_library and not cfg.decode.use_library
+    assert cfg.data.library_frac_base == 0 and cfg.data.library_frac_chat == 0
+    monkeypatch.setattr(runpy, "run_path", lambda *a, **kw: pytest.fail("a v9 run builds no library"))
+    out = tmp_path / "run"
+    SV.write_manifest(out, {"budget": {"t0": time.time()}})
+    paths = SV.RunPaths(out)
+    assert SV.task_library(paths, cfg, SV.core_plan(2), print) == 0
+    mk = SV.read_marker(paths, "library")
+    assert mk["path"] is None and "no library" in mk["reason"]
+    R = _run24()
+    run = R.Run.__new__(R.Run)
+    run.cfg, run.paths = cfg, paths
+    assert run.library_ready() is None and run.library_path() == ""
+    fl = FakeLoader()
+    gate = SV.LibraryGate(fl, run.library_ready, check_every_s=0.0)
+    for i, p in enumerate((0.0, 0.5, 0.95)):
+        gate(i, stage_at(p, cfg))
+    assert not gate.active and not fl.libs and all(b == 0 and c == 0 for _, b, c in fl.calls)
+    # the benchmark's plan and a ladder rung through the effective configuration
+    plan = B.Plan.of(cfg)
+    assert plan.key == "splash-remat1-ms32-sorted"
+    man = {"config": str(v9), "overrides": [],
+           "benchmark": {"plan_overrides": plan.overrides(),
+                         "ladder": {"rung": 3, "switches": "gate:0 sel:0 gain:0", "overrides": []},
+                         "horizon_tokens": 2.0e10}}
+    ecfg = SV.effective_config(man)
+    assert ecfg.model == cfg.model and ecfg.run.switches == "gate:0 sel:0 gain:0"
+    assert SV.generator_overrides(man).split(",") == [o for o in plan.overrides()
+                                                      if o.startswith("model.")]
+    on = {k for k, v in M.make_consts(cfg.model)["enable"].items() if np.ndim(v) == 0 and float(v)}
+    assert {"gain", "page"} <= on and not {"sel", "gate"} & on
+    rung = M.make_consts(cfg.model, **SV.parse_switches(ecfg.run.switches))["enable"]
+    assert float(rung["gain"]) == 0.0 and float(rung["page"]) == 1.0
+    assert SV.format_switches(SV.ladder_rung(3)[0]) == ecfg.run.switches
 
 
 def test_make_consts_fn_applies_the_switches():
@@ -440,6 +499,31 @@ def test_disk_estimate_is_stated_and_counts_the_raw_deletion():
     assert off["raw_left_gb"] == off["downloads_gb"] and not off["delete_raw_after_tokenize"]
     assert on["delete_raw_after_tokenize"] and 0 < on["raw_left_gb"] < 0.1 * on["downloads_gb"]
     assert on["total_gb"] < off["total_gb"] and SV.disk_need_gb(cfg) == on["total_gb"]
+
+
+def test_disk_estimate_counts_the_token_pages_of_v9():
+    """configs/v9.py: its token pages (gain/o and page/*, the ledger rows "gain" and "page") are
+    in every checkpoint the run can hold (run.keep_ckpts kept and one being written), 12 bytes
+    per number (float32 and two Adam moments); configurations without pages keep the fixed
+    allowance."""
+    import functools
+
+    import jax
+
+    from bes import budget
+    from bes.model import model as M
+
+    v9 = load_config(str(ROOT / "configs" / "v9.py"))
+    final = load_config(str(ROOT / "configs" / "final.py"))
+    shapes = jax.eval_shape(functools.partial(M.init_params, v9.model), jax.random.PRNGKey(0))
+    led = budget.count(shapes, v9.model).ledger()
+    assert SV.page_numbers(v9.model) == led["gain"][0] + led["page"][0] == 63_504_384
+    assert SV.page_numbers(final.model) == 0
+    a, b = SV.disk_need(v9), SV.disk_need(final)
+    assert b["other_gb"] == SV.DISK_OTHER_GB and "token pages" not in b["rule"]
+    assert a["other_gb"] == pytest.approx(SV.DISK_OTHER_GB + 4 * 12 * 63_504_384 / 1e9, abs=1e-3)
+    assert "token pages" in a["rule"]
+    assert a["total_gb"] - b["total_gb"] == pytest.approx(a["other_gb"] - b["other_gb"], abs=0.01)
 
 
 def _fake_source(data_dir, name, n_files, t_files, t0, sizes=None):

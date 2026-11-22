@@ -6,14 +6,22 @@
   by index; ``bes.budget`` counts one row per read);
 * ``group``: optimiser group, one of :data:`GROUPS`:
   ``matrix``  spectral optimiser (MuonH / Muon); every such matrix is non-zero at init,
-              stored ``[..., d_in, d_out]``;
-  ``embed``   Adam, vocabulary-indexed input tables (token and value embeddings);
+              stored ``[..., d_in, d_out]`` (also the token-neuron projections ``page/pin``,
+              ``page/pout``);
+  ``embed``   Adam, vocabulary-indexed input tables (token and value embeddings, the
+              token-neuron keys ``page/key``, which are used RMS-normalised like ``emb/tok``);
   ``unembed`` Adam, output embedding and the trust feature tables of the output law;
   ``feature`` Adam at a much lower rate, the zero-initialised feature tables: registers,
               candidate input (token and feature tables) and the trust biases;
   ``norm``    Adam, RMSNorm gains;
-  ``scalar``  Adam, lanes, attention gains, sink scalars and the value-embedding gate;
-  ``frozen``  not updated by the main optimiser (the critic, fitted in a separate stage).
+  ``scalar``  Adam, lanes, attention gains, sink scalars, the value-embedding gate and the
+              zero-initialised attention output gate ``core/attn/gate_w``, ``core/attn/gate_b``
+              (a zero matrix cannot be in the spectral group);
+  ``frozen``  not updated by the main optimiser (the critic, fitted in a separate stage);
+  ``gain``    Adam with its own rate and decay, the zero-initialised per-token gain tables
+              ``gain/*`` (one row of multiplicative deltas per vocabulary id);
+  ``page``    Adam with its own rate and decay, the zero-initialised token-neuron values
+              ``page/val`` (one row per vocabulary id).
 
 Paths are ``/``-joined dict keys (``"core/attn/wq"``); tuples of keys and JAX key paths are
 accepted too. Every leaf of ``bes.model.model.init_params`` must match a rule (tested);
@@ -28,7 +36,7 @@ from typing import Any, Iterable
 import jax
 
 KINDS = ("dense", "lookup")
-GROUPS = ("matrix", "embed", "unembed", "feature", "norm", "scalar", "frozen")
+GROUPS = ("matrix", "embed", "unembed", "feature", "norm", "scalar", "frozen", "gain", "page")
 
 
 @dataclass(frozen=True)
@@ -83,6 +91,13 @@ _RULES: list[tuple[str, Role]] = [
     ("trust/bias/*", _LOOKUP_FEATURE),
     ("critic/w1", _FROZEN),
     ("critic/w2", _FROZEN),
+    ("gain/*", Role("lookup", "gain")),
+    ("core/attn/gate_w", _SCALAR),
+    ("core/attn/gate_b", _SCALAR),
+    ("page/pin", _MATRIX),
+    ("page/pout", _MATRIX),
+    ("page/key", _LOOKUP_EMBED),
+    ("page/val", Role("lookup", "page")),
 ]
 
 

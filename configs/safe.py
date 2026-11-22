@@ -18,5 +18,6 @@ CFG = dataclasses.replace(
     _FINAL,
     data=dataclasses.replace(_FINAL.data, library_frac_base=0.0, library_frac_chat=0.0),
     run=dataclasses.replace(_FINAL.run, name="safe", out_dir="runs/safe",
-                            switches="reg:0 cand_in:0 cand_out:0 conf:0 sink:0 clock:0 kind:0"),
+                            switches="reg:0 cand_in:0 cand_out:0 conf:0 sink:0 clock:0 gain:0 "
+                                     "sel:0 gate:0 page:0 kind:0"),
 )

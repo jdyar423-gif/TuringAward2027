@@ -77,12 +77,20 @@ REPO = Path(__file__).resolve().parents[2]
 FORMAT = 1
 GB = 1e9
 
-#: Fallback ladder of the canary (plan section 6: sink, confidence channel, n-gram count heads,
-#: library passages, candidate tilt, registers, calculator spans), switched off one group at a
-#: time, cumulatively. Each rung: (group, make_consts switches, config overrides). The model
-#: has no switch for calculator spans (they are data and a decoding rule), so that rung changes
-#: nothing; it is kept so the ladder reads as the plan does.
+#: Fallback ladder of the canary, switched off one group at a time, cumulatively. First the v9
+#: paths (``docs/V9.md``): the head-wise attention output gate, selective attention, the token
+#: gain pages and the token neurons; then plan section 6: sink, confidence channel, n-gram count
+#: heads, library passages, candidate tilt, registers, calculator spans. Each rung: (group,
+#: make_consts switches, config overrides). The model has no switch for calculator spans (they
+#: are data and a decoding rule), so that rung changes nothing; it is kept so the ladder reads as
+#: the plan does. A rung whose paths a configuration does not have changes nothing for it either:
+#: the canary does not run such a rung again (``bes.train.benchmark.canary``), and the rung
+#: numbers are the same for every configuration.
 LADDER: tuple[tuple[str, dict[str, float], tuple[str, ...]], ...] = (
+    ("gate", {"gate": 0.0}, ()),
+    ("sel", {"sel": 0.0}, ()),
+    ("gain", {"gain": 0.0}, ()),
+    ("page", {"page": 0.0}, ()),
     ("sink", {"sink": 0.0}, ()),
     ("conf", {"conf": 0.0}, ()),
     ("ngram", {"cand_in": 0.0}, ()),
@@ -383,6 +391,24 @@ def check_devices(rep: Mapping[str, Any], allow_cpu: bool) -> list[str]:
 SHARD_BYTES_PER_RAW_BYTE = 1.4   # 2 bytes per token; a ClimbMix parquet of 92 MB holds 63.8 M tokens
 DISK_OTHER_GB = 6.0              # library, checkpoints (three of the parameters and both moments),
                                  # compilation cache, post-training outputs
+#: bytes per stored number of a token page in one checkpoint: the float32 parameter and its two
+#: Adam moments
+PAGE_CKPT_BYTES = 12
+
+
+def page_numbers(model_cfg: Any) -> int:
+    """Stored numbers of the v9 token pages of a ``ModelCfg`` (``gain/*``: ``V x P x n_blocks x
+    width`` per table; ``page/key`` and ``page/val``: ``V x n_blocks x rho x dk`` each, plus the
+    projections ``page/pin``, ``page/pout``); 0 without them. Plain arithmetic, no JAX."""
+    m = model_cfg
+    hw = m.n_heads * m.head_dim
+    width = m.gain_ffn + (hw if m.gain_o else 0) + (hw if m.gain_v else 0)
+    gain = m.vocab_size * m.gain_phases * m.n_blocks * width
+    page = 0
+    if m.tok_neurons:
+        page = (2 * m.vocab_size * m.n_blocks * m.tok_neurons * m.tok_dim
+                + 2 * m.n_blocks * m.d_model * m.tok_dim)
+    return gain + page
 
 
 def disk_need(cfg: Cfg, tokenize_workers: int = 4) -> dict[str, Any]:
@@ -394,7 +420,9 @@ def disk_need(cfg: Cfg, tokenize_workers: int = 4) -> dict[str, Any]:
     the sampling stage reads. With deletion the disk holds ``downloaded + 0.4 x tokenised`` raw
     and shard bytes at any time, so the peak is ``1.4 D`` plus the kept files, however far the
     tokenisation lags behind the downloads. Plus the shard temporaries of the tokenisation
-    workers (one largest file each) and :data:`DISK_OTHER_GB` for everything else."""
+    workers (one largest file each) and :data:`DISK_OTHER_GB` for everything else; the v9 token
+    pages (:func:`page_numbers`, 0.76 GB per checkpoint for ``configs/v9.py``) add their bytes in
+    ``run.keep_ckpts`` checkpoints and the one being written to ``other_gb``."""
     from bes.data import sources
 
     sizes: dict[str, float] = {}
@@ -416,14 +444,18 @@ def disk_need(cfg: Cfg, tokenize_workers: int = 4) -> dict[str, Any]:
     raw_left = min(total, kept) if delete else total
     temp = SHARD_BYTES_PER_RAW_BYTE * largest * max(1, int(tokenize_workers))
     need = SHARD_BYTES_PER_RAW_BYTE * total + raw_left + temp
+    pages = (cfg.run.keep_ckpts + 1) * PAGE_CKPT_BYTES * page_numbers(cfg.model) / GB
+    other = round(DISK_OTHER_GB + pages, 3)
+    rule = ("1.4 x downloads (shards) + raw files left (all of them without deletion, the "
+            "newest file of each sampled chat/math source with it) + one largest file per "
+            "tokenisation worker + 6 GB (library, checkpoints, compilation cache)")
+    if pages:
+        rule += f" + {pages:.2f} GB (the token pages in {cfg.run.keep_ckpts + 1} checkpoints)"
     return {"downloads_gb": round(total / GB, 3),
             "shards_gb": round(SHARD_BYTES_PER_RAW_BYTE * total / GB, 3),
             "raw_left_gb": round(raw_left / GB, 3), "tokenize_temp_gb": round(temp / GB, 3),
-            "other_gb": DISK_OTHER_GB, "total_gb": round(need / GB + DISK_OTHER_GB, 3),
-            "delete_raw_after_tokenize": delete,
-            "rule": ("1.4 x downloads (shards) + raw files left (all of them without deletion, the "
-                     "newest file of each sampled chat/math source with it) + one largest file per "
-                     "tokenisation worker + 6 GB (library, checkpoints, compilation cache)")}
+            "other_gb": other, "total_gb": round(need / GB + other, 3),
+            "delete_raw_after_tokenize": delete, "rule": rule}
 
 
 def disk_need_gb(cfg: Cfg, tokenize_workers: int = 4) -> float:

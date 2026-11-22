@@ -6,6 +6,7 @@ arm configurations.
 """
 from __future__ import annotations
 
+import dataclasses
 import hashlib
 import json
 import math
@@ -15,7 +16,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from bes.config import BOS, END, PAD
+from bes.config import BOS, END, PAD, OptimCfg, load_config
 from bes.data.samples import loss_weights
 from bes.eval import microbench as mb
 from bes.tokenizer import load as load_tok
@@ -295,6 +296,30 @@ def test_e2_arms_resolve_to_valid_configs():
     assert {"no_tape", "tape_out_only", "tape_in_only", "no_reg", "no_clock", "no_sink", "no_conf",
             "ve_0", "ve_wide", "muon", "loops_4", "loops_12", "lr_feature_x0.3", "lr_feature_x3",
             "mass_offset_4", "mass_offset_8", "transfer_rule", "src5_train_025", "src5_train_0"} <= set(names)
+    v9 = {a.name: a for a in MA.E2_ARMS if a.kind == "add_new"}
+    assert set(v9) == {"gain_o", "tok_neurons", "attn_gate", "sel_attn", "v9_pages", "v9_pages_gate",
+                       "v9_pages_decay", "v9_pages_lr03"}
+    slow = mb.arm_config(v9["v9_pages_lr03"], 1_000_000, mb.Bench())
+    assert (slow.optim.lr_gain, slow.optim.lr_page) == (0.003, 0.0012)
+    assert slow.model == mb.arm_config(v9["v9_pages"], 1_000_000, mb.Bench()).model
+    assert all(a.component for a in v9.values())
+    shipped = mb.arm_config(v9["v9_pages"], 1_000_000, mb.Bench())
+    pages = shipped.model
+    assert (pages.gain_o, pages.tok_neurons, pages.tok_dim, pages.attn_gate, pages.sel_attn) == \
+        (True, 8, pages.d_model // 4, False, False)
+    # the arm trains the page as configs/v9.py does: same flags, same rates and decay of its groups
+    v9_cfg = load_config(str(REPO / "configs" / "v9.py"))
+    for f in ("lr_gain", "lr_page", "gain_decay", "page_decay"):
+        assert getattr(shipped.optim, f) == getattr(v9_cfg.optim, f) == getattr(OptimCfg(), f), f
+    assert (pages.gain_o, pages.gain_v, pages.gain_ffn, pages.tok_neurons, pages.attn_gate, pages.sel_attn) == \
+        (v9_cfg.model.gain_o, v9_cfg.model.gain_v, v9_cfg.model.gain_ffn, v9_cfg.model.tok_neurons,
+         v9_cfg.model.attn_gate, v9_cfg.model.sel_attn)
+    gated = mb.arm_config(v9["v9_pages_gate"], 1_000_000, mb.Bench())
+    assert gated.model == dataclasses.replace(pages, attn_gate=True) and gated.optim == shipped.optim
+    decayed = mb.arm_config(v9["v9_pages_decay"], 1_000_000, mb.Bench())
+    assert decayed.model == pages
+    assert decayed.optim == dataclasses.replace(shipped.optim, gain_decay=0.1, page_decay=0.1)
+    assert mb.arm_config(v9["sel_attn"], 1_000_000, mb.Bench()).model.sel_attn
     lrs = {}
     for a in MA.E2_ARMS:
         cfg = mb.arm_config(a, 1_000_000, mb.Bench())
@@ -328,9 +353,31 @@ def test_paired_diff_by_hand():
     ("setting", -0.010, None, 0.002, "adopt"),
     ("setting", -0.010, None, 0.006, "keep default"),     # margin 1.2%
     ("setting", 0.020, None, 0.000, "keep default"),
+    ("add_new", 0.010, None, 0.002, "harm"),              # worse by 1% > margin 0.5%
+    ("add_new", -0.010, None, 0.002, "gain"),
+    ("add_new", 0.004, None, 0.001, "not resolved"),      # within the margin either way
+    ("add_new", -0.010, None, 0.006, "not resolved"),     # margin 1.2%
 ])
 def test_decision_rule_hand_cases(kind, g_last, g_early, se, expected):
     assert mb.decide(kind, g_last, g_early, se)[0] == expected
+
+
+def test_flops_per_token_counts_the_v9_matmuls_only_when_they_are_on():
+    sys.path.insert(0, str(REPO / "scripts"))
+    import micro_ablate as MA
+
+    by = {a.name: a for a in MA.E2_ARMS}
+    ref = mb.arm_config(by["ref"], 1_000_000, mb.Bench())
+    f = {n: mb.flops_per_token(mb.arm_config(by[n], 1_000_000, mb.Bench()))["forward"]
+         for n in ("ref", "gain_o", "sel_attn", "attn_gate", "tok_neurons", "v9_pages", "v9_pages_gate")}
+    m = ref.model
+    apps = m.n_loops * m.n_blocks
+    assert f["gain_o"] == f["sel_attn"] == f["ref"]                  # element-wise: no matmul
+    assert f["attn_gate"] - f["ref"] == apps * 2 * m.d_model * m.n_heads
+    dk = m.d_model // 4
+    assert f["tok_neurons"] - f["ref"] == apps * 2 * (2 * m.d_model * dk + 2 * 8 * dk)
+    assert f["v9_pages"] == f["tok_neurons"]
+    assert f["v9_pages_gate"] - f["ref"] == (f["tok_neurons"] - f["ref"]) + (f["attn_gate"] - f["ref"])
 
 
 def _record(name, kind, losses, seed=0, tokens=4000, views=None, mixture=(("web", 0.75), ("chat", 0.25))):

@@ -50,7 +50,8 @@ def cand_input(pc: dict, cand_tok: jax.Array, cand_feat: jax.Array, m: jax.Array
     :func:`cand_mask`.
     """
     dt = act_dtype(cfg)
-    tok = big_lookup(pc["in_tok"], cand_tok, m, mode=cfg.table_grad, dtype=dt)       # [B,T,cd]
+    tok = big_lookup(pc["in_tok"], cand_tok, m, mode=cfg.table_grad, dtype=dt,
+                     chunk=cfg.sorted_chunk)                                          # [B,T,cd]
     table, _ = concat_tables([pc["in_feat"][f] for f in FEAT_NAMES])
     fidx = feat_index(cand_feat)                                                      # [B,T,K,F]
     lead = fidx.shape[:-2]

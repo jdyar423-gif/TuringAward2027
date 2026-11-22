@@ -11,7 +11,16 @@ conventions for the numbers it reads:
   indexed at every earlier position that ``t`` can see (same segment, ``j <= t``) and the
   output-side rows of ``t`` itself. A sink position (``BOS`` with the sink on) contributes no
   rows to later positions: its key and value are ``sink_logit`` / ``sink_value`` at every loop
-  and block, whatever its token, registers or candidates.
+  and block, whatever its token, registers or candidates. The one exception is selective
+  attention (``sel_attn`` with the ``sel`` switch on): a position's head-0 query also feeds the
+  later queries through the selection ``S``, so a sink position that sees a key selection may
+  mask (a visible slot other than its own holding neither BOS nor padding, i.e. a BOS inside a
+  segment) contributes its rows (:func:`feeds_later`), except the rows that only enter its
+  value (``emb/ve``, ``gain/v``), which the sink value replaces.
+
+In both conventions the rows that only enter a position's value (:data:`VALUE_ROWS`) are not
+read at a sink position, the position ``t`` itself included: its query reads its token's other
+rows, its value is the sink value.
 
 Rows read by one position (indices clipped into the table, as the model does):
 
@@ -23,6 +32,9 @@ table                  row                                                      
 ``emb/reg/<f>``        the register value of field ``f`` (if the ``reg`` switch)    input
 ``cand/in_tok``        the candidate of every active slot (``mask_k != 0``)         input
 ``cand/in_feat/<f>``   feature ``f`` of every active slot                           input
+``gain/<g>``           the token (a ``[P, n_blocks, width]`` row; ``gain`` switch)  input
+``page/key``           the token (a ``[n_blocks, rho, dk]`` row; ``page`` switch)   input
+``page/val``           the token (a ``[n_blocks, rho, dk]`` row; ``page`` switch)   input
 ``trust/feat/<f>``     feature ``f`` of every slot with output mass                 output
 ``trust/bias/<f>``     feature ``f`` of every slot with output mass (width 1)       output
 =====================  ===========================================================  ==========
@@ -30,15 +42,19 @@ table                  row                                                      
 A slot has output mass (``bes.model.predictive``) when its ``cand_out`` slot mask is non-zero,
 its id lies in the vocabulary and the ``src`` multiplier of its source is non-zero. Dense
 leaves of switched-off paths are not read (``cand/in_proj`` without ``cand_in``,
-``trust/proj`` without ``cand_out``, the sink scalars without ``sink``); the critic is read only
-by decoders that use it (``include_critic``).
+``trust/proj`` without ``cand_out``, the sink scalars without ``sink``, the output gate
+``core/attn/gate_w`` / ``gate_b`` without ``gate``, the token-neuron projections ``page/pin`` /
+``page/pout`` without ``page``); the critic is read only by decoders that use it
+(``include_critic``). Selective attention has no parameters.
 
 Contents:
 
 * :func:`read_rows` - the read set of the last position of a sequence (either convention);
 * :class:`RowStore` - the dense leaves plus *only* the read rows; any other row raises KeyError;
 * :func:`reference_logits` - a numpy (float64) forward of the last position that sees nothing
-  but a :class:`RowStore`, from scratch (strict) or from a key-value cache (step);
+  but a :class:`RowStore`, from scratch (strict) or from a key-value cache (step), with the
+  v9 write-side paths (token gains, head-wise output gate, token neurons) and selective
+  attention written from their specification formulas;
 * :func:`poison` - large finite noise on every lookup row outside a read set;
 * :class:`ReadLogger` - distinct stored numbers read per generated token, both conventions.
 """
@@ -61,10 +77,15 @@ KIND_FIELD = [name for name, _ in CAND_FEATS].index("kind")
 N_KINDS = dict(CAND_FEATS)["kind"]
 SRC_FIELD = [name for name, _ in CAND_FEATS].index("src")
 N_SRC = dict(CAND_FEATS)["src"]
-SWITCHES = ("reg", "cand_in", "cand_out", "conf", "sink", "clock")
+SWITCHES = ("reg", "cand_in", "cand_out", "conf", "sink", "clock", "gain", "sel", "gate", "page")
+#: lookup tables whose rows only enter the position's value (replaced by the sink value at a
+#: sink position)
+VALUE_ROWS = ("emb/ve", "gain/v")
 #: dense leaves that a runtime switch removes from the computation
 _DENSE_SWITCH = {"cand/in_proj": "cand_in", "trust/proj": "cand_out",
-                 "core/attn/sink_logit": "sink", "core/attn/sink_value": "sink"}
+                 "core/attn/sink_logit": "sink", "core/attn/sink_value": "sink",
+                 "core/attn/gate_w": "gate", "core/attn/gate_b": "gate",
+                 "page/pin": "page", "page/pout": "page"}
 
 
 # ---------------------------------------------------------------------------- helpers
@@ -76,11 +97,20 @@ def _soft_cap(a: float, cap: float, knee: float = 2.0) -> float:
     return a if a <= lo else lo + knee * math.tanh((a - lo) / knee)
 
 
+def _gain_tables(cfg) -> tuple[str, ...]:
+    """Gain tables of the configuration (``gain/<name>``): ``ffn`` with ``gain_ffn > 0``,
+    ``o`` with ``gain_o``, ``v`` with ``gain_v``."""
+    flags = (("ffn", cfg.gain_ffn > 0), ("o", cfg.gain_o), ("v", cfg.gain_v))
+    return tuple(name for name, on in flags if on)
+
+
 def _enable(consts: Mapping | None, cfg) -> dict[str, Any]:
     """Runtime switches as floats (``kind`` as ``float64[N_KINDS]``, ``src`` as
     ``float64[N_SRC]``); defaults follow the static flags (as ``bes.model.model.make_consts``)."""
     static = {"reg": cfg.use_reg, "cand_in": cfg.use_cand_in, "cand_out": cfg.use_cand_out,
-              "conf": cfg.use_conf, "sink": cfg.use_sink, "clock": cfg.clock_planes > 0}
+              "conf": cfg.use_conf, "sink": cfg.use_sink, "clock": cfg.clock_planes > 0,
+              "gain": bool(_gain_tables(cfg)), "sel": cfg.sel_attn, "gate": cfg.attn_gate,
+              "page": cfg.tok_neurons > 0}
     en = {} if consts is None else consts["enable"]
     out: dict[str, Any] = {n: float(np.asarray(en[n])) if n in en else float(static[n])
                            for n in SWITCHES}
@@ -135,6 +165,12 @@ def position_reads(cfg, en: Mapping, token: int, reg_row=None, cand_tok_row=None
         out["emb/tok"].add(x)
         if cfg.ve_dim:
             out["emb/ve"].add(x)
+        if en["gain"] != 0:
+            for name in _gain_tables(cfg):
+                out[f"gain/{name}"].add(x)
+        if cfg.tok_neurons and en["page"] != 0:
+            out["page/key"].add(x)
+            out["page/val"].add(x)
         if cfg.use_reg and reg_row is not None and en["reg"] != 0:
             for f, (name, card) in enumerate(REG_FIELDS):
                 out[f"emb/reg/{name}"].add(int(np.clip(int(reg_row[f]), 0, card - 1)))
@@ -171,6 +207,39 @@ def _is_sink(cfg, en, token: int) -> bool:
     return bool(cfg.use_sink and en["sink"] != 0 and int(token) == special_id("<|bos|>", cfg.vocab_size))
 
 
+def _selective(cfg, en) -> bool:
+    """Selective attention is in the computation (static flag and runtime switch)."""
+    return bool(cfg.sel_attn and en["sel"] != 0)
+
+
+def _maskable(cfg, tokens: np.ndarray, seg: np.ndarray) -> np.ndarray:
+    """Keys selective attention may mask: neither a BOS token nor padding (``seg < 0``)."""
+    return (np.asarray(tokens) != special_id("<|bos|>", cfg.vocab_size)) & (np.asarray(seg) >= 0)
+
+
+def feeds_later(cfg, en: Mapping, feats: Mapping, j: int) -> bool:
+    """Whether the rows read at position ``j`` reach the later positions of its segment.
+
+    Always, except for a sink position: its key and value are the sink parameters, so its
+    rows reach later positions only through the selection of its head-0 query under
+    selective attention, which is non-zero only when that query sees a key selection may
+    mask (a visible slot other than its own whose token is neither BOS nor padding). Even
+    then the rows of :data:`VALUE_ROWS` do not reach them (the sink value replaces the value).
+    """
+    f = _row_feats(feats)
+    tok = f["tokens"]
+    if not _is_sink(cfg, en, tok[j]):
+        return True
+    if not _selective(cfg, en):
+        return False
+    n = tok.shape[0]
+    seg = f.get("seg", np.zeros(n, np.int64))
+    pos = f.get("pos", np.arange(n))
+    seen = (seg == seg[j]) & (pos <= pos[j]) & _maskable(cfg, tok, seg)
+    seen[j] = False
+    return bool(np.any(seen))
+
+
 def visible_positions(feats: Mapping, t: int | None = None) -> np.ndarray:
     """Positions ``j <= t`` in the segment of ``t`` (default: the last position)."""
     f = _row_feats(feats)
@@ -199,11 +268,18 @@ def read_rows(cfg, consts: Mapping | None, feats: Mapping,
                               _get(f, "cand_feat", j), inputs=inputs, outputs=outputs)
 
     rows: dict[str, set[int]] = {}
-    _merge(rows, at(t, True, True))
+    here = at(t, True, True)
+    if _is_sink(cfg, en, f["tokens"][t]):                 # the sink value replaces its value
+        here = {p: r for p, r in here.items() if p not in VALUE_ROWS}
+    _merge(rows, here)
     if convention == "strict":
         for j in visible_positions(f, t):
-            if j != t and not _is_sink(cfg, en, f["tokens"][j]):
-                _merge(rows, at(int(j), True, False))
+            if j == t or not feeds_later(cfg, en, f, int(j)):
+                continue
+            here = at(int(j), True, False)
+            if _is_sink(cfg, en, f["tokens"][j]):         # a sink seen through its selection
+                here = {p: r for p, r in here.items() if p not in VALUE_ROWS}
+            _merge(rows, here)
     return {p: np.asarray(sorted(r), np.int64) for p, r in sorted(rows.items())}
 
 
@@ -347,6 +423,38 @@ def _rotate(x: np.ndarray, cos: np.ndarray, sin: np.ndarray) -> np.ndarray:
     return np.concatenate([x1 * cos + x2 * sin, x2 * cos - x1 * sin], axis=-1)
 
 
+def _token_neurons(x: np.ndarray, pin: np.ndarray, pout: np.ndarray, key: np.ndarray,
+                   val: np.ndarray) -> np.ndarray:
+    """Private neurons of each position's token (part C, section C3), before the switch.
+
+    x: ``[Q, d]`` input of the feed-forward sub-layer; pin ``[d, dk]``, pout ``[dk, d]``;
+    key, val: ``[Q, rho, dk]`` the raw table rows of each position's token. Every key is
+    brought to unit RMS over ``dk``, ``z = rmsnorm(x @ pin)``, the pre-activation of neuron
+    ``j`` is ``<z, key_j> / sqrt(dk)``, its activation the square of its positive part, and the
+    output ``(sum_j act_j val_j) @ pout``. Returns ``[Q, d]``."""
+    dk = pin.shape[-1]
+    z = _rms(x @ pin)
+    pre = np.einsum("qc,qjc->qj", z, _rms(key)) / math.sqrt(dk)
+    act = np.maximum(pre, 0.0) ** 2
+    return np.einsum("qj,qjc->qc", act, val) @ pout
+
+
+def _selection(head0: np.ndarray, mask: np.ndarray, maskable: np.ndarray, own: np.ndarray,
+               prior: np.ndarray) -> np.ndarray:
+    """Selective attention offsets (SPEC_V9 section 4) of one block: ``F [Q, K]``.
+
+    head0: ``[Q, K]`` head 0's logits before any subtraction; mask: ``bool[Q, K]`` visible
+    pairs; maskable: ``bool[K]`` keys that are neither BOS nor padding; own: ``bool[Q, K]`` a
+    query's own slot; prior: ``[K]`` the selection of the queries before these ones (zero from
+    scratch, the cache's ``sel`` in step mode). The queries are in slot order:
+    ``F[i, j] = prior[j] + sum_{i' < i} S[i', j]`` with ``S[i', j]`` the positive part of the
+    head-0 logit of a visible, maskable key other than the query's own slot, else 0."""
+    keep = mask & maskable[None, :] & ~own
+    s = np.where(keep, np.maximum(head0, 0.0), 0.0)
+    before = np.concatenate([np.zeros((1, s.shape[1])), np.cumsum(s, axis=0)[:-1]], axis=0)
+    return prior[None, :] + before
+
+
 def reference_logits(store: RowStore, consts: Mapping | None, feats: Mapping, cfg,
                      kv: Mapping | None = None) -> np.ndarray:
     """Next-token scores ``float64[V]`` of the last position of one sequence, computed in
@@ -358,7 +466,17 @@ def reference_logits(store: RowStore, consts: Mapping | None, feats: Mapping, cf
     With ``kv`` (step): ``kv = {"k", "v": [n_loops, n_blocks, S, H, head_dim], "seg", "pos":
     int [S]}`` holds the cached keys and values of the earlier positions (e.g.
     :func:`kv_from_cache`; ``seg < 0`` marks empty slots) and only the last position is
-    computed. Positions default to ``arange(T)``, segments to 0.
+    computed; with selective attention also ``"sel": [n_loops, n_blocks, S]`` (the selection
+    accumulated by the earlier queries) and ``"bos": bool [S]``. Positions default to
+    ``arange(T)``, segments to 0.
+
+    The v9 paths, from their specification formulas (each scaled by its runtime switch):
+    token gains ``g = gain * row[(r P) // n_loops, i]`` of the position's token on the values
+    ``x W_v`` (before the value embedding), on the head outputs before ``W_o`` and on the first
+    ``gain_ffn`` ReLU^2 neurons; the head-wise output gate ``1 + gate (2 sigmoid(x W_g[i] / d +
+    b_g[r, i]) - 1)`` on each head's output, before the output gain; the token neurons
+    (:func:`_token_neurons`) added to the feed-forward output; selective attention
+    (:func:`_selection`) subtracting ``sel * F`` from the logits of every head.
     """
     f = _row_feats(feats)
     en = _enable(consts, cfg)
@@ -378,17 +496,34 @@ def reference_logits(store: RowStore, consts: Mapping | None, feats: Mapping, cf
     conf = en["conf"] if cfg.use_conf else None
     q_n = len(idx)
     # a sink position other than the last one only feeds later positions through its key and
-    # value, which are the sink parameters: its rows are never read (zero placeholders)
-    dummy = [int(j) != last and _is_sink(cfg, en, f["tokens"][j]) for j in idx]
+    # value, which are the sink parameters (and, under selective attention, through its
+    # selection when it sees a maskable key: feeds_later): otherwise its rows are never read
+    # (zero placeholders); the rows that only enter its value are never read at any sink
+    # position, the last one included (the sink value replaces the value)
+    sinks = [_is_sink(cfg, en, f["tokens"][j]) for j in idx]
+    dummy = [int(j) != last and not feeds_later(cfg, en, f, int(j)) for j in idx]
     d_model = store.dense("head/g").shape[0]
     e = np.stack([np.zeros(d_model) if dm else _embed(store, cfg, en, f, int(j))
                   for j, dm in zip(idx, dummy)])                                    # [Q, d]
+
+    def token_rows(path: str, shape: tuple[int, ...]) -> np.ndarray:
+        """``[Q, *shape]``: the row of each query position's token (zeros for placeholders)."""
+        skip = sinks if path in VALUE_ROWS else dummy
+        return np.stack([np.zeros(shape) if sk else
+                         store.row(path, int(np.clip(f["tokens"][j], 0, cfg.vocab_size - 1)))
+                         for j, sk in zip(idx, skip)])
+
     n_ve = cfg.ve_dim // hd
-    ve = None
-    if cfg.ve_dim:
-        ve = np.stack([np.zeros((cfg.n_loops, cfg.ve_dim)) if dm else
-                       store.row("emb/ve", int(np.clip(f["tokens"][j], 0, cfg.vocab_size - 1)))
-                       for j, dm in zip(idx, dummy)])                               # [Q, L, ve]
+    ve = token_rows("emb/ve", (cfg.n_loops, cfg.ve_dim)) if cfg.ve_dim else None   # [Q, L, ve]
+    hw = h_n * hd
+    widths = {"ffn": cfg.gain_ffn, "o": hw, "v": hw}
+    gains = ({name: en["gain"] * token_rows(f"gain/{name}", (cfg.gain_phases, nb, widths[name]))
+              for name in _gain_tables(cfg)} if en["gain"] != 0 else {})            # [Q, P, nb, w]
+    page = cfg.tok_neurons > 0 and en["page"] != 0
+    if page:
+        shape = (nb, cfg.tok_neurons, cfg.tok_dim)
+        keys, vals = token_rows("page/key", shape), token_rows("page/val", shape)   # [Q, nb, rho, dk]
+    gate_on = cfg.attn_gate and en["gate"] != 0
     pos_q, seg_q = f["pos"][idx], f["seg"][idx]
     if kv is not None:
         pos_k = np.concatenate([np.asarray(kv["pos"]), pos_q])
@@ -396,6 +531,14 @@ def reference_logits(store: RowStore, consts: Mapping | None, feats: Mapping, cf
     else:
         pos_k, seg_k = pos_q, seg_q
     mask = (pos_k[None, :] <= pos_q[:, None]) & (seg_k[None, :] == seg_q[:, None])  # [Q, S+Q]
+    select = _selective(cfg, en)
+    if select:
+        n_cached = 0 if kv is None else len(kv["seg"])
+        maskable = _maskable(cfg, f["tokens"][idx], seg_q)
+        if kv is not None:
+            maskable = np.concatenate([~np.asarray(kv["bos"], bool) & (np.asarray(kv["seg"]) >= 0),
+                                       maskable])
+        own = (n_cached + np.arange(q_n))[:, None] == np.arange(len(pos_k))[None, :]
 
     D = store.dense
     wq, wk, wv, wo = D("core/attn/wq"), D("core/attn/wk"), D("core/attn/wv"), D("core/attn/wo")
@@ -405,12 +548,16 @@ def reference_logits(store: RowStore, consts: Mapping | None, feats: Mapping, cf
     alpha, mix, beta = D("lanes/alpha"), D("lanes/mix"), D("lanes/beta")
     lanes = [e.copy() for _ in range(cfg.n_lanes)]
     for r in range(cfg.n_loops):
+        ph = (r * cfg.gain_phases) // cfg.n_loops
         u = sum(alpha[r, m] * lanes[m] for m in range(cfg.n_lanes))
         for i in range(nb):
             x = _rms(u, g1[i])
             q = (x @ wq[i]).reshape(q_n, h_n, dc)
             k = (x @ wk[i]).reshape(q_n, h_n, dc)
-            v = (x @ wv[i]).reshape(q_n, h_n, hd)
+            v = x @ wv[i]
+            if "v" in gains:
+                v = v * (1.0 + gains["v"][:, ph, i])
+            v = v.reshape(q_n, h_n, hd)
             if i == 0 and ve is not None:
                 gate = 3.0 * _sigmoid(x[:, :VE_GATE_CHANNELS] @ D("core/attn/ve_gate"))  # [Q, n_ve]
                 v[:, :n_ve] += ve[:, r].reshape(q_n, n_ve, hd) * gate[..., None]
@@ -433,13 +580,33 @@ def reference_logits(store: RowStore, consts: Mapping | None, feats: Mapping, cf
                 k = np.concatenate([np.asarray(kv["k"][r, i], np.float64), k], 0)
                 v = np.concatenate([np.asarray(kv["v"][r, i], np.float64), v], 0)
             logits = np.einsum("qhd,khd->hqk", q, k)
+            if select:
+                prior = np.zeros(len(pos_k))
+                if kv is not None:
+                    prior[:n_cached] = np.asarray(kv["sel"][r, i], np.float64)
+                logits = logits - en["sel"] * _selection(logits[0], mask, maskable, own,
+                                                         prior * maskable)[None]
             logits = np.where(mask[None], logits, -np.inf)
             p = np.exp(logits - np.max(logits, axis=-1, keepdims=True))
             p = p / np.sum(p, axis=-1, keepdims=True)
-            y = np.einsum("hqk,khd->qhd", p, v).reshape(q_n, h_n * hd)
+            y = np.einsum("hqk,khd->qhd", p, v)                                      # [Q, H, hd]
+            if gate_on:
+                z_g = x @ D("core/attn/gate_w")[i] / x.shape[-1] + D("core/attn/gate_b")[r, i][None]  # [Q, H]
+                y = y * (1.0 + en["gate"] * (2.0 * _sigmoid(z_g) - 1.0))[..., None]
+            y = y.reshape(q_n, hw)
+            if "o" in gains:
+                y = y * (1.0 + gains["o"][:, ph, i])
             u = u + y @ wo[i]
             x2 = _rms(u, g2[i])
-            u = u + np.maximum(x2 @ w_up[i], 0.0) ** 2 @ w_down[i]
+            act = np.maximum(x2 @ w_up[i], 0.0) ** 2
+            if "ffn" in gains:
+                g_f = gains["ffn"][:, ph, i]
+                act = np.concatenate([act[:, :g_f.shape[-1]] * (1.0 + g_f), act[:, g_f.shape[-1]:]], -1)
+            out = act @ w_down[i]
+            if page:
+                out = out + en["page"] * _token_neurons(x2, D("page/pin")[i], D("page/pout")[i],
+                                                        keys[:, i], vals[:, i])
+            u = u + out
         s_r = _rms(u, D("loop/g")[r])
         lanes = [sum(mix[r, a, b] * lanes[b] for b in range(cfg.n_lanes)) + beta[r, a] * s_r
                  for a in range(cfg.n_lanes)]
@@ -477,11 +644,17 @@ def log_softmax(z: np.ndarray) -> np.ndarray:
 
 def kv_from_cache(cache: Mapping, row: int = 0) -> dict[str, np.ndarray]:
     """One row of a ``bes.model.generate`` cache as the ``kv`` argument of
-    :func:`reference_logits` (all slots; empty slots carry ``seg = -1``)."""
+    :func:`reference_logits` (all slots; empty slots carry ``seg = -1``), with the
+    selective-attention entries ``sel [n_loops, n_blocks, S]`` and ``bos [S]`` when the cache
+    has them."""
     k = np.asarray(cache["k"], np.float64)[:, :, row]          # [L, nb, H, S, hd]
     v = np.asarray(cache["v"], np.float64)[:, :, row]
-    return {"k": np.swapaxes(k, 2, 3), "v": np.swapaxes(v, 2, 3),
-            "seg": np.asarray(cache["seg"])[row], "pos": np.asarray(cache["pos"])[row]}
+    out = {"k": np.swapaxes(k, 2, 3), "v": np.swapaxes(v, 2, 3),
+           "seg": np.asarray(cache["seg"])[row], "pos": np.asarray(cache["pos"])[row]}
+    if "sel" in cache:
+        out["sel"] = np.asarray(cache["sel"], np.float64)[:, :, row]        # [L, nb, S]
+        out["bos"] = np.asarray(cache["bos"], bool)[row]
+    return out
 
 
 def jax_last_logits(params: Any, consts: Mapping, feats: Mapping, cfg) -> np.ndarray:
@@ -581,11 +754,14 @@ class ReadLogger:
         out = position_reads(self.cfg, self.en, token, row.get("reg"), row.get("cand_tok"),
                              row.get("cand_feat"), inputs=False, outputs=True)
         step_rows: dict[str, set[int]] = {}
-        _merge(step_rows, here)
+        # the sink value replaces the value of a sink position: its value-only rows are not read
+        _merge(step_rows, {p: r for p, r in here.items() if p not in VALUE_ROWS} if sink else here)
         _merge(step_rows, out)
         strict_rows = {p: set(r) for p, r in self._union.items()}
         _merge(strict_rows, step_rows)
-        if not sink:                       # a sink position is invisible to later positions
+        # a sink position is invisible to later positions: a BOS always starts the window here,
+        # so under selective attention too it sees no key selection could mask (feeds_later)
+        if not sink:
             _merge(self._union, here)
         self._extra_total += int(extra_numbers)
         n_step = {p: len(r) for p, r in step_rows.items()}
@@ -620,6 +796,6 @@ class ReadLogger:
                 "dense": float(self.dense)}
 
 
-__all__ = ["position_reads", "visible_positions", "read_rows", "dense_paths", "lookup_paths",
-           "RowStore", "reference_logits", "log_softmax", "kv_from_cache", "jax_last_logits",
-           "max_logprob_diff", "poison", "ReadCount", "ReadLogger"]
+__all__ = ["position_reads", "visible_positions", "feeds_later", "read_rows", "dense_paths",
+           "lookup_paths", "RowStore", "reference_logits", "log_softmax", "kv_from_cache",
+           "jax_last_logits", "max_logprob_diff", "poison", "ReadCount", "ReadLogger"]

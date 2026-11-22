@@ -6,8 +6,10 @@ Two primitives, both returning ``sum_k w[..., k] * table[idx[..., k]]``:
   matrix ``M[..., R]`` is built by compare/select and multiplied with the table, so the forward
   is a matmul and the gradient ``M^T @ g`` is a matmul as well.
 * :func:`big_lookup` (vocabulary-sized tables): forward is a gather; the gradient of the table
-  is ``M^T @ g`` computed in row chunks (``mode="onehot"``, a custom VJP, no scatter), or the
-  plain autodiff of the gather (``mode="take"``: XLA scatter-add) for benchmarking.
+  is ``M^T @ g`` computed in row chunks (``mode="onehot"``, a custom VJP, no scatter), the
+  plain autodiff of the gather (``mode="take"``: XLA scatter-add) for benchmarking, or a
+  matmul over chunks of the index-sorted rows (``mode="sorted"``, a custom VJP, no scatter;
+  :func:`sorted_table_grad`) whose matmul cost is ``chunk / R`` of the one-hot mode.
 
 Weights ``w`` are treated as constants (no gradient flows into them) and are meant to be 0/1
 switches or masks; they are applied exactly (``x * 1 = x``, ``x * 0 = 0``). Indices are clipped
@@ -28,6 +30,9 @@ from bes.model.layers import hi
 F32 = jnp.float32
 #: element budget of one multi-hot chunk in the one-hot backward (2^24 -> 2048 rows of 8192).
 ONEHOT_CHUNK_ELEMS = 1 << 24
+#: rows per chunk of the sorted backward when ``big_lookup`` gets no ``chunk``
+#: (``ModelCfg.sorted_chunk`` has the same default)
+SORTED_CHUNK = 512
 
 
 def multi_hot(idx: jax.Array, w: jax.Array, rows: int, dtype=F32) -> jax.Array:
@@ -109,13 +114,102 @@ def _onehot_gather_sum(dtype_name: str):
     return f
 
 
+def sorted_table_grad(idx: jax.Array, w: jax.Array, g: jax.Array, rows: int,
+                      chunk: int = SORTED_CHUNK, dtype=F32) -> jax.Array:
+    """Table gradient ``G[v] = sum_{n, k: idx[n, k] = v} w[n, k] g[n]`` without scatter.
+
+    idx: int ``[n, K]`` row indices already clipped into ``[0, rows)``; w: float32 ``[n, K]``;
+    g: ``[n, W]`` cotangent of the lookup; chunk: rows ``C`` per chunk; dtype: operand dtype
+    of the matmul (``hi(dtype)`` accumulation).
+
+    The ``m = n K`` pairs are sorted by index (``gs [m, W]``: the weighted cotangent rows in
+    that order) and padded to ``n_chunks * C`` rows with the index ``rows`` (a run of its own)
+    and zero rows. ``rank`` is the dense rank of the run of equal indices and ``local`` the rank
+    relative to the first row of its chunk (``[0, C)``); ``part [n_chunks, C, W]`` is
+    ``onehot(local)^T @ gs`` per chunk (groups of chunks in a ``lax.map`` so that the one-hot
+    operand stays near ``ONEHOT_CHUNK_ELEMS`` elements), ``pref`` the prefix sums of the chunk
+    totals. A run spanning chunks ``c1 < c2`` is the last run of ``c1``, every chunk in between
+    and the first run of ``c2``:
+    ``G[v] = part[c1, l1] + [c2 > c1] (part[c2, 0] + pref[c2 - 1] - pref[c1])`` with ``c1, c2``
+    the chunks of the run's first and last row (``searchsorted``) and ``l1`` its local rank in
+    ``c1``; rows that do not occur get 0. Sort, gathers, compares, matmuls and cumulative sums
+    only. Returns ``hi(dtype)`` ``[rows, W]``.
+    """
+    ft = hi(dtype)
+    n, k = idx.shape
+    width = g.shape[-1]
+    m = n * k
+    c = max(1, int(chunk))
+    n_chunks = -(-m // c)
+    pad = n_chunks * c - m
+    ids = idx.reshape(m).astype(jnp.int32)
+    order = jnp.argsort(ids)
+    ids_s = ids[order]
+    gs = (g[order // k].astype(ft) * w.reshape(m)[order].astype(ft)[:, None]).astype(dtype)
+    if pad:
+        ids_s = jnp.concatenate([ids_s, jnp.full((pad,), rows, jnp.int32)])
+        gs = jnp.concatenate([gs, jnp.zeros((pad, width), dtype)])
+    new_run = jnp.concatenate([jnp.zeros((1,), jnp.int32),
+                               (ids_s[1:] != ids_s[:-1]).astype(jnp.int32)])
+    rank = jnp.cumsum(new_run, dtype=jnp.int32)
+    rank_c = rank.reshape(n_chunks, c)
+    local = rank_c - rank_c[:, :1]
+    iota = jnp.arange(c, dtype=jnp.int32)
+
+    def chunk_part(local_c, gs_c):          # [..., C], [..., C, W] -> [..., C, W]
+        onehot = (local_c[..., None] == iota).astype(dtype)
+        return jnp.einsum("...cr,...cw->...rw", onehot, gs_c, preferred_element_type=ft)
+
+    gs_c = gs.reshape(n_chunks, c, width)
+    per = max(1, ONEHOT_CHUNK_ELEMS // (c * c))
+    if n_chunks <= per:
+        part = chunk_part(local, gs_c)
+    else:
+        part = jax.lax.map(lambda a: chunk_part(*a), (local, gs_c), batch_size=per)
+    pref = jnp.cumsum(jnp.sum(part, axis=1), axis=0)                        # [n_chunks, W]
+    v = jnp.arange(rows, dtype=jnp.int32)
+    first = jnp.searchsorted(ids_s, v, side="left").astype(jnp.int32)
+    last = jnp.searchsorted(ids_s, v, side="right").astype(jnp.int32) - 1
+    c1 = jnp.minimum(first // c, n_chunks - 1)          # clipped: only absent rows are clipped
+    c2 = jnp.clip(last // c, 0, n_chunks - 1)
+    l1 = rank[jnp.minimum(first, n_chunks * c - 1)] - rank[c1 * c]
+    flat = part.reshape(n_chunks * c, width)
+    head = flat[c1 * c + l1]
+    tail = flat[c2 * c] + (pref[jnp.maximum(c2 - 1, 0)] - pref[c1])
+    grad = head + jnp.where((c2 > c1)[:, None], tail, jnp.zeros((), ft))
+    return jnp.where((last >= first)[:, None], grad, jnp.zeros((), ft))
+
+
+@functools.lru_cache(maxsize=None)
+def _sorted_gather_sum(dtype_name: str, chunk: int):
+    """Custom-VJP big lookup whose table gradient is :func:`sorted_table_grad`."""
+    dtype = jnp.dtype(dtype_name)
+
+    @jax.custom_vjp
+    def f(table, idx, w):
+        return _gather_sum(table, idx, w)
+
+    def fwd(table, idx, w):
+        return _gather_sum(table, idx, w), (idx, w, jnp.zeros((table.shape[0], 0), table.dtype))
+
+    def bwd(res, g):
+        idx, w, shape_carrier = res
+        grad = sorted_table_grad(idx, w, g, shape_carrier.shape[0], chunk, dtype)
+        return grad.astype(shape_carrier.dtype), None, None
+
+    f.defvjp(fwd, bwd)
+    return f
+
+
 def big_lookup(table: jax.Array, idx: jax.Array, w: jax.Array | None = None, *,
-               mode: str = "onehot", dtype=F32) -> jax.Array:
+               mode: str = "onehot", dtype=F32, chunk: int | None = None) -> jax.Array:
     """Lookup in a vocabulary-sized table.
 
     table: ``[R, W]`` (float32 master weights); idx: int ``[...]`` when ``w`` is None (one row
     per index, result ``[..., W]``), else int ``[..., K]`` with weights ``w [..., K]`` (weighted
     sum over K, result ``[..., W]``). ``dtype`` is the operand dtype of the backward matmul.
+    mode: ``"onehot"``, ``"take"`` or ``"sorted"`` (module docstring); chunk: rows per chunk of
+    the ``"sorted"`` backward (default :data:`SORTED_CHUNK`; ignored by the other modes).
     Returns rows in the table dtype.
     """
     single = w is None
@@ -131,6 +225,8 @@ def big_lookup(table: jax.Array, idx: jax.Array, w: jax.Array | None = None, *,
         out = _onehot_gather_sum(jnp.dtype(dtype).name)(table, i2, w2)
     elif mode == "take":
         out = _gather_sum(table, i2, w2)
+    elif mode == "sorted":
+        out = _sorted_gather_sum(jnp.dtype(dtype).name, int(chunk or SORTED_CHUNK))(table, i2, w2)
     else:
         raise ValueError(f"unknown table_grad mode {mode!r}")
     return out.reshape(*lead, table.shape[1])
