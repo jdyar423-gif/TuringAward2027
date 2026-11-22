@@ -1,0 +1,21 @@
+k_base: stored 155,136  read/token 105,264  core read (no embed/unembed) 55,296  steps 1464
+   attention                      stored      18,432  read    18,432
+   unembed                        stored      49,920  read    49,920
+   embed                          stored      49,920  read        48
+   shared ffn                     stored      36,864  read    36,864
+{"step": 100, "tokens": 819200, "train_ema": 5.3233, "s": 129.4}
+{"step": 200, "tokens": 1638400, "train_ema": 4.6035, "s": 256.3}
+{"step": 300, "tokens": 2457600, "train_ema": 4.3175, "s": 382.9}
+{"step": 400, "tokens": 3276800, "train_ema": 4.1579, "s": 504.6, "web": 4.1949, "chat": 3.8845, "asst": 3.8395, "mix": 4.1328}
+{"step": 500, "tokens": 4096000, "train_ema": 4.0533, "s": 629.0}
+{"step": 600, "tokens": 4915200, "train_ema": 3.9824, "s": 753.3}
+{"step": 700, "tokens": 5734400, "train_ema": 3.9242, "s": 874.7}
+{"step": 800, "tokens": 6553600, "train_ema": 3.879, "s": 994.3, "web": 3.9806, "chat": 3.5958, "asst": 3.543, "mix": 3.9037}
+{"step": 900, "tokens": 7372800, "train_ema": 3.844, "s": 1114.7}
+{"step": 1000, "tokens": 8192000, "train_ema": 3.8133, "s": 1256.5}
+{"step": 1100, "tokens": 9011200, "train_ema": 3.7904, "s": 1391.9}
+{"step": 1200, "tokens": 9830400, "train_ema": 3.7621, "s": 1514.6, "web": 3.8664, "chat": 3.458, "asst": 3.401, "mix": 3.7847}
+{"step": 1300, "tokens": 10649600, "train_ema": 3.733, "s": 1670.9}
+{"step": 1400, "tokens": 11468800, "train_ema": 3.7125, "s": 1833.8}
+{"step": 1464, "tokens": 11993088, "train_ema": 3.7019, "s": 1995.6, "web": 3.8168, "chat": 3.4037, "asst": 3.3469, "mix": 3.7342}
+FINAL k_base: web 3.8168 chat 3.4037 asst 3.3469 mix 3.7342  (5977 tok/s)

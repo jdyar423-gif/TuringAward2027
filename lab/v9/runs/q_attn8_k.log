@@ -1,0 +1,16 @@
+q_attn8_k: stored 187,392  read/token 105,264  core read (no embed/unembed) 55,296  steps 805
+   attention                      stored      13,824  read    13,824
+   unembed                        stored      49,920  read    49,920
+   embed                          stored      49,920  read        48
+   shared ffn                     stored      36,864  read    36,864
+   typed attention                stored      36,864  read     4,608
+{"step": 100, "tokens": 819200, "train_ema": 5.3224, "s": 128.5}
+{"step": 200, "tokens": 1638400, "train_ema": 4.613, "s": 251.8}
+{"step": 300, "tokens": 2457600, "train_ema": 4.3483, "s": 374.1}
+{"step": 400, "tokens": 3276800, "train_ema": 4.1889, "s": 497.9, "web": 4.2145, "chat": 3.9169, "asst": 3.8699, "mix": 4.155}
+{"step": 500, "tokens": 4096000, "train_ema": 4.0813, "s": 624.0}
+{"step": 600, "tokens": 4915200, "train_ema": 4.0044, "s": 747.5}
+{"step": 700, "tokens": 5734400, "train_ema": 3.9388, "s": 871.6}
+{"step": 800, "tokens": 6553600, "train_ema": 3.8894, "s": 997.2, "web": 3.9831, "chat": 3.6039, "asst": 3.5435, "mix": 3.9073}
+{"step": 805, "tokens": 6594560, "train_ema": 3.8871, "s": 1005.2, "web": 3.982, "chat": 3.6012, "asst": 3.5408, "mix": 3.9058}
+FINAL q_attn8_k: web 3.9820 chat 3.6012 asst 3.5408 mix 3.9058  (6538 tok/s)

@@ -1,0 +1,234 @@
+{
+ "args": {
+  "B": 64,
+  "T": 128,
+  "attn_experts": 0,
+  "attn_lowrank": 0,
+  "attn_parts": "qkvo",
+  "balance": 0.01,
+  "bidir": false,
+  "biemb": 0,
+  "bineur": [
+   0,
+   0
+  ],
+  "block_key_list": [],
+  "block_keys": "",
+  "blocks": 2,
+  "capacity": 1.2,
+  "chat_frac": 0.2,
+  "classes": "bal",
+  "d": 48,
+  "expert_f": 192,
+  "experts": 0,
+  "f": 192,
+  "gain_f": 192,
+  "gain_frac": 1.0,
+  "gain_lr": 0.0,
+  "gain_phases": 1,
+  "gain_wd": 0.01,
+  "grow": "",
+  "hash": "",
+  "hash_spec": [
+   0,
+   0,
+   0
+  ],
+  "head_classes": 0,
+  "heads": 4,
+  "hgain": false,
+  "igain": false,
+  "inx": "",
+  "inx_spec": [
+   0,
+   0
+  ],
+  "level_list": [],
+  "levels": "",
+  "lex": 0,
+  "lex_classes": 0,
+  "lex_gamma": 0.0,
+  "lex_lr": 0.0,
+  "lex_max": 16,
+  "lex_norm": false,
+  "lex_on": "x",
+  "lex_proj": 0,
+  "lexop": 0,
+  "lexprev": 0,
+  "loop_gates": false,
+  "loop_schedule": "",
+  "loops": 4,
+  "loss_roles": "all",
+  "lr": 0.005,
+  "lr_emb": 0.05,
+  "mean_class_share": 1.0,
+  "n_topics": 8,
+  "name": "g_o",
+  "ogain": true,
+  "outx": "",
+  "outx_spec": [
+   0,
+   0
+  ],
+  "prior": 0,
+  "qkgain": false,
+  "ring": "",
+  "ring_order": "tree",
+  "ring_spec": [
+   0,
+   0,
+   0
+  ],
+  "route": "tok",
+  "route_per_loop": false,
+  "seed": 0,
+  "seg": 32,
+  "selattn": false,
+  "shrink": 0.0,
+  "tclock": "",
+  "tie_blocks": false,
+  "tokbias": false,
+  "tokconv": 0,
+  "tokconv_loops": false,
+  "tokens": 12000000.0,
+  "tokgain": false,
+  "topic": "E8W1024",
+  "topic_emb": false,
+  "topic_k": 1,
+  "typebias": 0,
+  "ve": false,
+  "vgain": false,
+  "wd": 0.01,
+  "wfa": "",
+  "wfa_key": "cls",
+  "wfa_loops": false,
+  "wfa_mode": "rms",
+  "wfa_spec": [
+   0,
+   0
+  ],
+  "wfa_struct": "full",
+  "wfa_trunc": 0,
+  "wfa_window": 0,
+  "writer": 0,
+  "writer_shared": false
+ },
+ "asst": 3.261576565314719,
+ "chat": 3.317834218343099,
+ "core_read": 55392,
+ "log": [
+  {
+   "s": 131.7,
+   "step": 100,
+   "tokens": 819200,
+   "train_ema": 5.3227
+  },
+  {
+   "s": 255.0,
+   "step": 200,
+   "tokens": 1638400,
+   "train_ema": 4.5959
+  },
+  {
+   "s": 378.5,
+   "step": 300,
+   "tokens": 2457600,
+   "train_ema": 4.2896
+  },
+  {
+   "asst": 3.772,
+   "chat": 3.8184,
+   "mix": 4.0845,
+   "s": 502.0,
+   "step": 400,
+   "tokens": 3276800,
+   "train_ema": 4.1135,
+   "web": 4.151
+  },
+  {
+   "s": 625.9,
+   "step": 500,
+   "tokens": 4096000,
+   "train_ema": 4.0002
+  },
+  {
+   "s": 747.1,
+   "step": 600,
+   "tokens": 4915200,
+   "train_ema": 3.9252
+  },
+  {
+   "s": 871.2,
+   "step": 700,
+   "tokens": 5734400,
+   "train_ema": 3.8641
+  },
+  {
+   "asst": 3.4584,
+   "chat": 3.5128,
+   "mix": 3.8323,
+   "s": 994.9,
+   "step": 800,
+   "tokens": 6553600,
+   "train_ema": 3.817,
+   "web": 3.9122
+  },
+  {
+   "s": 1116.6,
+   "step": 900,
+   "tokens": 7372800,
+   "train_ema": 3.7803
+  },
+  {
+   "s": 1236.6,
+   "step": 1000,
+   "tokens": 8192000,
+   "train_ema": 3.7481
+  },
+  {
+   "s": 1356.7,
+   "step": 1100,
+   "tokens": 9011200,
+   "train_ema": 3.724
+  },
+  {
+   "asst": 3.3207,
+   "chat": 3.3768,
+   "mix": 3.7168,
+   "s": 1481.8,
+   "step": 1200,
+   "tokens": 9830400,
+   "train_ema": 3.6953,
+   "web": 3.8019
+  },
+  {
+   "s": 1604.7,
+   "step": 1300,
+   "tokens": 10649600,
+   "train_ema": 3.6666
+  },
+  {
+   "s": 1724.6,
+   "step": 1400,
+   "tokens": 11468800,
+   "train_ema": 3.6438
+  },
+  {
+   "asst": 3.2616,
+   "chat": 3.3178,
+   "mix": 3.6676,
+   "s": 1801.9,
+   "step": 1464,
+   "tokens": 11993088,
+   "train_ema": 3.6345,
+   "web": 3.7551
+  }
+ ],
+ "loop_steps": 5856.0,
+ "mix": 3.667636553446452,
+ "name": "g_o",
+ "read": 105360,
+ "stored": 254976,
+ "tok_per_s": 6644.482918881771,
+ "web": 3.75508713722229
+}

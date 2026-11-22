@@ -1,0 +1,15 @@
+k_f768: stored 265,728  read/token 215,856  core read (no embed/unembed) 165,888  steps 1464
+   attention                      stored      18,432  read    18,432
+   unembed                        stored      49,920  read    49,920
+   embed                          stored      49,920  read        48
+   shared ffn                     stored     147,456  read   147,456
+{"step": 100, "tokens": 819200, "train_ema": 5.4884, "s": 237.5}
+{"step": 200, "tokens": 1638400, "train_ema": 4.6318, "s": 460.0}
+{"step": 300, "tokens": 2457600, "train_ema": 4.3121, "s": 682.4}
+{"step": 400, "tokens": 3276800, "train_ema": 4.1311, "s": 903.0, "web": 4.1556, "chat": 3.841, "asst": 3.7984, "mix": 4.0927}
+{"step": 500, "tokens": 4096000, "train_ema": 4.0091, "s": 1120.8}
+{"step": 600, "tokens": 4915200, "train_ema": 3.9257, "s": 1344.4}
+{"step": 700, "tokens": 5734400, "train_ema": 3.8613, "s": 1569.6}
+{"step": 800, "tokens": 6553600, "train_ema": 3.8074, "s": 1795.9, "web": 3.8998, "chat": 3.5252, "asst": 3.4721, "mix": 3.8249}
+{"step": 900, "tokens": 7372800, "train_ema": 3.7665, "s": 2020.5}
+{"step": 1000, "tokens": 8192000, "train_ema": 3.731, "s": 2249.1}

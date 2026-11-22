@@ -1,0 +1,148 @@
+{
+ "args": {
+  "B": 64,
+  "T": 128,
+  "attn_experts": 8,
+  "attn_lowrank": 0,
+  "attn_parts": "q",
+  "balance": 0.01,
+  "bidir": false,
+  "biemb": 0,
+  "bineur": [
+   0,
+   0
+  ],
+  "block_key_list": [],
+  "block_keys": "",
+  "blocks": 2,
+  "capacity": 1.2,
+  "chat_frac": 0.2,
+  "classes": "bal",
+  "d": 48,
+  "expert_f": 192,
+  "experts": 0,
+  "f": 192,
+  "hash": "",
+  "hash_spec": [
+   0,
+   0,
+   0
+  ],
+  "head_classes": 0,
+  "heads": 4,
+  "level_list": [],
+  "levels": "",
+  "lex": 0,
+  "lex_gamma": 0.0,
+  "lex_max": 16,
+  "lexprev": 0,
+  "loop_gates": false,
+  "loop_schedule": "",
+  "loops": 4,
+  "loss_roles": "all",
+  "lr": 0.005,
+  "lr_emb": 0.05,
+  "mean_class_share": 1.0,
+  "n_topics": 8,
+  "name": "q_attn8_q",
+  "ring": "",
+  "ring_order": "tree",
+  "ring_spec": [
+   0,
+   0,
+   0
+  ],
+  "route": "tok",
+  "route_per_loop": false,
+  "seed": 0,
+  "seg": 32,
+  "tie_blocks": false,
+  "tokens": 6600000.0,
+  "topic": "E8W1024",
+  "topic_emb": false,
+  "topic_k": 1,
+  "typebias": 0,
+  "ve": false,
+  "wd": 0.01,
+  "writer": 0,
+  "writer_shared": false
+ },
+ "asst": 3.5575837627159053,
+ "chat": 3.613408883412679,
+ "core_read": 55296,
+ "log": [
+  {
+   "s": 127.5,
+   "step": 100,
+   "tokens": 819200,
+   "train_ema": 5.3224
+  },
+  {
+   "s": 252.9,
+   "step": 200,
+   "tokens": 1638400,
+   "train_ema": 4.6306
+  },
+  {
+   "s": 375.7,
+   "step": 300,
+   "tokens": 2457600,
+   "train_ema": 4.3785
+  },
+  {
+   "asst": 3.888,
+   "chat": 3.9333,
+   "mix": 4.1732,
+   "s": 496.7,
+   "step": 400,
+   "tokens": 3276800,
+   "train_ema": 4.2125,
+   "web": 4.2331
+  },
+  {
+   "s": 622.9,
+   "step": 500,
+   "tokens": 4096000,
+   "train_ema": 4.0971
+  },
+  {
+   "s": 745.7,
+   "step": 600,
+   "tokens": 4915200,
+   "train_ema": 4.0153
+  },
+  {
+   "s": 870.5,
+   "step": 700,
+   "tokens": 5734400,
+   "train_ema": 3.9482
+  },
+  {
+   "asst": 3.5589,
+   "chat": 3.6155,
+   "mix": 3.9196,
+   "s": 1000.9,
+   "step": 800,
+   "tokens": 6553600,
+   "train_ema": 3.8964,
+   "web": 3.9956
+  },
+  {
+   "asst": 3.5576,
+   "chat": 3.6134,
+   "mix": 3.9191,
+   "s": 1009.0,
+   "step": 805,
+   "tokens": 6594560,
+   "train_ema": 3.8941,
+   "web": 3.9955
+  }
+ ],
+ "loop_steps": 3220.0,
+ "mix": 3.9190737088521326,
+ "name": "q_attn8_q",
+ "read": 105264,
+ "stored": 187392,
+ "tok_per_s": 6512.3987854672505,
+ "web": 3.9954899152119956
+}

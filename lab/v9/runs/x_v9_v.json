@@ -1,0 +1,234 @@
+{
+ "args": {
+  "B": 64,
+  "T": 128,
+  "attn_experts": 0,
+  "attn_lowrank": 0,
+  "attn_parts": "qkvo",
+  "balance": 0.01,
+  "bidir": false,
+  "biemb": 0,
+  "bineur": [
+   0,
+   0
+  ],
+  "block_key_list": [],
+  "block_keys": "",
+  "blocks": 2,
+  "capacity": 1.2,
+  "chat_frac": 0.2,
+  "classes": "bal",
+  "d": 48,
+  "expert_f": 192,
+  "experts": 0,
+  "f": 192,
+  "gain_f": 192,
+  "gain_frac": 1.0,
+  "gain_lr": 0.0,
+  "gain_phases": 1,
+  "gain_wd": 0.01,
+  "grow": "",
+  "hash": "",
+  "hash_spec": [
+   0,
+   0,
+   0
+  ],
+  "head_classes": 0,
+  "heads": 4,
+  "hgain": false,
+  "igain": false,
+  "inx": "",
+  "inx_spec": [
+   0,
+   0
+  ],
+  "level_list": [],
+  "levels": "",
+  "lex": 8,
+  "lex_classes": 0,
+  "lex_gamma": 0.0,
+  "lex_lr": 0.005,
+  "lex_max": 16,
+  "lex_norm": true,
+  "lex_on": "x",
+  "lex_proj": 12,
+  "lexop": 0,
+  "lexprev": 0,
+  "loop_gates": false,
+  "loop_schedule": "",
+  "loops": 4,
+  "loss_roles": "all",
+  "lr": 0.005,
+  "lr_emb": 0.05,
+  "mean_class_share": 1.0,
+  "n_topics": 8,
+  "name": "x_v9_v",
+  "ogain": true,
+  "outx": "",
+  "outx_spec": [
+   0,
+   0
+  ],
+  "prior": 0,
+  "qkgain": false,
+  "ring": "",
+  "ring_order": "tree",
+  "ring_spec": [
+   0,
+   0,
+   0
+  ],
+  "route": "tok",
+  "route_per_loop": false,
+  "seed": 0,
+  "seg": 32,
+  "selattn": false,
+  "shrink": 0.0,
+  "tclock": "",
+  "tie_blocks": false,
+  "tokbias": false,
+  "tokconv": 0,
+  "tokconv_loops": false,
+  "tokens": 12000000.0,
+  "tokgain": false,
+  "topic": "E8W1024",
+  "topic_emb": false,
+  "topic_k": 1,
+  "typebias": 0,
+  "ve": false,
+  "vgain": true,
+  "wd": 0.01,
+  "wfa": "",
+  "wfa_key": "cls",
+  "wfa_loops": false,
+  "wfa_mode": "rms",
+  "wfa_spec": [
+   0,
+   0
+  ],
+  "wfa_struct": "full",
+  "wfa_trunc": 0,
+  "wfa_window": 0,
+  "writer": 0,
+  "writer_shared": false
+ },
+ "asst": 3.0723941500211933,
+ "chat": 3.131620009740194,
+ "core_read": 58176,
+ "log": [
+  {
+   "s": 140.9,
+   "step": 100,
+   "tokens": 819200,
+   "train_ema": 5.2314
+  },
+  {
+   "s": 272.3,
+   "step": 200,
+   "tokens": 1638400,
+   "train_ema": 4.5195
+  },
+  {
+   "s": 404.3,
+   "step": 300,
+   "tokens": 2457600,
+   "train_ema": 4.1758
+  },
+  {
+   "asst": 3.598,
+   "chat": 3.6432,
+   "mix": 3.9329,
+   "s": 539.5,
+   "step": 400,
+   "tokens": 3276800,
+   "train_ema": 3.9755,
+   "web": 4.0053
+  },
+  {
+   "s": 677.0,
+   "step": 500,
+   "tokens": 4096000,
+   "train_ema": 3.8521
+  },
+  {
+   "s": 814.3,
+   "step": 600,
+   "tokens": 4915200,
+   "train_ema": 3.7732
+  },
+  {
+   "s": 956.1,
+   "step": 700,
+   "tokens": 5734400,
+   "train_ema": 3.7059
+  },
+  {
+   "asst": 3.2835,
+   "chat": 3.3382,
+   "mix": 3.6709,
+   "s": 1104.3,
+   "step": 800,
+   "tokens": 6553600,
+   "train_ema": 3.6589,
+   "web": 3.7541
+  },
+  {
+   "s": 1249.4,
+   "step": 900,
+   "tokens": 7372800,
+   "train_ema": 3.617
+  },
+  {
+   "s": 1387.6,
+   "step": 1000,
+   "tokens": 8192000,
+   "train_ema": 3.5856
+  },
+  {
+   "s": 1522.5,
+   "step": 1100,
+   "tokens": 9011200,
+   "train_ema": 3.5575
+  },
+  {
+   "asst": 3.1364,
+   "chat": 3.1955,
+   "mix": 3.5598,
+   "s": 1658.6,
+   "step": 1200,
+   "tokens": 9830400,
+   "train_ema": 3.5299,
+   "web": 3.6508
+  },
+  {
+   "s": 1804.8,
+   "step": 1300,
+   "tokens": 10649600,
+   "train_ema": 3.5024
+  },
+  {
+   "s": 1948.2,
+   "step": 1400,
+   "tokens": 11468800,
+   "train_ema": 3.4773
+  },
+  {
+   "asst": 3.0724,
+   "chat": 3.1316,
+   "mix": 3.5075,
+   "s": 2037.4,
+   "step": 1464,
+   "tokens": 11993088,
+   "train_ema": 3.4668,
+   "web": 3.6015
+  }
+ ],
+ "loop_steps": 5856.0,
+ "mix": 3.507506227493286,
+ "name": "x_v9_v",
+ "read": 108144,
+ "stored": 756480,
+ "tok_per_s": 5877.896257475258,
+ "web": 3.601477781931559
+}
