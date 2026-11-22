@@ -1,9 +1,10 @@
 """The run on a Colab TPU, started from a terminal with the Colab CLI (github.com/googlecolab/google-colab-cli).
 
     colab new -s bes24h --tpu v6e1
-    colab exec -s bes24h --timeout 0 -f scripts/colab_tpu.py
+    colab exec -s bes24h --timeout 0 -f scripts/colab_tpu.py --env BES_SENT_AT=$(date +%s)
 
-or, with the wrapper that also checks, reports and fetches: ``python scripts/colab_cli.py start``.
+or, better, with the wrapper that also checks, mounts Drive for the mirror, reports and fetches:
+``python scripts/colab_cli.py start``.
 
 ``colab exec -f`` reads this file on your machine and sends its text to the kernel of the Colab
 runtime: it runs THERE, alone. The repository is not on the runtime yet, so this file imports
@@ -36,7 +37,8 @@ Jupyter contents API of ``colab upload`` / ``colab download`` does not use the k
 ``stop`` sends SIGTERM to the run (it writes a checkpoint and exits; the supervisor keeps the
 runtime), ``resume`` continues it (cell 8), ``package`` rebuilds the export parts (``package 4``:
 in parts of 4 MB), ``release`` ends the supervisor once the run is not running: the kernel is
-idle from then on and Colab takes the runtime back.
+idle from then on, and Colab takes the runtime back after an idle time it does not state. Until
+then the runtime is charged: ``colab stop -s <session>`` gives it back at once.
 
 What the supervisor decides by itself, so that an unattended runtime neither loses a run nor is
 kept for ever:
@@ -665,7 +667,9 @@ class Supervisor:
                     self.say(f"finishing failed ({type(e).__name__}: {e}); the export stays in the run directory")
             if self.hold_until is None:
                 self.hold_until = self.clock() + s["hold_s"]
-            self.state, self.note = "complete", "fetch the export, then send release (or wait)"
+            self.state = "complete"
+            self.note = ("fetch the export, then give the runtime back (colab stop / down --yes): that ends the "
+                         "charges; release or the end of the hold only stop keeping it alive")
         elif (state == "incomplete" and not self.stop_requested and self.resumes_left > 0
               and now - self.last_start >= s["resume_gap_s"]):
             self.resumes_left -= 1

@@ -115,15 +115,30 @@ newer) creates a Colab runtime from a terminal and runs code on it, with no brow
 clone of this repository on your machine:
 
     pip install google-colab-cli
-    python scripts/colab_cli.py start --smoke     # 30 minutes on a v5e-1 TPU: do this first
-    python scripts/colab_cli.py start             # the 24-hour run on a v6e-1 TPU
-    python scripts/colab_cli.py status            # the report of cell 7, from any terminal
+    python scripts/colab_cli.py start --smoke     # 30 minutes on a v5e-1 TPU: do this first ...
+    python scripts/colab_cli.py down --smoke --yes   # ... and give its runtime back
+    python scripts/colab_cli.py start             # the 24-hour run on a v6e-1 TPU, mirrored to Drive
+    python scripts/colab_cli.py status            # the report of cell 7 (from the machine that ran start)
+    python scripts/colab_cli.py fetch             # the export, once the run is complete
+    python scripts/colab_cli.py down --yes        # give the runtime back: this ends the charges
 
-`start` issues three commands of the CLI, which you can also type yourself:
+`start` issues these commands of the CLI in this order:
 
     colab sessions                                # signs you in on first use
     colab new -s bes24h --tpu v6e1                # the runtime: compute units are charged from here on
-    colab exec -s bes24h --timeout 0 -f scripts/colab_tpu.py
+    colab drivemount -s bes24h                    # asks you to authorise Drive (not with --no-drive)
+    colab exec -s bes24h --timeout 0 -f scripts/colab_tpu.py --env BES_SENT_AT=$(date +%s) --env BES_USE_DRIVE=1
+
+Typed by hand they do the same, minus what the wrapper adds: it refuses to send the program to a
+session whose supervisor is running or to create a second runtime, it uploads the Hugging Face
+token, and it reports what the runtime says afterwards. The smoke run needs
+`--env BES_NOTEBOOK=colab_v5e_smoke` and a `--tpu v5e1` runtime; without `BES_SENT_AT` a program
+that had to wait behind another execution is not recognised as stale (below).
+
+**The runtime runs the branch as it is on GitHub**, not your local clone: an edit of the
+notebook's cell 1 on your machine changes nothing. What sections 1.1 and 1.3 have you decide in
+cell 1 is an option of `start`: `--budget-minutes 1380`, `--config configs/strict.py`,
+`--drive-dir ...`. A private repository cannot be cloned on this route.
 
 **Signing in.** On first use the CLI prints an authorization link; you approve in any browser,
 Google shows a code, and you paste the code into the terminal where the CLI waits. That code is a
@@ -137,21 +152,28 @@ A machine without a desktop keyring (a server, WSL, a container) cannot keep the
 CLI then asks to sign in at every command: `pip install keyrings.alt` next to the CLI gives it a
 file store (plaintext, readable by you only; checked here), or use Application Default
 Credentials: `gcloud auth application-default login` with the four scopes that `colab skill`
-lists (the wrapper prints the full command when it meets this case), then
-`COLAB_CLI_ARGS=--auth=adc`.
+lists (the wrapper prints the full command when it meets this case, and the remedy for a locked
+keyring), then `COLAB_CLI_ARGS=--auth=adc`.
+
+**The mirror.** The 24-hour run mirrors its records, newest checkpoint and export to Google
+Drive (section 4), as the notebook does: `start` mounts Drive first, and the mount asks you to
+authorise in a browser. Without it (`--no-drive`) nothing of the run is outside the runtime: a
+runtime that Colab takes back takes the run with it, and the export exists only there until you
+`fetch` it. The smoke run has no mirror unless you pass `--drive`.
 
 **What runs on the runtime.** `colab exec -f` sends the text of `scripts/colab_tpu.py` to the
 runtime's kernel. There it clones this repository (cell 1's `REPO_URL` and `BRANCH`), runs the
 notebook's own cells 1, 1b, 2, 3 and 4, then cell 6 (a new run) or cell 8 (a run that exists on
-the runtime or on a mounted Drive), and stays in the kernel as the run's supervisor until the run
-has ended. It has to stay: a runtime made by the CLI lives while its kernel executes something
-(the CLI's documentation: liveness is "maintained by the Colab backend based on active kernel
-executions and interactions", "the CLI runs no keep-alive daemon"), and the run is a separate
-process. Consequences:
+the runtime or on the mounted Drive), and stays in the kernel as the run's supervisor until the
+run has ended. It has to stay: a runtime made by the CLI lives while its kernel executes
+something (the CLI's documentation: liveness is "maintained by the Colab backend based on active
+kernel executions and interactions", "the CLI runs no keep-alive daemon"), and the run is a
+separate process. Consequences:
 
-- Ctrl-C, a closed terminal or a dropped connection only detach `start`; the supervisor and the
-  run go on (`start --detach` returns once the supervisor has written its first status). Look at
-  the run with `status`.
+- Once `start` has printed "== starting", Ctrl-C, a closed terminal or a dropped connection only
+  detach it; the supervisor and the run go on (`start --detach` returns once the supervisor has
+  written its first status). Before that line nothing runs yet although the runtime may exist:
+  when a step fails or you interrupt it there, `start` says that an idle runtime is being charged.
 - While the supervisor runs, **do not use `colab exec`, `colab repl` or `colab restart-kernel` on
   the session**. The first two wait behind the supervisor without a word, whatever their
   `--timeout`; the third, which the CLI itself recommends for a "wedged kernel", restarts the
@@ -162,10 +184,13 @@ process. Consequences:
   look at the runtime without the kernel as well.
 - If the supervisor is gone while the run runs (`status` warns: its report is stale, or it says
   that it left), `start` again: with a run that is running it only supervises.
-- When the supervisor leaves, the kernel is idle and Colab takes the runtime back, with its disk.
-  It leaves 2 hours after a complete run (`--hold-minutes`), 4 hours after a run that ended
-  incomplete and was not continued, when you send `release`, and in any case 40 hours after the
-  last start, continuation or command.
+- **Leaving is not giving back.** The supervisor leaves 2 hours after a complete run
+  (`--hold-minutes`; 20 minutes for the smoke run), 4 hours after a run that ended incomplete and
+  was not continued (30 minutes for the smoke run), when you send `release`, and in any case 40
+  hours after the last start, continuation or command. From then on nothing keeps the runtime
+  alive, but it is still yours and still charged until Colab reclaims it, after an idle time that
+  is not documented. `down --yes` (`colab stop`) gives it back at once: run it when you have
+  fetched what you need, and after the smoke run before you start the 24-hour run.
 - The CLI keeps its sessions in a file on the machine that created them
   (`~/.config/colab-cli/sessions.json`): **use the wrapper from that machine**. From another one
   the session looks missing; `status` then says so, and `start` refuses to create a second
@@ -173,15 +198,15 @@ process. Consequences:
 
 | command | what it does |
 |---|---|
-| `start` | signs in, creates the session's runtime when it does not exist (`--smoke`: session `bes-smoke`, v5e-1, the smoke notebook; `--cpu`: a CPU runtime with `ALLOW_CPU`, a rehearsal of this route), sends the program, and reports what the runtime's status file says afterwards (it fails when no supervisor is running then: the exit status of `colab exec` does not tell). Options: `--detach`, `--drive` (mounts Drive first with `colab drivemount`, which needs you; then the mirror of section 4 runs) or `--no-drive`, `--hf-token-file FILE`, `--budget-minutes N`, `--action auto\|start\|resume`, `--auto-resume N`, `--hold-minutes M`, `--part-mb N`. It does not send the program when a supervisor already holds the session |
+| `start` | signs in, creates the session's runtime when it does not exist (`--smoke`: session `bes-smoke`, v5e-1, the smoke notebook; `--smoke --cpu`: session `bes-cpu` on a CPU runtime with `ALLOW_CPU`, a rehearsal of this route without a TPU), mounts Drive (the 24-hour run; `--no-drive` or `--drive` to choose), sends the program, and reports what the runtime's status file says afterwards (it fails when no supervisor is running then: the exit status of `colab exec` does not tell). Options: `--detach`, `--hf-token-file FILE`, `--budget-minutes N`, `--config FILE`, `--drive-dir DIR`, `--action auto\|start\|resume`, `--auto-resume N`, `--hold-minutes M`, `--part-mb N`. It does not send the program when a supervisor already holds the session |
 | `status` | prints the supervisor's state and the report of cell 7; warns when no supervisor is writing it |
 | `send stop` | SIGTERM to the run: it writes a checkpoint and exits; the supervisor keeps the runtime. A run that has not exited after 30 minutes gets a second SIGTERM (it exits at once on it), and 5 minutes later its processes are killed |
 | `send resume` | continues the run (cell 8) |
 | `send package` | packages `RUN_DIR/final` again for `fetch` (done by itself when the run is complete); `--part-mb 4` for smaller parts |
-| `send release` | ends the supervisor once the run is not running: the runtime goes back to Colab |
+| `send release` | ends the supervisor once the run is not running. The runtime is idle from then on; it is not given back (see above) |
 | `fetch --to DIR` | downloads the export in 16 MB parts, checks each part and the whole archive by SHA-256, unpacks it to `DIR/final`. A part that does not come through is reported with the CLI's own message; finished parts are kept |
-| `url` | `colab url`: a browser link that attaches the Colab page to the same runtime |
-| `down --yes` | `colab stop`: gives the runtime back now; its disk is lost. It says so when nothing was stopped |
+| `url` | `colab url`: a browser link that attaches an empty Colab notebook to the same runtime |
+| `down --yes` | `colab stop`: gives the runtime back now, which ends the charges; its disk is lost. It says so when nothing was stopped |
 
 `send` refuses when no supervisor is running (a command left on the runtime would be dropped by
 the next one).
@@ -192,23 +217,28 @@ incomplete twice (`--auto-resume`), at least a minute apart, and not a run you s
 does not continue, it still packages an export the run wrote on its way out. A run still running
 3 hours after its own deadline (or after the start of the attempt, when that was later) is asked
 to stop, and a complete run whose process has not exited after 10 minutes is killed. A program
-that starts more than 30 minutes after it was sent has waited behind another execution and
-leaves without touching anything (so do not let the clocks of your machine and the runtime
+that `start` sent and that begins more than 30 minutes later has waited behind another execution
+and leaves without touching anything (so do not let the clocks of your machine and the runtime
 differ by that much). Every line the supervisor prints is also in
 `/content/bes_cli/supervisor.log`.
 
 **Differences from the notebook.** No Hugging Face prompt: pass `--hf-token-file` (the file is
 uploaded, read into the run's environment and removed; `--env HF_TOKEN=...` would be written into
-the CLI's history file on your machine). No Drive mirror unless Drive is mounted before the
-start (`--drive`); without it, a reclaimed runtime takes the run with it, and `fetch` is the only
-way to get the export. On a new runtime after a loss, `start --drive` continues the mirrored run
-(section 5); without a mirror it starts a new one. The chat and the arena (cells 10 and 11) need
-a terminal on the runtime: `colab ssh -s bes24h` after the run, or `url` and the notebook.
+the CLI's history file on your machine). On a new runtime after a loss, `start --action resume`
+continues the run from its mirror on Drive (section 5) and refuses when there is none; a plain
+`start` would begin a new run in that case. The chat and the arena (cells 10 and 11) need a
+shell on the runtime: `colab ssh -s bes24h` (a local `ssh` client and an ed25519 or ecdsa key),
+within the hold time (raise `--hold-minutes` if you plan to vote for long). Nothing fetches the
+arena's votes: copy them yourself before `down`, for example
+`colab ssh -s bes24h -- tar czf /content/arena.tgz -C /content/TuringAward2027/data_cache arena`
+and `colab download -s bes24h /content/arena.tgz arena.tgz`.
 
 Nothing in this section was run against Colab: the commands and their options were checked
 against the CLI's own help and source (version 0.8.0), the two scripts against stand-ins for the
-`colab` command and the run (`tests/train/test_colab_cli.py`), and once on this development
-machine with the real smoke run behind a stand-in `colab`. How long an idle runtime survives,
+`colab` command and the run (`tests/train/test_colab_cli.py`), and three times on this
+development machine with the real smoke run behind a stand-in `colab` (once with the supervisor
+killed in the middle and started again, once with the mirror writing to a stand-in for Drive).
+How long an idle runtime survives,
 how long a runtime may live at all, and whether your account may create a v6e-1 TPU are Colab's
 to say (`colab new` reports a refusal; section 9).
 
@@ -277,8 +307,9 @@ minutes since the start); cell 7 summarises them. The benchmark's numbers are al
 ## 5. Resuming
 
 After a crash, a kill, a stop, a disconnected or recycled runtime (with the Colab CLI of section
-2.1: `python scripts/colab_cli.py send resume` on the same runtime, `start --drive` on a new one;
-both run cell 8):
+2.1: `python scripts/colab_cli.py send resume` on the same runtime; on a new one
+`start --action resume`, which mounts Drive and continues the mirrored run with cell 8, and
+refuses when Drive holds no run instead of starting a new one):
 
 1. On a recycled runtime, run cells 1, 1b and 2 to 5 again (code, dependencies, token). Do not run
    cell 6: it starts a new run (it refuses when Drive holds the run).

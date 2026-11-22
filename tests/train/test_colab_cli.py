@@ -51,6 +51,11 @@ resume = "--resume" in args
 ORDER = ("preflight", "background", "benchmark", "train", "sample", "critic", "prefopt", "select",
          "judge", "export")
 manifest = os.path.join(out, "manifest.json")
+# the handler first: a test may signal as soon as it sees the attempt recorded below
+if os.environ.get("STANDIN_DEAF"):
+    signal.signal(signal.SIGTERM, lambda *a: open(os.path.join(runs, "sigterms"), "a").write("x"))
+else:
+    signal.signal(signal.SIGTERM, lambda *a: sys.exit(3))
 if resume and not os.path.exists(manifest):
     sys.exit("--resume: no run")
 if not resume and os.path.exists(manifest):
@@ -79,10 +84,6 @@ now = time.time()
 if not resume:
     dump(manifest, {"created": now, "config": args[args.index("--config") + 1],
                     "budget": {"t0": now, "deadline": now + 1800.0, "budget_s": 1800.0}})
-if os.environ.get("STANDIN_DEAF"):
-    signal.signal(signal.SIGTERM, lambda *a: open(os.path.join(runs, "sigterms"), "a").write("x"))
-else:
-    signal.signal(signal.SIGTERM, lambda *a: sys.exit(3))
 stages(ORDER[:3], "train")
 dump(os.path.join(out, "train", "ledger.json"), {"tokens": 123456 * n, "steps": 10 * n, "seconds": {"train": 5.0, "lost": 0.0},
                                                   "restarts": n - 1, "rollbacks": 0})
@@ -98,8 +99,11 @@ if not os.environ.get("STANDIN_AUTOFINISH"):
         if time.time() > deadline:
             sys.exit(4)
         time.sleep(0.02)
-    with open(gate) as f:
-        word = f.read().strip()
+    word = ""
+    while not word:                               # the file can be seen before its word is written
+        with open(gate) as f:
+            word = f.read().strip()
+        time.sleep(0.005)
 else:
     time.sleep(float(os.environ.get("STANDIN_AUTOFINISH")))
 if word == "crash":
@@ -727,7 +731,15 @@ elif cmd == "stop":
     else:
         print(f"[colab] Session '{{session}}' not found.")
 elif cmd == "drivemount":
+    if os.environ.get("FAKE_COLAB_NO_DRIVE"):
+        sys.exit(1)
     os.makedirs(here("content/drive/MyDrive"), exist_ok=True)
+elif cmd == "ls":
+    path = here([a for a in rest if a not in ("-s", session)][0])
+    if not os.path.isdir(path):
+        print("[colab] Error: File or directory not found")
+        sys.exit(1)
+    print("\\n".join(n + ("/" if os.path.isdir(os.path.join(path, n)) else "") for n in sorted(os.listdir(path))))
 else:
     sys.exit(f"fake colab: unknown command {{cmd}}")
 """
@@ -745,7 +757,7 @@ def fake_colab(tmp_path, monkeypatch):
     monkeypatch.setenv("COLAB_BIN", str(binary))
     monkeypatch.setenv("FAKE_COLAB_HOME", str(home))
     for name in ("COLAB_CLI_ARGS", "FAKE_COLAB_EXEC", "FAKE_COLAB_ORPHANS", "FAKE_COLAB_HTTP_ERROR",
-                 "FAKE_COLAB_BUSY"):
+                 "FAKE_COLAB_BUSY", "FAKE_COLAB_NO_DRIVE"):
         monkeypatch.delenv(name, raising=False)
     monkeypatch.chdir(tmp_path)
 
@@ -753,7 +765,7 @@ def fake_colab(tmp_path, monkeypatch):
         path = home / "calls.jsonl"
         rows = [json.loads(ln) for ln in path.read_text().splitlines()] if path.exists() else []
         rows = [[re.sub(r"^BES_SENT_AT=\d+$", "BES_SENT_AT=<now>", a) for a in r] for r in rows]
-        return rows if downloads else [r for r in rows if r[0] != "download"]
+        return rows if downloads else [r for r in rows if r[0] not in ("download", "ls")]
 
     return home, calls
 
@@ -775,7 +787,8 @@ def _status(home: Path, age: float = 5.0, state: str = "running", note: str = ""
 def test_start_signs_in_creates_the_v6e1_runtime_and_sends_the_program(fake_colab, capfd):
     """The commands of a first start, in order, as the Colab CLI 0.8.0 spells them: `sessions`
     (sign-in, then once more to see the account's runtimes), `status -s`, `new -s NAME --tpu
-    v6e1`, `exec -s NAME --timeout 0 -f colab_tpu.py`; then the runtime's status says whether a
+    v6e1`, `drivemount -s NAME` (the 24-hour run is mirrored to Drive unless --no-drive),
+    `exec -s NAME --timeout 0 -f colab_tpu.py`; then the runtime's status says whether a
     supervisor runs (the exit status of `colab exec` does not)."""
     _, calls = fake_colab
     assert cli.main(["start"]) == 0
@@ -784,32 +797,61 @@ def test_start_signs_in_creates_the_v6e1_runtime_and_sends_the_program(fake_cola
         ["status", "-s", "bes24h"],
         ["sessions"],
         ["new", "-s", "bes24h", "--tpu", "v6e1"],
+        ["drivemount", "-s", "bes24h"],
         ["exec", "-s", "bes24h", "--timeout", "0", "-f", str(TPU),
-         "--env", "BES_NOTEBOOK=colab_v6e_24h", "--env", "BES_ACTION=auto", "--env", "BES_SENT_AT=<now>"],
+         "--env", "BES_NOTEBOOK=colab_v6e_24h", "--env", "BES_ACTION=auto", "--env", "BES_SENT_AT=<now>",
+         "--env", "BES_USE_DRIVE=1"],
     ]
     assert calls(downloads=True)[-1][:3] == ["download", "-s", "bes24h"]
     out = capfd.readouterr().out
-    assert "compute units are charged from now on" in out and "Ctrl-C only detaches" in out
+    assert "compute units are charged from now on" in out and "From here on Ctrl-C only detaches" in out
     assert "the supervisor is running: running" in out
+    assert cli.main(["start", "-s", "second", "--new-runtime", "--no-drive"]) == 0       # no mirror on request
+    assert not any(c[:3] == ["drivemount", "-s", "second"] for c in calls()) and "BES_USE_DRIVE=0" in calls()[-1]
 
 
-def test_start_options_reach_the_runtime(fake_colab):
+def test_start_options_reach_the_runtime(fake_colab, capfd):
+    """What cell 1 of the notebook would hold is an option here (the runtime runs the branch on
+    GitHub, not the local clone). The smoke run has a short hold of its own and no mirror; the
+    CPU rehearsal has its own session and exists only for the smoke run."""
     home, calls = fake_colab
     token = home / "token"
     token.write_text("hf_standin")
-    assert cli.main(["start", "--smoke", "--budget-minutes", "20", "--no-drive", "--auto-resume", "0",
-                     "--hold-minutes", "30", "--action", "start", "--hf-token-file", str(token),
-                     "--branch", "main", "--repo-url", "https://github.com/x/y", "--part-mb", "4"]) == 0
+    assert cli.main(["start", "--smoke", "--budget-minutes", "20", "--auto-resume", "0", "--action", "start",
+                     "--hf-token-file", str(token), "--branch", "main", "--repo-url", "https://github.com/x/y",
+                     "--part-mb", "4", "--config", "configs/canary.py"]) == 0
     assert ["new", "-s", "bes-smoke", "--tpu", "v5e1"] in calls()
     assert ["upload", "-s", "bes-smoke", str(token), "/content/bes_hf_token"] in calls()
     assert (home / "content" / "bes_hf_token").read_text() == "hf_standin"
+    assert not any(c[0] == "drivemount" for c in calls())
     env = [a for a in calls()[-1] if "=" in a]
-    assert env == ["BES_NOTEBOOK=colab_v5e_smoke", "BES_ACTION=start", "BES_SENT_AT=<now>",
-                   "BES_REPO_URL=https://github.com/x/y", "BES_BRANCH=main", "BES_BUDGET_MINUTES=20",
-                   "BES_USE_DRIVE=0", "BES_AUTO_RESUME=0", "BES_HOLD_MINUTES=30", "BES_PART_MB=4"]
-    assert cli.main(["start", "--cpu", "-s", "rehearsal", "--drive"]) == 0
-    assert ["new", "-s", "rehearsal"] in calls() and ["drivemount", "-s", "rehearsal"] in calls()
-    assert "BES_ALLOW_CPU=1" in calls()[-1] and "BES_USE_DRIVE=1" in calls()[-1]
+    assert env == ["BES_NOTEBOOK=colab_v5e_smoke", "BES_ACTION=start", "BES_SENT_AT=<now>", "BES_HOLD_MINUTES=20",
+                   "BES_HOLD_FAILED_MINUTES=30", "BES_REPO_URL=https://github.com/x/y", "BES_BRANCH=main",
+                   "BES_CONFIG=configs/canary.py", "BES_BUDGET_MINUTES=20", "BES_AUTO_RESUME=0", "BES_PART_MB=4"]
+    assert cli.main(["start", "--smoke", "--cpu", "--drive", "--hold-minutes", "45",
+                     "--drive-dir", "/content/drive/MyDrive/x"]) == 0
+    assert ["new", "-s", "bes-cpu"] in calls() and ["drivemount", "-s", "bes-cpu"] in calls()
+    env = [a for a in calls()[-1] if "=" in a]
+    assert "BES_ALLOW_CPU=1" in env and "BES_USE_DRIVE=1" in env and "BES_HOLD_MINUTES=45" in env
+    assert "BES_DRIVE_DIR=/content/drive/MyDrive/x" in env
+    capfd.readouterr()
+    before = len(calls())
+    assert cli.main(["start", "--cpu"]) == 1                          # the 24-hour configuration on a CPU: no
+    assert "use `start --smoke --cpu`" in capfd.readouterr().err and len(calls()) == before
+
+
+def test_start_checks_first_and_says_when_a_charged_runtime_is_left_idle(fake_colab, monkeypatch, capfd):
+    """A mistyped token path is found before the runtime is created. When a step fails after
+    that (the Drive mount here), nothing was sent although the runtime exists: `start` says so."""
+    _, calls = fake_colab
+    assert cli.main(["start", "--hf-token-file", "no-such-file"]) == 1
+    assert "does not exist" in capfd.readouterr().err and calls() == []
+    monkeypatch.setenv("FAKE_COLAB_NO_DRIVE", "1")
+    assert cli.main(["start"]) == 1
+    err = capfd.readouterr().err
+    assert "Drive was not mounted" in err and "--no-drive" in err
+    assert "its runtime exists and is charged while it idles" in err and "down --yes" in err
+    assert ["new", "-s", "bes24h", "--tpu", "v6e1"] in calls() and not any(c[0] == "exec" for c in calls())
 
 
 def test_start_stops_when_the_runtime_is_refused(fake_colab, monkeypatch, capfd):
@@ -865,22 +907,28 @@ def test_failures_of_the_cli_are_explained_by_their_cause():
 
 def test_start_does_not_queue_behind_a_running_supervisor(fake_colab, monkeypatch, capfd):
     """A second `colab exec` on a session whose kernel runs the supervisor would wait for it to
-    end and then act hours later: `start` sees the fresh status (or its own attached exec) and
-    does not send it."""
+    end and then act hours later: `start` sees the fresh status and does not send it. The CLI's
+    own BUSY mark counts only while the runtime has no status at all (a start of a moment ago):
+    a closed terminal leaves that mark behind for ever, and it must not stop a new supervisor
+    when the old one is gone."""
     home, calls = fake_colab
     _session(home)
     _status(home, age=30)
-    assert cli.main(["start"]) == 0
+    assert cli.main(["start", "--no-drive", "--hold-minutes", "5"]) == 0
     assert not any(c[0] in ("exec", "new") for c in calls())
-    assert "a supervisor is already running" in capfd.readouterr().out
+    out = capfd.readouterr().out
+    assert "a supervisor is already running" in out and "options of this start were not applied" in out
     _status(home, age=3600)                                          # stale: it died
-    assert cli.main(["start"]) == 0 and calls()[-1][0] == "exec"
+    assert cli.main(["start", "--no-drive"]) == 0 and calls()[-1][0] == "exec"
     _status(home, age=5, state="released")                           # it said it left
-    assert cli.main(["start"]) == 0 and [c[0] for c in calls()].count("exec") == 2
-    (home / "content" / "bes_cli" / "status.json").unlink()          # no status yet, but this machine's exec is attached
+    assert cli.main(["start", "--no-drive"]) == 0 and [c[0] for c in calls()].count("exec") == 2
     monkeypatch.setenv("FAKE_COLAB_BUSY", "1")
-    assert cli.main(["start"]) == 0 and [c[0] for c in calls()].count("exec") == 2
-    assert "is attached to 'bes24h' from this machine" in capfd.readouterr().out
+    _status(home, age=3600)                                          # the mark of a terminal that was closed
+    assert cli.main(["start", "--no-drive"]) == 0 and [c[0] for c in calls()].count("exec") == 3
+    (home / "content" / "bes_cli" / "status.json").unlink()          # no status yet: a start of a moment ago
+    assert cli.main(["start", "--no-drive"]) == 0 and [c[0] for c in calls()].count("exec") == 3
+    assert "repeat with --ignore-busy" in capfd.readouterr().out
+    assert cli.main(["start", "--no-drive", "--ignore-busy"]) == 0 and [c[0] for c in calls()].count("exec") == 4
 
 
 def test_a_failed_download_is_not_taken_for_a_missing_file(fake_colab, monkeypatch, capfd):
@@ -950,21 +998,23 @@ def test_the_route_end_to_end_with_stand_ins(fake_colab, monkeypatch, capfd):
     for k, v in _env(home / "content", BES_HOLD_MINUTES="0.005", STANDIN_AUTOFINISH="0.3").items():
         if k not in ("BES_ROOT", "BES_NOTEBOOK", "BES_ALLOW_CPU"):
             monkeypatch.setenv(k, v)
-    assert cli.main(["start", "--smoke", "--cpu"]) == 0
+    assert cli.main(["start", "--smoke", "--cpu", "--hold-minutes", "0.005"]) == 0
     out = capfd.readouterr().out
     assert "the run is complete" in out and "export packaged" in out
-    assert "the supervisor of 'bes-smoke' has left (the hold time is over" in out
-    assert cli.main(["status", "--smoke"]) == 0
+    assert "the supervisor of 'bes-cpu' has left (the hold time is over" in out and "`down --yes`" in out
+    where = ["--smoke", "-s", "bes-cpu"]
+    assert cli.main(["status", *where]) == 0
     out = capfd.readouterr().out
     assert "supervisor: released" in out and "export       finished" in out and "the supervisor has left" in out
-    assert cli.main(["fetch", "--smoke", "--to", "got"]) == 0
+    assert cli.main(["fetch", *where, "--to", "got"]) == 0
+    assert "charged until it is given back" in capfd.readouterr().out
     assert (Path("got") / "final" / "weights.bin").read_bytes() == bytes(range(256)) * 800
     assert json.loads((Path("got") / "final" / "ckpt" / "manifest.json").read_text()) == {"step": 10}
     assert not (Path("got") / ".parts").exists()
-    assert cli.main(["url", "--smoke"]) == 0 and "colab.research.google.com" in capfd.readouterr().out
-    assert cli.main(["down", "--smoke"]) == 1 and (home / "sessions" / "bes-smoke").exists()
-    assert cli.main(["down", "--smoke", "--yes"]) == 0 and not (home / "sessions" / "bes-smoke").exists()
-    assert cli.main(["status", "--smoke"]) == 1 and "does not exist" in capfd.readouterr().err
+    assert cli.main(["url", *where]) == 0 and "colab.research.google.com" in capfd.readouterr().out
+    assert cli.main(["down", *where]) == 1 and (home / "sessions" / "bes-cpu").exists()
+    assert cli.main(["down", *where, "--yes"]) == 0 and not (home / "sessions" / "bes-cpu").exists()
+    assert cli.main(["status", *where]) == 1 and "does not exist" in capfd.readouterr().err
 
 
 def test_fetch_rejects_a_damaged_part_and_an_archive_that_is_not_the_export(fake_colab, monkeypatch, capfd, tmp_path):

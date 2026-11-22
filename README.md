@@ -18,11 +18,22 @@
 [Colab CLI](https://github.com/googlecolab/google-colab-cli)（Linux、macOS，Python 3.12 以上）可以不開瀏覽器，直接從終端機建立 Colab 的 TPU 執行階段並在上面執行。在本倉庫的 clone 裡：
 
     pip install google-colab-cli
-    python scripts/colab_cli.py start --smoke     # 先做：v5e-1 TPU 上 30 分鐘的管線檢查
-    python scripts/colab_cli.py start             # v6e-1 TPU 上的 24 小時訓練
-    python scripts/colab_cli.py status            # 隨時查看進度
+    python scripts/colab_cli.py start --smoke        # 先做：v5e-1 TPU 上 30 分鐘的管線檢查
+    python scripts/colab_cli.py down --smoke --yes   # 檢查完把那個執行階段還回去
+    python scripts/colab_cli.py start                # v6e-1 TPU 上的 24 小時訓練（會掛載 Drive 做鏡像）
+    python scripts/colab_cli.py status               # 查看進度（要在執行 start 的那台機器上）
+    python scripts/colab_cli.py fetch                # 訓練完成後下載匯出並校驗
+    python scripts/colab_cli.py down --yes           # 歸還執行階段：這一步才會停止計費
 
-`start` 等同於 `colab sessions`（第一次使用時登入）、`colab new -s bes24h --tpu v6e1`（建立執行階段，從這一刻起計費）與 `colab exec -s bes24h --timeout 0 -f scripts/colab_tpu.py`。登入時 CLI 會印出一個授權連結，在瀏覽器同意後 Google 會顯示一段授權碼，請把它貼回 CLI 等待輸入的那個終端機，不要貼到別處（它等同於密碼）。CLI 建立的執行階段只在核心有東西在執行時才會存活，所以 `scripts/colab_tpu.py` 會留在核心裡守著訓練直到結束；按 Ctrl-C 或關掉終端機只是離線，訓練照常進行。其餘指令（`send stop|resume|release`、`fetch`、`url`、`down`）與注意事項見 `RUNBOOK.md` 第 2.1 節。這條路線只用替身的 `colab` 指令測試過，沒有在 Colab 上實際執行。
+`start` 會依序執行 `colab sessions`（第一次使用時登入）、`colab new -s bes24h --tpu v6e1`（建立執行階段，從這一刻起計費）、`colab drivemount`（24 小時訓練預設鏡像到 Drive，需要您在瀏覽器授權；`--no-drive` 可關閉，但那樣執行階段一被回收訓練就全部遺失）與 `colab exec -s bes24h --timeout 0 -f scripts/colab_tpu.py`。
+
+- **登入**：CLI 會印出一個授權連結，在瀏覽器同意後 Google 會顯示一段授權碼，請把它貼回 CLI 等待輸入的那個終端機，不要貼到別處（它等同於密碼）。
+- **守護程式**：CLI 建立的執行階段只在核心有東西在執行時才會存活，所以 `scripts/colab_tpu.py` 會留在核心裡守著訓練直到結束。`start` 印出「== starting」之後，按 Ctrl-C 或關掉終端機只是離線，訓練照常進行；在那之前中斷則什麼都還沒開始，而執行階段可能已經在計費（`start` 會提醒）。
+- **不要對同一個工作階段下 `colab exec`、`colab repl` 或 `colab restart-kernel`**：前兩者會無聲地排在守護程式後面，第三者會把守護程式殺掉。
+- **停止計費**：守護程式結束或送出 `release` 只是不再維持執行階段，仍會計費到 Colab 回收為止；`down --yes` 才是立刻歸還。
+- 執行階段上跑的是 GitHub 上這個分支的程式，不是本機 clone；原本要在 notebook 第 1 格改的設定，改用 `start` 的選項（`--budget-minutes`、`--config` 等）。
+
+其餘指令（`send stop|resume|package|release`、`url`）與注意事項見 `RUNBOOK.md` 第 2.1 節。這條路線只用替身的 `colab` 指令測試過，沒有在 Colab 上實際執行。
 
 ## What this is
 
@@ -105,9 +116,10 @@ The real run: `RUNBOOK.md` (what to do before, during and after the 24 hours) an
 Both open in Colab from the links near the top of this file, with this repository, its branch
 and the TPU type already filled in.
 From a terminal instead of a browser tab: `python scripts/colab_cli.py start` uses the Colab
-CLI (https://github.com/googlecolab/google-colab-cli) to create the v6e-1 runtime and to send it
-`scripts/colab_tpu.py`, which runs the notebook's cells there and stays in the kernel as the
-run's supervisor (`RUNBOOK.md` section 2.1).
+CLI (https://github.com/googlecolab/google-colab-cli) to create the v6e-1 runtime, to mount Drive
+for the mirror and to send `scripts/colab_tpu.py`, which runs the notebook's cells there and
+stays in the kernel as the run's supervisor; `down --yes` gives the runtime back, which is what
+ends the charges (`RUNBOOK.md` section 2.1).
 The code and every data file stay on the runtime's local disk (about 72 GB for the default plan:
 raw downloads are deleted once tokenised); Google Drive receives only the run's records, logs, the
 newest checkpoint and the export. Along the way the run keeps a hashed 0.3% of every chat, rag

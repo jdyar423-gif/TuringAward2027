@@ -1,13 +1,14 @@
 """The run on a Colab TPU from your terminal, through the Colab CLI.
 
     pip install google-colab-cli          # https://github.com/googlecolab/google-colab-cli (Linux, macOS)
-    python scripts/colab_cli.py start --smoke      # 30 minutes on a v5e-1 TPU: do this first
-    python scripts/colab_cli.py start              # the 24-hour run on a v6e-1 TPU
+    python scripts/colab_cli.py start --smoke      # 30 minutes on a v5e-1 TPU: do this first ...
+    python scripts/colab_cli.py down --smoke --yes # ... and give its runtime back
+    python scripts/colab_cli.py start              # the 24-hour run on a v6e-1 TPU (mounts Drive for the mirror)
     python scripts/colab_cli.py status             # the progress report
     python scripts/colab_cli.py url                # a browser link that attaches Colab to the same runtime
     python scripts/colab_cli.py send stop          # stop | resume | package | release
     python scripts/colab_cli.py fetch --to export  # the exported model, checked by SHA-256
-    python scripts/colab_cli.py down --yes         # give the runtime back (its disk is lost)
+    python scripts/colab_cli.py down --yes         # give the runtime back: this is what ends the charges
 
 ``start`` signs you in when needed (the Colab CLI prints an authorization link and asks for the
 code Google shows: paste it in that terminal, nowhere else), creates the session
@@ -17,17 +18,28 @@ repository on the runtime, runs the notebook's own cells and stays in the kernel
 supervisor, because a runtime made by the CLI lives only while its kernel executes something.
 Read its docstring for the files it keeps under ``/content/bes_cli`` and what the commands do.
 
-``start`` stays attached and prints the supervisor's lines. Ctrl-C, a closed terminal or a lost
-connection only detach it: the run and its supervisor go on. ``--detach`` starts it in the
-background. While the supervisor runs, every other ``colab exec`` on the session waits behind
-it (and ``colab restart-kernel`` would kill it), so this wrapper talks to the runtime through
-files (``colab upload``/``download``).
+The 24-hour run mirrors its records, newest checkpoint and export to Google Drive
+(``RUNBOOK.md`` section 4), as the notebook does: ``start`` mounts Drive first, which asks you
+to authorise in a browser (``--no-drive`` runs without the mirror; then a runtime that Colab
+takes back takes the run with it). The smoke run has no mirror unless you pass ``--drive``.
+
+Once it says "== starting", ``start`` stays attached and prints the supervisor's lines; from
+then on Ctrl-C, a closed terminal or a lost connection only detach it: the run and its
+supervisor go on. ``--detach`` starts it in the background. Before that line nothing runs yet,
+although the runtime may already exist and be charged. While the supervisor runs, every other
+``colab exec`` on the session waits behind it (and ``colab restart-kernel`` would kill it), so
+this wrapper talks to the runtime through files (``colab upload``/``download``).
+
+``release`` and the end of the supervisor's hold time only stop keeping the runtime alive: it
+is charged until Colab reclaims it. ``down --yes`` (``colab stop``) gives it back at once.
 
 The Colab CLI keeps its sessions in a file on the machine that created them: use this wrapper
 from that machine. From another one the session looks missing, and ``start`` refuses to create a
 second runtime while the account has one this machine does not know (``--new-runtime`` overrides).
 
-Without this wrapper the same thing is two commands; see ``RUNBOOK.md`` section 2.1.
+The runtime runs the branch as it is on GitHub, not your local clone: what you would set in
+the notebook's cell 1 is an option here (``--budget-minutes``, ``--config``, ``--drive-dir``).
+The commands can be typed by hand as well; ``RUNBOOK.md`` section 2.1 says what is lost then.
 ``COLAB_BIN`` names another ``colab`` executable, ``COLAB_CLI_ARGS`` adds global options to
 every call (for example ``--auth=adc``). Nothing here was run against Colab: the wrapper is
 tested with a stand-in for the ``colab`` command (``tests/train/test_colab_cli.py``).
@@ -50,10 +62,14 @@ from pathlib import Path
 
 PROGRAM = Path(__file__).resolve().with_name("colab_tpu.py")
 REMOTE = "/content/bes_cli"
+#: drive: the mirror to Google Drive unless --no-drive (the 24-hour run), or only with --drive.
+#: env: what the smoke run sets unless you do: a short hold, so its runtime is not kept for hours.
 PRESETS = {
-    "final": {"session": "bes24h", "notebook": "colab_v6e_24h", "tpu": "v6e1"},
-    "smoke": {"session": "bes-smoke", "notebook": "colab_v5e_smoke", "tpu": "v5e1"},
+    "final": {"session": "bes24h", "notebook": "colab_v6e_24h", "tpu": "v6e1", "drive": True, "env": {}},
+    "smoke": {"session": "bes-smoke", "notebook": "colab_v5e_smoke", "tpu": "v5e1", "drive": None,
+              "env": {"BES_HOLD_MINUTES": "20", "BES_HOLD_FAILED_MINUTES": "30"}},
 }
+CPU_SESSION = "bes-cpu"             # start --smoke --cpu: its own session, never the TPU one
 COMMANDS = ("stop", "resume", "package", "release")
 STALE_S = 240.0                     # a status older than this: no supervisor is writing it
 INSTALL = ("the `colab` command was not found. Install the Colab CLI (Linux or macOS, Python 3.12+):\n"
@@ -163,6 +179,11 @@ class Colab:
             return False
         raise Failed(explain(f"the download of {remote}", p))
 
+    def drive_mounted(self) -> bool:
+        """True when the runtime has Drive mounted (asked through the file interface, not the kernel)."""
+        p = self.quiet("ls", "-s", self.session, "/content/drive")
+        return p.returncode == 0 and "MyDrive" in p.stdout
+
     def upload(self, local: Path, remote: str) -> None:
         p = self.quiet("upload", "-s", self.session, str(local), remote)
         if p.returncode != 0:
@@ -213,20 +234,25 @@ def running(info: dict | None) -> bool:
     return age is not None and age < STALE_S
 
 
-def environment(args: argparse.Namespace, preset: dict) -> list[str]:
+def environment(args: argparse.Namespace, preset: dict, drive: bool | None) -> list[str]:
     """The ``--env KEY=VALUE`` arguments of ``colab exec`` for these options. BES_SENT_AT lets the
     program see that it waited behind another execution (it then leaves without acting)."""
     env = {"BES_NOTEBOOK": preset["notebook"], "BES_ACTION": args.action, "BES_SENT_AT": f"{time.time():.0f}"}
+    env.update(preset["env"])
     if args.repo_url:
         env["BES_REPO_URL"] = args.repo_url
     if args.branch is not None:
         env["BES_BRANCH"] = args.branch
+    if args.config:
+        env["BES_CONFIG"] = args.config
     if args.budget_minutes is not None:
         env["BES_BUDGET_MINUTES"] = f"{args.budget_minutes:g}"
     if args.cpu:
         env["BES_ALLOW_CPU"] = "1"
-    if args.drive is not None:
-        env["BES_USE_DRIVE"] = "1" if args.drive else "0"
+    if drive is not None:
+        env["BES_USE_DRIVE"] = "1" if drive else "0"
+    if args.drive_dir:
+        env["BES_DRIVE_DIR"] = args.drive_dir
     if args.auto_resume is not None:
         env["BES_AUTO_RESUME"] = str(args.auto_resume)
     if args.hold_minutes is not None:
@@ -253,7 +279,8 @@ def after_start(colab: Colab, hints: str) -> int:
         print(f"== detached from '{colab.session}'; the supervisor is running: {info.get('state')}{note}\n{hints}")
         return 0
     if info.get("state") == "released" and "failed" not in str(info.get("note")):
-        print(f"== the supervisor of '{colab.session}' has left{note}. Nothing keeps the runtime alive now.")
+        print(f"== the supervisor of '{colab.session}' has left{note}. Nothing keeps the runtime alive now, but it "
+              "is charged until Colab reclaims it: `down --yes` gives it back at once.")
         return 0
     print(f"== no supervisor is running on '{colab.session}': last state {info.get('state')}{note}. The runtime is "
           "idle and still charged until Colab reclaims it: fix the cause and start again, or give it back "
@@ -263,11 +290,18 @@ def after_start(colab: Colab, hints: str) -> int:
 
 def cmd_start(args: argparse.Namespace) -> int:
     preset = PRESETS["smoke" if args.smoke else "final"]
-    session = args.session or preset["session"]
+    if args.cpu and not args.smoke:
+        raise Failed("--cpu is for a rehearsal of this route with the smoke run: use `start --smoke --cpu`. "
+                     "(Without --smoke it would run the 24-hour configuration on a CPU runtime.)")
+    session = args.session or (CPU_SESSION if args.cpu else preset["session"])
     colab = Colab(session)
     if not PROGRAM.is_file():
         raise Failed(f"{PROGRAM} is missing")
-    flag = " --smoke" if args.smoke else ""
+    token = Path(args.hf_token_file).expanduser() if args.hf_token_file else None
+    if token is not None and not token.is_file():        # before anything is created and charged
+        raise Failed(f"{token} does not exist")
+    drive = args.drive if args.drive is not None else preset["drive"]
+    flag = (" --smoke" if args.smoke else "") + (f" -s {session}" if session != preset["session"] else "")
     print(f"== signing in if needed, and the sessions of this account (`{' '.join(colab.argv('sessions'))}`)")
     if colab.shown("sessions") != 0:
         raise Failed("`colab sessions` failed (see above): sign in first; it prints a link and asks for the code "
@@ -275,14 +309,21 @@ def cmd_start(args: argparse.Namespace) -> int:
     line = colab.status_line()
     if line is not None:
         print(f"== session '{session}' exists: using it")
-        if "BUSY" in line and PROGRAM.name in line:
-            print(f"a `colab exec` of the supervisor is attached to '{session}' from this machine: not sending "
-                  f"another one, it would only wait behind it.\nprogress: python scripts/colab_cli.py status{flag}")
-            return 0
-        age = supervisor_age(remote_status(colab)[0])
+        info = remote_status(colab)[0]
+        age = supervisor_age(info)
         if age is not None and age < STALE_S:
             print(f"a supervisor is already running on '{session}' (status written {age:.0f} s ago): not sending "
-                  f"another one, it would only wait behind it.\nprogress: python scripts/colab_cli.py status{flag}")
+                  "another one, it would only wait behind it. The options of this start were not applied.\n"
+                  f"progress: python scripts/colab_cli.py status{flag}")
+            return 0
+        if info is None and "BUSY" in line and PROGRAM.name in line and not args.ignore_busy:
+            # the CLI's local mark of a `colab exec` that has not written a status yet: a start of a
+            # moment ago. (With a status that is stale or says "left", the mark is itself stale: a
+            # closed terminal leaves it behind, and the program is sent.)
+            print(f"this machine's Colab CLI says a `colab exec` of the supervisor is attached to '{session}', and "
+                  "the runtime has no supervisor status yet: a start of a moment ago? Not sending another one. "
+                  "If no start is in progress (a closed terminal leaves that mark behind), repeat with "
+                  "--ignore-busy.")
             return 0
     else:
         others = unknown_runtimes(colab)
@@ -293,20 +334,43 @@ def cmd_start(args: argparse.Namespace) -> int:
         print(f"== creating the runtime (`{' '.join(colab.argv(*new))}`): compute units are charged from now on")
         if colab.shown(*new) != 0:
             raise Failed("the runtime was not created: the Colab CLI's message above says why")
-    if args.hf_token_file:
-        token = Path(args.hf_token_file).expanduser()
-        if not token.is_file():
-            raise Failed(f"{token} does not exist")
+    try:
+        _prepare(colab, token, drive)
+    except (Failed, KeyboardInterrupt) as e:
+        print(f"\n== nothing was sent to '{session}', but its runtime exists and is charged while it idles: "
+              f"`python scripts/colab_cli.py start{flag}` again, or give it back with "
+              f"`python scripts/colab_cli.py down{flag} --yes`.", file=sys.stderr)
+        if isinstance(e, KeyboardInterrupt):
+            return 130
+        raise
+    return _send_program(args, preset, colab, drive, flag)
+
+
+def _prepare(colab: Colab, token: Path | None, drive: bool | None) -> None:
+    """What `start` does on the runtime before the program is sent: the token file and Drive."""
+    session = colab.session
+    if token is not None:
         colab.upload(token, "/content/bes_hf_token")
         print("== Hugging Face token uploaded (the supervisor reads it into the run's environment and removes the file)")
-    if args.drive:
-        print(f"== mounting Drive (`{' '.join(colab.argv('drivemount', '-s', session))}`): follow its prompts")
-        if colab.shown("drivemount", "-s", session) != 0:
-            raise Failed("Drive was not mounted; start again without --drive to run without the mirror")
-    run = colab.argv("exec", "-s", session, "--timeout", "0", "-f", str(PROGRAM), *environment(args, preset))
+    if drive and not colab.drive_mounted():
+        print(f"== mounting Google Drive for the mirror (`{' '.join(colab.argv('drivemount', '-s', session))}`): "
+              "follow its prompts")
+        if colab.shown("drivemount", "-s", session) != 0 or not colab.drive_mounted():
+            raise Failed("Drive was not mounted. Mount it yourself (`colab drivemount -s " + session + "`) and "
+                         "start again to have the mirror, or start with --no-drive: then nothing of the run is "
+                         "outside the runtime until you fetch the export.")
+    elif drive:
+        print("== Google Drive is mounted on the runtime: the run is mirrored")
+
+
+def _send_program(args: argparse.Namespace, preset: dict, colab: Colab, drive: bool | None, flag: str) -> int:
+    """`colab exec` of the program, attached or in the background, and what the runtime says then."""
+    session = colab.session
+    run = colab.argv("exec", "-s", session, "--timeout", "0", "-f", str(PROGRAM), *environment(args, preset, drive))
     hints = (f"  progress:  python scripts/colab_cli.py status{flag}\n"
              f"  browser:   python scripts/colab_cli.py url{flag}\n"
-             f"  give back: python scripts/colab_cli.py down{flag} --yes   (the runtime's disk is lost)")
+             f"  export:    python scripts/colab_cli.py fetch{flag}\n"
+             f"  give back: python scripts/colab_cli.py down{flag} --yes   (ends the charges; the runtime's disk is lost)")
     if args.detach:
         log = Path(args.log or f"colab_{session}.log").resolve()
         with open(log, "ab") as f:
@@ -326,7 +390,8 @@ def cmd_start(args: argparse.Namespace) -> int:
         print(f"== no status from the supervisor within {args.wait:.0f} s (the kernel may still be starting): "
               f"look at {log} and at `status`.\n{hints}")
         return 0
-    print(f"== starting (`{' '.join(run)}`)\n   Ctrl-C only detaches this terminal: the run and its supervisor go on.\n")
+    print(f"== starting (`{' '.join(run)}`)\n   From here on Ctrl-C only detaches this terminal: the run and its "
+          "supervisor go on.\n")
     try:
         subprocess.call(run)
     except KeyboardInterrupt:
@@ -335,8 +400,12 @@ def cmd_start(args: argparse.Namespace) -> int:
     return after_start(colab, hints)
 
 
+def _session(args: argparse.Namespace) -> str:
+    return args.session or PRESETS["smoke" if args.smoke else "final"]["session"]
+
+
 def cmd_status(args: argparse.Namespace) -> int:
-    colab = Colab(args.session or PRESETS["smoke" if args.smoke else "final"]["session"])
+    colab = Colab(_session(args))
     if not colab.exists():
         raise Failed(missing(colab))
     info, text = remote_status(colab)
@@ -357,7 +426,7 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 
 def cmd_send(args: argparse.Namespace) -> int:
-    colab = Colab(args.session or PRESETS["smoke" if args.smoke else "final"]["session"])
+    colab = Colab(_session(args))
     if not colab.exists():
         raise Failed(missing(colab))
     if not running(remote_status(colab)[0]) and not args.force:
@@ -397,7 +466,7 @@ def _extract(tar_path: Path, to: Path) -> None:
 
 
 def cmd_fetch(args: argparse.Namespace) -> int:
-    colab = Colab(args.session or PRESETS["smoke" if args.smoke else "final"]["session"])
+    colab = Colab(_session(args))
     if not colab.exists():
         raise Failed(missing(colab))
     to = Path(args.to).resolve()
@@ -436,17 +505,18 @@ def cmd_fetch(args: argparse.Namespace) -> int:
     _extract(tar_path, to)
     shutil.rmtree(parts_dir)
     print(f"export in {to / 'final'} ({meta['bytes'] / 1e6:.1f} MB, SHA-256 of the archive verified).\n"
-          f"check its files:  python scripts/export.py --verify {to / 'final'}")
+          f"check its files:  python scripts/export.py --verify {to / 'final'}\n"
+          "The runtime is charged until it is given back: `down --yes` once you have what you need.")
     return 0
 
 
 def cmd_url(args: argparse.Namespace) -> int:
-    colab = Colab(args.session or PRESETS["smoke" if args.smoke else "final"]["session"])
+    colab = Colab(_session(args))
     return colab.shown("url", "-s", colab.session, *(["--open"] if args.open else []))
 
 
 def cmd_down(args: argparse.Namespace) -> int:
-    colab = Colab(args.session or PRESETS["smoke" if args.smoke else "final"]["session"])
+    colab = Colab(_session(args))
     if not args.yes:
         raise Failed(f"this stops the runtime of '{colab.session}': its disk, the run directory and anything not "
                      "on Drive or fetched are lost. Repeat with --yes if that is what you want.")
@@ -473,13 +543,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
     p = common(sub.add_parser("start", help="create the TPU runtime if needed and start or continue the run"))
     p.add_argument("--tpu", default=None, help="v6e1 or v5e1 (default: v6e1, with --smoke v5e1)")
-    p.add_argument("--cpu", action="store_true", help="a CPU runtime and ALLOW_CPU (a rehearsal of this route)")
+    p.add_argument("--cpu", action="store_true", help="with --smoke: a CPU runtime and ALLOW_CPU, session "
+                                                      f"{CPU_SESSION} (a rehearsal of this route without a TPU)")
     p.add_argument("--action", default="auto", choices=["auto", "start", "resume"],
                    help="auto: continue a run that exists on the runtime or on Drive, else start one")
     p.add_argument("--budget-minutes", type=float, default=None, help="replace the notebook's BUDGET_MINUTES")
+    p.add_argument("--config", default=None, help="replace the notebook's CONFIG (a configs/*.py of the branch)")
     p.add_argument("--drive", action=argparse.BooleanOptionalAction, default=None,
-                   help="--drive mounts Drive first (interactive) for the mirror; --no-drive never mirrors; "
-                        "default: mirror when Drive is already mounted")
+                   help="--drive mounts Google Drive first (it asks you) and mirrors the run to it: the default "
+                        "of the 24-hour run; --no-drive never mirrors: the default of the smoke run unless "
+                        "Drive is already mounted")
+    p.add_argument("--drive-dir", default=None, help="replace the notebook's DRIVE_DIR")
     p.add_argument("--hf-token-file", default=None, help="a file with a Hugging Face token, uploaded to the runtime")
     p.add_argument("--repo-url", default=None, help="clone another repository (default: this one)")
     p.add_argument("--branch", default=None, help="clone another branch")
@@ -488,6 +562,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p.add_argument("--part-mb", type=float, default=None, help="size of the export's parts for fetch (16)")
     p.add_argument("--new-runtime", action="store_true",
                    help="create the runtime although the account has one this machine does not know")
+    p.add_argument("--ignore-busy", action="store_true",
+                   help="send the program although this machine's CLI marks a `colab exec` as attached")
     p.add_argument("--detach", action="store_true", help="send in the background and return once the supervisor "
                                                          "has written its first status")
     p.add_argument("--wait", type=float, default=90.0, help="with --detach: seconds to wait for that status")
