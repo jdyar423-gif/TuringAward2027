@@ -153,3 +153,12 @@
 - **連結的寫法**：分支名含斜線。Colab 的 notebook 程式把 `/github/<owner>/<repo>/blob/` 之後的**一個**路徑段當成分支並做百分號解碼，它自己產生這類網址時也用 `encodeURIComponent`，所以連結寫成 `blob/claude%2Fmodest-carson-yi2d9g/notebooks/…`。它載入檔案的位址是 `raw.githubusercontent.com/<owner>/<repo>/<branch>/<path>`，直接寫斜線時分支會被誤判為 `claude`，但拼出來的位址相同。
 - **依據與限度**：以上兩點（分支的解析、`gpuType` 的讀取與 `V6E1`→「v6e-1 TPU」、`V5E1`→「v5e-1 TPU」的對應）是 2026-11-22 讀 Colab 當時的前端腳本得到的，**不是在 Colab 上開啟 notebook 驗證的**；Colab 改版後可能不同。在這個容器裡實際做過的只有：用出貨的第 1、1b、3 格對推上去的分支執行 clone（取得正確的 commit 與後續各格需要的檔案），以及確認上述 raw 位址回傳的就是倉庫裡的兩個 notebook。
 - **分支改名或合併後**：連結、第 1 格的 `BRANCH` 與 notebook 第一格要一起改；上述測試會指出不一致之處。
+
+## 16. 從終端機以 Colab CLI 直連 TPU
+
+- **新增**：`scripts/colab_cli.py`（在使用者機器上執行的薄包裝：`start`／`status`／`send`／`fetch`／`url`／`down`）與 `scripts/colab_tpu.py`（由 `colab exec -f` 送進 Colab 核心執行的程式）。後者在執行階段上 clone 本倉庫、執行 notebook 自己的第 1、1b、2、3、4 格與第 6 或第 8 格（同一份程式碼，不另寫一套），然後留在核心裡當訓練的守護者。
+- **為什麼要有守護者**：Colab CLI（0.8.0）沒有保活機制，它的文件寫明執行階段的存活「由後端依核心是否有執行中的工作決定」；訓練本身是獨立行程，核心一閒置執行階段就會被回收（文件沒有給時間，早期版本的紀錄是幾分鐘）。所以只下 `colab new` 再用 `colab exec` 啟動背景訓練是行不通的：指令一返回，執行階段與訓練不久就一起消失。守護者讓核心持續忙碌，並在訓練結束後依設定保留一段時間再離開。
+- **守護者做的事**：每分鐘把第 7 格的進度報告寫到 `/content/bes_cli/status.txt`；讀取單字指令檔 `ctl`（`stop`、`resume`、`package`、`release`）；訓練行程意外結束時自動續跑（預設 2 次，使用者要求停止後不續跑）；訓練完成後執行第 12 格（驗證匯出、有 Drive 時複製）並把匯出打包成 16 MB 的分片供 `fetch` 下載與逐片校驗；超過訓練自己的期限 3 小時仍在執行時停止一次；單輪出錯只記錄、不離開。守護者執行期間同一工作階段的其他 `colab exec` 會排在它後面，所以包裝一律經由檔案（`colab upload`／`download`，不經核心）與它溝通。
+- **依據**：指令與旗標對照 Colab CLI 0.8.0 的 `--help` 與原始碼（`colab new --tpu v6e1`、`colab exec --timeout 0 -f … --env K=V`；`exec` 結束時只關閉連線、不中斷核心；`--timeout` 是無輸出的閒置上限；`--env` 會在程式文字前加上幾行，所以該檔不能有 `__future__` 匯入，也沒有 `__file__`）。
+- **驗證與限度**：`tests/train/test_colab_cli.py` 以替身的 `colab` 指令與替身訓練程式測試兩個檔案（建立指令的順序與旗標、不重複送出守護者、當機後續跑、各指令、匯出分片與校驗）；另在本機以真正的 smoke 配置經替身 `colab` 完整走過一次。**沒有在 Colab 上執行過**：登入流程、帳號能否取得 v6e-1、閒置回收與最長壽命、contents API 對 16 MB 分片的限制都未驗證（`RUNBOOK.md` 第 9 節）。
+- **登入與授權範圍**：CLI 第一次使用時印出授權連結，使用者在瀏覽器同意後把 Google 顯示的授權碼貼回 CLI 的終端機。0.8.0 版要求的範圍含 `colaboratory`、電子郵件與個人檔案、`drive.file` 與 `cloud-platform`。這段授權碼等同於密碼，因此沒有設計成由代理程式代為登入：需要代理程式操作時，應在使用者自己的機器上登入後再讓它下指令。

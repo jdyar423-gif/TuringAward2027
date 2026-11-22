@@ -6,9 +6,10 @@ code was developed and rehearsed on a 4-core CPU container, and the TPU facts be
 compile-only estimates (`docs/TPU_NOTES.md`). The first 40 minutes of the run are where those
 estimates meet the chip; section 3 says what you must see there and what each failure means.
 
-Contents: 1 before the run, 2 starting it, 3 the first 40 minutes, 4 during the run,
-5 resuming, 6 the fallback ladder, 7 after the run (export, evaluation, arena), 8 reproducing
-the accounting, 9 known unknowns, 10 honest expectations, 11 where things are.
+Contents: 1 before the run, 2 starting it (2.1: from a terminal with the Colab CLI), 3 the first
+40 minutes, 4 during the run, 5 resuming, 6 the fallback ladder, 7 after the run (export,
+evaluation, arena), 8 reproducing the accounting, 9 known unknowns, 10 honest expectations,
+11 where things are.
 
 ## 1. Before the run
 
@@ -107,6 +108,88 @@ installed), from the repository's directory:
 
     mkdir -p runs && nohup python scripts/run_24h.py --config configs/final.py --out runs/final > runs/final.log 2>&1 &
 
+### 2.1 From a terminal: the Colab CLI
+
+The [Colab CLI](https://github.com/googlecolab/google-colab-cli) (Linux and macOS, Python 3.12 or
+newer) creates a Colab runtime from a terminal and runs code on it, with no browser tab. From a
+clone of this repository on your machine:
+
+    pip install google-colab-cli
+    python scripts/colab_cli.py start --smoke     # 30 minutes on a v5e-1 TPU: do this first
+    python scripts/colab_cli.py start             # the 24-hour run on a v6e-1 TPU
+    python scripts/colab_cli.py status            # the report of cell 7, from any terminal
+
+`start` issues three commands of the CLI, which you can also type yourself:
+
+    colab sessions                                # signs you in on first use
+    colab new -s bes24h --tpu v6e1                # the runtime: compute units are charged from here on
+    colab exec -s bes24h --timeout 0 -f scripts/colab_tpu.py
+
+**Signing in.** On first use the CLI prints an authorization link; you approve in any browser,
+Google shows a code, and you paste the code into the terminal where the CLI waits. That code is a
+credential ("similar to your password", says the page that shows it): give it to that prompt and
+to nothing else (no chat, no notebook). The page is the Google Cloud SDK's and speaks of the
+`gcloud` CLI, because the Colab CLI signs in through the same Google client. As of version
+0.8.0 the CLI asks for your Colab account (`colaboratory`), your e-mail address and profile,
+files it creates on Drive (`drive.file`) and Google Cloud (`cloud-platform`); the token stays in
+your machine's keyring. `colab sessions` shows that the sign-in works before anything is charged.
+A machine without a desktop keyring (a server, WSL, a container) cannot keep the token, and the
+CLI then asks to sign in at every command: `pip install keyrings.alt` next to the CLI gives it a
+file store (plaintext, readable by you only; checked here), or use Application Default
+Credentials: `gcloud auth application-default login` with the four scopes that `colab skill`
+lists (the wrapper prints the full command when it meets this case), then
+`COLAB_CLI_ARGS=--auth=adc`.
+
+**What runs on the runtime.** `colab exec -f` sends the text of `scripts/colab_tpu.py` to the
+runtime's kernel. There it clones this repository (cell 1's `REPO_URL` and `BRANCH`), runs the
+notebook's own cells 1, 1b, 2, 3 and 4, then cell 6 (a new run) or cell 8 (a run that exists on
+the runtime or on a mounted Drive), and stays in the kernel as the run's supervisor until the run
+has ended. It has to stay: a runtime made by the CLI lives while its kernel executes something
+(the CLI's documentation: liveness is "maintained by the Colab backend based on active kernel
+executions and interactions", "the CLI runs no keep-alive daemon"), and the run is a separate
+process. Consequences:
+
+- Ctrl-C, a closed terminal or a dropped connection only detach `start`; the supervisor and the
+  run go on (`start --detach` returns at once). Look at the run with `status`.
+- While the supervisor runs, every other `colab exec` on the session waits behind it. The wrapper
+  therefore talks to the runtime through files (`colab upload`, `colab download`), which do not
+  use the kernel: `/content/bes_cli/status.txt` (rewritten every minute), `ctl` (commands),
+  `export/` (the export in parts).
+- When the supervisor leaves, the kernel is idle and Colab takes the runtime back, with its disk.
+  It leaves 2 hours after a complete run (`--hold-minutes`), 4 hours after a run that ended
+  incomplete and was not continued, or when you send `release`.
+
+| command | what it does |
+|---|---|
+| `start` | signs in, creates the session's runtime when it does not exist (`--smoke`: session `bes-smoke`, v5e-1, the smoke notebook; `--cpu`: a CPU runtime with `ALLOW_CPU`, a rehearsal of this route), sends the program. Options: `--detach`, `--drive` (mounts Drive first with `colab drivemount`, which needs you; then the mirror of section 4 runs) or `--no-drive`, `--hf-token-file FILE`, `--budget-minutes N`, `--action auto\|start\|resume`, `--auto-resume N`, `--hold-minutes M`. It does not send the program when a supervisor already holds the session |
+| `status` | prints the supervisor's state and the report of cell 7; warns when no supervisor is writing it |
+| `send stop` | SIGTERM to the run: it writes a checkpoint and exits; the supervisor keeps the runtime |
+| `send resume` | continues the run (cell 8) |
+| `send package` | packages `RUN_DIR/final` again for `fetch` (done by itself when the run is complete) |
+| `send release` | ends the supervisor once the run is not running: the runtime goes back to Colab |
+| `fetch --to DIR` | downloads the export in 16 MB parts, checks each part and the whole archive by SHA-256, unpacks it to `DIR/final` |
+| `url` | `colab url`: a browser link that attaches the Colab page to the same runtime |
+| `down --yes` | `colab stop`: gives the runtime back now; its disk is lost |
+
+The supervisor continues a run that died by itself twice (`--auto-resume`), at least a minute
+apart; it does not continue a run you stopped. A run still running 3 hours after its own
+deadline is stopped once. Every line it prints is also in `/content/bes_cli/supervisor.log`.
+
+**Differences from the notebook.** No Hugging Face prompt: pass `--hf-token-file` (the file is
+uploaded, read into the run's environment and removed; `--env HF_TOKEN=...` would be written into
+the CLI's history file on your machine). No Drive mirror unless Drive is mounted before the
+start (`--drive`); without it, a reclaimed runtime takes the run with it, and `fetch` is the only
+way to get the export. On a new runtime after a loss, `start --drive` continues the mirrored run
+(section 5); without a mirror it starts a new one. The chat and the arena (cells 10 and 11) need
+a terminal on the runtime: `colab ssh -s bes24h` after the run, or `url` and the notebook.
+
+Nothing in this section was run against Colab: the commands and their options were checked
+against the CLI's own help and source (version 0.8.0), the two scripts against stand-ins for the
+`colab` command and the run (`tests/train/test_colab_cli.py`), and once on this development
+machine with the real smoke run behind a stand-in `colab`. How long an idle runtime survives,
+how long a runtime may live at all, and whether your account may create a v6e-1 TPU are Colab's
+to say (`colab new` reports a refusal; section 9).
+
 ## 3. The first 40 minutes
 
 The plan's timeline (`docs/PLAN.md` section 6) puts installation, downloads, the benchmark and the
@@ -171,7 +254,9 @@ minutes since the start); cell 7 summarises them. The benchmark's numbers are al
 
 ## 5. Resuming
 
-After a crash, a kill, a stop, a disconnected or recycled runtime:
+After a crash, a kill, a stop, a disconnected or recycled runtime (with the Colab CLI of section
+2.1: `python scripts/colab_cli.py send resume` on the same runtime, `start --drive` on a new one;
+both run cell 8):
 
 1. On a recycled runtime, run cells 1, 1b and 2 to 5 again (code, dependencies, token). Do not run
    cell 6: it starts a new run (it refuses when Drive holds the run).
@@ -356,7 +441,11 @@ one-hour canary) measures most of it.
   and whether files replaced or deleted through the Drive mount fill the Drive trash as reported
   (section 1.1). The "open in Colab" links were not opened on Colab either: how Colab reads the
   branch from the link and the TPU type from the notebook's metadata was read from the script of
-  its notebook app (`docs/CHANGES.md` section 15).
+  its notebook app (`docs/CHANGES.md` section 15). The Colab CLI route (section 2.1) was never run
+  against Colab: the sign-in, whether a v6e-1 runtime is granted, how soon an idle runtime is
+  reclaimed, the longest life of a runtime, whether the supervisor's 16 MB export parts pass the
+  runtime's contents API, and whether an attached `colab exec` survives the hourly renewal of the
+  runtime's token (the supervisor does not depend on it) are all unverified.
 - **The recipe**: the learning-rate transfer rule is extrapolated from its authors' sweep to about
   2e10 tokens (`docs/CHANGES.md` section 6); the evidence gates E2 and E4 had not been run when
   this was written (`docs/E2_ABLATIONS.md`, `docs/E4_PROBES.md`); E5 was measured on a 1M-token
@@ -395,6 +484,7 @@ From `docs/PLAN.md` section 10, unchanged by anything measured since:
 | `RUN_DIR/final/` | the export (section 7.1) |
 | `RUN_DIR.log`, `RUN_DIR.mirror.log`, `RUN_DIR.mirror.json` | the run's output, the Drive mirror's output and its status (notebook) |
 | `DRIVE_DIR/`, `DRIVE_DIR.log` | the mirror on Drive: records, logs, the newest checkpoint, the export |
+| `/content/bes_cli/` | the Colab CLI route (section 2.1): `status.txt`, `status.json`, `supervisor.log`, the command file `ctl`, `export/` (the export in parts with `parts.json`) |
 | `data_cache/` | downloads, token shards, the library (`library/lib_v2`, with its `build_settings.json`), opponent GGUF files, the proxy harness's cache and reports (`proxy/reports/factual/` for the library measurement), the arena |
 
 Code: `scripts/run_24h.py` (stages), `bes/train/supervisor.py` (manifest, preflight, background

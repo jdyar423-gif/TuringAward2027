@@ -13,6 +13,17 @@
 
 兩個連結都從本倉庫的 `claude/modest-carson-yi2d9g` 分支載入 notebook（Colab 的網址把分支名當成單一路徑段，所以分支名裡的斜線寫成 `%2F`）。打開後不必改任何參數就能開始：第 1 格已填好本倉庫與分支，notebook 的中繼資料已指定 TPU 型號（v6e-1；管線檢查為 v5e-1）。連線前仍請在「執行階段 → 變更執行階段類型」確認硬體（第 2 格遇到不符的裝置會停下），再依 `RUNBOOK.md` 第 2 節的順序執行：第 1、1b、2 到 5 格，然後第 6 格。這兩個 notebook 還沒有在 Colab 上實際執行過。
 
+### 從終端機直連 TPU（Colab CLI）
+
+[Colab CLI](https://github.com/googlecolab/google-colab-cli)（Linux、macOS，Python 3.12 以上）可以不開瀏覽器，直接從終端機建立 Colab 的 TPU 執行階段並在上面執行。在本倉庫的 clone 裡：
+
+    pip install google-colab-cli
+    python scripts/colab_cli.py start --smoke     # 先做：v5e-1 TPU 上 30 分鐘的管線檢查
+    python scripts/colab_cli.py start             # v6e-1 TPU 上的 24 小時訓練
+    python scripts/colab_cli.py status            # 隨時查看進度
+
+`start` 等同於 `colab sessions`（第一次使用時登入）、`colab new -s bes24h --tpu v6e1`（建立執行階段，從這一刻起計費）與 `colab exec -s bes24h --timeout 0 -f scripts/colab_tpu.py`。登入時 CLI 會印出一個授權連結，在瀏覽器同意後 Google 會顯示一段授權碼，請把它貼回 CLI 等待輸入的那個終端機，不要貼到別處（它等同於密碼）。CLI 建立的執行階段只在核心有東西在執行時才會存活，所以 `scripts/colab_tpu.py` 會留在核心裡守著訓練直到結束；按 Ctrl-C 或關掉終端機只是離線，訓練照常進行。其餘指令（`send stop|resume|release`、`fetch`、`url`、`down`）與注意事項見 `RUNBOOK.md` 第 2.1 節。這條路線只用替身的 `colab` 指令測試過，沒有在 Colab 上實際執行。
+
 ## What this is
 
 A language model with at most 100M stored numbers (each at most 16 bits: weights, lookup tables,
@@ -93,6 +104,10 @@ The real run: `RUNBOOK.md` (what to do before, during and after the 24 hours) an
 `notebooks/colab_v6e_24h.ipynb`; a 30-minute free-tier check: `notebooks/colab_v5e_smoke.ipynb`.
 Both open in Colab from the links near the top of this file, with this repository, its branch
 and the TPU type already filled in.
+From a terminal instead of a browser tab: `python scripts/colab_cli.py start` uses the Colab
+CLI (https://github.com/googlecolab/google-colab-cli) to create the v6e-1 runtime and to send it
+`scripts/colab_tpu.py`, which runs the notebook's cells there and stays in the kernel as the
+run's supervisor (`RUNBOOK.md` section 2.1).
 The code and every data file stay on the runtime's local disk (about 72 GB for the default plan:
 raw downloads are deleted once tokenised); Google Drive receives only the run's records, logs, the
 newest checkpoint and the export. Along the way the run keeps a hashed 0.3% of every chat, rag
