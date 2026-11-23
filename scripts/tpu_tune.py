@@ -9,10 +9,11 @@ shape, so it needs no data on disk and can run right after the set-up, before th
 
 * **training**: one ``value_and_grad`` of the loss per micro-batch for the candidates that
   change no value (``docs/TPU_NOTES.md``): ``model.remat_keep`` ("" or "kernel"),
-  ``model.loss_chunk`` (the configured one or one chunk per micro-batch), ``optim.micro_seqs``
-  (the configured rows or half of them) and, at the long sequence length, the splash tiles
-  (the configured ones or one tile per sequence). A candidate replaces the configured value
-  only when it is at least ``--margin`` (1.5%) faster;
+  ``model.loss_chunk`` (the configured one or one chunk per micro-batch) and, at the long
+  sequence length, the splash tiles (the configured ones or one tile per sequence). A
+  candidate replaces the configured value only when it is at least ``--margin`` (1.5%)
+  faster. Half the micro-batch is timed for information only (``optim.micro_seqs`` also sizes
+  the batch of the preference optimisation);
 * **decoding**: milliseconds per synchronous decode step of ``bes.decode.lm.OurLM`` (device
   step plus the host's exact features) for 6 and 24 rows, and one ``bes.decode.smc.decode`` of
   a chat prompt with the run's decode settings: the post-training stages (sampling, decode
@@ -148,10 +149,12 @@ def main(argv: Sequence[str] | None = None) -> int:
             cur, best = (c, best2) if c is not None else (cur, best)
         rows = rows1
         if rows1 % 2 == 0 and rows1 >= 4:
-            got = timed(f"micro_seqs={rows1 // 2}", cur, rows1 // 2, t1)
-            if got is not None and got >= best * (1.0 + args.margin):
-                chosen["optim.micro_seqs"] = rows1 // 2
-                rows, best = rows1 // 2, got
+            # reported, never recommended: optim.micro_seqs also sizes the batch of the
+            # preference optimisation (scripts/run_24h.py, stage_prefopt), so it is not a
+            # setting that only changes speed
+            got = timed(f"micro_seqs={rows1 // 2} (information only)", cur, rows1 // 2, t1)
+            if got is not None:
+                report["half_micro_batch_tokens_per_s"] = got
         tps_out[str(t1)] = best
         if t2 != t1:
             rows_l = max(1, rows * t1 // t2)

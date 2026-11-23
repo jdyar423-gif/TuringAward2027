@@ -350,7 +350,7 @@ python scripts/tpu_tune.py --config configs/final.py --override model.table_grad
 
 It prints tokens per second of one `value_and_grad` per candidate (`model.remat_keep=kernel`:
 the backward pass keeps the attention kernels' outputs instead of running the forward kernels
-again; one cross-entropy chunk per micro-batch; half the micro-batch; at the long length one
+again; one cross-entropy chunk per micro-batch; at the long length one
 splash tile per sequence), milliseconds per decode step for 6 and 24 rows and of one
 `smc.decode`, and the time of the reference log-probabilities and of two optimiser steps of the
 preference optimisation. Its last line is `RECOMMEND {"overrides": [...], ...}`: a candidate is
