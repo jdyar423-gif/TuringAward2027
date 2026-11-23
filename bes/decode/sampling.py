@@ -120,6 +120,42 @@ def tempered(logp: np.ndarray, temperature: float) -> np.ndarray:
     return log_softmax(z if temperature == 1.0 else z / float(temperature))
 
 
+TOP_P_CANDIDATES = 256      # rows whose nucleus lies inside their this-many largest entries skip the full sort
+
+
+def _top_p_keep(lq: np.ndarray, keep: np.ndarray, top_p: float,
+                m: int = TOP_P_CANDIDATES) -> np.ndarray | None:
+    """The top-p filter of :func:`truncation_keep` without sorting the vocabulary: exactly the
+    set the full stable sort gives, or None when some row's nucleus is not inside its
+    candidates (the caller then sorts).
+
+    A row's candidates are every entry at least as large as its ``m``-th largest (all ties at
+    that value included), in the order of the full stable sort (larger first, lower id first
+    among equals): they are a prefix of that sort, so the cumulative masses are the same
+    numbers. A full sort of ``[6, 8192]`` float64 rows was a sixth of the host's time per
+    decode step.
+    """
+    n_rows, n_v = lq.shape
+    if n_v <= 4 * m:
+        return None
+    x = np.where(keep, lq, NEG_INF)
+    p = np.exp(log_softmax(x))
+    part = np.argpartition(-lq, m - 1, axis=-1)[:, :m]
+    thresh = np.min(np.take_along_axis(lq, part, axis=-1), axis=-1)
+    out = np.zeros_like(keep)
+    for r in range(n_rows):
+        if not np.isfinite(thresh[r]):
+            return None
+        cand = np.flatnonzero(lq[r] >= thresh[r])                 # ascending ids
+        order = cand[np.argsort(-lq[r, cand], kind="stable")]
+        ps = p[r, order]
+        kept = (np.cumsum(ps) - ps) < top_p
+        if kept[-1]:                                             # the nucleus may go on beyond the candidates
+            return None
+        out[r, order[kept]] = True
+    return keep & out
+
+
 def truncation_keep(logq: np.ndarray, top_k: int = 0, top_p: float = 1.0, min_p: float = 0.0,
                     within: np.ndarray | None = None) -> np.ndarray:
     """Tokens kept by top-k, top-p and min-p (``bool[K, V]``).
@@ -137,6 +173,11 @@ def truncation_keep(logq: np.ndarray, top_k: int = 0, top_p: float = 1.0, min_p:
     keep = np.isfinite(lq)
     n_v = lq.shape[-1]
     use_k, use_p = 0 < top_k < n_v, top_p < 1.0
+    if use_p and not use_k and lq.ndim == 2:
+        fast = _top_p_keep(lq, keep, top_p)
+        if fast is not None:
+            keep = fast
+            use_p = False
     # one stable sort per row serves both filters: top-k keeps a prefix of this order, so the
     # survivors keep their relative order (ties: lower id first) for top-p
     order = np.argsort(-lq, axis=-1, kind="stable") if (use_k or use_p) else None

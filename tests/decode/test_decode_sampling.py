@@ -90,6 +90,50 @@ def _ref_keep(lq, top_k, top_p, min_p, within):
     return out
 
 
+def _full_sort_keep(lq, top_p, min_p, within):
+    """The top-p / min-p filter with one stable sort of every row (the implementation before the
+    candidate path): what ``truncation_keep`` must return bit for bit."""
+    lq = np.where(within, np.asarray(lq, np.float64), -np.inf) if within is not None else np.asarray(lq, np.float64)
+    keep = np.isfinite(lq)
+    order = np.argsort(-lq, axis=-1, kind="stable")
+    p = np.exp(S.log_softmax(np.where(keep, lq, -np.inf)))
+    ps = np.take_along_axis(p, order, axis=-1)
+    kp = np.zeros_like(keep)
+    np.put_along_axis(kp, order, (np.cumsum(ps, axis=-1) - ps) < top_p, axis=-1)
+    keep &= kp
+    if min_p > 0:
+        x = np.where(keep, lq, -np.inf)
+        keep &= x >= np.max(x, axis=-1, keepdims=True) + np.log(min_p)
+    return keep
+
+
+@pytest.mark.parametrize("top_p,min_p", [(0.9, 0.0), (0.5, 0.0), (0.999, 0.0), (0.9, 0.05)])
+def test_top_p_without_a_full_sort_is_the_full_sort(top_p, min_p):
+    """Real vocabulary sizes take the candidate path (``_top_p_keep``): peaked rows (the nucleus
+    inside the candidates), flat rows (it is not: the full sort decides), rows with many equal
+    values at the candidate boundary and inside the nucleus, masked rows and a row with fewer
+    finite entries than candidates give exactly the kept set of the full stable sort."""
+    rng = np.random.default_rng(5)
+    v = 8192
+    peaked = rng.standard_normal((4, v)) * 4.0
+    flat = rng.standard_normal((2, v)) * 0.01
+    tied = np.round(rng.standard_normal((3, v)) * 3.0)                 # few distinct values: ties everywhere
+    plateau = np.full((1, v), -3.0); plateau[0, rng.choice(v, 300, replace=False)] = 2.0   # 300 equal maxima
+    sparse = np.full((1, v), -np.inf); sparse[0, rng.choice(v, 40, replace=False)] = rng.standard_normal(40)
+    lq = S.log_softmax(np.concatenate([peaked, flat, tied, plateau, sparse]))
+    within = rng.random(lq.shape) < 0.9
+    for rows, name in ((slice(0, 4), "peaked"), (slice(4, 6), "flat"), (slice(6, 9), "tied"),
+                       (slice(9, 10), "plateau"), (slice(10, 11), "sparse"), (slice(0, 11), "mixed")):
+        for w in (None, within[rows]):
+            got = S.truncation_keep(lq[rows], 0, top_p, min_p, within=w)
+            np.testing.assert_array_equal(got, _full_sort_keep(lq[rows], top_p, min_p, w), err_msg=name)
+    # the candidate path is the one in use for the peaked rows, and it declines the flat ones
+    keep = np.isfinite(lq)
+    assert (S._top_p_keep(lq[:4], keep[:4], top_p) is not None) == (top_p <= 0.9)   # 0.999 needs more candidates
+    assert S._top_p_keep(lq[4:6], keep[4:6], top_p) is None
+    assert S._top_p_keep(lq[:, :600], keep[:, :600], top_p) is None    # a small vocabulary sorts
+
+
 @pytest.mark.parametrize("top_k,top_p,min_p", [(0, 0.9, 0.0), (3, 1.0, 0.0), (4, 0.7, 0.0),
                                                (0, 1.0, 0.2), (5, 0.8, 0.1), (1, 0.5, 0.0),
                                                (0, 1.0, 0.0)])
