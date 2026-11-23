@@ -210,3 +210,27 @@ def test_lanes_as_a_tuple_and_as_a_stack_agree():
     out, ys = controller.run_loops(lambda ln, x: (controller.update(mix, beta, ln, x * s, jnp.float32), x),
                                    s, jnp.arange(3, dtype=jnp.float32), 3, remat=True)
     assert isinstance(out, tuple) and len(out) == 3 and out[0].shape == s.shape and ys.shape == (3,)
+
+
+def test_keeping_the_kernel_outputs_changes_no_value_and_runs_no_forward_kernel_twice():
+    """``remat_keep="kernel"``: the same loss and gradients as full rematerialisation; the
+    gradient program holds the forward kernels once (the forward pass) instead of twice (again
+    in the backward pass of the rematerialised loop step)."""
+    base = tiny_cfg(n_loops=3, attn_impl="splash", remat=True)
+    params = random_params(base, seed=21)
+    consts = M.make_consts(base)
+    batch = make_batch(base, B=2, T=40, seed=22, seg_starts=((0,), (0, 17)))
+    out, kernels = {}, {}
+    for keep in ("", "kernel"):
+        cfg = dataclasses.replace(base, remat_keep=keep)
+        fn = jax.value_and_grad(lambda p, c=cfg: M.loss_fn(p, consts, batch, c)[0])
+        out[keep] = jax.jit(fn)(params)
+        kernels[keep] = str(jax.make_jaxpr(fn)(params)).count("pallas_call")
+    np.testing.assert_allclose(float(out["kernel"][0]), float(out[""][0]), rtol=1e-6)
+    for a, b in zip(jax.tree.leaves(out["kernel"][1]), jax.tree.leaves(out[""][1])):
+        np.testing.assert_allclose(np.asarray(a), np.asarray(b), atol=1e-6, rtol=1e-4)
+    # the printed program names the forward kernel in the forward body and, without the
+    # policy, again in the backward body next to the backward kernel
+    assert kernels["kernel"] < kernels[""], kernels
+    with pytest.raises(ValueError, match="remat_keep"):
+        M.check_cfg(dataclasses.replace(base, remat_keep="everything"))

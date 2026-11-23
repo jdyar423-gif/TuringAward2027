@@ -1,0 +1,65 @@
+
+===== 2026-11-23 04:34:54 /usr/bin/python3 scripts/run_24h.py --config configs/final.py --out /content/runs/final_b --budget-minutes 1321.9
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+[   0.05 min] start preflight: slice 180 s (planned 180 s), 79311 s left in the run
+[   0.05 min] preflight WARNING: jax 0.11.2 is not the pinned 0.11.1
+[   0.05 min] preflight: jax 0.11.2 backend tpu devices ['TPU v6 lite']; 44 cores, 185.7 GB RAM, 165.19 GB free disk, HF_TOKEN not set
+[   0.05 min] finished preflight in 0 s
+[   0.05 min] start background: slice 60 s (planned 60 s), 79311 s left in the run
+[   0.05 min] background: started downloads (pid 56262)
+[   0.05 min] background: started tokenize (pid 56263)
+[   0.05 min] background: started library (pid 56264)
+[   0.05 min] background: started gguf (pid 56265)
+[   0.05 min] finished background in 0 s
+[   0.05 min] start benchmark: slice 900 s (planned 900 s), 79311 s left in the run
+[   0.05 min] benchmark: training shards found; building the benchmark loader
+loader: the epoch caps cut the planned token share of dolly from 0.0044 to 0.0013 (at most 8 reads of 3.23e+06 tokens over a horizon of 2e+10 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0126 to 0.0005 (at most 8 reads of 1.27e+06 tokens over a horizon of 2e+10 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0079 to 0.0032 (at most 8 reads of 8.06e+06 tokens over a horizon of 2e+10 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0032 to 0.0002 (at most 8 reads of 4.19e+05 tokens over a horizon of 2e+10 tokens; block 0 at step 0); the rest of its share goes to other sources
+[   0.08 min] background: downloads finished
+[   0.08 min] background: library finished
+[   0.12 min] background: gguf finished
+[   0.12 min] background: started opponents (pid 56617)
+[   0.18 min] benchmark: loader 1773.7 rows/s with 6 workers
+[   1.80 min] benchmark: splash-remat1-ms32-onehot T=1024: 201,877 tok/s, step 1.299 s, compile 43.6 s, peak 3.42 GiB
+[   3.23 min] benchmark: splash-remat1-ms32-onehot T=2048: 185,472 tok/s, step 1.413 s, compile 47.5 s, peak 3.42 GiB
+[   4.50 min] benchmark: splash-remat0-ms16-onehot T=1024: 166,440 tok/s, step 1.575 s, compile 41.2 s, peak 16.22 GiB
+[   5.70 min] benchmark: splash-remat1-ms32-sorted T=1024: 201,918 tok/s, step 1.298 s, compile 42.7 s, peak 3.50 GiB
+[   6.93 min] benchmark: splash-remat1-ms32-sorted T=2048: 183,653 tok/s, step 1.427 s, compile 41.4 s, peak 3.50 GiB
+[   7.90 min] benchmark: splash-remat1-ms32-take T=1024: 204,006 tok/s, step 1.285 s, compile 29.6 s, peak 3.38 GiB
+[   8.82 min] benchmark: splash-remat1-ms32-take T=2048: 185,077 tok/s, step 1.416 s, compile 23.6 s, peak 3.38 GiB
+[  10.29 min] benchmark: xla-remat1-ms32-take T=1024: 104,570 tok/s, step 2.507 s, compile 32.6 s, peak 4.99 GiB
+[  10.29 min] benchmark: chosen plan splash-remat1-ms32-take (197,759 tok/s expected)
+[  10.74 min] canary: determinism True, parity {'ok': True, 'loss': 8.353538513183594, 'dense': 8.353540420532227, 'rel': 2.2832817425823597e-07, 'tol': 0.02}
+[  11.50 min] canary: safe configuration: first 9.0118 last 5.3409 skipped 0 8x16x2048:ok ok=True
+[  12.21 min] canary: full configuration: first 8.3150 last 4.7415 skipped 0 8x16x2048:ok ok=True
+[  12.26 min] benchmark: horizon 1.232e+10 tokens (197,759 tok/s x 62320 s); loader workers 6
+[  12.26 min] finished benchmark in 732 s
+[  12.26 min] start train: slice 62379 s (planned 61974 s), 78579 s left in the run
+[  12.54 min] train: ckpt step=0 reason=init path=ckpt-000001-step-000000000
+[  12.54 min] train: setup step=0
+[  12.54 min] train: set-up (compile 2 shapes, 2 reused from the benchmark, restore) took 4.3 s; step 0
+[  12.54 min] train: stage step=0 p=1.3763340590638227e-10
+loader: the epoch caps cut the planned token share of dolly from 0.0040 to 0.0021 (at most 8 reads of 3.23e+06 tokens over a horizon of 1.23e+10 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0114 to 0.0008 (at most 8 reads of 1.27e+06 tokens over a horizon of 1.23e+10 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of library_qa from 0.0160 to 0.0044 (at most 8 reads of 6.82e+06 tokens over a horizon of 1.23e+10 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0028 to 0.0003 (at most 8 reads of 4.19e+05 tokens over a horizon of 1.23e+10 tokens; block 0 at step 0); the rest of its share goes to other sources
+[  13.64 min] train: step 50 p 0.001 loss 4.8245 T 1024 tok/s 204,699
+[  22.75 min] stop requested (SIGTERM); the current stage stops at its next check
+[  22.81 min] train: ckpt step=478 reason=final path=ckpt-000002-step-000000478
+[  22.81 min] train: end step=478 reason=requested p=0.009860674296359444
+[  22.82 min] interrupted in train: training stopped at step 478 on request (final checkpoint /content/runs/final_b/train/ckpt/ckpt-000002-step-000000478)
+[  22.83 min] stage table:
+stage      status      planned  allotted      used    down tries  reason
+preflight  finished      180.0     180.0       0.0     0.0     1  
+background finished       60.0      60.0       0.0     0.0     1  
+benchmark  finished      900.0     900.0     732.4     0.0     1  
+train      pending     61974.0   62378.6     633.7     0.0     1  interrupted: training stopped at step 478 on request (final checkpoint /content/runs/final_b/train/c
+sample     pending      3000.0         -       0.0     0.0     0  
+critic     pending       600.0         -       0.0     0.0     0  
+prefopt    pending      3600.0         -       0.0     0.0     0  
+select     pending      2700.0         -       0.0     0.0     0  
+judge      pending      1800.0         -       0.0     0.0     0  
+export     pending       900.0         -       0.0     0.0     0  

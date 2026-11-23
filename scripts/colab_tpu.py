@@ -74,6 +74,9 @@ Settings (all optional):
     BES_CELLS             the numbered setup cells to run, default "2,3,4"
     BES_USE_DRIVE         auto (default: mirror to Drive when it is mounted) | 0 | 1
     BES_DRIVE_DIR, BES_CONFIG, BES_BUDGET_MINUTES, BES_ALLOW_CPU   replace the notebook's parameters
+    BES_OVERRIDES         replace the notebook's OVERRIDES: "section.field=value;..." (";" or spaces
+                          between them) given to a new run as --override options (a continued run
+                          keeps its own)
     BES_RUN_DIR           replace the notebook's RUN_DIR: an absolute path on the runtime's local disk
                           (a second run next to another one, each with its own directory, log and
                           pid file). Without BES_DRIVE_DIR its mirror goes to a directory of the
@@ -172,6 +175,7 @@ def settings(env):
         "drive_dir": env.get("BES_DRIVE_DIR") or None,
         "run_dir": (env.get("BES_RUN_DIR") or "").rstrip("/") or None,
         "config": env.get("BES_CONFIG") or None,
+        "overrides": " ".join((env.get("BES_OVERRIDES") or "").replace(";", " ").split()) or None,
         "move_deadline": (env.get("BES_MOVE_DEADLINE") or "").strip() or None,
         "restore": _flag(env.get("BES_RESTORE"), False),
         "budget_minutes": _number(env, "BES_BUDGET_MINUTES", None),
@@ -388,6 +392,8 @@ class Supervisor:
                   RUN_DIR=s["run_dir"] or moved(ns["RUN_DIR"]), DRIVE_DIR=drive_dir)
         if s["config"]:
             ns["CONFIG"] = s["config"]
+        if s["overrides"]:
+            ns["OVERRIDES"] = s["overrides"]
         if s["budget_minutes"] is not None:
             b = s["budget_minutes"]
             ns["BUDGET_MINUTES"] = int(b) if float(b).is_integer() else b
@@ -410,7 +416,7 @@ class Supervisor:
                 raise RuntimeError("BES_USE_DRIVE=1 but Drive is not mounted on this runtime: run `colab drivemount "
                                    "-s <session>` in your terminal first (mounting needs you), or start without it")
         self.say(f"notebook {s['notebook']}: CONFIG {ns['CONFIG']}, RUN_DIR {ns['RUN_DIR']}, BUDGET_MINUTES "
-                 f"{ns['BUDGET_MINUTES']}, USE_DRIVE {ns['USE_DRIVE']}"
+                 f"{ns['BUDGET_MINUTES']}, OVERRIDES {ns.get('OVERRIDES') or 'none'}, USE_DRIVE {ns['USE_DRIVE']}"
                  + (f" (DRIVE_DIR {ns['DRIVE_DIR']})" if ns["USE_DRIVE"] else "")
                  + f", ALLOW_CPU {ns['ALLOW_CPU']}")
 

@@ -336,6 +336,39 @@ library adds to factual replies; `python -m bes.eval.proxy factual` on the check
 with the library measures that (section 7.2). The rule that was fixed before the comparison of
 `configs/v9.py` and `configs/final.py`, and its result: `docs/CHANGES.md` section 19.
 
+### 2.3 Settings chosen on the chip: `tpu_tune.py` and `--override`
+
+Some settings change no value of the model and only matter for speed on the chip at hand. One
+measurement on the idle accelerator, right after the runtime's set-up and before the run exists
+(synthetic batches: it needs no data; about five minutes on a v6e), times them and the programs
+of the post-training stages:
+
+```
+python scripts/tpu_tune.py --config configs/final.py --override model.table_grad=take \
+    --out /content/bes_cli/tune.json
+```
+
+It prints tokens per second of one `value_and_grad` per candidate (`model.remat_keep=kernel`:
+the backward pass keeps the attention kernels' outputs instead of running the forward kernels
+again; one cross-entropy chunk per micro-batch; half the micro-batch; at the long length one
+splash tile per sequence), milliseconds per decode step for 6 and 24 rows and of one
+`smc.decode`, and the time of the reference log-probabilities and of two optimiser steps of the
+preference optimisation. Its last line is `RECOMMEND {"overrides": [...], ...}`: a candidate is
+recommended only when it is at least 1.5% faster. Give the overrides to the run:
+
+```
+python scripts/colab_cli.py start --action start --config configs/final.py \
+    --override model.remat_keep=kernel --override run.post_minutes=critic=0,judge=15,buffer=20 \
+    --override run.post_reserve_hours=3.4167
+```
+
+`--override` (repeatable; no spaces or `;` inside one) becomes the `--override` options of a new
+run (`BES_OVERRIDES`, the notebooks' `OVERRIDES` parameter); a continued run keeps its own.
+`run.post_minutes` replaces entries of the plan's post-training minutes (sample 50, critic 10,
+prefopt 60, select 45, judge 30, export 15, buffer 60): the post window (`run.post_reserve_hours`)
+is shared in those proportions and a stage with 0 minutes is skipped, so set
+`run.post_reserve_hours` to the new sum over 60 to keep the other stages' own minutes.
+
 ## 3. The first 40 minutes
 
 The plan's timeline (`docs/PLAN.md` section 6) puts installation, downloads, the benchmark and the

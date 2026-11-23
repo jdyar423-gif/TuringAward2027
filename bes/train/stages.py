@@ -27,7 +27,8 @@ export        final parameters, configuration, reports              15
 ============  ===================================================  ========================
 
 The post-training minutes are those of the plan's 19:30-24:00 window (270 minutes); they are
-scaled to ``run.post_reserve_hours`` (:data:`POST_MINUTES`).
+scaled to ``run.post_reserve_hours`` (:data:`POST_MINUTES`). ``run.post_minutes`` replaces
+entries (:func:`post_minutes`); a stage planned with 0 minutes is skipped.
 
 Lateness
 --------
@@ -113,6 +114,22 @@ class StageSpec:
     device: bool
 
 
+def post_minutes(run: RunCfg) -> dict[str, float]:
+    """:data:`POST_MINUTES` with the entries of ``run.post_minutes`` (``"stage=minutes ..."``)
+    replaced. ``export`` keeps a positive share (it is never skipped)."""
+    out = dict(POST_MINUTES)
+    for item in str(getattr(run, "post_minutes", "") or "").replace(",", " ").split():
+        name, sep, value = item.partition("=")
+        if not sep or name not in out:
+            raise ValueError(f"run.post_minutes: {item!r} is not <stage>=<minutes> with a stage of "
+                             f"{sorted(out)}")
+        minutes = float(value)
+        if not math.isfinite(minutes) or minutes < 0 or (name == "export" and minutes <= 0):
+            raise ValueError(f"run.post_minutes: {item!r}: minutes must be >= 0 (> 0 for export)")
+        out[name] = minutes
+    return out
+
+
 def stage_specs(run: RunCfg, budget_s: float) -> dict[str, StageSpec]:
     """The plan of every stage (and of the buffer) for a run of ``budget_s`` seconds."""
     post_s = run.post_reserve_hours * HOUR
@@ -127,9 +144,10 @@ def stage_specs(run: RunCfg, budget_s: float) -> dict[str, StageSpec]:
                                 None, name in DEVICE)
     train = max(0.0, budget_s - post_s - sum(pre.values()))
     specs["train"] = StageSpec("train", train, 0.0, train, None, True)
-    total_post = sum(POST_MINUTES.values())
+    minutes = post_minutes(run)
+    total_post = sum(minutes.values())
     for name in POST + ("buffer",):
-        planned = post_s * POST_MINUTES[name] / total_post
+        planned = post_s * minutes[name] / total_post
         shed = SHED_ORDER.index(name) if name in SHED_ORDER else None
         specs[name] = StageSpec(name, planned, planned * MIN_FRACTION.get(name, 1.0), planned,
                                 shed, name in DEVICE)
@@ -191,6 +209,9 @@ def allocate(specs: Mapping[str, StageSpec], pending: Sequence[str], now: float,
         return alloc
     start = max(now, train_end) if "train" in pending else now
     available = max(0.0, deadline - start)
+    for n in post:
+        if specs[n].planned_s <= 0 and n not in NEVER_SHED:
+            alloc.skipped[n] = "planned with 0 minutes (run.post_minutes)"
     sl = {n: specs[n].planned_s for n in post}
     sl["buffer"] = specs["buffer"].planned_s
     need = sum(sl.values())

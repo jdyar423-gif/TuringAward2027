@@ -248,6 +248,8 @@ def environment(args: argparse.Namespace, preset: dict, drive: bool | None) -> l
         env["BES_BRANCH"] = args.branch
     if args.config:
         env["BES_CONFIG"] = args.config
+    if getattr(args, "override", None):
+        env["BES_OVERRIDES"] = ";".join(checked_overrides(args.override))
     if args.budget_minutes is not None:
         env["BES_BUDGET_MINUTES"] = f"{args.budget_minutes:g}"
     if args.cpu:
@@ -297,8 +299,18 @@ def after_start(colab: Colab, hints: str) -> int:
     return 1
 
 
+def checked_overrides(items) -> list[str]:
+    """The ``--override`` items of ``start`` (``section.field=value``; no space and no ``;`` in
+    one, because they travel in one environment variable), or :class:`Failed`."""
+    for item in items:
+        if not re.fullmatch(r"[A-Za-z_]+\.[A-Za-z_0-9]+=[^\s;]+", item):
+            raise Failed(f"--override {item!r}: write section.field=value without spaces or ';'")
+    return list(items)
+
+
 def cmd_start(args: argparse.Namespace) -> int:
     preset = PRESETS["smoke" if args.smoke else "final"]
+    checked_overrides(args.override)                     # before anything is created and charged
     if args.cpu and not args.smoke:
         raise Failed("--cpu is for a rehearsal of this route with the smoke run: use `start --smoke --cpu`. "
                      "(Without --smoke it would run the 24-hour configuration on a CPU runtime.)")
@@ -651,6 +663,9 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    help="auto: continue a run that exists on the runtime or on Drive, else start one")
     p.add_argument("--budget-minutes", type=float, default=None, help="replace the notebook's BUDGET_MINUTES")
     p.add_argument("--config", default=None, help="replace the notebook's CONFIG (a configs/*.py of the branch)")
+    p.add_argument("--override", action="append", default=[], metavar="SECTION.FIELD=VALUE",
+                   help="an --override of scripts/run_24h.py for a new run (repeat it; no spaces in a "
+                        "value: lists take commas, as run.post_minutes=critic=0,judge=15)")
     p.add_argument("--drive", action=argparse.BooleanOptionalAction, default=None,
                    help="--drive mounts Google Drive first (it asks you) and mirrors the run to it: the default "
                         "of the 24-hour run; --no-drive never mirrors: the default of the smoke run unless "

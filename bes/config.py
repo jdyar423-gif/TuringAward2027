@@ -136,6 +136,11 @@ class ModelCfg:
     tok_neurons: int = 0         # rho: private feed-forward neurons per token and block (tables
                                  # page/key, page/val; projections page/pin, page/pout); 0 = off
     tok_dim: int = 192           # dk: width of the neuron space shared by all tokens
+    # -- appended after the first TPU measurements (docs/TPU_NOTES.md)
+    remat_keep: str = ""         # with remat: what the backward pass keeps instead of recomputing.
+                                 # "" = nothing (the whole loop step is recomputed); "kernel" = the
+                                 # outputs of the attention kernels (the forward kernels do not run
+                                 # again in the backward pass; 50 MB per block application at 32x1024)
 
     @property
     def d_ffn(self) -> int:
@@ -284,6 +289,13 @@ class RunCfg:
     # -- appended by the v9 core track (read by bes/train/benchmark.py)
     sel_min_speed: float = 0.85       # the start-up benchmark keeps selective attention (dense path)
                                       # iff its tokens/s is at least this times the best plan without it
+    # -- appended after the first TPU run (bes/train/stages.py)
+    post_minutes: str = ""            # "stage=minutes ..." replacing entries of the plan's post-training
+                                      # minutes (stages.POST_MINUTES: sample 50, critic 10, prefopt 60,
+                                      # select 45, judge 30, export 15, buffer 60); the post window
+                                      # (post_reserve_hours) is shared in these proportions, a stage
+                                      # with 0 minutes is skipped. To keep the other stages' own
+                                      # minutes set post_reserve_hours to the new sum / 60
 
 
 # ----------------------------------------------------------------------------- decode

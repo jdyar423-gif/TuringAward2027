@@ -420,3 +420,31 @@ def test_interrupt_near_the_deadline_exports(tmp_path):
     sup.fns["judge"], sup.fns["export"] = judge, export
     res = sup.run()
     assert res["status"] == "interrupted" and exported
+
+
+def test_post_minutes_replace_entries_and_a_zero_stage_is_skipped():
+    """``run.post_minutes``: the post window is shared in the new proportions; with
+    ``post_reserve_hours`` set to the new sum the other stages keep their own minutes; a stage
+    with 0 minutes is skipped by the allocation (never ``export``); bad entries are refused."""
+    run = RunCfg(post_minutes="critic=0 judge=15 buffer=20", post_reserve_hours=205.0 / 60.0)
+    assert ST.post_minutes(run) == {**ST.POST_MINUTES, "critic": 0.0, "judge": 15.0, "buffer": 20.0}
+    specs = ST.stage_specs(run, 22 * HOUR)
+    want = {"sample": 50, "critic": 0, "prefopt": 60, "select": 45, "judge": 15, "export": 15, "buffer": 20}
+    for name, minutes in want.items():
+        assert specs[name].planned_s == pytest.approx(minutes * 60.0), name
+    default = ST.stage_specs(RunCfg(), 22 * HOUR)
+    assert specs["train"].planned_s - default["train"].planned_s == pytest.approx(65 * 60.0)
+    deadline = 22 * HOUR
+    train_end = deadline - run.post_reserve_hours * HOUR
+    al = ST.allocate(specs, ST.POST, train_end, deadline, train_end)
+    assert list(al.skipped) == ["critic"] and "0 minutes" in al.skipped["critic"]
+    assert al.slices["critic"] == 0 and al.slices["prefopt"] == pytest.approx(3600.0)
+    assert al.needed_s == pytest.approx(al.available_s) and not al.shrunk
+    # late by half an hour: the buffer goes first, then the judge, as without the setting
+    late = ST.allocate(specs, ST.POST, train_end + 1800, deadline, train_end)
+    assert late.slices["buffer"] if "buffer" in late.slices else True
+    assert late.slices["prefopt"] == pytest.approx(3600.0) and late.slices["sample"] == pytest.approx(3000.0)
+    assert late.slices["judge"] < 15 * 60.0
+    for bad in ("critic", "critic=-1", "export=0", "train=5", "judge=x"):
+        with pytest.raises(ValueError):
+            ST.post_minutes(RunCfg(post_minutes=bad))

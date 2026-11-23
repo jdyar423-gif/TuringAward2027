@@ -1051,6 +1051,36 @@ def test_start_signs_in_creates_the_v6e1_runtime_and_sends_the_program(fake_cola
     assert not any(c[:3] == ["drivemount", "-s", "second"] for c in calls()) and "BES_USE_DRIVE=0" in calls()[-1]
 
 
+def test_overrides_reach_a_new_run(tmp_path, monkeypatch, fake_colab):
+    """``start --override`` (repeatable) travels as BES_OVERRIDES and becomes the ``--override``
+    options of a new run, in order; values keep their commas and equals signs; an item with a
+    space, a semicolon or without a section is refused before anything is sent."""
+    home, calls = fake_colab
+    assert cli.main(["start", "--smoke", "--action", "start", "--override", "model.remat_keep=kernel",
+                     "--override", "run.post_minutes=critic=0,judge=15,buffer=20"]) == 0
+    env = [a for a in calls()[-1] if "=" in a]
+    assert "BES_OVERRIDES=model.remat_keep=kernel;run.post_minutes=critic=0,judge=15,buffer=20" in env
+    n = len(calls())
+    for bad in ("model.remat_keep=a b", "remat_keep=kernel", "model.x=1;run.y=2"):
+        assert cli.main(["start", "--smoke", "--override", bad]) != 0
+    assert not any(c and c[0] == "exec" for c in calls()[n:])
+    monkeypatch.chdir(tmp_path)
+    root = tmp_path / "content"
+    _standin_repo(root)
+    sup, out = _supervisor(root, [time.time()], BES_ACTION="start", BES_BUDGET_MINUTES="30",
+                           BES_OVERRIDES="model.remat_keep=kernel;run.post_minutes=critic=0,judge=15,buffer=20")
+    _setup(sup)
+    _wait(lambda: len(_attempts(root)) == 1, "the run")
+    argv = _attempts(root)[0]
+    i = argv.index("--override")
+    assert argv[i:i + 4] == ["--override", "model.remat_keep=kernel", "--override",
+                             "run.post_minutes=critic=0,judge=15,buffer=20"]
+    assert "OVERRIDES model.remat_keep=kernel run.post_minutes=critic=0,judge=15,buffer=20" in out.getvalue()
+    (root / "bes_cli" / "ctl").write_text("stop\n")
+    sup.tick()
+    _wait(lambda: not sup.run_alive(), "the stop")
+
+
 def test_start_options_reach_the_runtime(fake_colab, capfd):
     """What cell 1 of the notebook would hold is an option here (the runtime runs the branch on
     GitHub, not the local clone). The smoke run has a short hold of its own and no mirror; the

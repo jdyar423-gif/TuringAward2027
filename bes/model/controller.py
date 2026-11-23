@@ -63,18 +63,42 @@ def update(mix_r: jax.Array, beta_r: jax.Array, lanes, s: jax.Array, dtype):
     return tuple(out) if isinstance(lanes, (tuple, list)) else jnp.stack(out)
 
 
+def keep_kernel_outputs(prim, *_, **__) -> bool:
+    """``jax.checkpoint`` policy: keep the outputs of the Pallas kernels (the attention output
+    and the log-sum-exp residual of the forward splash kernel), recompute everything else.
+
+    Without it the backward pass of a rematerialised loop step runs the forward kernels a second
+    time only to rebuild those outputs. They are one activation per block application (50 MB at
+    32 x 1024 in bfloat16); the matrix products and the element-wise work around them are
+    recomputed either way, because their own residuals (float32, several times larger) are what
+    is cheaper to recompute than to keep (docs/TPU_NOTES.md)."""
+    return getattr(prim, "name", "") == "pallas_call"
+
+
+REMAT_POLICIES: dict[str, Any] = {"": None, "kernel": keep_kernel_outputs}
+
+
 def run_loops(step: Callable[[jax.Array, Any], tuple[jax.Array, Any]], e: jax.Array,
-              xs: Any, n_lanes: int, remat: bool) -> tuple[jax.Array, Any]:
+              xs: Any, n_lanes: int, remat: bool, keep: str = "") -> tuple[jax.Array, Any]:
     """Run ``step(lanes, xs_r) -> (lanes, ys_r)`` over the loop axis with ``lax.scan``.
 
     e: ``[B, T, d]`` initial state copied into every lane; xs: per-loop inputs with a leading
-    loop axis; remat: wrap the step in ``jax.checkpoint`` (recompute in the backward pass).
+    loop axis; remat: wrap the step in ``jax.checkpoint`` (recompute in the backward pass);
+    keep: what that backward pass keeps instead (``ModelCfg.remat_keep``, :data:`REMAT_POLICIES`).
     The lanes are carried as a tuple of ``N`` arrays ``[B, T, d]``: slicing a stacked
     ``[N, B, T, d]`` carry and stacking it again in every loop are copies of the activations
     (1.4% of a training step on TPU v6e). Returns ``(lanes: tuple of N arrays [B, T, d], ys
     with a leading loop axis)``; :func:`combine`, :func:`update` and ``head.final_hidden`` take
     both forms.
     """
+    if keep not in REMAT_POLICIES:
+        raise ValueError(f"remat_keep must be one of {sorted(REMAT_POLICIES)}, got {keep!r}")
     lanes0 = tuple(e for _ in range(n_lanes))
-    body = jax.checkpoint(step, prevent_cse=False) if remat else step
+    policy = REMAT_POLICIES[keep]
+    if not remat:
+        body = step
+    elif policy is None:
+        body = jax.checkpoint(step, prevent_cse=False)
+    else:
+        body = jax.checkpoint(step, prevent_cse=False, policy=policy)
     return jax.lax.scan(body, lanes0, xs)

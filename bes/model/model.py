@@ -101,6 +101,8 @@ def check_cfg(cfg) -> None:
         raise ValueError("sel_attn needs the dense attention path (attn_impl='xla')")
     if cfg.tok_neurons < 0 or cfg.tok_dim < 1:
         raise ValueError(f"tok_neurons={cfg.tok_neurons} must be >= 0 and tok_dim={cfg.tok_dim} >= 1")
+    if cfg.remat_keep not in controller.REMAT_POLICIES:
+        raise ValueError(f"remat_keep={cfg.remat_keep!r} must be one of {sorted(controller.REMAT_POLICIES)}")
 
 
 # ------------------------------------------------------------------------- parameters
@@ -524,7 +526,7 @@ def forward(params: dict, consts: dict, feats: dict, cfg) -> tuple[jax.Array, di
         s = rmsnorm(u, x["g"], out_dtype=dt)
         return controller.update(x["mix"], x["beta"], lanes, s, dt), jnp.stack(masses)
 
-    lanes, masses = controller.run_loops(step, e, xs, cfg.n_lanes, cfg.remat)
+    lanes, masses = controller.run_loops(step, e, xs, cfg.n_lanes, cfg.remat, cfg.remat_keep)
     h = head.final_hidden(lanes, params["head"]["g"])
     return h, {"sink_mass": jnp.mean(masses, axis=0)}
 
