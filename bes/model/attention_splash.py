@@ -131,23 +131,32 @@ def attend(q: jax.Array, k: jax.Array, v: jax.Array, seg: jax.Array, cfg, *,
     seg: int ``[B, T]`` segment ids (negative ids are allowed and only see equal ids).
     Returns ``[B, T, H, head_dim]`` in the dtype of ``q``.
     """
+    qt, kt, vt = (jnp.swapaxes(a, 1, 2) for a in (q, k, v))                   # [B, H, T, hd]
+    return jnp.swapaxes(attend_major(qt, kt, vt, seg, cfg, interpret=interpret), 1, 2)
+
+
+def attend_major(q: jax.Array, k: jax.Array, v: jax.Array, seg: jax.Array, cfg, *,
+                 interpret: bool | None = None) -> jax.Array:
+    """:func:`attend` on head-major operands: ``q, k, v: [B, H, T, head_dim]``, the layout of the
+    kernels, so that a caller that builds its operands in this layout pays no transpose (on TPU a
+    transpose of an activation costs about as much as the matrix product that made it:
+    docs/TPU_NOTES.md). Returns ``[B, H, T, head_dim]`` in the dtype of ``q``.
+    """
     sa = _sa()
-    b, t, h, hd = q.shape
+    b, h, t, hd = q.shape
     tp = padded_length(t)
     seg = jnp.asarray(seg, jnp.int32)
     if tp != t:
-        pad = ((0, 0), (0, tp - t), (0, 0), (0, 0))
+        pad = ((0, 0), (0, 0), (0, tp - t), (0, 0))
         q, k, v = (jnp.pad(a, pad) for a in (q, k, v))
         seg = jnp.pad(seg, ((0, 0), (0, tp - t)), constant_values=PAD_SEGMENT)
     interp = use_interpret(cfg) if interpret is None else bool(interpret)
     kernel = make_kernel(tp, h, block_sizes(cfg, tp), interp)
-    qt, kt, vt = (jnp.swapaxes(a, 1, 2) for a in (q, k, v))                   # [B, H, T, hd]
     ids = sa.SegmentIds(q=seg, kv=seg)
 
     def one(q1, k1, v1, s1):
         return kernel(q1, k1, v1, segment_ids=s1)
-    y = jax.vmap(one)(qt, kt, vt, ids)
-    return jnp.swapaxes(y, 1, 2)[:, :t]
+    return jax.vmap(one)(q, k, v, ids)[:, :, :t]
 
 
 def attend_like_xla(q: jax.Array, k: jax.Array, v: jax.Array, seg_q: jax.Array,
@@ -194,4 +203,4 @@ def flops(b: int, t: int, h: int, hd: int, causal: bool = True) -> float:
 
 
 __all__ = ["available", "register_alias", "use_interpret", "padded_length", "block_sizes", "make_kernel", "attend",
-           "attend_like_xla", "reference", "flops", "LANES"]
+           "attend_major", "attend_like_xla", "reference", "flops", "LANES"]

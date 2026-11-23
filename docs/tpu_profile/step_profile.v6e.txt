@@ -1,0 +1,32 @@
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+loader: the epoch caps cut the planned token share of dolly from 0.0044 to 0.0013 (at most 8 reads of 3.23e+06 tokens over a horizon of 2e+10 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0126 to 0.0005 (at most 8 reads of 1.27e+06 tokens over a horizon of 2e+10 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0079 to 0.0032 (at most 8 reads of 8.06e+06 tokens over a horizon of 2e+10 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0032 to 0.0002 (at most 8 reads of 4.19e+05 tokens over a horizon of 2e+10 tokens; block 0 at step 0); the rest of its share goes to other sources
+device TPU v6 lite config configs/final.py step shape (8, 32, 1024) {'tokens': ((8, 32, 1025), 'int32'), 'w': ((8, 32, 1024), 'float32'), 'seg': ((8, 32, 1024), 'int32'), 'reg': ((8, 32, 1024, 15), 'int16'), 'clock': ((8, 32, 1024, 3), 'int32'), 'cand_tok': ((8, 32, 1024, 16), 'int32'), 'cand_feat': ((8, 32, 1024, 16, 6), 'int8')}
+a: forward hidden, one micro-batch                            1015.7 ms   (first call   5.1 s)
+b: loss (forward + head), one micro-batch                       83.6 ms   (first call   5.2 s)
+c: value_and_grad(loss), one micro-batch                       288.8 ms   (first call  14.9 s)
+d: optimizer update alone (one per step)                         1.5 ms   (first call   4.3 s)
+e: gradient accumulation (scan over 8 micro-batches)          2313.3 ms   (first call  17.3 s)
+f: no rematerialisation -> value_and_grad                  FAILED JaxRuntimeError: RESOURCE_EXHAUSTED: E1000: CompileTimeHbmOom: Ran out of memory on HBM, the total memory required for HLO temporaries (32.93G) exceeds available HBM (31.24G). H
+g: dense attention (xla) -> value_and_grad                     303.0 ms   (first call  15.7 s)
+h: no candidate input features -> value_and_grad               282.8 ms   (first call  11.9 s)
+i: no candidate output law -> value_and_grad                   284.6 ms   (first call  14.4 s)
+j: no candidate tape at all -> value_and_grad                  275.1 ms   (first call  11.1 s)
+k: no registers -> value_and_grad                              288.6 ms   (first call  14.8 s)
+l: no value embeddings (ve_dim 0) -> value_and_grad            283.1 ms   (first call  14.5 s)
+m: table gradient take -> value_and_grad                       290.0 ms   (first call  11.6 s)
+n: no sink -> value_and_grad                                   261.2 ms   (first call  14.4 s)
+o: 1 loop instead of 8 -> value_and_grad                        42.9 ms   (first call  12.8 s)
+p: float32 activations -> value_and_grad                       362.4 ms   (first call  14.0 s)
+exit status 0 after 248 s

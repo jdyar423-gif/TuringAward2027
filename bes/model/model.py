@@ -257,7 +257,9 @@ def _feat(feats: dict, name: str):
 def make_ctx(consts: dict, feats: dict, cfg) -> attention.Ctx:
     """Rotary tables, sink indicator, confidence switch, segments and positions; with
     ``sel_attn`` also the BOS positions (``tokens == bos_id``, whatever the sink switch) and
-    the selective-attention switch; with ``attn_gate`` the switch of the output gate."""
+    the selective-attention switch; with ``attn_gate`` the switch of the output gate; with
+    ``attn_impl == "splash"`` the rotary tables of the head-major path
+    (``attention.rotary_major``)."""
     tokens = jnp.asarray(feats["tokens"])
     b, t = tokens.shape
     pos = _feat(feats, "pos")
@@ -272,8 +274,10 @@ def make_ctx(consts: dict, feats: dict, cfg) -> attention.Ctx:
     bos = tokens == bos_id(cfg) if cfg.sel_attn else None
     sel = jnp.asarray(en["sel"], F32) if cfg.sel_attn else None
     gate = jnp.asarray(en["gate"], F32) if cfg.attn_gate else None
+    rot_c, rot_s = (attention.rotary_major(cos, sin, cfg.bias_dims) if cfg.attn_impl == "splash"
+                    else (None, None))
     return attention.Ctx(cos, sin, sink, conf, seg.astype(jnp.int32), pos.astype(jnp.int32),
-                         bos, sel, gate)
+                         bos, sel, gate, rot_c, rot_s)
 
 
 def _cand(feats: dict):
@@ -402,12 +406,31 @@ def token_rows(params: dict, consts: dict, tokens: jax.Array, cfg) -> list[dict]
     return [{"key": keys[i], "val": vals[:, :, i].astype(dt), "on": on} for i in range(cfg.n_blocks)]
 
 
+def major_gains(gains: dict[str, jax.Array] | None, cfg) -> dict[str, jax.Array] | None:
+    """The attention gain rows (``o``, ``v``) of every block in the head-major layout of the
+    splash path: ``{table: [n_blocks, B, H, T, head_dim]}`` from phase 0 of :func:`gain_rows`
+    (``gain_phases = 1``), or None when there is nothing to convert (no such table, or another
+    attention implementation). Made once per forward, outside the loop scan: inside it the
+    transpose would be repeated for every block application (``attention.MajorGain``)."""
+    if not gains or cfg.attn_impl != "splash":
+        return None
+    h, hd = cfg.n_heads, cfg.head_dim
+    out = {}
+    for name in ("o", "v"):
+        if name in gains:
+            rows = gains[name][0]                                    # [n_blocks, B, T, H*hd]
+            out[name] = jnp.swapaxes(rows.reshape(rows.shape[:3] + (h, hd)), 2, 3)
+    return out or None
+
+
 def block_params(params: dict, cfg) -> list[dict]:
     """Per-block parameter dicts with matrices cast to the activation dtype (outside the scan).
 
     With ``attn_gate`` the attention entry also holds ``gate_w [d, H]`` and ``gate_b
     [n_loops, H]`` (float32, indexed by the loop inside the scan); with ``tok_neurons`` the
-    block holds the projections ``pin [d, dk]`` and ``pout [dk, d]``.
+    block holds the projections ``pin [d, dk]`` and ``pout [dk, d]``; with ``attn_impl ==
+    "splash"`` the attention entry also holds the matrices of the head-major path
+    (``attention.major_weights``).
     """
     dt = act_dtype(cfg)
     core = params["core"]
@@ -424,6 +447,8 @@ def block_params(params: dict, cfg) -> list[dict]:
         if cfg.attn_gate:
             pa["gate_w"] = pa_all["gate_w"][i]
             pa["gate_b"] = pa_all["gate_b"][:, i]
+        if cfg.attn_impl == "splash":
+            pa.update(attention.major_weights(pa, cfg))
         pb = {"attn": pa, "wo": pa_all["wo"][i].astype(dt),
               "w_up": pm["w_up"][i].astype(dt), "w_down": pm["w_down"][i].astype(dt),
               "g1": pn["g1"][i], "g2": pn["g2"][i]}
@@ -484,14 +509,17 @@ def forward(params: dict, consts: dict, feats: dict, cfg) -> tuple[jax.Array, di
         xs["phase"] = jnp.asarray(loop_phases(cfg))
     if cfg.attn_gate:
         xs["loop"] = jnp.arange(cfg.n_loops, dtype=jnp.int32)
+    major = major_gains(gains, cfg) if "phase" not in xs else None
 
     def step(lanes, x):
         u = controller.combine(x["alpha"], lanes, dt)
         masses = []
         for i, pb in enumerate(blocks):
-            u, m = block(pb, u, ctx, x.get("ve") if i == 0 else None, cfg,
-                         gain=block_gain(gains, i, x.get("phase")), loop=x.get("loop"),
-                         tok=None if tok is None else tok[i])
+            g = block_gain(gains, i, x.get("phase"))
+            if major:
+                g = {**g, **{name: attention.MajorGain(rows[i]) for name, rows in major.items()}}
+            u, m = block(pb, u, ctx, x.get("ve") if i == 0 else None, cfg, gain=g,
+                         loop=x.get("loop"), tok=None if tok is None else tok[i])
             masses.append(m)
         s = rmsnorm(u, x["g"], out_dtype=dt)
         return controller.update(x["mix"], x["beta"], lanes, s, dt), jnp.stack(masses)

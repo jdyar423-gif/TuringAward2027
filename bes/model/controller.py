@@ -33,23 +33,25 @@ def init_lanes(n_loops: int, n_lanes: int) -> dict[str, np.ndarray]:
     return {"alpha": alpha, "mix": mix, "beta": beta}
 
 
-def combine(alpha_r: jax.Array, lanes: jax.Array, dtype) -> jax.Array:
-    """``sum_n alpha_r[n] * lanes[n]``: alpha_r ``[N]``, lanes ``[N, B, T, d]`` -> ``[B, T, d]``."""
+def combine(alpha_r: jax.Array, lanes, dtype) -> jax.Array:
+    """``sum_n alpha_r[n] * lanes[n]``: alpha_r ``[N]``, lanes ``[N, B, T, d]`` or a tuple of
+    ``N`` arrays ``[B, T, d]`` -> ``[B, T, d]``."""
     ft = hi(dtype)
     a = alpha_r.astype(ft)
     u = a[0] * lanes[0].astype(ft)
-    for n in range(1, lanes.shape[0]):
+    for n in range(1, len(lanes)):
         u = u + a[n] * lanes[n].astype(ft)
     return u.astype(dtype)
 
 
-def update(mix_r: jax.Array, beta_r: jax.Array, lanes: jax.Array, s: jax.Array, dtype) -> jax.Array:
+def update(mix_r: jax.Array, beta_r: jax.Array, lanes, s: jax.Array, dtype):
     """``mix_r @ lanes + beta_r[:, None] * s``: mix_r ``[N, N]``, beta_r ``[N]``,
-    lanes ``[N, B, T, d]``, s ``[B, T, d]`` -> ``[N, B, T, d]``."""
+    lanes ``[N, B, T, d]``, s ``[B, T, d]`` -> ``[N, B, T, d]``; with a tuple of ``N`` lanes
+    ``[B, T, d]`` the result is a tuple too (no stacking)."""
     ft = hi(dtype)
     m = mix_r.astype(ft)
     bt = beta_r.astype(ft)
-    n_lanes = lanes.shape[0]
+    n_lanes = len(lanes)
     lf = [lanes[j].astype(ft) for j in range(n_lanes)]
     sf = s.astype(ft)
     out = []
@@ -58,7 +60,7 @@ def update(mix_r: jax.Array, beta_r: jax.Array, lanes: jax.Array, s: jax.Array, 
         for j in range(n_lanes):
             acc = acc + m[i, j] * lf[j]
         out.append(acc.astype(dtype))
-    return jnp.stack(out)
+    return tuple(out) if isinstance(lanes, (tuple, list)) else jnp.stack(out)
 
 
 def run_loops(step: Callable[[jax.Array, Any], tuple[jax.Array, Any]], e: jax.Array,
@@ -67,8 +69,12 @@ def run_loops(step: Callable[[jax.Array, Any], tuple[jax.Array, Any]], e: jax.Ar
 
     e: ``[B, T, d]`` initial state copied into every lane; xs: per-loop inputs with a leading
     loop axis; remat: wrap the step in ``jax.checkpoint`` (recompute in the backward pass).
-    Returns ``(lanes [N, B, T, d], ys with a leading loop axis)``.
+    The lanes are carried as a tuple of ``N`` arrays ``[B, T, d]``: slicing a stacked
+    ``[N, B, T, d]`` carry and stacking it again in every loop are copies of the activations
+    (1.4% of a training step on TPU v6e). Returns ``(lanes: tuple of N arrays [B, T, d], ys
+    with a leading loop axis)``; :func:`combine`, :func:`update` and ``head.final_hidden`` take
+    both forms.
     """
-    lanes0 = jnp.broadcast_to(e[None], (n_lanes,) + e.shape)
+    lanes0 = tuple(e for _ in range(n_lanes))
     body = jax.checkpoint(step, prevent_cse=False) if remat else step
     return jax.lax.scan(body, lanes0, xs)

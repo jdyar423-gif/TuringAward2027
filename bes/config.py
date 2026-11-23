@@ -106,10 +106,12 @@ class ModelCfg:
     table_grad: str = "onehot"   # vocabulary-table gradients: "onehot" (chunked matmul) | "take" (scatter-add)
                                  # | "sorted" (matmul over sorted chunks, sorted_chunk rows each)
     loss_chunk: int = 8192       # rows of float32 [rows, V] logits per cross-entropy chunk
-    splash_block_q: int = 512    # splash attention query tile (clipped to the padded length)
-    splash_block_kv: int = 512   # splash attention key/value tile
+    # splash tiles: measured on TPU v6e at 32x1024 (docs/TPU_NOTES.md): 1024/1024/512 with the
+    # fused backward kernel is 10% of a training step faster than 512/512/512 with two kernels
+    splash_block_q: int = 1024   # splash attention query tile (clipped to the padded length)
+    splash_block_kv: int = 1024  # splash attention key/value tile
     splash_block_kv_compute: int = 512  # inner key/value step of the splash kernels
-    splash_fused_bwd: bool = False      # one fused dQ/dK/dV backward kernel instead of two
+    splash_fused_bwd: bool = True       # one fused dQ/dK/dV backward kernel instead of two
     splash_interpret: str = "auto"      # Pallas interpret mode: "auto" (= not on TPU) | "true" | "false"
     mass_offset: float = 6.0     # output law: log-mass a_k = bias + <h A, c_k> - mass_offset
     mass_log_cap: float = 10.0   # output law: m_k = exp(soft_cap(a_k, mass_log_cap)) * mask_k * src_scale

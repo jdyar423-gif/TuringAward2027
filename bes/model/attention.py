@@ -34,6 +34,18 @@ Implementations (``cfg.attn_impl``):
   ``attend(q, k, v, seg, cfg) -> y`` with ``q, k, v, y: [B, T, H, head_dim]`` and the same
   semantics (static causal mask + per-example segment ids). Imported lazily so CPU runs never
   touch it. No selective attention.
+
+Head-major path (:func:`attention_major`, taken by :func:`attention` for ``"splash"`` without
+an ``attend_fn``): the same sub-layer written as matrix products and broadcast element-wise
+operations only, with the operands built directly in the kernel's layout ``[B, H, T, head_dim]``.
+On TPU v6e the reference composition spent 62% of a block application in slices,
+concatenations, transposes and float32 round trips of ``[B, T, d]`` tensors (the products
+themselves took 16%, the kernel 22%); this path computes the same values (to float rounding)
+1.8 times as fast per training step (docs/TPU_NOTES.md, "Where a step spends its time"). The
+three ideas: the rotation is two products instead of a slice-and-concatenate
+(``rotate(x W) = (x W) * (cos, cos) + (x W') * (sin, -sin)`` with ``W'`` the columns of ``W``
+with the two rotary halves of every head exchanged), the reserved dims are zero columns of
+those matrices plus broadcast constants (no concatenation), and nothing is transposed.
 """
 from __future__ import annotations
 
@@ -41,9 +53,10 @@ from typing import NamedTuple
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 
 from bes.model import sinks
-from bes.model.layers import F32, act_dtype, gain_product, hi, l2norm, mm
+from bes.model.layers import F32, L2_EPS, PhaseGain, act_dtype, gain_product, hi, l2norm, mm
 from bes.model.rope_clocks import rotate
 
 VE_GATE_CHANNELS = 12   # nanochat: the gate reads the first 12 channels of the block input
@@ -58,7 +71,10 @@ class Ctx(NamedTuple):
     seg, pos: ``int32[B, T]`` segment ids and positions used by the mask; bos: ``bool[B, T]``
     the position holds BOS (keys selective attention never masks) or None; sel: ``float32[]``
     selective-attention switch, or None (statically off); gate: ``float32[]`` switch of the
-    head-wise output gate, or None (statically off).
+    head-wise output gate, or None (statically off); rot_c, rot_s: the rotary tables of the
+    head-major path (:func:`rotary_major`: ``float32[B, 1, T, head_dim]``), or None (computed
+    on demand; ``bes.model.model.make_ctx`` fills them for ``attn_impl == "splash"`` so that
+    they are made once per forward, outside the loop scan).
     """
     cos: jax.Array
     sin: jax.Array
@@ -69,6 +85,16 @@ class Ctx(NamedTuple):
     bos: jax.Array | None = None
     sel: jax.Array | None = None
     gate: jax.Array | None = None
+    rot_c: jax.Array | None = None
+    rot_s: jax.Array | None = None
+
+
+class MajorGain(NamedTuple):
+    """Token gain rows of one block already in the head-major layout: ``rows [B, H, T,
+    head_dim]`` (``hi(act_dtype)``), made once per forward outside the loop scan
+    (``bes.model.model.forward``). :func:`attention_major` also takes the ``[B, T, H*head_dim]``
+    rows and ``layers.PhaseGain`` of the reference path and transposes them itself."""
+    rows: jax.Array
 
 
 def qkv(pa: dict, x: jax.Array, ctx: Ctx, ve: jax.Array | None, cfg, gain_v=None):
@@ -229,6 +255,8 @@ def attention(pa: dict, wo: jax.Array, x: jax.Array, ctx: Ctx, ve: jax.Array | N
     ``layers.PhaseGain``) or None: the values (see :func:`qkv`) and the head outputs ``y`` are
     multiplied by ``1 + gain`` in ``hi(act_dtype)`` (``layers.gain_product``), the latter after
     ``attend_fn`` / the sink-mass metric and before ``W_o``.
+    With ``attn_impl == "splash"`` and no ``attend_fn`` the sub-layer is computed by
+    :func:`attention_major` (same values, no slices, concatenations or transposes).
     With ``gate_w`` / ``gate_b`` in ``pa`` (``attn_gate``) the head outputs ``y`` (of the kernel
     or of ``attend_fn``) are first multiplied by :func:`head_gate` with the switch ``ctx.gate``
     and loop: the int32 loop index (required then). Order: kernel -> sink-mass metric -> gate
@@ -237,6 +265,10 @@ def attention(pa: dict, wo: jax.Array, x: jax.Array, ctx: Ctx, ve: jax.Array | N
     """
     b, t, _ = x.shape
     ft = hi(act_dtype(cfg))
+    if attend_fn is None and cfg.attn_impl == "splash":
+        if ctx.sel is not None:
+            raise ValueError("selective attention needs the dense path (attn_impl='xla')")
+        return attention_major(pa, wo, x, ctx, ve, cfg, gain_v=gain_v, gain_o=gain_o, loop=loop)
     q, k, v = qkv(pa, x, ctx, ve, cfg, gain_v)
     if attend_fn is None:
         y, aux = self_attend(q, k, v, ctx, ctx.sink if "sink_logit" in pa else None, cfg)
@@ -251,4 +283,160 @@ def attention(pa: dict, wo: jax.Array, x: jax.Array, ctx: Ctx, ve: jax.Array | N
     if gain_o is not None:
         y = gain_product(y, gain_o, ft)
     out = mm(y, wo, act_dtype(cfg))
+    return out, aux
+
+
+# ------------------------------------------------------------------ head-major path (splash)
+def _unit(n: int, i: int, dtype) -> jax.Array:
+    """``[n]`` vector with a 1 at index ``i``."""
+    e = np.zeros(n, np.float32)
+    e[i] = 1.0
+    return jnp.asarray(e, dtype)
+
+
+def rotary_major(cos: jax.Array, sin: jax.Array, bias_dims: int) -> tuple[jax.Array, jax.Array]:
+    """Rotary tables of the head-major path from ``cos, sin [B, T, 1, P]`` (``Ctx``):
+    ``c = (cos, cos, 0, ..)`` and ``s = (sin, -sin, 0, ..)``, each ``[B, 1, T, head_dim]`` with
+    ``bias_dims`` zeros at the end, so that ``rotate(x) = x * c + x' * s`` where ``x'`` is ``x``
+    with its two halves exchanged (``rope_clocks.rotate``) and the reserved dims stay zero."""
+    z = jnp.zeros(cos.shape[:-1] + (bias_dims,), cos.dtype)
+    c = jnp.concatenate([cos, cos, z], axis=-1)
+    s = jnp.concatenate([sin, -sin, z], axis=-1)
+    return jnp.swapaxes(c, 1, 2), jnp.swapaxes(s, 1, 2)
+
+
+def major_weights(pa: dict, cfg) -> dict:
+    """Projection matrices of the head-major path from one block's ``wq``, ``wk`` ``[d, H*dc]``
+    and ``wv`` ``[d, H*hd]``, each ``[d, H, head_dim]`` in the dtype of its source:
+
+    * ``wq_a``, ``wk_a``: the columns of the head, zero in the reserved dims;
+    * ``wq_b``, ``wk_b``: the same with the two rotary halves of every head exchanged
+      (``x @ w_b`` is ``x @ w_a`` with its halves exchanged, at the price of a product instead
+      of a slice and a concatenation of the activation);
+    * ``wv_m``: ``wv`` reshaped.
+
+    ``bes.model.model.block_params`` adds them for ``attn_impl == "splash"`` (once per forward,
+    outside the loop scan); :func:`qkv_major` derives them itself when they are missing.
+    """
+    h, hd = cfg.n_heads, cfg.head_dim
+    dc = hd - cfg.bias_dims
+    p = dc // 2
+    out = {"wv_m": pa["wv"].reshape(pa["wv"].shape[0], h, hd)}
+    for name in ("wq", "wk"):
+        w = pa[name]
+        w3 = w.reshape(w.shape[0], h, dc)
+        z = jnp.zeros((w.shape[0], h, hd - dc), w.dtype)
+        out[name + "_a"] = jnp.concatenate([w3, z], axis=-1)
+        out[name + "_b"] = jnp.concatenate([w3[..., p:], w3[..., :p], z], axis=-1)
+    return out
+
+
+def _major_rows(gain, b: int, t: int, h: int, hd: int, ft) -> jax.Array:
+    """Gain delta rows as ``[B, H, T, head_dim]`` in ``ft`` from a :class:`MajorGain`, the
+    ``[B, T, H*head_dim]`` rows of the reference path or a ``layers.PhaseGain``."""
+    if isinstance(gain, MajorGain):
+        return gain.rows.astype(ft)
+    if isinstance(gain, PhaseGain):
+        gain = jax.lax.dynamic_index_in_dim(gain.rows, gain.phase, 0, keepdims=False)[gain.block]
+    return jnp.swapaxes(gain.astype(ft).reshape(b, t, h, hd), 1, 2)
+
+
+def qkv_major(pa: dict, x: jax.Array, ctx: Ctx, ve: jax.Array | None, cfg, gain_v=None):
+    """:func:`qkv` in the head-major layout: ``(q, k, v)``, each ``[B, H, T, head_dim]`` in the
+    activation dtype, with the values of ``qkv(...)`` transposed (to float rounding).
+
+    Matrix products with activation-dtype operands and ``hi(act_dtype)`` accumulation, then
+    broadcast element-wise operations in ``hi(act_dtype)`` only:
+
+        r   = (x @ w_a) * c + (x @ w_b) * s                    # rotation; reserved dims are 0
+        q   = r / |r| * q_gain[h] + e_dc                       # e_dc: the constant 1 of the
+        k   = r / |r| * (1 - sink) + sink * sink_logit[h] e_dc #   first reserved dim
+        v   = (x @ wv) (1 + gain_v) + value embedding          # then the confidence dim and
+                                                               #   the sink value, as masks
+
+    pa: one block's attention parameters, with the matrices of :func:`major_weights` or
+    without; gain_v: None, a :class:`MajorGain`, ``[B, T, H*head_dim]`` rows or a
+    ``layers.PhaseGain``.
+    """
+    dt = act_dtype(cfg)
+    ft = hi(dt)
+    b, t, _ = x.shape
+    h, hd = cfg.n_heads, cfg.head_dim
+    if cfg.bias_dims < 1:
+        raise ValueError("the reserved bias dims are required (bias_dims >= 1)")
+    dc = hd - cfg.bias_dims
+    c, s = (ctx.rot_c, ctx.rot_s) if ctx.rot_c is not None else rotary_major(ctx.cos, ctx.sin, cfg.bias_dims)
+    w = pa if "wq_a" in pa else major_weights(pa, cfg)
+    xa = x.astype(dt)
+
+    def proj(w3):                                       # [d, H, hd] -> hi [B, H, T, hd]
+        return jnp.einsum("btd,dhk->bhtk", xa, w3.astype(dt), preferred_element_type=ft)
+
+    def unit_rotated(wa, wb):
+        r = proj(wa) * c + proj(wb) * s
+        return r * jax.lax.rsqrt(jnp.sum(r * r, axis=-1, keepdims=True) + L2_EPS)
+
+    e_bias = _unit(hd, dc, ft)
+    q = unit_rotated(w["wq_a"], w["wq_b"]) * pa["q_gain"].astype(ft)[:, None, None] + e_bias
+    k = unit_rotated(w["wk_a"], w["wk_b"])
+    v = proj(w["wv_m"])
+    if gain_v is not None:
+        v = v * (1.0 + _major_rows(gain_v, b, t, h, hd, ft))
+    if ve is not None:
+        n_ve = ve.shape[-1] // hd
+        gate_in = x[..., :VE_GATE_CHANNELS].astype(ft)
+        gate = 3.0 * jax.nn.sigmoid(gate_in @ pa["ve_gate"].astype(ft))
+        add = jnp.swapaxes(ve.astype(ft).reshape(b, t, n_ve, hd) * gate[..., None], 1, 2)   # [B, n_ve, T, hd]
+        if n_ve == h:
+            v = v + add
+        elif n_ve == 1:                                 # head 0 only: a broadcast mask, no padding
+            v = v + _unit(h, 0, ft)[:, None, None] * add
+        else:
+            v = v + jnp.pad(add, ((0, 0), (0, h - n_ve), (0, 0), (0, 0)))
+    if ctx.conf is not None:
+        cm = jnp.asarray(ctx.conf, ft) * _unit(hd, hd - 1, ft)
+        v = v * (1.0 - cm) + cm
+    if "sink_logit" in pa and ctx.sink is not None:
+        on = ctx.sink.astype(ft)[:, None, :, None]
+        keep = 1.0 - on
+        k = k * keep + on * (pa["sink_logit"].astype(ft)[:, None, None] * e_bias)
+        sv = jnp.concatenate([pa["sink_value"].astype(ft), jnp.zeros((h, 1), ft)], axis=-1)
+        v = v * keep + on * sv[:, None, :]
+    return q.astype(dt), k.astype(dt), v.astype(dt)
+
+
+def attention_major(pa: dict, wo: jax.Array, x: jax.Array, ctx: Ctx, ve: jax.Array | None, cfg,
+                    gain_v=None, gain_o=None, loop: jax.Array | int | None = None):
+    """The attention sub-layer on the splash kernels in the kernel's own layout: the values of
+    :func:`attention` with ``attend_fn = self_attend`` (to float rounding), without a slice, a
+    concatenation or a transpose of an activation.
+
+    :func:`qkv_major` -> ``attention_splash.attend_major`` -> sink-mass metric -> head gate ->
+    ``gain_o`` -> ``W_o`` as one contraction over ``(head, head_dim)``. gain_v, gain_o: None, a
+    :class:`MajorGain`, ``[B, T, H*head_dim]`` rows or a ``layers.PhaseGain``.
+    Returns ``(hi(act_dtype) [B, T, d], mean sink mass)``.
+    """
+    from bes.model import attention_splash as splash  # TPU path, imported lazily
+
+    dt = act_dtype(cfg)
+    ft = hi(dt)
+    b, t, _ = x.shape
+    h, hd = cfg.n_heads, cfg.head_dim
+    q, k, v = qkv_major(pa, x, ctx, ve, cfg, gain_v)
+    y = splash.attend_major(q, k, v, ctx.seg, cfg)                                # [B, H, T, hd]
+    if "sink_logit" in pa and ctx.sink is not None and ctx.conf is not None:
+        aux = jnp.asarray(ctx.conf, F32) * jnp.mean(1.0 - y[..., -1].astype(F32))
+    else:
+        aux = jnp.zeros((), F32)
+    if "gate_w" in pa or gain_o is not None:
+        y = y.astype(ft)
+        if "gate_w" in pa:
+            if loop is None or ctx.gate is None:
+                raise ValueError("the attention output gate needs the loop index and ctx.gate "
+                                 "(make_ctx with attn_gate)")
+            y = y * jnp.swapaxes(head_gate(pa, x, loop, ctx.gate), 1, 2)[..., None]
+        if gain_o is not None:
+            y = y * (1.0 + _major_rows(gain_o, b, t, h, hd, ft))
+    out = jnp.einsum("bhtk,hkd->btd", y.astype(dt), wo.reshape(h, hd, wo.shape[-1]).astype(dt),
+                     preferred_element_type=ft)
     return out, aux

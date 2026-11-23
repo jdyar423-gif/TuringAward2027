@@ -18,11 +18,12 @@ import jax.numpy as jnp
 from bes.model.layers import act_dtype, hi, mm, rmsnorm, softcap
 
 
-def final_hidden(lanes: jax.Array, g: jax.Array) -> jax.Array:
-    """``rmsnorm(sum_n lanes[n]) * g``: lanes ``[N, B, T, d]`` -> ``float32[B, T, d]``."""
-    ft = hi(lanes.dtype)
+def final_hidden(lanes, g: jax.Array) -> jax.Array:
+    """``rmsnorm(sum_n lanes[n]) * g``: lanes ``[N, B, T, d]`` or a tuple of ``N`` arrays
+    ``[B, T, d]`` -> ``float32[B, T, d]``."""
+    ft = hi(lanes[0].dtype)
     s = lanes[0].astype(ft)
-    for n in range(1, lanes.shape[0]):
+    for n in range(1, len(lanes)):
         s = s + lanes[n].astype(ft)
     return rmsnorm(s, g, out_dtype=ft)
 

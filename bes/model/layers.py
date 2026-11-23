@@ -117,9 +117,16 @@ def mlp(x: jax.Array, w_up: jax.Array, w_down: jax.Array, dtype, gain=None) -> j
     multiplicative deltas (``n <= d_ffn``, float32 rows) or a :class:`PhaseGain` of that shape:
     the first ``n`` neurons are multiplied by ``1 + gain`` in ``hi(dtype)``, before the cast to
     ``dtype`` (:func:`gain_product`). Returns ``hi(dtype)`` (float32) ``[..., d]``.
+
+    The pre-activations ``W_up x`` are stored in ``dtype`` and squared in ``hi(dtype)``: the
+    ``[..., d_ffn]`` tensor is the largest of the block, and keeping it in float32 between the
+    two products cost 28% of the sub-layer on TPU v6e (2.97 ms against 2.13 ms per application
+    at 32,768 tokens; docs/TPU_NOTES.md). With ``dtype = float32`` nothing changes; with
+    bfloat16 the pre-activation is rounded once more than before (2^-9 relative, unbiased),
+    before a square whose result is rounded to bfloat16 for ``W_down`` either way.
     """
-    h = mm(x, w_up, dtype)
-    h = jnp.square(jax.nn.relu(h))
+    h = mm(x, w_up, dtype, out_dtype=dtype)
+    h = jnp.square(jax.nn.relu(h.astype(hi(dtype))))
     if gain is not None:
         n = gain.shape[-1]
         h = (gain_product(h, gain, h.dtype) if n == h.shape[-1] else

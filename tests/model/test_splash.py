@@ -155,8 +155,8 @@ def test_block_sizes_and_kernels_of_the_final_shapes():
     assert cfg.attn_impl == "splash"
     for t in (1024, 2048):
         bs = S.block_sizes(cfg, t)
-        assert (bs.block_q, bs.block_kv, bs.block_kv_compute) == (512, 512, 512)
-        assert bs.has_backward_blocks
+        assert (bs.block_q, bs.block_kv, bs.block_kv_compute) == (1024, 1024, 512)   # measured on v6e
+        assert bs.has_backward_blocks and bs.use_fused_bwd_kernel and bs.block_q_dq is None
         kern = S.make_kernel(t, cfg.n_heads, bs, False)
         assert type(kern).__name__ == "SplashAttentionKernel"
     assert S.padded_length(200) == 256 and S.block_sizes(cfg, 384).block_q == 384

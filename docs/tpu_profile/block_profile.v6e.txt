@@ -1,0 +1,31 @@
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+loader: the epoch caps cut the planned token share of dolly from 0.0044 to 0.0013 (at most 8 reads of 3.23e+06 tokens over a horizon of 2e+10 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0126 to 0.0005 (at most 8 reads of 1.27e+06 tokens over a horizon of 2e+10 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0079 to 0.0032 (at most 8 reads of 8.06e+06 tokens over a horizon of 2e+10 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0032 to 0.0002 (at most 8 reads of 4.19e+05 tokens over a horizon of 2e+10 tokens; block 0 at step 0); the rest of its share goes to other sources
+device TPU v6 lite, configs/final.py, micro-batch (32, 1024), d 768, heads 6x128, d_ffn 3072, act bfloat16, 16 applications per call
+A: the block                                         forward   35.52 ms   forward+backward   15.43 ms   (compile 2+7 s)
+B: attention sub-layer (norm, qkv, kernel, Wo)       forward    3.94 ms   forward+backward   12.70 ms   (compile 2+6 s)
+C: feed-forward sub-layer (norm, up, relu^2, down)   forward    0.47 ms   forward+backward    2.97 ms   (compile 2+2 s)
+D: attention sub-layer without the kernel            forward    1.55 ms   forward+backward    5.97 ms   (compile 2+5 s)
+E: attention kernel alone (configured)               forward    0.71 ms   forward+backward    3.35 ms   (compile 0+1 s)
+F: rmsnorm alone                                     forward    0.05 ms   forward+backward    0.23 ms   (compile 0+1 s)
+G: one d x d product, float32 accumulation           forward    0.08 ms   forward+backward    0.23 ms   (compile 1+2 s)
+H: one d x d product, activation dtype               forward    0.08 ms   forward+backward    0.23 ms   (compile 1+2 s)
+I: up and down products only, activation dtype       forward    0.38 ms   forward+backward    1.52 ms   (compile 2+2 s)
+J: feed-forward sub-layer in the activation dtype    forward    0.47 ms   forward+backward    2.13 ms   (compile 2+3 s)
+K: dense attention kernel alone                      forward    1.40 ms   forward+backward    6.98 ms   (compile 1+1 s)
+L: kernel, tiles 1024/1024/1024                      forward    0.63 ms   forward+backward    2.82 ms   (compile 1+1 s)
+M: kernel, tiles 1024/1024/512                       forward    0.61 ms   forward+backward    2.76 ms   (compile 1+1 s)
+N: kernel, tiles 256/256/256                         forward    1.72 ms   forward+backward    7.48 ms   (compile 0+1 s)
+O: kernel, fused backward                            forward    0.71 ms   forward+backward    2.79 ms   (compile 0+1 s)
+exit status 0 after 77 s

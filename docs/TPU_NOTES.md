@@ -64,10 +64,13 @@ the sequence a multiple of `block_q` and `block_kv`. `bes.model.attention_splash
 length to a multiple of 128 (extra segment id) and shrinks each tile to the largest multiple of
 128 that divides the padded length.
 
-**Block sizes.** Defaults (`ModelCfg.splash_block_q / _kv / _kv_compute`) are 512 for the
-forward and both backward kernels: the per-example grid is `(6, 2, 2)` at `T = 1024` and
-`(6, 4, 4)` at `T = 2048`. They are a starting point, not a measurement. Override with
-`--override model.splash_block_q=1024` etc. and sweep on the chip (below).
+**Block sizes.** Defaults (`ModelCfg.splash_block_q / _kv / _kv_compute`) are 1024 / 1024 / 512
+with the fused backward kernel (`splash_fused_bwd=True`), measured on TPU v6e at 32 x 1024
+(section "Where a step spends its time"): against 512 / 512 / 512 with two backward kernels
+(the first defaults, never measured before the run) the attention sub-layer takes 5.87 ms
+instead of 7.04 ms per block application and a training step is 10% faster. 256 tiles are 2.2
+times slower than 512 for the kernel alone. Override with `--override model.splash_block_q=...`
+to sweep (`scripts/plan_sweep.py` times a plan with any override).
 
 ## Known pitfalls
 
@@ -178,6 +181,72 @@ Consequences:
    256-token chunk; one generation compared with the full-sequence forward at bf16 tolerance.
 7. Determinism: the same batch twice gives the same loss bit for bit.
 8. Host pipeline rate (exact layer, loader) against the measured step time.
+
+## Where a step spends its time (measured on TPU v6e-1, 2026-11-23)
+
+The first numbers from the real chip (Colab `TPU v6 lite`, jax 0.11.2, libtpu 0.0.50, 31.24 GiB
+HBM) were three times under the plan's assumption: `configs/final.py` trained at 112-117k tokens
+per second, `configs/v9.py` at 88-92k (the plan assumed 300-450k). What was ruled out, in the
+order it was tried, each by a measurement on the idle chip:
+
+| suspect | measurement | verdict |
+|---|---|---|
+| a fixed cost per micro-batch | `ms64` 110,855, `ms128` 104,576 tok/s against `ms32` 111,893 (`scripts/plan_sweep.py`) | no: larger is slower |
+| sequence length | `T=2048` 105,912 against `T=1024` 111,893 | the quadratic part is about 6% |
+| rematerialisation | without it (half micro-batch) 116,986 | 4.5% |
+| the float32 softmax head | 5.8 ms per micro-batch of 289 ms | no |
+| the optimiser (Polar Express, once per step) | 1.5 ms of a 2.34 s step | no |
+| gradient accumulation | the scan of 8 micro-batches is 8.0 times one `value_and_grad` | no |
+| candidate tape, registers, value embeddings, sink | each within 5% when removed (10% for the sink) | no |
+| dense instead of flash attention | 303 ms against 289 ms | no |
+| the loops | 1 loop instead of 8: 42.9 ms against 289 ms | **yes: 97% is the 16 block applications** |
+
+Inside one block application at 32 x 1024 tokens (forward and backward with rematerialisation,
+a scan of 8 steps of two applications; the first program timed in a process is 10 times slower
+for a few calls and has to be discarded):
+
+| part | ms | |
+|---|---|---|
+| the block | 15.4 | |
+| attention sub-layer | 12.7 | |
+| ... its kernel alone (512 tiles) | 3.35 | 2.8 with 1024 tiles or the fused backward kernel; dense: 7.0 |
+| ... without the kernel | 5.97 | projections, rotation, normalisation, reserved dims |
+| feed-forward sub-layer | 2.97 | 2.13 with the hidden layer stored in bfloat16 |
+| the two feed-forward products alone | 1.52 | 814 TFLOP/s forward: the matrix units work |
+| one `d x d` product | 0.23 | 0.08 forward; float32 accumulation costs nothing |
+| `rmsnorm` | 0.23 | |
+
+So the matrix products of a block take about 2.4 ms and the kernel 3.4 ms; **the other 9.6 ms
+(62%) is glue**: slices and concatenations (the rotary halves, the reserved bias dims), transposes
+between `[B, T, H, hd]` and the kernel's `[B, H, T, hd]`, and float32 tensors of the widest
+shapes. Each of those is one or more passes over a 50-400 MB tensor at memory speed, and on this
+chip a pass costs about as much as the `d x d` product that made the tensor.
+
+What was changed, with the same values to float rounding (`tests/model/test_attention_major.py`;
+loss 8.33353 for every variant on the chip), in tokens per second for one `value_and_grad` at
+32 x 1024 (`configs/final.py`):
+
+| implementation | ms per micro-batch | tok/s |
+|---|---|---|
+| reference | 289.3 | 113,264 |
+| rotation as two products, reserved dims as zero columns and broadcast constants (no slice, no concatenation) | 215.0 | 152,379 |
+| ... and operands built in the kernel's layout, `W_o` as one contraction over (head, dim) (no transpose) | 194.9 | 168,155 |
+| ... and feed-forward pre-activations stored in bfloat16 | 181.8 | 180,248 |
+| ... and lanes carried as a tuple | 179.3 | 182,779 |
+| ... and tiles 1024 / 1024 / 512 with the fused backward kernel | 162.0 | **202,245** |
+
+Variants that lost: one product per head stacked on the head axis (274.6 ms: 36 small products
+are slower than 5 large ones plus a contraction); feed-forward entirely in bfloat16 (184.5 ms,
+no better than stored bfloat16 with float32 arithmetic); no rematerialisation at half the
+micro-batch (now 159-167k: with less glue the recomputed forward is cheaper than keeping the
+residuals, so `remat=True` is also the faster plan); 256 tiles.
+
+The scripts that made these tables are kept in `docs/tpu_profile/` (`step_profile.py`: parts of
+a step and single features removed; `block_profile.py`: parts of a block; `proto_profile.py`:
+the candidates, patched into the modules); they need a tokenised shard directory and a free
+chip. What is left at 202k: 16 x about 8 ms of block (kernel 2.3, products 2.9, glue 2.8) and
+34 ms outside the blocks (head 5.8; the per-loop controller and value embeddings; embedding and
+tape).
 
 ## Addendum: the plan without rematerialisation
 
