@@ -892,7 +892,11 @@ class Run:
         params, consts, info, _, _ = self.latest_params(ecfg, prefer_post=False)
         t = min(PrefCfg.seq_len, ecfg.model.max_seq)
         ppm = max(1, min(PrefCfg.pairs_per_micro, ecfg.optim.micro_seqs * ecfg.data.seq_len // (2 * t)))
-        pref = dataclasses.replace(PrefCfg(), seq_len=t, pairs_per_micro=ppm,
+        # the micro-batch of the execution plan bounds the rows of one DPO micro-batch; when it
+        # halves them (optim.micro_seqs = 16 at 1,024 tokens: 8 pairs), twice the micro-batches
+        # keep the pairs per optimiser step, and so the step the learning rates were chosen for
+        n_micro = PrefCfg.n_micro * min(2, max(1, PrefCfg.pairs_per_micro // ppm))
+        pref = dataclasses.replace(PrefCfg(), seq_len=t, pairs_per_micro=ppm, n_micro=n_micro,
                                    cache_gb=min(PrefCfg.cache_gb, 1.0))
         sampled = []
         for s in self._samples():               # labels checked against their tokens' text

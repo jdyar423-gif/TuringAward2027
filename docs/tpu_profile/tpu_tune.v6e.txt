@@ -1,0 +1,18 @@
+tpu_tune: configs/final.py ['model.table_grad=take'], device TPU v6 lite, base micro-batch 32x1024, long 2048
+training, T=1024:
+  warm-up (discarded)                             158.6 ms     206,578 tok/s  loss 9.01489  (compile 11 s)
+  configured                                      158.3 ms     206,973 tok/s  loss 9.01489  (compile 10 s)
+  remat_keep=kernel                               161.2 ms     203,225 tok/s  loss 9.01489  (compile 11 s)
+  loss_chunk=32768                                156.4 ms     209,555 tok/s  loss 9.01489  (compile 10 s)
+  micro_seqs=16 (information only)                 73.3 ms     223,417 tok/s  loss 9.01466  (compile 11 s)
+training, T=2048:
+  as chosen above                                 176.1 ms     186,072 tok/s  loss 9.01472  (compile 10 s)
+  splash tiles 2048/2048                          177.5 ms     184,590 tok/s  loss 9.01472  (compile 13 s)
+decoding (prompt of 22 tokens, cache for 768 new tokens):
+    6 rows:    12.1 ms per step (    496 tokens/s), prefill and its compile 3.0 s, first step 2.2 s
+   24 rows:    34.5 ms per step (    695 tokens/s), prefill and its compile 0.2 s, first step 2.1 s
+  smc.decode, 6 particles, 96 tokens: 4.1 s = 43.1 ms per token position (untrained weights: no early end)
+preference optimisation (128 synthetic pairs, batches (4, 32, 1024)):
+  reference log-probabilities: 8.4 s with the compile, 0.35 s again (739 rows/s)
+  one epoch of 2 steps: 16.7 s with the compile, 1.30 s again (0.65 s per step of 64 pairs), loss 0.6931581497192383, finite True
+RECOMMEND {"overrides": [], "tokens_per_s": {"1024": 206973.1268499898, "2048": 186072.19311490835}, "seconds": 133.8}
