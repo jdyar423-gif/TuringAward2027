@@ -17,6 +17,7 @@ import os
 import re
 import shutil
 import signal
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -28,7 +29,8 @@ from bes.config import load_config
 REPO = Path(__file__).resolve().parents[2]
 CONFIG = REPO / "configs" / "smoke.py"
 OVERRIDES = ["model.n_loops=2", "decode.particles=2", "decode.max_new_tokens=8"]
-NOTEBOOKS = [REPO / "notebooks" / "colab_v6e_24h.ipynb", REPO / "notebooks" / "colab_v5e_smoke.ipynb"]
+NOTEBOOKS = [REPO / "notebooks" / "colab_v6e_24h.ipynb", REPO / "notebooks" / "colab_v5e_smoke.ipynb",
+             REPO / "notebooks" / "colab_v6e_24h_v9.ipynb"]
 
 WEB = [("The river runs through the old town. Bridges cross it at three places, and the market "
         "sits on the east bank. ") * 6,
@@ -987,7 +989,7 @@ def _colab_link(repo_url: str, branch: str, name: str) -> str:
     return f"https://colab.research.google.com/github/{owner_repo}/blob/{quote(branch, safe='')}/notebooks/{name}"
 
 
-@pytest.mark.parametrize("path, tpu", list(zip(NOTEBOOKS, ("V6E1", "V5E1"))),
+@pytest.mark.parametrize("path, tpu", list(zip(NOTEBOOKS, ("V6E1", "V5E1", "V6E1"))),
                          ids=lambda v: v.name if isinstance(v, Path) else v)
 def test_notebook_opens_from_its_colab_link_without_edits(path, tpu):
     """A notebook opened from its "open in Colab" link clones the repository and branch the link
@@ -1011,6 +1013,36 @@ def test_notebook_opens_from_its_colab_link_without_edits(path, tpu):
         # every Colab link of the document opens a notebook of this repository at this branch
         found = set(re.findall(r"https://colab\.research\.google\.com/github/[^\s)\"'<>]+", text))
         assert found <= set(links.values()), found
+
+
+def test_the_v9_notebook_is_the_24_hour_notebook_with_the_v9_parameters():
+    """notebooks/colab_v6e_24h_v9.ipynb is written by scripts/notebook_variants.py from the
+    24-hour notebook: the same cells, with the configuration, the run directory and the Drive
+    directory of configs/v9.py in the parameters cell (RUNBOOK.md section 1.4), its own Colab
+    link and its own first paragraph. A change of the 24-hour notebook without running the
+    script fails here."""
+    sys.path.insert(0, str(REPO / "scripts"))
+    import notebook_variants as NV
+
+    base, v9 = NOTEBOOKS[0], NOTEBOOKS[2]
+    assert (NV.BASE, NV.V9) == (base, v9)
+    assert NV.derive(base.read_text(), ()) == base.read_text()       # the file format round-trips
+    assert v9.read_text() == NV.derive(base.read_text())
+    ns_base, ns_v9 = {}, {}
+    exec(compile(_as_python(_code_cells(json.loads(base.read_text()))[0]), "params", "exec"), ns_base)
+    exec(compile(_as_python(_code_cells(json.loads(v9.read_text()))[0]), "params", "exec"), ns_v9)
+    changed = {k for k in ns_base if not k.startswith("__") and ns_base[k] != ns_v9[k]}
+    assert changed == {"CONFIG", "RUN_DIR", "DRIVE_DIR"}
+    assert (ns_v9["CONFIG"], ns_v9["RUN_DIR"], ns_v9["DRIVE_DIR"]) == (
+        "configs/v9.py", "/content/runs/v9", "/content/drive/MyDrive/bes_runs/v9")
+    cfg = load_config(str(REPO / ns_v9["CONFIG"]))
+    assert cfg.run.name == "v9" and (REPO / ns_base["CONFIG"]).is_file()
+    # only the first three cells differ, and the runtime the notebook asks for is the same
+    a, b = json.loads(base.read_text()), json.loads(v9.read_text())
+    assert [i for i, (x, y) in enumerate(zip(a["cells"], b["cells"])) if x != y] == [0, 1, 2]
+    assert len(a["cells"]) == len(b["cells"]) and a["metadata"] == b["metadata"]
+    with pytest.raises(ValueError, match="exactly one occurrence"):
+        NV.derive(base.read_text(), (("no such text in the notebook", "x"),))
 
 
 # ======================================================================= documents

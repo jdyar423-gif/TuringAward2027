@@ -10,8 +10,9 @@
 |---|---|---|
 | `notebooks/colab_v6e_24h.ipynb` | 正式的 24 小時訓練（TPU v6e-1） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jdyar423-gif/TuringAward2027/blob/claude%2Fmodest-carson-yi2d9g/notebooks/colab_v6e_24h.ipynb) |
 | `notebooks/colab_v5e_smoke.ipynb` | 30 分鐘的管線檢查（免費層 TPU，預期 v5e-1；不計入 24 小時） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jdyar423-gif/TuringAward2027/blob/claude%2Fmodest-carson-yi2d9g/notebooks/colab_v5e_smoke.ipynb) |
+| `notebooks/colab_v6e_24h_v9.ipynb` | 24 小時訓練的替代配置 `configs/v9.py`（逐詞頁、無藏書，`docs/V9.md`；TPU v6e-1） | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/jdyar423-gif/TuringAward2027/blob/claude%2Fmodest-carson-yi2d9g/notebooks/colab_v6e_24h_v9.ipynb) |
 
-兩個連結都從本倉庫的 `claude/modest-carson-yi2d9g` 分支載入 notebook（Colab 的網址把分支名當成單一路徑段，所以分支名裡的斜線寫成 `%2F`）。打開後不必改任何參數就能開始：第 1 格已填好本倉庫與分支，notebook 的中繼資料已指定 TPU 型號（v6e-1；管線檢查為 v5e-1）。連線前仍請在「執行階段 → 變更執行階段類型」確認硬體（第 2 格遇到不符的裝置會停下），再依 `RUNBOOK.md` 第 2 節的順序執行：第 1、1b、2 到 5 格，然後第 6 格。這兩個 notebook 還沒有在 Colab 上實際執行過。
+三個連結都從本倉庫的 `claude/modest-carson-yi2d9g` 分支載入 notebook（Colab 的網址把分支名當成單一路徑段，所以分支名裡的斜線寫成 `%2F`）。打開後不必改任何參數就能開始：第 1 格已填好本倉庫與分支，notebook 的中繼資料已指定 TPU 型號（v6e-1；管線檢查為 v5e-1）。連線前仍請在「執行階段 → 變更執行階段類型」確認硬體（第 2 格遇到不符的裝置會停下），再依 `RUNBOOK.md` 第 2 節的順序執行：第 1、1b、2 到 5 格，然後第 6 格。v9 的 notebook 與 24 小時 notebook 只差第 1 格的三個參數（配置、執行目錄、Drive 目錄），由 `scripts/notebook_variants.py` 產生；正式訓練只跑其中一個。這三個 notebook 還沒有在 Colab 上實際執行過。
 
 ### 從終端機直連 TPU（Colab CLI）
 

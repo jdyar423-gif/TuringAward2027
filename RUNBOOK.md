@@ -84,7 +84,11 @@ numbers of the library spent on one page per vocabulary id (design and evidence:
 98.0M stored numbers, 19.6M read per token in the standard accounting convention; the strict
 one is above 20M, on real documents a median of 23.8M at T = 1024 and 26.7M at T = 2048:
 `docs/ACCOUNTING.md`). It starts with the same commands and `--config configs/v9.py`, in run
-and Drive directories of its own: in notebook cell 1 set `CONFIG = "configs/v9.py"`,
+and Drive directories of its own. `notebooks/colab_v6e_24h_v9.ipynb`
+([direct link](https://colab.research.google.com/github/jdyar423-gif/TuringAward2027/blob/claude%2Fmodest-carson-yi2d9g/notebooks/colab_v6e_24h_v9.ipynb))
+is the 24-hour notebook with these three values in cell 1, its own link and its own first
+paragraph, and no other change (written by `scripts/notebook_variants.py`, never edited by
+hand); in the 24-hour notebook itself the same is `CONFIG = "configs/v9.py"`,
 `RUN_DIR = "/content/runs/v9"` and `DRIVE_DIR = "/content/drive/MyDrive/bes_runs/v9"` (with the
 `final` directories, a run of `configs/final.py` already there stops the start, `--resume`
 refuses the other configuration and the mirror copies nothing into another run's directory);

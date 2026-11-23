@@ -178,3 +178,8 @@
 - **沒有採用**：Q/K 分頁、FFN 增益為主、需派發的專家、雜湊 n-gram 輸入表（已發表的斜率換算到這個預算約 0.007 nats）、逐頭閘門、短因果卷積等（`docs/V9.md` 第 9 節）。
 - **限度**：實驗室處在 n-gram 計數模型勝過所有神經網路臂的區間，逐詞儲存在那裡的價值偏高；已發表的同類做法在 1 億參數附近的增益是 0.04–0.11 nats。頁群組的學習率沒有在正式規模調過。沒有任何數字來自 TPU：v6e 的 compile-only 檢查通過（訓練步驟尖峰 7.01 GiB，無散射），吞吐由開機基準量測。
 - **測試**：`tests/conftest.py` 在每個測試模組結束後清除 JAX 的編譯快取。原因：單一 pytest 行程連跑整個 `tests/model` 時，已編譯程式的記憶體映射累積到核心上限（`vm.max_map_count`，預設 65,530），之後的編譯全部以「LLVM compilation error: Cannot allocate memory」失敗（實測 4 分鐘約 3 萬個映射）；清除後每個模組結束時降回數百，整個目錄的峰值約 1.7 萬。
+
+## 18. v9 的 Colab 連結；為什麼不在開發容器裡替使用者登入 Colab CLI
+
+- **新增**：`notebooks/colab_v6e_24h_v9.ipynb`，即 24 小時 notebook 把第 1 格的三個參數換成 v9（`CONFIG = "configs/v9.py"`、`RUN_DIR = "/content/runs/v9"`、`DRIVE_DIR = "/content/drive/MyDrive/bes_runs/v9"`），外加自己的「Open in Colab」連結與第一段說明；其餘各格與中繼資料（TPU v6e-1）相同。它由 `scripts/notebook_variants.py` 從 24 小時 notebook 產生、不手改；`tests/train/test_export.py` 檢查兩者只差這些地方，並把它納入所有 notebook 測試。`README.md` 與 `RUNBOOK.md` 第 1.4 節有它的連結。和另外兩個 notebook 一樣，它沒有在 Colab 上實際執行過。
+- **沒有做的事**：使用者要求由開發容器直接用 Colab CLI 連上 TPU。在容器內安裝並檢視了 CLI（PyPI 上仍是 0.8.0）：登入是「遠端複製貼上」流程（`colab_cli/auth.py` 的 `_run_remote_flow`）——CLI 印出授權網址，使用者在瀏覽器同意後，Google 的頁面顯示一段授權碼，必須輸入到 CLI 等待的那個終端機；換得的權杖範圍含 `cloud-platform`（使用者的 Google Cloud）、`colaboratory`、`drive.file`。開發容器與使用者之間只有對話這一條通道，而那段授權碼等同密碼，不該經過對話；替代的 `--auth=adc` 同樣需要先在某台機器上互動登入。所以沒有在容器內登入，也沒有建立任何執行階段。可行的做法仍是第 15、16 節的兩條：在自己的瀏覽器開 notebook 連結，或在自己的機器上執行 `scripts/colab_cli.py`。
