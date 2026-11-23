@@ -19,6 +19,7 @@ import subprocess
 import sys
 import tarfile
 import textwrap
+import threading
 import time
 from pathlib import Path
 
@@ -51,6 +52,12 @@ resume = "--resume" in args
 ORDER = ("preflight", "background", "benchmark", "train", "sample", "critic", "prefopt", "select",
          "judge", "export")
 manifest = os.path.join(out, "manifest.json")
+if "--move-deadline" in args:                     # the edit-only call: recorded, nothing runs
+    with open(os.path.join(runs, "moved.jsonl"), "a") as f:
+        f.write(json.dumps({"out": out, "when": args[args.index("--move-deadline") + 1],
+                            "run": os.path.exists(manifest)}) + "\\n")
+    print("stand-in: deadline moved to", args[args.index("--move-deadline") + 1])
+    sys.exit(0 if os.path.exists(manifest) else 1)
 # the handler first: a test may signal as soon as it sees the attempt recorded below
 if os.environ.get("STANDIN_DEAF"):
     signal.signal(signal.SIGTERM, lambda *a: open(os.path.join(runs, "sigterms"), "a").write("x"))
@@ -90,6 +97,15 @@ dump(os.path.join(out, "train", "ledger.json"), {"tokens": 123456 * n, "steps": 
 with open(os.path.join(out, "train", "train_log.jsonl"), "a") as f:
     f.write(json.dumps({"event": "step", "step": 10 * n, "p": 0.1, "seq_len": 64, "loss": 5.0 - n,
                         "loss_ema": 5.0, "tok_per_s": 1000.0, "lr": 1.0}) + "\\n")
+ck = os.path.join(out, "train", "ckpt", f"ckpt-{n:06d}-step-{10 * n:09d}")
+os.makedirs(ck, exist_ok=True)
+with open(os.path.join(ck, "arrays.npz"), "wb") as f:
+    f.write(bytes([n]) * 5000)
+dump(os.path.join(ck, "manifest.json"), {"step": 10 * n})
+os.makedirs(os.path.join(out, "train", "ckpt", ".tmp-half"), exist_ok=True)
+os.makedirs(os.path.join(out, "logs"), exist_ok=True)
+with open(os.path.join(out, "logs", "downloads.log"), "a") as f:
+    f.write(f"attempt {n}\\n")
 print("stand-in run attempt", n, flush=True)
 word = "finish"
 if not os.environ.get("STANDIN_AUTOFINISH"):
@@ -212,7 +228,14 @@ def test_the_kernel_program_matches_the_repository():
         ns: dict = {}
         exec(compile(cells["1"], "params", "exec"), ns)
         assert (ns["REPO_URL"], ns["BRANCH"]) == (tpu.REPO_URL, tpu.BRANCH)
-    assert tpu.COMMANDS == cli.COMMANDS
+        exec(compile(cells["1b"], "helpers", "exec"), ns)            # definitions only
+        mirror: dict = {"__name__": "mirror"}
+        exec(compile(ns["MIRROR_CODE"], "mirror", "exec"), mirror)
+        assert (tpu.SNAP_ROOT_FILES, tpu.SNAP_FILES, tpu.SNAP_TREES, tpu.SNAP_CKPT_ROOTS) == (
+            mirror["ROOT_FILES"], mirror["FILES"], mirror["TREES"], mirror["CKPT_ROOTS"])
+        assert all(tpu._temporary(n) == mirror["_skip"](n) for n in
+                   (".tmp-x", ".trash-1", ".old-2", ".part-ckpt", "a.part", "x.lock", "__pycache__", "ckpt-1", "log"))
+    assert tpu.COMMANDS == cli.COMMANDS and tpu.RESTORE_PREFIX == cli.RESTORE_PREFIX
     assert {p["notebook"] for p in cli.PRESETS.values()} == set(tpu.NOTEBOOKS)
 
 
@@ -222,11 +245,13 @@ def test_settings_reject_what_they_do_not_know():
     for bad in ({"BES_NOTEBOOK": "x"}, {"BES_ACTION": "go"}, {"BES_USE_DRIVE": "maybe"},
                 {"BES_BUDGET_MINUTES": "soon"}, {"BES_RUN_DIR": "runs/v9"},
                 {"BES_RUN_DIR": "/content/drive/MyDrive/bes_runs/v9"}, {"BES_RUN_DIR": "/content/drive"},
-                {"BES_RUN_DIR": "/content"}, {"BES_RUN_DIR": "/content/TuringAward2027/"}):
+                {"BES_RUN_DIR": "/content"}, {"BES_RUN_DIR": "/content/TuringAward2027/"},
+                {"BES_MOVE_DEADLINE": "tomorrow"}):
         with pytest.raises(RuntimeError):
             tpu.settings(bad)
     assert tpu.settings({})["run_dir"] is None                       # the notebook's RUN_DIR
     assert tpu.settings({"BES_RUN_DIR": "/content/runs/v9/"})["run_dir"] == "/content/runs/v9"
+    assert tpu.settings({})["move_deadline"] is None and tpu.settings({"BES_MOVE_DEADLINE": " +45 "})["move_deadline"] == "+45"
 
 
 def test_supervisor_runs_the_notebook_cells_and_packages_the_export(tmp_path):
@@ -659,6 +684,164 @@ def test_two_runs_on_one_runtime_keep_to_their_own_directories(tmp_path, monkeyp
     assert f"(DRIVE_DIR {root / 'drive/MyDrive/x'})" in out.getvalue()
 
 
+def test_a_continuation_moves_the_deadline_first(tmp_path, monkeypatch):
+    """BES_MOVE_DEADLINE: a run that continues on another runtime gets its deadline moved by the
+    run's own command before cell 8 continues it, once; a failure of that command stops the
+    continuation, and a run that is running is left alone."""
+    monkeypatch.chdir(tmp_path)
+    root = tmp_path / "content"
+    _standin_repo(root)
+    clock = [time.time()]
+    moved = root / "runs" / "moved.jsonl"
+    sup, _ = _supervisor(root, clock)
+    _setup(sup)
+    _wait(lambda: len(_attempts(root)) == 1, "the first attempt")
+    again, out = _supervisor(root, clock, BES_MOVE_DEADLINE="1800000000")    # the run runs: not touched
+    _setup(again)
+    assert "its deadline is not moved while it runs" in out.getvalue() and not moved.exists()
+    (root / "runs" / "gate1").write_text("crash")
+    _wait(lambda: not sup.run_alive(), "the crash")
+    sup, out = _supervisor(root, clock, BES_ACTION="resume", BES_MOVE_DEADLINE="1800000000")
+    _setup(sup)
+    _wait(lambda: len(_attempts(root)) == 2, "the continued run")
+    [call] = [json.loads(ln) for ln in moved.read_text().splitlines()]
+    assert call == {"out": str(root / "runs" / "smoke"), "when": "1800000000", "run": True}
+    text = out.getvalue()
+    assert text.index("deadline moved to 1800000000") < text.index("continuing the run")
+    assert sup.s["move_deadline"] is None and "--resume" in _attempts(root)[1]
+    (root / "runs" / "gate2").write_text("crash")
+    _wait(lambda: not sup.run_alive(), "the second crash")
+    clock[0] += 120.0
+    sup.tick()                                                   # an automatic continuation: no second move
+    _wait(lambda: len(_attempts(root)) == 3, "the automatic continuation")
+    assert len(moved.read_text().splitlines()) == 1
+    (root / "runs" / "gate3").write_text("finish")
+    _wait(lambda: not sup.run_alive(), "the end")
+    # a directory without a run: nothing is moved and nothing is continued
+    other, _ = _supervisor(root, clock, BES_RUN_DIR=str(root / "runs" / "none"), BES_ACTION="resume",
+                           BES_MOVE_DEADLINE="+30")
+    with pytest.raises(RuntimeError, match="no run to continue"):
+        _setup(other)
+    assert len(moved.read_text().splitlines()) == 1
+    # the run's command refuses (here: the stand-in, for a directory whose manifest is gone)
+    broken, _ = _supervisor(root, clock, BES_ACTION="resume", BES_MOVE_DEADLINE="+30")
+    broken.clone()
+    broken.load_cells()
+    broken.parameters()
+    broken.setup_cells()
+    broken.run_dir = str(root / "runs" / "none")
+    with pytest.raises(RuntimeError, match="the deadline could not be moved"):
+        broken.move_deadline()
+
+
+def _tar_of(parts_dir: Path) -> tuple[dict, bytes]:
+    meta = json.loads((parts_dir / "parts.json").read_text())
+    data = b"".join((parts_dir / p["name"]).read_bytes() for p in meta["parts"])
+    assert hashlib.sha256(data).hexdigest() == meta["sha256"] and len(data) == meta["bytes"]
+    return meta, data
+
+
+def test_a_snapshot_carries_the_run_to_another_runtime(tmp_path, monkeypatch):
+    """`snapshot` packs what the Drive mirror holds while the run goes on; unpacked on another
+    runtime (BES_RESTORE) it is the run directory the continuation starts from. A damaged upload
+    is refused before anything is unpacked."""
+    monkeypatch.chdir(tmp_path)
+    root = tmp_path / "content"
+    _standin_repo(root)
+    clock = [time.time()]
+    sup, out = _supervisor(root, clock, BES_PART_MB="0.004")
+    _setup(sup)
+    _wait(lambda: len(_attempts(root)) == 1 and (root / "runs" / "smoke" / "logs").is_dir(), "the first attempt")
+    ctl, snap = root / "bes_cli" / "ctl", root / "bes_cli" / "snapshot"
+    ctl.write_text("snapshot\n")
+    assert sup.tick() and sup.run_alive() and sup.state == "running"          # the run goes on
+    meta, data = _tar_of(snap)
+    assert meta["checkpoints"] == {"train/ckpt": "ckpt-000001-step-000000010"} and len(meta["parts"]) >= 3
+    assert meta["run_dir"] == str(root / "runs" / "smoke") and meta["tokens"] == 123456
+    with tarfile.open(fileobj=io.BytesIO(data)) as tar:
+        names = set(tar.getnames())
+        assert tar.extractfile("run/train/ckpt/ckpt-000001-step-000000010/arrays.npz").read() == b"\x01" * 5000
+    assert {"run/manifest.json", "run/stages.json", "run/train/ledger.json", "run/train/train_log.jsonl",
+            "run/logs/downloads.log", "run/train/ckpt/ckpt-000001-step-000000010/manifest.json", "run.log"} <= names
+    assert not any(".tmp-half" in n for n in names)
+    info = json.loads((root / "bes_cli" / "status.json").read_text())
+    assert info["snapshot"]["parts"] == len(meta["parts"]) and info["snapshot"]["sha256"] == meta["sha256"]
+    assert "snapshot:" in (root / "bes_cli" / "status.txt").read_text()
+    # a later snapshot replaces the set as a whole (the newer checkpoint, nothing left over)
+    (root / "runs" / "gate1").write_text("crash")
+    _wait(lambda: not sup.run_alive(), "the crash")
+    clock[0] += 120.0
+    sup.tick()
+    _wait(lambda: len(_attempts(root)) == 2 and (root / "runs" / "smoke" / "train" / "ckpt" /
+                                                   "ckpt-000002-step-000000020" / "manifest.json").exists(),
+          "the continued run")
+    ctl.write_text("snapshot 0.012\n")
+    sup.tick()
+    meta, data = _tar_of(snap)
+    assert meta["checkpoints"] == {"train/ckpt": "ckpt-000002-step-000000020"}
+    assert max(p["bytes"] for p in meta["parts"]) == int(0.012 * 2 ** 20)
+    assert sorted(os.listdir(root / "bes_cli")) == ["export", "snapshot", "status.json", "status.txt",
+                                                     "supervisor.log"] or "snapshot.new" not in os.listdir(root / "bes_cli")
+    assert not (root / "bes_cli" / "snapshot.old").exists()
+    with tarfile.open(fileobj=io.BytesIO(data)) as tar:
+        assert not any("ckpt-000001" in n for n in tar.getnames())           # only the newest checkpoint
+    (root / "runs" / "gate2").write_text("crash")
+    _wait(lambda: not sup.run_alive(), "the second crash")
+
+    # another runtime: the parts are uploaded next to /content, the program unpacks and continues
+    other = tmp_path / "content2"
+    _standin_repo(other)
+    for i, part in enumerate(meta["parts"]):
+        shutil.copyfile(snap / part["name"], other / f"bes_restore.{i:03d}")
+    shutil.copyfile(snap / "parts.json", other / "bes_restore.parts.json")
+    new, out = _supervisor(other, clock, BES_RESTORE="1", BES_ACTION="resume", BES_MOVE_DEADLINE="+30")
+    new.clone()
+    new.load_cells()
+    new.parameters()
+    new.setup_cells()
+    new.restore_snapshot()
+    run2 = other / "runs" / "smoke"
+    assert (run2 / "train" / "ckpt" / "ckpt-000002-step-000000020" / "arrays.npz").read_bytes() == b"\x02" * 5000
+    assert json.loads((run2 / "manifest.json").read_text())["config"] == "configs/smoke.py"
+    assert (run2 / "logs" / "downloads.log").read_text() == "attempt 1\nattempt 2\n"
+    assert "stand-in run attempt 2" in (other / "runs" / "smoke.log").read_text()
+    assert not list(other.glob("bes_restore.*")) and "snapshot restored into" in out.getvalue()
+    new.start_or_resume()
+    _wait(lambda: len(_attempts(other)) == 1, "the continuation on the other runtime")
+    assert _attempts(other)[0] == ["--out", str(run2), "--resume", "--allow-cpu"]
+    moved = [json.loads(ln) for ln in (other / "runs" / "moved.jsonl").read_text().splitlines()]
+    assert moved == [{"out": str(run2), "when": "+30", "run": True}]         # the deadline first, then the run
+    (other / "runs" / "gate1").write_text("finish")
+    _wait(lambda: not new.run_alive(), "the end")
+    assert new.run_state() == "complete"
+
+    # refusals: nothing uploaded; a damaged part (nothing is unpacked); a run that is already there
+    third = tmp_path / "content3"
+    _standin_repo(third)
+    sup3, _ = _supervisor(third, clock, BES_RESTORE="1")
+    sup3.clone()
+    sup3.load_cells()
+    sup3.parameters()
+    with pytest.raises(RuntimeError, match="was not uploaded"):
+        sup3.restore_snapshot()
+    for i, part in enumerate(meta["parts"]):
+        shutil.copyfile(snap / part["name"], third / f"bes_restore.{i:03d}")
+    shutil.copyfile(snap / "parts.json", third / "bes_restore.parts.json")
+    blob = (third / "bes_restore.001").read_bytes()
+    (third / "bes_restore.001").write_bytes(blob[:-1] + bytes([blob[-1] ^ 1]))
+    with pytest.raises(RuntimeError, match="did not arrive intact"):
+        sup3.restore_snapshot()
+    assert not (third / "runs" / "smoke").exists()
+    (third / "bes_restore.001").write_bytes(blob)
+    (third / "runs" / "smoke").mkdir(parents=True)
+    (third / "runs" / "smoke" / "manifest.json").write_text("{}")
+    out3 = io.StringIO()
+    sup3.out = out3
+    sup3.restore_snapshot()
+    assert "already holds a run" in out3.getvalue() and not list(third.glob("bes_restore.*"))
+    assert (third / "runs" / "smoke" / "manifest.json").read_text() == "{}"
+
+
 def test_supervisor_reads_the_token_file_and_refuses_an_unmounted_drive(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("HF_TOKEN", raising=False)
@@ -887,11 +1070,13 @@ def test_start_options_reach_the_runtime(fake_colab, capfd):
                    "BES_HOLD_FAILED_MINUTES=30", "BES_REPO_URL=https://github.com/x/y", "BES_BRANCH=main",
                    "BES_CONFIG=configs/canary.py", "BES_BUDGET_MINUTES=20", "BES_AUTO_RESUME=0", "BES_PART_MB=4"]
     assert cli.main(["start", "--smoke", "--cpu", "--drive", "--hold-minutes", "45",
-                     "--drive-dir", "/content/drive/MyDrive/x", "--run-dir", "/content/runs/x"]) == 0
+                     "--drive-dir", "/content/drive/MyDrive/x", "--run-dir", "/content/runs/x",
+                     "--move-deadline=+45"]) == 0
     assert ["new", "-s", "bes-cpu"] in calls() and ["drivemount", "-s", "bes-cpu"] in calls()
     env = [a for a in calls()[-1] if "=" in a]
     assert "BES_ALLOW_CPU=1" in env and "BES_USE_DRIVE=1" in env and "BES_HOLD_MINUTES=45" in env
     assert "BES_DRIVE_DIR=/content/drive/MyDrive/x" in env and "BES_RUN_DIR=/content/runs/x" in env
+    assert "BES_MOVE_DEADLINE=+45" in env
     capfd.readouterr()
     before = len(calls())
     assert cli.main(["start", "--cpu"]) == 1                          # the 24-hour configuration on a CPU: no
@@ -1045,6 +1230,83 @@ def test_send_needs_a_supervisor_and_carries_the_part_size(fake_colab, capfd):
     assert (home / "content" / "bes_cli" / "ctl").read_text() == "package 4\n"
     _status(home, age=5, state="released")
     assert cli.main(["send", "--force", "release"]) == 0
+
+
+def test_snapshot_downloads_a_copy_of_the_run_and_restore_uploads_it(fake_colab, monkeypatch, capfd, tmp_path):
+    """`snapshot` asks a running supervisor (here: the real one, ticking in a thread on the
+    stand-in runtime), waits for the new set and downloads it checked; `start --restore` uploads
+    that set to another runtime before the program is sent, and checks it before anything is
+    created."""
+    home, calls = fake_colab
+    _session(home)
+    root = home / "content"
+    _standin_repo(root)
+    clock = [time.time()]
+    sup, _ = _supervisor(root, clock, BES_PART_MB="0.004")
+    _setup(sup)
+    _wait(lambda: len(_attempts(root)) == 1 and (root / "runs" / "smoke" / "logs").is_dir(), "the run")
+    stop = threading.Event()
+
+    def supervise():
+        while not stop.is_set():
+            clock[0] = time.time()
+            sup.tick()
+            time.sleep(0.05)
+
+    thread = threading.Thread(target=supervise, daemon=True)
+    thread.start()
+    try:
+        _wait(lambda: (root / "bes_cli" / "status.json").exists(), "the first status")
+        assert cli.main(["snapshot", "--to", "snap", "--wait", "30"]) == 0
+        out = capfd.readouterr().out
+        assert "asked the supervisor of 'bes24h' for a snapshot" in out and "SHA-256 verified" in out
+        assert "start --action resume --restore" in out and f"--run-dir {root / 'runs' / 'smoke'}" in out
+        meta, data = _tar_of(Path("snap"))
+        assert meta["checkpoints"] == {"train/ckpt": "ckpt-000001-step-000000010"} and len(meta["parts"]) >= 3
+        assert not (Path("snap") / ".incoming").exists()
+        with tarfile.open(fileobj=io.BytesIO(data)) as tar:
+            assert "run/manifest.json" in tar.getnames() and "run.log" in tar.getnames()
+        first = meta["created"]
+        assert cli.main(["snapshot", "--to", "snap", "--wait", "30", "--part-mb", "0.016"]) == 0     # a newer one
+        meta, _ = _tar_of(Path("snap"))
+        assert meta["created"] > first and max(p["bytes"] for p in meta["parts"]) == int(0.016 * 2 ** 20)
+        assert sorted(f.name for f in Path("snap").iterdir()) == sorted([p["name"] for p in meta["parts"]] + ["parts.json"])
+        assert cli.main(["snapshot", "--to", "again", "--no-request"]) == 0                          # the last one
+        assert _tar_of(Path("again"))[0]["sha256"] == meta["sha256"]
+        capfd.readouterr()
+    finally:
+        stop.set()
+        thread.join(timeout=10)
+    (root / "runs" / "gate1").write_text("crash")
+    _status(home, age=5, state="released")                       # no supervisor (and its status knows no snapshot)
+    assert cli.main(["snapshot", "--to", "snap"]) == 1
+    assert "only a running supervisor takes a snapshot" in capfd.readouterr().err
+    assert cli.main(["snapshot", "--to", "snap", "--no-request"]) == 1
+    assert "has not taken a snapshot yet" in capfd.readouterr().err
+    assert _tar_of(Path("snap"))[0]["sha256"] == meta["sha256"]                                   # the copy is kept
+
+    # another runtime: checked first, uploaded before the program is sent, parts.json last
+    home2 = tmp_path / "colab_home2"
+    home2.mkdir()
+    monkeypatch.setenv("FAKE_COLAB_HOME", str(home2))
+    Path("empty").mkdir()
+    assert cli.main(["start", "--restore", "empty", "--no-drive"]) == 1
+    assert "holds no snapshot" in capfd.readouterr().err and not (home2 / "calls.jsonl").exists()
+    part = Path("again") / meta["parts"][1]["name"]
+    part.write_bytes(part.read_bytes()[:-3])
+    assert cli.main(["start", "--restore", "again", "--no-drive"]) == 1
+    assert "missing or damaged" in capfd.readouterr().err and not (home2 / "calls.jsonl").exists()
+    assert cli.main(["start", "--restore", "snap", "--action", "resume", "--no-drive", "--run-dir", "/content/runs/smoke",
+                     "--move-deadline=+30"]) == 0
+    rows = [json.loads(ln) for ln in (home2 / "calls.jsonl").read_text().splitlines()]
+    ups = [r[-1] for r in rows if r[0] == "upload"]
+    assert ups == [f"/content/bes_restore.{i:03d}" for i in range(len(meta["parts"]))] + ["/content/bes_restore.parts.json"]
+    kinds = [r[0] for r in rows]
+    assert kinds.index("new") < kinds.index("upload") and max(i for i, k in enumerate(kinds) if k == "upload") < kinds.index("exec")
+    env = [a for a in rows[kinds.index("exec")] if "=" in a]
+    assert "BES_RESTORE=1" in env and "BES_ACTION=resume" in env and "BES_MOVE_DEADLINE=+30" in env
+    for i, p_ in enumerate(meta["parts"]):
+        assert hashlib.sha256((home2 / "content" / f"bes_restore.{i:03d}").read_bytes()).hexdigest() == p_["sha256"]
 
 
 def test_the_route_end_to_end_with_stand_ins(fake_colab, monkeypatch, capfd):

@@ -6,7 +6,8 @@
     python scripts/colab_cli.py start              # the 24-hour run on a v6e-1 TPU (mounts Drive for the mirror)
     python scripts/colab_cli.py status             # the progress report
     python scripts/colab_cli.py url                # a browser link that attaches Colab to the same runtime
-    python scripts/colab_cli.py send stop          # stop | resume | package | release
+    python scripts/colab_cli.py send stop          # stop | resume | package | release | snapshot
+    python scripts/colab_cli.py snapshot --to snap # a copy of the run's records and newest checkpoint, here
     python scripts/colab_cli.py fetch --to export  # the exported model, checked by SHA-256
     python scripts/colab_cli.py down --yes         # give the runtime back: this is what ends the charges
 
@@ -71,7 +72,8 @@ PRESETS = {
               "env": {"BES_HOLD_MINUTES": "20", "BES_HOLD_FAILED_MINUTES": "30"}},
 }
 CPU_SESSION = "bes-cpu"             # start --smoke --cpu: its own session, never the TPU one
-COMMANDS = ("stop", "resume", "package", "release")
+COMMANDS = ("stop", "resume", "package", "release", "snapshot")
+RESTORE_PREFIX = "bes_restore."     # scripts/colab_tpu.py reads <root>/bes_restore.parts.json and .NNN
 STALE_S = 240.0                     # a status older than this: no supervisor is writing it
 INSTALL = ("the `colab` command was not found. Install the Colab CLI (Linux or macOS, Python 3.12+):\n"
            "    pip install google-colab-cli        (or: uv tool install google-colab-cli)\n"
@@ -186,7 +188,7 @@ class Colab:
         return p.returncode == 0 and "MyDrive" in p.stdout
 
     def upload(self, local: Path, remote: str) -> None:
-        p = self.quiet("upload", "-s", self.session, str(local), remote)
+        p = self.quiet("upload", "-s", self.session, str(local), remote, timeout=1800.0)
         if p.returncode != 0:
             raise Failed(explain(f"the upload to {remote}", p))
 
@@ -256,6 +258,10 @@ def environment(args: argparse.Namespace, preset: dict, drive: bool | None) -> l
         env["BES_DRIVE_DIR"] = args.drive_dir
     if args.run_dir:
         env["BES_RUN_DIR"] = args.run_dir
+    if args.move_deadline:
+        env["BES_MOVE_DEADLINE"] = args.move_deadline
+    if args.restore:
+        env["BES_RESTORE"] = "1"
     if args.auto_resume is not None:
         env["BES_AUTO_RESUME"] = str(args.auto_resume)
     if args.hold_minutes is not None:
@@ -303,6 +309,7 @@ def cmd_start(args: argparse.Namespace) -> int:
     token = Path(args.hf_token_file).expanduser() if args.hf_token_file else None
     if token is not None and not token.is_file():        # before anything is created and charged
         raise Failed(f"{token} does not exist")
+    restore = local_snapshot(Path(args.restore)) if args.restore else None    # before anything is charged
     drive = args.drive if args.drive is not None else preset["drive"]
     flag = (" --smoke" if args.smoke else "") + (f" -s {session}" if session != preset["session"] else "")
     print(f"== signing in if needed, and the sessions of this account (`{' '.join(colab.argv('sessions'))}`)")
@@ -338,7 +345,7 @@ def cmd_start(args: argparse.Namespace) -> int:
         if colab.shown(*new) != 0:
             raise Failed("the runtime was not created: the Colab CLI's message above says why")
     try:
-        _prepare(colab, token, drive)
+        _prepare(colab, token, drive, restore)
     except (Failed, KeyboardInterrupt) as e:
         print(f"\n== nothing was sent to '{session}', but its runtime exists and is charged while it idles: "
               f"`python scripts/colab_cli.py start{flag}` again, or give it back with "
@@ -349,12 +356,38 @@ def cmd_start(args: argparse.Namespace) -> int:
     return _send_program(args, preset, colab, drive, flag)
 
 
-def _prepare(colab: Colab, token: Path | None, drive: bool | None) -> None:
-    """What `start` does on the runtime before the program is sent: the token file and Drive."""
+def local_snapshot(src: Path) -> tuple[Path, dict]:
+    """``(directory, parts.json)`` of a snapshot that `snapshot --to` downloaded, every part
+    present and intact."""
+    src = src.expanduser().resolve()
+    try:
+        meta = json.loads((src / "parts.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        raise Failed(f"{src} holds no snapshot (no readable parts.json): `snapshot --to {src}` downloads one") from None
+    for part in meta.get("parts") or []:
+        local = src / part["name"]
+        if not local.is_file() or _sha256(local) != part["sha256"]:
+            raise Failed(f"{local} is missing or damaged: download the snapshot again")
+    if not meta.get("parts"):
+        raise Failed(f"{src / 'parts.json'} lists no parts")
+    return src, meta
+
+
+def _prepare(colab: Colab, token: Path | None, drive: bool | None,
+             restore: tuple[Path, dict] | None = None) -> None:
+    """What `start` does on the runtime before the program is sent: the token file, a snapshot
+    to continue from, and Drive."""
     session = colab.session
     if token is not None:
         colab.upload(token, "/content/bes_hf_token")
         print("== Hugging Face token uploaded (the supervisor reads it into the run's environment and removes the file)")
+    if restore is not None:
+        src, meta = restore
+        print(f"== uploading the snapshot of {meta.get('run_dir')} ({len(meta['parts'])} parts, "
+              f"{meta['bytes'] / 1e6:.1f} MB, checkpoints {meta.get('checkpoints') or 'none'})")
+        for i, part in enumerate(meta["parts"]):
+            colab.upload(src / part["name"], f"/content/{RESTORE_PREFIX}{i:03d}")
+        colab.upload(src / "parts.json", f"/content/{RESTORE_PREFIX}parts.json")        # last: the set is complete
     if drive and not colab.drive_mounted():
         print(f"== mounting Google Drive for the mirror (`{' '.join(colab.argv('drivemount', '-s', session))}`): "
               "follow its prompts")
@@ -435,7 +468,8 @@ def cmd_send(args: argparse.Namespace) -> int:
     if not running(remote_status(colab)[0]) and not args.force:
         raise Failed(f"no supervisor is running on '{colab.session}' (see `status`): nothing was sent. A command "
                      "left there would only be dropped by the next supervisor. `start` again first.")
-    text = args.word + (f" {args.part_mb:g}" if args.word == "package" and args.part_mb is not None else "")
+    text = args.word + (f" {args.part_mb:g}" if args.word in ("package", "snapshot") and args.part_mb is not None
+                        else "")
     with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / "ctl"
         path.write_text(text + "\n", encoding="utf-8")
@@ -513,6 +547,71 @@ def cmd_fetch(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_snapshot(args: argparse.Namespace) -> int:
+    """Ask the supervisor for a snapshot (unless --no-request), wait for it and download it."""
+    colab = Colab(_session(args))
+    if not colab.exists():
+        raise Failed(missing(colab))
+    info, _ = remote_status(colab)
+    last = float(((info or {}).get("snapshot") or {}).get("created") or 0.0)
+    if not args.no_request:
+        if not running(info):
+            raise Failed(f"no supervisor is running on '{colab.session}' (see `status`): only a running supervisor "
+                         "takes a snapshot. --no-request downloads the one it took last.")
+        text = "snapshot" + (f" {args.part_mb:g}" if args.part_mb is not None else "")
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "ctl"
+            path.write_text(text + "\n", encoding="utf-8")
+            colab.upload(path, f"{REMOTE}/ctl")
+        print(f"asked the supervisor of '{colab.session}' for a snapshot; waiting for it (up to {args.wait:.0f} s)")
+        end = time.time() + args.wait
+        while True:
+            time.sleep(min(5.0, max(0.1, args.wait / 40)))
+            info, _ = remote_status(colab)
+            if float(((info or {}).get("snapshot") or {}).get("created") or 0.0) > last:
+                break
+            if time.time() > end:
+                raise Failed(f"no new snapshot within {args.wait:.0f} s (`status` says what the supervisor does); "
+                             "nothing was downloaded")
+    elif not last:
+        raise Failed(f"the supervisor of '{colab.session}' has not taken a snapshot yet")
+    to = Path(args.to).resolve()
+    inc = to / ".incoming"
+    inc.mkdir(parents=True, exist_ok=True)
+    index = inc / "parts.json"
+    if not colab.download(f"{REMOTE}/snapshot/parts.json", index):
+        raise Failed("the snapshot is not on the runtime (snapshot/parts.json does not exist)")
+    meta = json.loads(index.read_text(encoding="utf-8"))
+    keep = {p["name"] for p in meta["parts"]} | {"parts.json"}
+    for stale in inc.iterdir():
+        if stale.name not in keep:
+            stale.unlink()
+    whole = hashlib.sha256()
+    for i, part in enumerate(meta["parts"]):
+        local = inc / part["name"]
+        if not (local.is_file() and _sha256(local) == part["sha256"]):
+            if not colab.download(f"{REMOTE}/snapshot/{part['name']}", local) or _sha256(local) != part["sha256"]:
+                raise Failed(f"{part['name']} did not arrive intact (a newer snapshot replaced it?): run snapshot "
+                             f"again; finished parts are kept in {inc}")
+        whole.update(local.read_bytes())
+        if (i + 1) % 10 == 0 or i + 1 == len(meta["parts"]):
+            print(f"  {i + 1}/{len(meta['parts'])} parts")
+    if whole.hexdigest() != meta["sha256"]:
+        raise Failed("the joined snapshot does not match its SHA-256; run snapshot again")
+    for old in to.iterdir():                          # the complete new set replaces the previous one
+        if old.is_file():
+            old.unlink()
+    for part in meta["parts"]:
+        os.replace(inc / part["name"], to / part["name"])
+    os.replace(index, to / "parts.json")
+    inc.rmdir()
+    print(f"snapshot in {to}: {len(meta['parts'])} parts, {meta['bytes'] / 1e6:.1f} MB, checkpoints "
+          f"{meta.get('checkpoints') or 'none'}, {meta.get('tokens')} training tokens (SHA-256 verified).\n"
+          f"continue it on another runtime:  python scripts/colab_cli.py start --action resume --restore {to}"
+          + (f" --run-dir {meta['run_dir']}" if meta.get("run_dir") else ""))
+    return 0
+
+
 def cmd_url(args: argparse.Namespace) -> int:
     colab = Colab(_session(args))
     return colab.shown("url", "-s", colab.session, *(["--open"] if args.open else []))
@@ -561,6 +660,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                    help="replace the notebook's RUN_DIR (an absolute path on the runtime's local disk): a run "
                         "next to another one on the same runtime; without --drive-dir its mirror goes to a "
                         "directory of the same name next to the notebook's DRIVE_DIR")
+    p.add_argument("--move-deadline", default=None, metavar="WHEN",
+                   help="before a run is continued, move its deadline: seconds since the epoch, or +MINUTES / "
+                        "-MINUTES (a run continued on another runtime: RUNBOOK.md section 5). Write a "
+                        "relative value as --move-deadline=+45")
+    p.add_argument("--restore", default=None, metavar="DIR",
+                   help="upload the snapshot in DIR (`snapshot --to DIR`) and unpack it as the run directory when "
+                        "the runtime does not hold the run: a continuation on another runtime without Drive")
     p.add_argument("--hf-token-file", default=None, help="a file with a Hugging Face token, uploaded to the runtime")
     p.add_argument("--repo-url", default=None, help="clone another repository (default: this one)")
     p.add_argument("--branch", default=None, help="clone another branch")
@@ -579,9 +685,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     common(sub.add_parser("status", help="print the supervisor's progress report")).set_defaults(fn=cmd_status)
     p = common(sub.add_parser("send", help="send a command to the supervisor"))
     p.add_argument("word", choices=COMMANDS)
-    p.add_argument("--part-mb", type=float, default=None, help="with package: megabytes per part")
+    p.add_argument("--part-mb", type=float, default=None, help="with package or snapshot: megabytes per part")
     p.add_argument("--force", action="store_true", help="send although no supervisor seems to be running")
     p.set_defaults(fn=cmd_send)
+    p = common(sub.add_parser("snapshot", help="have the supervisor pack the run's records and newest checkpoint, "
+                                               "and download them (a copy of the run outside Colab)"))
+    p.add_argument("--to", default="colab_snapshot", help="local directory (default colab_snapshot)")
+    p.add_argument("--part-mb", type=float, default=None, help="megabytes per part (default: the supervisor's)")
+    p.add_argument("--wait", type=float, default=900.0, help="seconds to wait for the supervisor (default 900)")
+    p.add_argument("--no-request", action="store_true", help="download the snapshot the supervisor took last")
+    p.set_defaults(fn=cmd_snapshot)
     p = common(sub.add_parser("fetch", help="download the packaged export and verify it"))
     p.add_argument("--to", default="colab_export", help="local directory (default colab_export)")
     p.set_defaults(fn=cmd_fetch)

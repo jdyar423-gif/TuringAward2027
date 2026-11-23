@@ -196,12 +196,18 @@
 - **v6e-1 當下配不到。** 01:00–01:22 之間五次 `colab new --tpu v6e1` 全部失敗：`POST /tun/m/assign` 被後端掛住，前三次在用戶端預設的 120 秒逾時，後兩次（`COLAB_CLI_REQUEST_TIMEOUT=900`）各在 240 秒後由 Google 前端回 `502 Bad Gateway`。帳號資格沒有問題（`ccu-info` 回報 `eligibleTpus: V6E1, V5E1`），過程中沒有產生任何執行階段或費用。CLI 把逾時與 502／503／504 當成可重試的「慢配置」，並在重試前以 GET 對帳；所以取得 v6e-1 要用同一個指令長時間重試（`COLAB_CLI_ASSIGN_RETRIES`、`COLAB_CLI_RETRY_BACKOFF`），每次失敗後檢查帳號上有沒有本機不認得的執行階段。v6e-1 的每小時費率要到配置成功才看得到。
 - Drive 掛載的授權連結由 `…/tun/m/credentials-propagation/<endpoint>` 依執行階段產生（`authtype=dfs_ephemeral`）。這個端點的 `dryrun=true` 不需要核心：對剛建立的 CPU 執行階段呼叫，回的是 `success: false` 與一個 Google 授權連結。所以可以在送出守護程式之前先取得連結、等使用者同意，再執行 `colab drivemount`；是否每個新執行階段都要重新同意還沒有驗證，先當作需要。
 
+- **Drive 掛載實測（CPU 執行階段）。** 使用者點了試跑取得的連結並同意後，`dryrun=true` 仍然回 `success: false`：它不能拿來偵測「已同意」。實際的 `colab drivemount` 第一次以 `Connection was lost` 失敗，第二次 17 秒完成（「Credentials propagated」、`/content/drive/MyDrive` 可列出）；同意是記在（帳號、執行階段）上的，與是哪一次產生的連結無關。沒有同意就掛載的話，核心裡的 `drive.mount` 在約 2 分鐘後以 `ValueError: mount failed` 結束、CLI 仍回 0，之後可以再試。所以流程是：先給連結，再每隔一陣子重試掛載直到 `/content/drive/MyDrive` 出現。掛載點上的 `shutil.disk_usage` 回報的是執行階段自己的磁碟（242 GB），不是 Drive 的配額；以這個憑證也讀不到 Drive 的配額（Drive API 對這個用戶端回 403），鏡像空間夠不夠只能由使用者確認。
+- **使用者的方案是 Colab Pro。** Colab 的 FAQ 寫明「一般而言筆記本最多執行 12 小時」、只有 Pro+「在運算單元足夠時可連續執行至 24 小時」，且實際上限不公開。因此 24 小時的訓練要當成會跨兩個執行階段來準備：Drive 鏡像成為必要條件；第一台被收回後要重新取得 v6e-1（目前就配不到，這是最大的風險）；兩台之間的空窗不是 TPU 時間，而第二台自己也只有約 12 小時。
+
 **程式的改動。**
+
+- `scripts/run_24h.py --move-deadline WHEN`（`bes.train.supervisor.move_deadline`；Colab CLI 路線是 `start --move-deadline`／`BES_MOVE_DEADLINE`，在續跑之前執行，執行階段上沒有這個訓練時先從 Drive 複製回來）：把訓練的期限改到指定的時刻，只改紀錄、不執行任何階段。期限同時存在 manifest、階段帳本與訓練器的 `run.json`，三處一起改，manifest 另記下每一次移動。課表的進度是 p = T／(T＋剩餘時間)，所以期限往後移「停機的長度」時進度恰好接在停下的地方，往前移則自動壓縮；原本「停機時間算在預算內」的規則不變，這是給「換到另一台壽命有限的機器」用的例外。
 
 - `scripts/colab_tpu.py` 的 `BES_RUN_DIR`（`scripts/colab_cli.py start --run-dir`）：同一個執行階段上的第二個訓練有自己的目錄、記錄檔、pid 檔與鏡像目錄（未指定 `--drive-dir` 時，取筆記本 `DRIVE_DIR` 旁的同名目錄）。只接受執行階段本機磁碟上的絕對路徑。
 - `scripts/midrun_eval.py`：把一個或兩個訓練保留下來的每個檢查點，放在匯出檢查用的同一批保留集列上評分（上限外的 ClimbMix 檔、smol-smoltalk 測試集、代理題組的使用者輪；float32 激活、稠密注意力、`highest` 乘法精度，與各自的執行方案無關），並報告成對差：各自最新檢查點、相同訓練時間、相同訓練 token 數（在相鄰檢查點之間對 log token 內插，絕不外推）。
+- 快照（`scripts/colab_cli.py snapshot --to DIR`、守護程式的 `snapshot` 指令）與還原（`start --restore DIR`、`BES_RESTORE=1`）：守護程式在訓練進行中把 Drive 鏡像會保存的那一組檔案（紀錄、記錄檔與報告、每個檢查點目錄最新的一個完整檢查點；清單與筆記本的鏡像程式相同，有測試保持一致）打成一個 tar 的分片，包裝把它下載到使用者（或代理程式）這一邊並逐片、整體校驗 SHA-256。換到新的執行階段時把分片上傳成 `/content/bes_restore.*`，守護程式校驗後解成 run 目錄（只在該執行階段沒有這個訓練時），再移期限、續跑。這是不靠 Drive 的第二條接續路線：Drive 的同意綁定個別執行階段，第一台被收回時使用者未必在場。分片上傳下載在 CPU 執行階段上實測：16 MB 與 32 MB 的檔案雙向完整，下載約 5 MB/s、上傳約 3.5 MB/s。
 - `Supervisor.run_alive`：行程剛啟動、exec 尚未完成的一瞬間 `/proc/<pid>/cmdline` 讀到空字串，原本會被當成「不是訓練行程」；在負載高的機器上讓既有測試偶發失敗。現在空命令列視為行程存在。
-- 測試：`tests/train/test_colab_cli.py`（run 目錄的設定檢查、兩個訓練先後停止／新開／續跑、鏡像目錄的推導、包裝把選項送到執行階段）與 `tests/train/test_midrun_eval.py`（內插與成對差的算術）。評分本身在本機以兩個迷你 smoke 訓練實測：初始化時帶逐詞頁與不帶的損失逐位相同（8.7914），之後各檢查點與成對差如預期列出。流程寫在 `RUNBOOK.md` 第 2.2 節。
+- 測試：`tests/train/test_colab_cli.py`（run 目錄的設定檢查、兩個訓練先後停止／新開／續跑、鏡像目錄的推導、續跑前先移期限且只移一次、快照在訓練中打包並在另一個執行階段還原後續跑、損毀的上傳在解開前被拒絕、包裝把選項送到執行階段）、`tests/train/test_midrun_eval.py`（內插與成對差的算術）與 `tests/train/test_move_deadline.py`（三處紀錄一致、移動後進度連續、不在未來的期限被拒絕）。評分本身在本機以兩個迷你 smoke 訓練實測：初始化時帶逐詞頁與不帶的損失逐位相同（8.7914），之後各檢查點與成對差如預期列出。流程寫在 `RUNBOOK.md` 第 2.2 節。
 
 **對照的設計。** 兩個配置在同一個 v6e-1 執行階段上先後各訓練一段，勝者從自己的檢查點續訓到期限；輸的那一段是這個決定的代價（約 2 小時，佔 24 小時的一成弱）。
 

@@ -227,6 +227,52 @@ def read_marker(paths: RunPaths, task: str) -> dict | None:
     return read_json(paths.marker(task))
 
 
+def move_deadline(out: str | Path, deadline: float, *, now: float | None = None,
+                  reason: str = "") -> dict:
+    """Move the deadline of the run in ``out`` (no run may be running there) and return
+    ``{"from", "to", "moved_s", "train_end", "left_s", "files"}``.
+
+    A run is one budget of wall time, and a restart counts its downtime against that budget.
+    This is the exception for a run that continues on another machine whose own lifetime decides
+    how long it may still run: the time between the machines is not the run's (the deadline
+    moves later), or the new machine does not live as long as the run had left (it moves
+    earlier). The schedule needs no other change: progress is ``T / (T + remaining)``, so it
+    stretches or compresses into the time that is left (``bes.train.schedule``). ``budget_s``,
+    the plan the stage table shows, is kept; every move is recorded in the manifest
+    (``budget.moved``). The stage ledger and the trainer's ``run.json`` hold the same deadline
+    and are rewritten with it. The new deadline must lie in the future."""
+    paths = RunPaths(Path(out))
+    man = read_manifest(out)
+    if man is None or "budget" not in man:
+        raise ValueError(f"{out}: no run (no manifest.json with a budget)")
+    now = time.time() if now is None else float(now)
+    new, old = float(deadline), float(man["budget"]["deadline"])
+    if not math.isfinite(new) or new <= now:
+        raise ValueError(f"the new deadline ({new:.0f}) is not in the future (now {now:.0f})")
+    files = []
+    stages = read_json(paths.stages)
+    if isinstance(stages, dict) and "deadline" in stages:
+        stages["deadline"] = new
+        atomic_write_json(paths.stages, stages)
+        files.append(paths.stages.name)
+    run_json = paths.train / "run.json"
+    info = read_json(run_json)
+    if isinstance(info, dict) and "deadline" in info:
+        info["deadline"] = new
+        atomic_write_json(run_json, info)
+        files.append("train/run.json")
+    budget = dict(man["budget"])
+    budget["deadline"] = new
+    budget["moved"] = list(budget.get("moved", [])) + [
+        {"time": now, "from": old, "to": new, "reason": str(reason)}]
+    man["budget"] = budget
+    write_manifest(out, man)
+    files.append(paths.manifest.name)
+    post_s = base_config(man).run.post_reserve_hours * 3600.0
+    return {"from": old, "to": new, "moved_s": new - old, "train_end": new - post_s,
+            "left_s": new - now, "files": files}
+
+
 def _jsonable(x: Any) -> Any:
     if isinstance(x, Mapping):
         return {str(k): _jsonable(v) for k, v in x.items()}

@@ -27,11 +27,16 @@ evaluation, arena), 8 reproducing the accounting, 9 known unknowns, 10 honest ex
 
 **Colab session limits.** The 24-hour budget is wall time from the moment `scripts/run_24h.py`
 creates the run; installation happens before. Colab runtimes have a maximum lifetime that depends on
-the tier and the accelerator; check yours before you start (this was not verified for TPU v6e
-runtimes). If the runtime may not outlive install + 24 h, set `BUDGET_MINUTES = 1380` (23 hours) in cell 1:
-the post-training reserve and the export keep their shares, training gets shorter. A runtime that
-dies anyway is handled by section 5 (resume on a new runtime; the downtime counts against the
-budget).
+the tier. Colab's FAQ (read 2026-11-23) says: "In general, notebooks can run for at most 12 hours",
+"Colab Pro+ supports continuous code execution for up to 24 hours if you have sufficient compute
+units", and that Colab "does not publish these limits"; a runtime is also terminated when the
+compute units run out. So only a Pro+ account can expect one runtime for the whole run, and even
+there install + 24 h does not fit: set `BUDGET_MINUTES = 1380` (23 hours) in cell 1 (the
+post-training reserve and the export keep their shares, training gets shorter). **On any other
+plan the run spans two runtimes**: the Drive mirror is then not optional, and the run continues on
+the second runtime as section 5 describes, with its deadline moved to what that runtime can still
+give (`--move-deadline`); the last hours (post-training, export) must lie well inside the second
+runtime's own lifetime. None of these limits was measured on a TPU v6e runtime.
 
 ### 1.2 Rehearse
 
@@ -253,12 +258,13 @@ separate process. Consequences:
 
 | command | what it does |
 |---|---|
-| `start` | signs in, creates the session's runtime when it does not exist (`--smoke`: session `bes-smoke`, v5e-1, the smoke notebook; `--smoke --cpu`: session `bes-cpu` on a CPU runtime with `ALLOW_CPU`, a rehearsal of this route without a TPU), mounts Drive (the 24-hour run; `--no-drive` or `--drive` to choose), sends the program, and reports what the runtime's status file says afterwards (it fails when no supervisor is running then: the exit status of `colab exec` does not tell). Options: `--detach`, `--hf-token-file FILE`, `--budget-minutes N`, `--config FILE`, `--drive-dir DIR`, `--run-dir DIR` (section 2.2), `--action auto\|start\|resume`, `--auto-resume N`, `--hold-minutes M`, `--part-mb N`. It does not send the program when a supervisor already holds the session |
+| `start` | signs in, creates the session's runtime when it does not exist (`--smoke`: session `bes-smoke`, v5e-1, the smoke notebook; `--smoke --cpu`: session `bes-cpu` on a CPU runtime with `ALLOW_CPU`, a rehearsal of this route without a TPU), mounts Drive (the 24-hour run; `--no-drive` or `--drive` to choose), sends the program, and reports what the runtime's status file says afterwards (it fails when no supervisor is running then: the exit status of `colab exec` does not tell). Options: `--detach`, `--hf-token-file FILE`, `--budget-minutes N`, `--config FILE`, `--drive-dir DIR`, `--run-dir DIR` (section 2.2), `--move-deadline WHEN` and `--restore DIR` (section 5), `--action auto\|start\|resume`, `--auto-resume N`, `--hold-minutes M`, `--part-mb N`. It does not send the program when a supervisor already holds the session |
 | `status` | prints the supervisor's state and the report of cell 7; warns when no supervisor is writing it |
 | `send stop` | SIGTERM to the run: it writes a checkpoint and exits; the supervisor keeps the runtime. A run that has not exited after 30 minutes gets a second SIGTERM (it exits at once on it), and 5 minutes later its processes are killed |
 | `send resume` | continues the run (cell 8) |
 | `send package` | packages `RUN_DIR/final` again for `fetch` (done by itself when the run is complete); `--part-mb 4` for smaller parts |
 | `send release` | ends the supervisor once the run is not running. The runtime is idle from then on; it is not given back (see above) |
+| `snapshot --to DIR` | asks the supervisor to pack the run's records and the newest complete checkpoint of each checkpoint directory (what the Drive mirror holds) as parts of one tar file, while the run goes on; waits for the new set, downloads it and checks every part and the whole by SHA-256. `DIR` then holds a copy of the run outside Colab (`--no-request`: the set taken last; `--part-mb N`). `start --restore DIR` continues from it on another runtime (section 5) |
 | `fetch --to DIR` | downloads the export in 16 MB parts, checks each part and the whole archive by SHA-256, unpacks it to `DIR/final`. A part that does not come through is reported with the CLI's own message; finished parts are kept |
 | `url` | `colab url`: a browser link that attaches an empty Colab notebook to the same runtime |
 | `down --yes` | `colab stop`: gives the runtime back now, which ends the charges; its disk is lost. It says so when nothing was stopped |
@@ -405,7 +411,41 @@ refuses when Drive holds no run instead of starting a new one):
    (the records, the ledgers, the loader journal, the samples and reports, the logs and the newest
    checkpoint), then starts `python scripts/run_24h.py --out RUN_DIR --resume` in the background.
 
-The resumed run keeps its budget (the downtime counted against it), its configuration, overrides
+**Another runtime with a lifetime of its own.** A run that loses its runtime to Colab's lifetime
+limit (section 1.1) continues on a new one, and two things differ from a restart on the same
+machine: the hours between the two runtimes were not TPU time, and the new runtime will be taken
+away after its own limit. Move the deadline before the continuation, to the earlier of "the old
+deadline plus the downtime" and "what this runtime can still give, minus a margin":
+
+    python scripts/colab_cli.py start --action resume --run-dir /content/runs/v9 --move-deadline 1795480000
+    python scripts/run_24h.py --out RUN_DIR --move-deadline +90       # the same by hand, then --resume
+
+(seconds since the epoch, or `--move-deadline=+MINUTES` / `=-MINUTES` from the present deadline;
+`scripts/run_24h.py --move-deadline` edits the records and runs nothing). The deadline is
+rewritten in the manifest (with a record of every move under `budget.moved`), the stage ledger
+and the trainer's `run.json`; `budget_s`, the plan the stage table shows, stays. Nothing else
+needs to change: progress is `T / (T + remaining)`, so the schedule goes on exactly where it
+stopped when the deadline moves by the downtime, and compresses when the new runtime gives less.
+The Colab CLI route copies the mirrored run back from Drive first when the runtime does not hold
+it. A deadline that is not in the future is refused.
+
+**Without Drive: a snapshot.** Mounting Drive needs a person at the moment the new runtime
+exists (the consent is given per runtime). `python scripts/colab_cli.py snapshot --to DIR` keeps a
+copy of the run on your own machine instead: the same files the mirror holds, packed by the
+supervisor while the run trains and downloaded through the runtime's file interface (measured on
+a CPU runtime: 16 and 32 MB files intact in both directions, about 5 MB/s down and 3.5 MB/s up,
+so a 1.1 GB `configs/v9.py` checkpoint takes about four minutes down and five up). Take one
+every hour or so; each replaces the previous one once it is complete. On a new runtime
+
+    python scripts/colab_cli.py start --action resume --restore DIR --run-dir /content/runs/v9 \
+        --move-deadline 1795480000 --no-drive
+
+uploads the parts as `/content/bes_restore.*`, and the program checks them, unpacks them as the
+run directory (only when the runtime does not hold the run), moves the deadline and continues
+with cell 8. What was trained after the snapshot is lost, as with the mirror's hourly copy.
+
+The resumed run keeps its budget (the downtime counted against it, unless the deadline was moved
+as above), its configuration, overrides
 and benchmark result (the horizon is reused, not re-measured), continues at the first unfinished
 stage, restarts the background tasks and restores the newest loadable training checkpoint. On a
 recycled machine the data is not on Drive: the background tasks download, tokenise and build it
@@ -631,7 +671,7 @@ From `docs/PLAN.md` section 10, unchanged by anything measured since:
 | `RUN_DIR/final/` | the export (section 7.1) |
 | `RUN_DIR.log`, `RUN_DIR.mirror.log`, `RUN_DIR.mirror.json` | the run's output, the Drive mirror's output and its status (notebook) |
 | `DRIVE_DIR/`, `DRIVE_DIR.log` | the mirror on Drive: records, logs, the newest checkpoint, the export |
-| `/content/bes_cli/` | the Colab CLI route (section 2.1): `status.txt`, `status.json`, `supervisor.log`, the command file `ctl`, `export/` (the export in parts with `parts.json`) |
+| `/content/bes_cli/` | the Colab CLI route (section 2.1): `status.txt`, `status.json`, `supervisor.log`, the command file `ctl`, `export/` (the export in parts with `parts.json`), `snapshot/` (the run's records and newest checkpoints in parts) |
 | `data_cache/` | downloads, token shards, the library (`library/lib_v2`, with its `build_settings.json`), opponent GGUF files, the proxy harness's cache and reports (`proxy/reports/factual/` for the library measurement), the arena |
 
 Code: `scripts/run_24h.py` (stages), `bes/train/supervisor.py` (manifest, preflight, background

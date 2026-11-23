@@ -31,14 +31,21 @@ Jupyter contents API of ``colab upload`` / ``colab download`` does not use the k
 
     /content/bes_cli/status.txt     the progress report of notebook cell 7, rewritten every minute
     /content/bes_cli/status.json    the same moment for programs (time, state, run_alive, ...)
-    /content/bes_cli/ctl            a one-word command you upload: stop | resume | package | release
+    /content/bes_cli/ctl            a one-word command you upload: stop | resume | package | release | snapshot
     /content/bes_cli/export/        the export as numbered parts of a tar file, with parts.json
+    /content/bes_cli/snapshot/      the run's records and newest checkpoints as parts, with parts.json
 
 ``stop`` sends SIGTERM to the run (it writes a checkpoint and exits; the supervisor keeps the
 runtime), ``resume`` continues it (cell 8), ``package`` rebuilds the export parts (``package 4``:
 in parts of 4 MB), ``release`` ends the supervisor once the run is not running: the kernel is
 idle from then on, and Colab takes the runtime back after an idle time it does not state. Until
 then the runtime is charged: ``colab stop -s <session>`` gives it back at once.
+
+``snapshot`` packs what the Drive mirror holds (the run's records, logs and reports, and the
+newest complete checkpoint of each checkpoint directory) as parts of one tar file, while the
+run goes on. Downloaded (``colab_cli.py snapshot``), it is a second copy of the run outside
+Colab; uploaded to a new runtime as ``/content/bes_restore.*`` (``colab_cli.py start --restore``)
+and unpacked there by this program (``BES_RESTORE=1``), it continues the run without Drive.
 
 What the supervisor decides by itself, so that an unattended runtime neither loses a run nor is
 kept for ever:
@@ -71,6 +78,13 @@ Settings (all optional):
                           (a second run next to another one, each with its own directory, log and
                           pid file). Without BES_DRIVE_DIR its mirror goes to a directory of the
                           same name next to the notebook's DRIVE_DIR
+    BES_MOVE_DEADLINE     before a run is continued, move its deadline (seconds since the epoch, or
+                          +MINUTES / -MINUTES): for a run that continues on another runtime, whose
+                          own lifetime decides how long the run may still take (it is restored
+                          from Drive first when the runtime does not hold it)
+    BES_RESTORE           1: unpack the snapshot uploaded as <root>/bes_restore.parts.json and
+                          <root>/bes_restore.NNN into the run directory first, when this runtime
+                          does not hold the run (a continuation on another runtime without Drive)
     BES_AUTO_RESUME       how often a run that died is continued without you, default 2
     BES_HOLD_MINUTES      how long the runtime is kept after the run is complete, default 120
     BES_HOLD_FAILED_MINUTES   ... and after a run that ended incomplete, default 240
@@ -117,7 +131,15 @@ DONE = ("finished", "skipped")
 #: the stages whose failure stops the run (the default of bes.train.supervisor.Supervisor; a test
 #: keeps the two equal). A failed stage outside this set is over: the run goes on without it.
 ESSENTIAL = ("preflight", "background", "benchmark", "train")
-COMMANDS = ("stop", "resume", "package", "release")
+COMMANDS = ("stop", "resume", "package", "release", "snapshot")
+#: What a snapshot holds of a run directory: the lists of the Drive mirror (MIRROR_CODE in
+#: notebook cell 1b; a test keeps the two equal).
+SNAP_ROOT_FILES = ("manifest.json", "stages.json", "stage_table.json")
+SNAP_FILES = ("train/ledger.json", "train/run.json", "train/train_log.jsonl", "train/loader_journal.jsonl",
+              "benchmark/results.jsonl")
+SNAP_TREES = ("logs", "health", "post", "final")
+SNAP_CKPT_ROOTS = ("train/ckpt", "train/ckpt_params", "post/ckpt")
+RESTORE_PREFIX = "bes_restore."      # <root>/bes_restore.parts.json and <root>/bes_restore.NNN
 
 
 def _flag(value, default):
@@ -150,6 +172,8 @@ def settings(env):
         "drive_dir": env.get("BES_DRIVE_DIR") or None,
         "run_dir": (env.get("BES_RUN_DIR") or "").rstrip("/") or None,
         "config": env.get("BES_CONFIG") or None,
+        "move_deadline": (env.get("BES_MOVE_DEADLINE") or "").strip() or None,
+        "restore": _flag(env.get("BES_RESTORE"), False),
         "budget_minutes": _number(env, "BES_BUDGET_MINUTES", None),
         "allow_cpu": None if not env.get("BES_ALLOW_CPU") else _flag(env.get("BES_ALLOW_CPU"), False),
         "auto_resume": int(_number(env, "BES_AUTO_RESUME", 2)),
@@ -176,6 +200,12 @@ def settings(env):
         raise RuntimeError(f"BES_USE_DRIVE={s['use_drive']!r}: choose auto, 0 or 1")
     s["repo_dir"] = os.path.join(s["root"], "TuringAward2027")
     s["cli_dir"] = os.path.join(s["root"], "bes_cli")
+    if s["move_deadline"] is not None:
+        try:
+            float(s["move_deadline"])
+        except ValueError:
+            raise RuntimeError(f"BES_MOVE_DEADLINE={s['move_deadline']!r}: give seconds since the epoch, or "
+                               "+MINUTES / -MINUTES") from None
     if s["run_dir"] is not None:
         drive = os.path.join(s["root"], "drive")
         if not os.path.isabs(s["run_dir"]):
@@ -211,6 +241,58 @@ def _secs(x):
     return f"{x / 3600:.2f} h" if x >= 3600 else f"{x / 60:.1f} min" if x >= 60 else f"{x:.0f} s"
 
 
+def _temporary(name):
+    """The mirror's rule for names that are not copied (files being written, locks)."""
+    return (name.startswith((".tmp-", ".trash-", ".old-", ".part-")) or name.endswith((".part", ".lock"))
+            or name == "__pycache__")
+
+
+def snapshot_members(run_dir):
+    """``(files, checkpoints)`` of a snapshot: ``files`` are paths relative to the run directory
+    (records, the trees of logs and reports without their checkpoint directories, and every file
+    of the newest ``ckpt-*`` directory of each checkpoint root), ``checkpoints`` names the
+    checkpoint taken per root. What the Drive mirror copies, read the same way."""
+    files, ckpts = [], {}
+    for top in SNAP_ROOT_FILES + SNAP_FILES + SNAP_TREES:
+        path = os.path.join(run_dir, top)
+        if os.path.isfile(path):
+            files.append(top)
+            continue
+        for root, dirs, names in os.walk(path):
+            rel = os.path.relpath(root, run_dir)
+            dirs[:] = sorted(d for d in dirs if not _temporary(d) and os.path.join(rel, d) not in SNAP_CKPT_ROOTS)
+            files += [os.path.join(rel, n) for n in sorted(names) if not _temporary(n)]
+    for rel in SNAP_CKPT_ROOTS:
+        root = os.path.join(run_dir, rel)
+        try:
+            names = sorted(n for n in os.listdir(root) if n.startswith("ckpt-") and os.path.isdir(os.path.join(root, n)))
+        except OSError:
+            continue
+        if names:
+            ckpts[rel] = names[-1]
+            for sub, dirs, found in os.walk(os.path.join(root, names[-1])):
+                dirs.sort()
+                files += [os.path.relpath(os.path.join(sub, n), run_dir) for n in sorted(found)]
+    return files, ckpts
+
+
+def split_file(path, out_dir, prefix, part_bytes):
+    """Cut ``path`` into ``<out_dir>/<prefix>.NNN`` parts of ``part_bytes``; returns
+    ``(parts, bytes, sha256)`` with each part's name, size and SHA-256."""
+    whole, parts = hashlib.sha256(), []
+    with open(path, "rb") as f:
+        while True:
+            chunk = f.read(part_bytes)
+            if not chunk:
+                break
+            whole.update(chunk)
+            name = f"{prefix}.{len(parts):03d}"
+            with open(os.path.join(out_dir, name), "wb") as g:
+                g.write(chunk)
+            parts.append({"name": name, "bytes": len(chunk), "sha256": hashlib.sha256(chunk).hexdigest()})
+    return parts, sum(p["bytes"] for p in parts), whole.hexdigest()
+
+
 class Supervisor:
     """Sets the run up with the notebook's cells, then keeps the kernel busy until it is over."""
 
@@ -236,6 +318,7 @@ class Supervisor:
         self.act_failures = 0
         self.hold_until = None
         self.export = None
+        self.snap = None                  # the last snapshot: created, bytes, parts, checkpoints
         self.finished_handled = False
         self.last_start = 0.0
         self.t0 = self.last_activity = self.clock()
@@ -402,18 +485,40 @@ class Supervisor:
         st = self.stages()
         return [n for n in STAGES if (st.get(n) or {}).get("status") == "failed"]
 
+    def move_deadline(self):
+        """BES_MOVE_DEADLINE, once, before the continuation: the run's own command moves the
+        deadline in its records (the run is copied back from Drive first when this runtime does
+        not hold it; cell 8 would do the same a moment later)."""
+        when, ns = self.s["move_deadline"], self.ns
+        if when is None:
+            return
+        if not os.path.exists(os.path.join(self.run_dir, "manifest.json")) and ns["USE_DRIVE"]:
+            self.say("copying the mirrored run back from Drive (to move its deadline before it continues)")
+            ns["restore_from_drive"]()
+        cmd = [sys.executable, "scripts/run_24h.py", "--out", self.run_dir, "--move-deadline", when]
+        p = subprocess.run(cmd, cwd=self.s["repo_dir"], capture_output=True, text=True)
+        tail = (p.stdout + p.stderr).strip().splitlines()[-3:]
+        if p.returncode != 0:
+            raise RuntimeError(f"the deadline could not be moved ({' '.join(cmd[1:])}, exit status "
+                               f"{p.returncode}): " + " | ".join(tail))
+        for line in tail:
+            self.say("  " + line)
+        self.s["move_deadline"] = None
+
     def start_or_resume(self):
         ns, action = self.ns, self.s["action"]
         on_drive = bool(ns["USE_DRIVE"]) and os.path.exists(os.path.join(ns["DRIVE_DIR"], "manifest.json"))
         state = self.run_state()
         if self.run_alive():
-            self.say("the run is already running on this runtime: supervising it")
+            self.say("the run is already running on this runtime: supervising it"
+                     + (" (its deadline is not moved while it runs)" if self.s["move_deadline"] else ""))
         elif state == "complete":
             self.say(f"the run in {self.run_dir} is complete: nothing to start")
         elif state == "incomplete" or on_drive:
             if action == "start":
                 raise RuntimeError(f"{self.run_dir} (or its Drive mirror) already holds a run: use BES_ACTION=resume "
                                    "or auto to continue it, or another RUN_DIR for a new one")
+            self.move_deadline()
             self.resume("a run exists" + (" on Drive" if state == "none" else ""))
         else:
             if action == "resume":
@@ -529,7 +634,8 @@ class Supervisor:
         info = {"time": now, "state": self.state, "note": self.note, "run_alive": alive,
                 "run_dir": getattr(self, "run_dir", None), "notebook": self.s["notebook"],
                 "resumes": self.resumes, "auto_resumes_left": self.resumes_left,
-                "hold_until": self.hold_until, "export": self.export, "supervisor_started": self.t0,
+                "hold_until": self.hold_until, "export": self.export, "snapshot": self.snap,
+                "supervisor_started": self.t0,
                 "stop_step": self.stop_step, "pid": os.getpid()}
         head = (f"supervisor: {self.state}" + (f" ({self.note})" if self.note else "") + "\n"
                 f"written {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(now))} (runtime clock), "
@@ -540,6 +646,9 @@ class Supervisor:
         if self.export:
             head += (f"export packaged: {len(self.export['parts'])} parts, {self.export['bytes'] / 1e6:.1f} MB "
                      f"in {self.path('export')}\n")
+        if self.snap:
+            head += (f"snapshot: {self.snap['parts']} parts, {self.snap['bytes'] / 1e6:.1f} MB, taken "
+                     f"{_secs(max(0.0, now - self.snap['created']))} ago ({self.snap['checkpoints']})\n")
         body = ""
         if report and "show_progress" in self.ns:
             buf = io.StringIO()
@@ -574,7 +683,7 @@ class Supervisor:
             self.say(f"ignoring the command {text[:40]!r}: expected one of {', '.join(COMMANDS)}")
             return None
         self.say(f"command: {text[:40]}")
-        if word == "package" and arg.strip():
+        if word in ("package", "snapshot") and arg.strip():
             try:
                 mb = float(arg)
                 if not 0.01 <= mb <= 256:
@@ -598,24 +707,127 @@ class Supervisor:
         tar_path = os.path.join(out, "final.tar")
         with tarfile.open(tar_path, "w") as tar:
             tar.add(final, arcname="final")
-        whole, parts = hashlib.sha256(), []
-        with open(tar_path, "rb") as f:
-            while True:
-                chunk = f.read(self.s["part_bytes"])
-                if not chunk:
-                    break
-                whole.update(chunk)
-                name = f"final.tar.{len(parts):03d}"
-                with open(os.path.join(out, name), "wb") as g:
-                    g.write(chunk)
-                parts.append({"name": name, "bytes": len(chunk), "sha256": hashlib.sha256(chunk).hexdigest()})
+        parts, size, digest = split_file(tar_path, out, "final.tar", self.s["part_bytes"])
         os.remove(tar_path)
-        self.export = {"parts": parts, "bytes": sum(p["bytes"] for p in parts), "sha256": whole.hexdigest(),
-                       "created": self.clock()}
+        self.export = {"parts": parts, "bytes": size, "sha256": digest, "created": self.clock()}
         _write(os.path.join(out, "parts.json"), json.dumps(self.export))
         self.say(f"export packaged: {len(parts)} parts, {self.export['bytes'] / 1e6:.1f} MB, sha256 "
                  f"{self.export['sha256'][:16]}... in {out}")
         return self.export
+
+    def snapshot(self):
+        """The run's records and newest checkpoints as parts of one tar file in ``snapshot/``
+        (members ``run/<path in the run directory>`` and ``run.log``), built next to it and swapped
+        in when complete, so that a download never sees half a set. The run may be training: a
+        complete checkpoint directory does not change, and the records are read as the Drive
+        mirror reads them."""
+        run = self.run_dir
+        if not os.path.exists(os.path.join(run, "manifest.json")):
+            self.say(f"no snapshot: {run} holds no run")
+            return None
+        t0 = time.time()
+        files, ckpts = snapshot_members(run)
+        out, tmp, old = self.path("snapshot"), self.path("snapshot.new"), self.path("snapshot.old")
+        for d in (tmp, old):
+            if os.path.isdir(d):
+                for name in os.listdir(d):
+                    os.remove(os.path.join(d, name))
+                os.rmdir(d)
+        os.makedirs(tmp)
+        tar_path = os.path.join(tmp, "run.tar")
+        with tarfile.open(tar_path, "w") as tar:
+            for rel in files:
+                try:
+                    tar.add(os.path.join(run, rel), arcname="run/" + rel, recursive=False)
+                except OSError:              # rotated away between the listing and the copy
+                    pass
+            log = self.ns.get("LOG")
+            if log and os.path.isfile(log):
+                tar.add(log, arcname="run.log", recursive=False)
+        parts, size, digest = split_file(tar_path, tmp, "run.tar", self.s["part_bytes"])
+        os.remove(tar_path)
+        led = _read_json(os.path.join(run, "train", "ledger.json")) or {}
+        meta = {"parts": parts, "bytes": size, "sha256": digest, "created": self.clock(),
+                "run_dir": run, "checkpoints": ckpts, "tokens": led.get("tokens"), "steps": led.get("steps")}
+        _write(os.path.join(tmp, "parts.json"), json.dumps(meta))
+        if os.path.isdir(out):
+            os.replace(out, old)
+        os.replace(tmp, out)
+        if os.path.isdir(old):
+            for name in os.listdir(old):
+                os.remove(os.path.join(old, name))
+            os.rmdir(old)
+        self.snap = {"created": meta["created"], "bytes": size, "parts": len(parts), "checkpoints": ckpts,
+                     "sha256": digest}
+        self.say(f"snapshot: {len(parts)} parts, {size / 1e6:.1f} MB, checkpoints {ckpts or 'none'}, "
+                 f"sha256 {digest[:16]}... in {out} ({time.time() - t0:.0f} s)")
+        return meta
+
+    def restore_snapshot(self):
+        """BES_RESTORE: the snapshot uploaded as ``<root>/bes_restore.*`` becomes the run directory
+        (and the run's log), when this runtime does not hold the run. Every part and the whole
+        archive are checked by SHA-256; only regular files and directories under ``run/`` and
+        ``run.log`` are unpacked. The uploaded parts are removed afterwards."""
+        root, run = self.s["root"], self.run_dir
+        meta = _read_json(os.path.join(root, RESTORE_PREFIX + "parts.json"))
+        if not meta or not meta.get("parts"):
+            raise RuntimeError(f"BES_RESTORE=1 but {root}/{RESTORE_PREFIX}parts.json was not uploaded "
+                               "(colab_cli.py start --restore DIR uploads a snapshot)")
+        names = [os.path.join(root, RESTORE_PREFIX + f"{i:03d}") for i in range(len(meta["parts"]))]
+        if os.path.exists(os.path.join(run, "manifest.json")):
+            self.say(f"{run} already holds a run: the uploaded snapshot is not unpacked")
+        else:
+            tar_path = os.path.join(root, RESTORE_PREFIX + "tar")
+            whole, n = hashlib.sha256(), 0
+            try:
+                with open(tar_path, "wb") as out:
+                    for path, part in zip(names, meta["parts"]):
+                        try:
+                            with open(path, "rb") as f:
+                                data = f.read()
+                        except OSError:
+                            data = b""
+                        if hashlib.sha256(data).hexdigest() != part["sha256"]:
+                            raise RuntimeError(f"{path} did not arrive intact: upload the snapshot again")
+                        whole.update(data)
+                        out.write(data)
+                if whole.hexdigest() != meta["sha256"]:
+                    raise RuntimeError("the uploaded snapshot does not match its SHA-256: upload it again")
+                with tarfile.open(tar_path) as tar:
+                    for m in tar.getmembers():          # everything is looked at before anything is written
+                        parts = m.name.split("/")
+                        inside = m.name == "run.log" or (parts[0] == "run" and len(parts) > 1)
+                        if not (m.isfile() or m.isdir()) or not inside or ".." in parts or m.name.startswith("/"):
+                            raise RuntimeError(f"the snapshot holds something unexpected ({m.name!r}); not unpacked")
+                    for m in tar.getmembers():
+                        if m.name == "run.log":
+                            dst = self.ns["LOG"]
+                        else:
+                            dst = os.path.join(run, *m.name.split("/")[1:])
+                        if m.isdir():
+                            os.makedirs(dst, exist_ok=True)
+                            continue
+                        os.makedirs(os.path.dirname(dst) or ".", exist_ok=True)
+                        with tar.extractfile(m) as src, open(dst + ".part", "wb") as f:
+                            while True:
+                                buf = src.read(1 << 22)
+                                if not buf:
+                                    break
+                                f.write(buf)
+                        os.replace(dst + ".part", dst)
+                        n += 1
+            finally:
+                try:
+                    os.remove(tar_path)
+                except OSError:
+                    pass
+            self.say(f"snapshot restored into {run}: {n} files, {meta['bytes'] / 1e6:.1f} MB, checkpoints "
+                     f"{meta.get('checkpoints') or 'none'} (taken at {meta.get('tokens')} tokens)")
+        for path in names + [os.path.join(root, RESTORE_PREFIX + "parts.json")]:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
 
     def finish(self):
         """Once, when the run is complete: cell 12 (the export to Drive, its verification), the parts."""
@@ -668,6 +880,11 @@ class Supervisor:
                 self.package()
             except OSError as e:
                 self.say(f"the export could not be packaged: {e}")
+        elif word == "snapshot":
+            try:
+                self.snapshot()
+            except (OSError, tarfile.TarError) as e:
+                self.say(f"the snapshot could not be taken: {type(e).__name__}: {e}")
         if alive and not self.stop_requested and self.stop_sent_at is None:
             late = self.overrun(now)
             if late is not None:
@@ -822,6 +1039,8 @@ class Supervisor:
             else:
                 self.setup_cells()
                 self.hf_token()
+                if s["restore"]:
+                    self.restore_snapshot()
                 self.start_or_resume()
         except BaseException as e:
             done.set()

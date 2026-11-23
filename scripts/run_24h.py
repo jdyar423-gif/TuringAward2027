@@ -4,6 +4,7 @@ post-training, evaluation and export.
 
     python scripts/run_24h.py --config configs/final.py --out runs/final
     python scripts/run_24h.py --out runs/final --resume              # after a crash or a kill
+    python scripts/run_24h.py --out runs/final --move-deadline +45   # before a --resume on another machine
     python scripts/run_24h.py --config configs/smoke.py --allow-cpu --budget-minutes 12 --out runs/smoke
 
 Stages, their plan and the shedding order: ``bes/train/stages.py``. Manifest, preflight, core
@@ -1441,7 +1442,22 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
                     help="the run's whole budget in minutes (sets run.deadline_hours)")
     ap.add_argument("--restart-training", action="store_true",
                     help="discard the training so far and start it again (inside the restart window)")
+    ap.add_argument("--move-deadline", default=None, metavar="WHEN",
+                    help="move the deadline of the run in --out and exit, without running anything: "
+                         "seconds since the epoch, or +MINUTES / -MINUTES relative to the present "
+                         "deadline (a run that continues on another machine: RUNBOOK.md section 5)")
     return ap.parse_args(argv)
+
+
+def parse_deadline(when: str, present: float) -> float:
+    """``--move-deadline``: an absolute time in seconds since the epoch, or ``+M`` / ``-M``
+    minutes from the present deadline."""
+    text = str(when).strip()
+    try:
+        value = float(text)
+    except ValueError:
+        raise SystemExit(f"--move-deadline {when!r}: give seconds since the epoch, or +MINUTES / -MINUTES") from None
+    return present + 60.0 * value if text[:1] in "+-" else value
 
 
 def configure_jax(paths: SV.RunPaths, log=_say) -> dict:
@@ -1510,6 +1526,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     lock = SV.RunLock(paths.lock).acquire()
     try:
         man = SV.read_manifest(out)
+        if args.move_deadline is not None:
+            if man is None:
+                raise SystemExit(f"--move-deadline: no run in {out} (no manifest.json)")
+            try:
+                res = SV.move_deadline(out, parse_deadline(args.move_deadline, float(man["budget"]["deadline"])),
+                                       reason="--move-deadline " + str(args.move_deadline))
+            except ValueError as e:
+                raise SystemExit(f"--move-deadline: {e}") from None
+            _say(f"run_24h: deadline of {out} moved by {res['moved_s'] / 60:+.1f} min to "
+                 f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(res['to']))} ({res['left_s'] / 3600:.2f} h "
+                 f"from now; training until {time.strftime('%H:%M:%S', time.localtime(res['train_end']))}); "
+                 f"rewritten: {', '.join(res['files'])}")
+            return EXIT_OK
         if man is not None and not args.resume:
             raise SystemExit(f"{out} already holds a run (manifest.json); continue it with --resume "
                              "or choose another --out")
