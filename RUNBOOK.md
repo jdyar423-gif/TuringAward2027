@@ -6,7 +6,8 @@ code was developed and rehearsed on a 4-core CPU container, and the TPU facts be
 compile-only estimates (`docs/TPU_NOTES.md`). The first 40 minutes of the run are where those
 estimates meet the chip; section 3 says what you must see there and what each failure means.
 
-Contents: 1 before the run, 2 starting it (2.1: from a terminal with the Colab CLI), 3 the first
+Contents: 1 before the run, 2 starting it (2.1: from a terminal with the Colab CLI; 2.2: two
+configurations on one runtime), 3 the first
 40 minutes, 4 during the run, 5 resuming, 6 the fallback ladder, 7 after the run (export,
 evaluation, arena), 8 reproducing the accounting, 9 known unknowns, 10 honest expectations,
 11 where things are.
@@ -252,7 +253,7 @@ separate process. Consequences:
 
 | command | what it does |
 |---|---|
-| `start` | signs in, creates the session's runtime when it does not exist (`--smoke`: session `bes-smoke`, v5e-1, the smoke notebook; `--smoke --cpu`: session `bes-cpu` on a CPU runtime with `ALLOW_CPU`, a rehearsal of this route without a TPU), mounts Drive (the 24-hour run; `--no-drive` or `--drive` to choose), sends the program, and reports what the runtime's status file says afterwards (it fails when no supervisor is running then: the exit status of `colab exec` does not tell). Options: `--detach`, `--hf-token-file FILE`, `--budget-minutes N`, `--config FILE`, `--drive-dir DIR`, `--action auto\|start\|resume`, `--auto-resume N`, `--hold-minutes M`, `--part-mb N`. It does not send the program when a supervisor already holds the session |
+| `start` | signs in, creates the session's runtime when it does not exist (`--smoke`: session `bes-smoke`, v5e-1, the smoke notebook; `--smoke --cpu`: session `bes-cpu` on a CPU runtime with `ALLOW_CPU`, a rehearsal of this route without a TPU), mounts Drive (the 24-hour run; `--no-drive` or `--drive` to choose), sends the program, and reports what the runtime's status file says afterwards (it fails when no supervisor is running then: the exit status of `colab exec` does not tell). Options: `--detach`, `--hf-token-file FILE`, `--budget-minutes N`, `--config FILE`, `--drive-dir DIR`, `--run-dir DIR` (section 2.2), `--action auto\|start\|resume`, `--auto-resume N`, `--hold-minutes M`, `--part-mb N`. It does not send the program when a supervisor already holds the session |
 | `status` | prints the supervisor's state and the report of cell 7; warns when no supervisor is writing it |
 | `send stop` | SIGTERM to the run: it writes a checkpoint and exits; the supervisor keeps the runtime. A run that has not exited after 30 minutes gets a second SIGTERM (it exits at once on it), and 5 minutes later its processes are killed |
 | `send resume` | continues the run (cell 8) |
@@ -295,6 +296,39 @@ killed in the middle and started again, once with the mirror writing to a stand-
 How long an idle runtime survives,
 how long a runtime may live at all, and whether your account may create a v6e-1 TPU are Colab's
 to say (`colab new` reports a refusal; section 9).
+
+### 2.2 Two configurations on one runtime: a head-to-head, and the winner goes on
+
+`start --run-dir DIR` gives a run a directory of its own on the runtime (with its own log, pid file
+and mirror directory: `DRIVE_DIR` becomes the directory of the same name next to the notebook's
+unless `--drive-dir` says otherwise). Two configurations can then train one after the other on the
+same runtime, each for a while, be compared on the same held-out rows, and the better one be
+continued from its checkpoint. Both runs must end at the same moment, so the second one gets the
+budget that is left of the first one's (`--budget-minutes`, fractions allowed):
+
+    python scripts/colab_cli.py start --config configs/v9.py --run-dir /content/runs/v9 --budget-minutes 1400 --detach
+    python scripts/colab_cli.py status                 # ... until the ledger shows the training time you want
+    python scripts/colab_cli.py send stop              # the run writes a checkpoint and exits
+    python scripts/colab_cli.py send release           # its supervisor leaves; the runtime is still yours
+    python scripts/colab_cli.py start --action start --config configs/final.py --run-dir /content/runs/final \
+        --budget-minutes <what is left of 1400> --detach
+    python scripts/colab_cli.py send stop && python scripts/colab_cli.py send release      # after the same training time
+    # on the runtime, with no run holding the TPU (through `colab exec`, in a process of its own):
+    python scripts/midrun_eval.py --run /content/runs/v9 --run /content/runs/final --rows 128 --out /content/bes_cli/compare.json
+    python scripts/colab_cli.py start --action resume --run-dir /content/runs/<winner> --detach
+
+`send release` leaves the kernel idle: send the next program at once (an idle runtime is charged
+and, after a time Colab does not state, reclaimed). `scripts/midrun_eval.py` scores every kept
+training checkpoint of each run on the held-out rows of the export's check, with float32
+activations and dense attention whatever the runs' execution plans were, and prints the paired
+difference at the newest checkpoints, at matched training time and at matched training tokens
+(interpolated between checkpoints, never extrapolated). It takes the default device, so no run may
+be training (`--device cpu` runs it next to one, slowly). The continued run keeps its deadline:
+the time the other run took is lost time in its ledger, and its schedule compresses into what is
+left (section 5). What a loss comparison after an hour or two cannot show is what the written
+library adds to factual replies; `python -m bes.eval.proxy factual` on the checkpoint of the run
+with the library measures that (section 7.2). The rule that was fixed before the comparison of
+`configs/v9.py` and `configs/final.py`, and its result: `docs/CHANGES.md` section 19.
 
 ## 3. The first 40 minutes
 

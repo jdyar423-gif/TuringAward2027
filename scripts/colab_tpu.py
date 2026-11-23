@@ -67,6 +67,10 @@ Settings (all optional):
     BES_CELLS             the numbered setup cells to run, default "2,3,4"
     BES_USE_DRIVE         auto (default: mirror to Drive when it is mounted) | 0 | 1
     BES_DRIVE_DIR, BES_CONFIG, BES_BUDGET_MINUTES, BES_ALLOW_CPU   replace the notebook's parameters
+    BES_RUN_DIR           replace the notebook's RUN_DIR: an absolute path on the runtime's local disk
+                          (a second run next to another one, each with its own directory, log and
+                          pid file). Without BES_DRIVE_DIR its mirror goes to a directory of the
+                          same name next to the notebook's DRIVE_DIR
     BES_AUTO_RESUME       how often a run that died is continued without you, default 2
     BES_HOLD_MINUTES      how long the runtime is kept after the run is complete, default 120
     BES_HOLD_FAILED_MINUTES   ... and after a run that ended incomplete, default 240
@@ -144,6 +148,7 @@ def settings(env):
                   if c.strip()],
         "use_drive": (env.get("BES_USE_DRIVE") or "auto").strip().lower(),
         "drive_dir": env.get("BES_DRIVE_DIR") or None,
+        "run_dir": (env.get("BES_RUN_DIR") or "").rstrip("/") or None,
         "config": env.get("BES_CONFIG") or None,
         "budget_minutes": _number(env, "BES_BUDGET_MINUTES", None),
         "allow_cpu": None if not env.get("BES_ALLOW_CPU") else _flag(env.get("BES_ALLOW_CPU"), False),
@@ -171,6 +176,15 @@ def settings(env):
         raise RuntimeError(f"BES_USE_DRIVE={s['use_drive']!r}: choose auto, 0 or 1")
     s["repo_dir"] = os.path.join(s["root"], "TuringAward2027")
     s["cli_dir"] = os.path.join(s["root"], "bes_cli")
+    if s["run_dir"] is not None:
+        drive = os.path.join(s["root"], "drive")
+        if not os.path.isabs(s["run_dir"]):
+            raise RuntimeError(f"BES_RUN_DIR={s['run_dir']!r}: give an absolute path on the runtime")
+        if s["run_dir"] == drive or s["run_dir"].startswith(drive + "/"):
+            raise RuntimeError(f"BES_RUN_DIR={s['run_dir']!r} is on Google Drive: the run directory stays on "
+                               "the local disk, Drive only mirrors it (BES_DRIVE_DIR)")
+        if s["run_dir"] in (s["root"], s["repo_dir"], s["cli_dir"]):
+            raise RuntimeError(f"BES_RUN_DIR={s['run_dir']!r}: choose a directory of its own for the run")
     return s
 
 
@@ -283,8 +297,12 @@ class Supervisor:
         def moved(path):          # the notebook's /content paths under another root (tests)
             return path if root == "/content" or not path.startswith("/content") else root + path[len("/content"):]
 
+        drive_dir = s["drive_dir"] or moved(ns["DRIVE_DIR"])
+        if s["run_dir"] and not s["drive_dir"]:
+            # a run directory of its own gets a mirror directory of its own, next to the notebook's
+            drive_dir = os.path.join(os.path.dirname(drive_dir.rstrip("/")), os.path.basename(s["run_dir"]))
         ns.update(REPO_URL=s["repo_url"], BRANCH=s["branch"], CODE_COPY="", REPO_DIR=s["repo_dir"],
-                  RUN_DIR=moved(ns["RUN_DIR"]), DRIVE_DIR=s["drive_dir"] or moved(ns["DRIVE_DIR"]))
+                  RUN_DIR=s["run_dir"] or moved(ns["RUN_DIR"]), DRIVE_DIR=drive_dir)
         if s["config"]:
             ns["CONFIG"] = s["config"]
         if s["budget_minutes"] is not None:
@@ -309,7 +327,9 @@ class Supervisor:
                 raise RuntimeError("BES_USE_DRIVE=1 but Drive is not mounted on this runtime: run `colab drivemount "
                                    "-s <session>` in your terminal first (mounting needs you), or start without it")
         self.say(f"notebook {s['notebook']}: CONFIG {ns['CONFIG']}, RUN_DIR {ns['RUN_DIR']}, BUDGET_MINUTES "
-                 f"{ns['BUDGET_MINUTES']}, USE_DRIVE {ns['USE_DRIVE']}, ALLOW_CPU {ns['ALLOW_CPU']}")
+                 f"{ns['BUDGET_MINUTES']}, USE_DRIVE {ns['USE_DRIVE']}"
+                 + (f" (DRIVE_DIR {ns['DRIVE_DIR']})" if ns["USE_DRIVE"] else "")
+                 + f", ALLOW_CPU {ns['ALLOW_CPU']}")
 
     def setup_cells(self):
         ns = self.ns
@@ -355,6 +375,10 @@ class Supervisor:
             with open(f"/proc/{pid}/cmdline", "rb") as f:
                 cmd = f.read().replace(b"\0", b" ").decode("utf-8", "replace")
         except (OSError, ValueError):
+            return True
+        if not cmd.strip():
+            # between fork and the end of exec the command line reads empty for a moment (seen
+            # under load right after the start): the process is there, so it is the run
             return True
         return "run_24h.py" in cmd
 

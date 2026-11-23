@@ -183,3 +183,38 @@
 
 - **新增**：`notebooks/colab_v6e_24h_v9.ipynb`，即 24 小時 notebook 把第 1 格的三個參數換成 v9（`CONFIG = "configs/v9.py"`、`RUN_DIR = "/content/runs/v9"`、`DRIVE_DIR = "/content/drive/MyDrive/bes_runs/v9"`），外加自己的「Open in Colab」連結與第一段說明；其餘各格與中繼資料（TPU v6e-1）相同。它由 `scripts/notebook_variants.py` 從 24 小時 notebook 產生、不手改；`tests/train/test_export.py` 檢查兩者只差這些地方，並把它納入所有 notebook 測試。`README.md` 與 `RUNBOOK.md` 第 1.4 節有它的連結。和另外兩個 notebook 一樣，它沒有在 Colab 上實際執行過。
 - **沒有做的事**：使用者要求由開發容器直接用 Colab CLI 連上 TPU。在容器內安裝並檢視了 CLI（PyPI 上仍是 0.8.0）：登入是「遠端複製貼上」流程（`colab_cli/auth.py` 的 `_run_remote_flow`）——CLI 印出授權網址，使用者在瀏覽器同意後，Google 的頁面顯示一段授權碼，必須輸入到 CLI 等待的那個終端機；換得的權杖範圍含 `cloud-platform`（使用者的 Google Cloud）、`colaboratory`、`drive.file`。開發容器與使用者之間只有對話這一條通道，而那段授權碼等同密碼，不該經過對話；替代的 `--auth=adc` 同樣需要先在某台機器上互動登入。所以沒有在容器內登入，也沒有建立任何執行階段。可行的做法仍是第 15、16 節的兩條：在自己的瀏覽器開 notebook 連結，或在自己的機器上執行 `scripts/colab_cli.py`。
+
+## 19. 第一次接上真實的 Colab；v9 與 final 在 v6e-1 上的對照（規則事先寫定）
+
+**情境的改變。** 使用者在新的工作階段裡明確要求由開發容器直連，並自行把授權碼貼進對話（第 18 節當時拒絕的做法；這是使用者對自己帳號的決定）。容器以 Colab CLI 0.8.0 的 `--auth=adc` 登入，憑證只存在容器內一個僅擁有者可讀的檔案，不進倉庫。使用者另外定了三件事：**TPU 只能用 v6e-1**（取消 v5e-1 的管線檢查；v6e-1 上的一切，包括檢查與對照，都算在 24 小時內）、CPU 執行階段可以用來彩排、正式配置「先比幾小時」再決定。
+
+**第一批在真實 Colab 上量到的事實（2026-11-23 UTC；都不是 TPU 上的數字）。**
+
+- Colab CLI 路線可用：`colab new`（CPU）數秒內就緒；`colab exec`（WebSocket）、`colab upload`／`download`（contents API）經由容器的代理都能通；`scripts/colab_cli.py start --smoke --cpu --detach` 一次成功，守護程式、狀態檔、`status`、`fetch`（SHA-256 校驗）與 `scripts/export.py --verify` 都照設計運作。
+- CPU 執行階段：2 核、242 GB 可用磁碟、預裝的 jax 與 jaxlib 正是 0.11.1（第 2 格沒有警告）、費率 0.08 運算單元／小時。`requirements-colab.txt` 的安裝花了 13 分鐘（llama-cpp-python 在 2 核上從原始碼編譯）；pip 提示預裝的 `datasets 4.8.5` 要求 `huggingface-hub<2.0`（本專案不使用 `datasets`，匯入檢查通過）。不帶 HF token 也能完成下載。
+- 30 分鐘的 smoke 管線（`configs/smoke.py`、`--allow-cpu`）十個階段全部完成：開機基準選了 `xla-remat0-ms8-onehot`（1,005 tok/s），金絲雀的一致性、決定性、安全配置與完整配置都通過，訓練 277 步（損失 9.0 → 4.6）；偏好優化兩個學習率都沒有通過健檢，如設計保留訓練權重；匯出 7.0 MB，16 位元權重的保留集檢查通過（差 2.2e-5 nats）。旁車評估在 2 核上每次都超過評估間隔而被終止或略過：正式主機的核心數要在 preflight 那一行確認。
+- **v6e-1 當下配不到。** 01:00–01:22 之間五次 `colab new --tpu v6e1` 全部失敗：`POST /tun/m/assign` 被後端掛住，前三次在用戶端預設的 120 秒逾時，後兩次（`COLAB_CLI_REQUEST_TIMEOUT=900`）各在 240 秒後由 Google 前端回 `502 Bad Gateway`。帳號資格沒有問題（`ccu-info` 回報 `eligibleTpus: V6E1, V5E1`），過程中沒有產生任何執行階段或費用。CLI 把逾時與 502／503／504 當成可重試的「慢配置」，並在重試前以 GET 對帳；所以取得 v6e-1 要用同一個指令長時間重試（`COLAB_CLI_ASSIGN_RETRIES`、`COLAB_CLI_RETRY_BACKOFF`），每次失敗後檢查帳號上有沒有本機不認得的執行階段。v6e-1 的每小時費率要到配置成功才看得到。
+- Drive 掛載的授權連結由 `…/tun/m/credentials-propagation/<endpoint>` 依執行階段產生（`authtype=dfs_ephemeral`）。這個端點的 `dryrun=true` 不需要核心：對剛建立的 CPU 執行階段呼叫，回的是 `success: false` 與一個 Google 授權連結。所以可以在送出守護程式之前先取得連結、等使用者同意，再執行 `colab drivemount`；是否每個新執行階段都要重新同意還沒有驗證，先當作需要。
+
+**程式的改動。**
+
+- `scripts/colab_tpu.py` 的 `BES_RUN_DIR`（`scripts/colab_cli.py start --run-dir`）：同一個執行階段上的第二個訓練有自己的目錄、記錄檔、pid 檔與鏡像目錄（未指定 `--drive-dir` 時，取筆記本 `DRIVE_DIR` 旁的同名目錄）。只接受執行階段本機磁碟上的絕對路徑。
+- `scripts/midrun_eval.py`：把一個或兩個訓練保留下來的每個檢查點，放在匯出檢查用的同一批保留集列上評分（上限外的 ClimbMix 檔、smol-smoltalk 測試集、代理題組的使用者輪；float32 激活、稠密注意力、`highest` 乘法精度，與各自的執行方案無關），並報告成對差：各自最新檢查點、相同訓練時間、相同訓練 token 數（在相鄰檢查點之間對 log token 內插，絕不外推）。
+- `Supervisor.run_alive`：行程剛啟動、exec 尚未完成的一瞬間 `/proc/<pid>/cmdline` 讀到空字串，原本會被當成「不是訓練行程」；在負載高的機器上讓既有測試偶發失敗。現在空命令列視為行程存在。
+- 測試：`tests/train/test_colab_cli.py`（run 目錄的設定檢查、兩個訓練先後停止／新開／續跑、鏡像目錄的推導、包裝把選項送到執行階段）與 `tests/train/test_midrun_eval.py`（內插與成對差的算術）。評分本身在本機以兩個迷你 smoke 訓練實測：初始化時帶逐詞頁與不帶的損失逐位相同（8.7914），之後各檢查點與成對差如預期列出。流程寫在 `RUNBOOK.md` 第 2.2 節。
+
+**對照的設計。** 兩個配置在同一個 v6e-1 執行階段上先後各訓練一段，勝者從自己的檢查點續訓到期限；輸的那一段是這個決定的代價（約 2 小時，佔 24 小時的一成弱）。
+
+1. 先跑 `configs/v9.py`，預算是「到 24 小時終點為止」的全部時間；開機基準與金絲雀照常，訓練滿 75 分鐘後 `send stop`、`send release`。
+2. 再跑 `configs/final.py`，預算設成同一個絕對期限，訓練滿同樣的 75 分鐘後停止。兩者停下時進度 p 都在 0.07 左右：同在定學習率、1,024 tokens 的階段。
+3. TPU 空出來後執行 `scripts/midrun_eval.py --rows 128`。
+4. 勝者以 `start --action resume --run-dir …` 續訓；另一個的時間在它的帳本裡是損失時間，課表自動壓縮進剩下的時間。
+
+**判定規則（看到任何 TPU 數字之前寫定）。** 主指標是「相同訓練時間」下 smol-smoltalk 測試集裡助理 token 的保留集損失（吞吐的差異因此已經算在內），Δ = final − v9：
+
+- Δ ≥ +0.02 nats：選 v9。
+- Δ ≤ −0.02 nats：選 final。
+- |Δ| < 0.02：損失分不出來，由藏書決定。在 final 的檢查點上以 `python -m bes.eval.proxy factual` 量事實題（藏書開與關、同樣的種子，限時 10 分鐘）：門控開啟的題目上幫到的顯著多於害到的（符號檢定 p < 0.05）選 final，否則選 v9（沒有藏書要維護，98M 全是學到的參數）。
+- 任一配置在金絲雀落到安全配置、或吞吐不到另一個的 70%，直接判另一個勝；相同 token 數下的差、網頁與代理題組的損失只報告，不參與判定。128 列（每域約 13 萬個位置）的成對差，抽樣誤差估計約 0.005 nats，門檻約為它的四倍。
+
+**這個對照看不到什麼。** 75 分鐘（約 1.5×10⁹ tokens）的排名不保證就是 23 小時後的排名：逐詞頁在資料少的時候最值錢（`docs/V9.md` 第 8 節），藏書的價值在解碼時才出現，而且只在門控開啟的題目上。規則用損失作主指標、用事實題作平手時的裁決，是在這個限制下能事先說清楚的最好做法，不是對最終盲測的保證。結果會補在本節之後。

@@ -220,9 +220,13 @@ def test_settings_reject_what_they_do_not_know():
     assert tpu.settings({})["cells"] == ["2", "3", "4"] and tpu.settings({"BES_CELLS": ""})["cells"] == []
     assert tpu.settings({"BES_BRANCH": ""})["branch"] == ""          # the default branch of a fork
     for bad in ({"BES_NOTEBOOK": "x"}, {"BES_ACTION": "go"}, {"BES_USE_DRIVE": "maybe"},
-                {"BES_BUDGET_MINUTES": "soon"}):
+                {"BES_BUDGET_MINUTES": "soon"}, {"BES_RUN_DIR": "runs/v9"},
+                {"BES_RUN_DIR": "/content/drive/MyDrive/bes_runs/v9"}, {"BES_RUN_DIR": "/content/drive"},
+                {"BES_RUN_DIR": "/content"}, {"BES_RUN_DIR": "/content/TuringAward2027/"}):
         with pytest.raises(RuntimeError):
             tpu.settings(bad)
+    assert tpu.settings({})["run_dir"] is None                       # the notebook's RUN_DIR
+    assert tpu.settings({"BES_RUN_DIR": "/content/runs/v9/"})["run_dir"] == "/content/runs/v9"
 
 
 def test_supervisor_runs_the_notebook_cells_and_packages_the_export(tmp_path):
@@ -601,6 +605,60 @@ def test_supervisor_start_and_resume_actions(tmp_path, monkeypatch):
     assert "is complete: nothing to start" in out.getvalue() and len(_attempts(root)) == 2
 
 
+def test_two_runs_on_one_runtime_keep_to_their_own_directories(tmp_path, monkeypatch):
+    """BES_RUN_DIR: a comparison of two configurations runs them one after the other on the same
+    runtime. Each run has its directory, pid file, log and mirror directory; a supervisor started
+    for one stops, starts and continues that one only."""
+    monkeypatch.chdir(tmp_path)
+    root = tmp_path / "content"
+    _standin_repo(root)
+    clock = [time.time()]
+    a_dir, b_dir = root / "runs" / "a", root / "runs" / "b"
+    a, out = _supervisor(root, clock, BES_RUN_DIR=str(a_dir) + "/", BES_CONFIG="configs/v9.py",
+                         BES_BUDGET_MINUTES="1400")
+    _setup(a)
+    _wait(lambda: len(_attempts(root)) == 1, "run a")
+    assert _attempts(root)[0] == ["--config", "configs/v9.py", "--out", str(a_dir), "--budget-minutes", "1400",
+                                  "--allow-cpu"]
+    assert a.run_dir == str(a_dir) and a.ns["PID_FILE"] == f"{a_dir}.pid" and a.ns["LOG"] == f"{a_dir}.log"
+    assert f"RUN_DIR {a_dir}," in out.getvalue()
+    (root / "bes_cli" / "ctl").write_text("stop\n")              # what `send stop` uploads
+    a.tick()
+    _wait(lambda: not a.run_alive(), "the stop of run a")
+    assert a.run_state() == "incomplete" and a.stop_requested
+    b, _ = _supervisor(root, clock, BES_RUN_DIR=str(b_dir), BES_ACTION="start", BES_BUDGET_MINUTES="1275.5")
+    _setup(b)                                                    # a new run although runs/a holds one
+    _wait(lambda: len(_attempts(root)) == 2, "run b")
+    assert _attempts(root)[1] == ["--config", "configs/smoke.py", "--out", str(b_dir), "--budget-minutes",
+                                  "1275.5", "--allow-cpu"]
+    assert b.run_alive() and not a.run_alive() and (a_dir / "manifest.json").exists()
+    (root / "bes_cli" / "ctl").write_text("stop\n")
+    b.tick()
+    _wait(lambda: not b.run_alive(), "the stop of run b")
+    again, _ = _supervisor(root, clock, BES_RUN_DIR=str(a_dir), BES_ACTION="resume")
+    _setup(again)                                                # the winner goes on from its checkpoint
+    _wait(lambda: len(_attempts(root)) == 3, "the continued run a")
+    assert _attempts(root)[2] == ["--out", str(a_dir), "--resume", "--allow-cpu"]
+    assert again.run_alive() and not b.run_alive()
+    (root / "runs" / "gate3").write_text("finish")
+    _wait(lambda: not again.run_alive(), "the end of run a")
+    assert again.run_state() == "complete" and b.run_state() == "incomplete"
+    assert (a_dir / "final" / "weights.bin").exists() and not (b_dir / "final").exists()
+    # the mirror of a run with a directory of its own: next to the notebook's, under the same name
+    (root / "drive" / "MyDrive").mkdir(parents=True)
+    sup, _ = _supervisor(root, clock, BES_RUN_DIR=str(b_dir))
+    sup.clone()
+    sup.load_cells()
+    sup.parameters()
+    assert sup.ns["USE_DRIVE"] is True and sup.ns["DRIVE_DIR"] == str(root / "drive/MyDrive/bes_runs/b")
+    sup, out = _supervisor(root, clock, BES_RUN_DIR=str(b_dir), BES_DRIVE_DIR=str(root / "drive/MyDrive/x"))
+    sup.clone()
+    sup.load_cells()
+    sup.parameters()
+    assert sup.ns["DRIVE_DIR"] == str(root / "drive/MyDrive/x")
+    assert f"(DRIVE_DIR {root / 'drive/MyDrive/x'})" in out.getvalue()
+
+
 def test_supervisor_reads_the_token_file_and_refuses_an_unmounted_drive(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("HF_TOKEN", raising=False)
@@ -829,11 +887,11 @@ def test_start_options_reach_the_runtime(fake_colab, capfd):
                    "BES_HOLD_FAILED_MINUTES=30", "BES_REPO_URL=https://github.com/x/y", "BES_BRANCH=main",
                    "BES_CONFIG=configs/canary.py", "BES_BUDGET_MINUTES=20", "BES_AUTO_RESUME=0", "BES_PART_MB=4"]
     assert cli.main(["start", "--smoke", "--cpu", "--drive", "--hold-minutes", "45",
-                     "--drive-dir", "/content/drive/MyDrive/x"]) == 0
+                     "--drive-dir", "/content/drive/MyDrive/x", "--run-dir", "/content/runs/x"]) == 0
     assert ["new", "-s", "bes-cpu"] in calls() and ["drivemount", "-s", "bes-cpu"] in calls()
     env = [a for a in calls()[-1] if "=" in a]
     assert "BES_ALLOW_CPU=1" in env and "BES_USE_DRIVE=1" in env and "BES_HOLD_MINUTES=45" in env
-    assert "BES_DRIVE_DIR=/content/drive/MyDrive/x" in env
+    assert "BES_DRIVE_DIR=/content/drive/MyDrive/x" in env and "BES_RUN_DIR=/content/runs/x" in env
     capfd.readouterr()
     before = len(calls())
     assert cli.main(["start", "--cpu"]) == 1                          # the 24-hour configuration on a CPU: no

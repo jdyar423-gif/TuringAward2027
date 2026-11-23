@@ -38,7 +38,8 @@ from that machine. From another one the session looks missing, and ``start`` ref
 second runtime while the account has one this machine does not know (``--new-runtime`` overrides).
 
 The runtime runs the branch as it is on GitHub, not your local clone: what you would set in
-the notebook's cell 1 is an option here (``--budget-minutes``, ``--config``, ``--drive-dir``).
+the notebook's cell 1 is an option here (``--budget-minutes``, ``--config``, ``--drive-dir``,
+``--run-dir`` for a run next to another one on the same runtime: ``RUNBOOK.md`` section 2.2).
 The commands can be typed by hand as well; ``RUNBOOK.md`` section 2.1 says what is lost then.
 ``COLAB_BIN`` names another ``colab`` executable, ``COLAB_CLI_ARGS`` adds global options to
 every call (for example ``--auth=adc``). Nothing here was run against Colab: the wrapper is
@@ -253,6 +254,8 @@ def environment(args: argparse.Namespace, preset: dict, drive: bool | None) -> l
         env["BES_USE_DRIVE"] = "1" if drive else "0"
     if args.drive_dir:
         env["BES_DRIVE_DIR"] = args.drive_dir
+    if args.run_dir:
+        env["BES_RUN_DIR"] = args.run_dir
     if args.auto_resume is not None:
         env["BES_AUTO_RESUME"] = str(args.auto_resume)
     if args.hold_minutes is not None:
@@ -554,6 +557,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         "of the 24-hour run; --no-drive never mirrors: the default of the smoke run unless "
                         "Drive is already mounted")
     p.add_argument("--drive-dir", default=None, help="replace the notebook's DRIVE_DIR")
+    p.add_argument("--run-dir", default=None,
+                   help="replace the notebook's RUN_DIR (an absolute path on the runtime's local disk): a run "
+                        "next to another one on the same runtime; without --drive-dir its mirror goes to a "
+                        "directory of the same name next to the notebook's DRIVE_DIR")
     p.add_argument("--hf-token-file", default=None, help="a file with a Hugging Face token, uploaded to the runtime")
     p.add_argument("--repo-url", default=None, help="clone another repository (default: this one)")
     p.add_argument("--branch", default=None, help="clone another branch")
