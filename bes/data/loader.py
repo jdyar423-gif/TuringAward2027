@@ -1497,10 +1497,15 @@ class Loader:
     def __init__(self, cfg: Cfg, tok: Any, data_dir: str | os.PathLike, library: Any = None,
                  n_workers: int | None = None, seed: int | None = None, *,
                  loader_cfg: LoaderCfg | None = None, mix: MixCfg | None = None,
-                 journal: str | os.PathLike | None = None, start_method: str = "spawn"):
+                 journal: str | os.PathLike | None = None, start_method: str = "spawn",
+                 tokens_before: int = 0):
         from bes.train import schedule
 
         self.cfg = cfg
+        #: training tokens of the run before this loader's first batch: 0, except for a stream
+        #: that starts in the middle of a run (a run grafted onto another configuration:
+        #: scripts/graft_run.py). The remaining horizon is estimated from all tokens of the run.
+        self.tokens_before = int(tokens_before)
         self.data = cfg.data
         self.lcfg = loader_cfg if loader_cfg is not None else LoaderCfg()
         self.mix = mix if mix is not None else MixCfg()
@@ -1670,8 +1675,9 @@ class Loader:
 
     def _horizon(self, stage: Mapping[str, Any], tokens0: int, block_tokens: int) -> float:
         p = float(stage["p"])
-        total = tokens0 / p if p >= self.lcfg.horizon_min_p and tokens0 > 0 else float(self.lcfg.horizon_tokens)
-        return max(float(block_tokens), total - float(tokens0))
+        done = float(tokens0) + float(getattr(self, "tokens_before", 0))
+        total = done / p if p >= self.lcfg.horizon_min_p and done > 0 else float(self.lcfg.horizon_tokens)
+        return max(float(block_tokens), total - done)
 
     def _new_block(self, index: int, stage: Any, states: Sequence[Sequence], prev: Block | None,
                    at: int | None = None) -> Block:

@@ -192,6 +192,27 @@ class Run:
                          f"{total} shards of the journal are not committed yet (e.g. {missing[0]})")
             time.sleep(poll_s)
 
+    def _grafted_stream(self, man) -> dict:
+        """Loader arguments of a run that continues another one under a new configuration
+        (``scripts/graft_run.py``; the manifest's ``graft`` record): its data stream starts at
+        progress ``p`` after ``tokens`` training tokens. The loader estimates the remaining
+        horizon from all tokens of the run, and a source may be read ``max_epochs * (1 - p)``
+        times in the part that is left (its reads before the graft are not in this journal).
+        ``{}`` for an ordinary run."""
+        from bes.config import MixCfg
+
+        graft = man.get("graft") or {}
+        if not graft:
+            return {}
+        out: dict = {"tokens_before": int(graft.get("tokens") or 0)}
+        if graft.get("p") is not None:
+            left = min(1.0, max(0.05, 1.0 - float(graft["p"])))
+            out["mix"] = dataclasses.replace(MixCfg(), max_epochs=MixCfg().max_epochs * left)
+        self.log(f"train: this run continues {graft.get('from_config')} from step {graft.get('step')} "
+                 f"({out['tokens_before']:.3e} tokens, p {graft.get('p')}): the loader plans for the rest"
+                 + (f", at most {out['mix'].max_epochs:.2f} reads of a source" if "mix" in out else ""))
+        return out
+
     def _micro_split(self, ecfg):
         """Into how many pieces the training step cuts every micro-batch on the device
         (``bes.train.train.accumulate``: same update, smaller tensors, faster on the TPU v6e):
@@ -655,7 +676,7 @@ class Run:
         base_log = JsonlLog(self.paths.train / "train_log.jsonl", verbose=False)
         loader = Loader(ecfg, self.tok(), SV.tok_root(ecfg, self.paths.out), library=lib,
                         n_workers=workers, seed=ecfg.run.seed, loader_cfg=lcfg,
-                        journal=self.paths.train / LoaderCfg.journal_name)
+                        journal=self.paths.train / LoaderCfg.journal_name, **self._grafted_stream(man))
         gate = SV.LibraryGate(loader, self.library_ready, active=lib is not None, log=self.log)
         n_rec = [0]
 
