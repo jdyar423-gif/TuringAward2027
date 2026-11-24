@@ -1,0 +1,17 @@
+{
+  "p02be44cc93": "Neither corrects the sentence; A loops and repeats original, B garbles meaning.",
+  "pc3c06f620f": "A loops boxed nonsense; B incoherent prose, umbrella never finds its way home.",
+  "p38ee3f6542": "Both define rainbow wrongly; B also rambles and ignores the 20-word limit.",
+  "p0ecbc43f38": "A answers correctly in lowercase; B is degenerate rambling about letters.",
+  "p3350b2b36d": "A correct $11.52; B wrong $12.60.",
+  "p5a048a1578": "A gives no story; B incoherent, contradictory, no power outage or meeting.",
+  "pd792cf4d8e": "Correct is 707; A says 697, B answers a different subtraction wrongly.",
+  "pa7e5fd2e49": "A degenerates into invented words; B loops boxed non-stories in both turns.",
+  "p119740aba3": "A reaches correct 0.3 despite rambling, ignores turn 2; B wrong both turns.",
+  "pcb3d3f99cc": "Neither names Leonardo da Vinci; A says DEI, B loops 'The artist'.",
+  "p98486adfaf": "A's explanation wrong and example code crashes; B is degenerate nonsense.",
+  "pe2ed84b59b": "B gives three plausible bullets; A is off-topic nonsense about distances.",
+  "pc4b9921840": "A computes correct 56 though rambling, cut off; B confidently wrong (100).",
+  "pd6ac815b18": "A repeats original unchanged; B degenerate rambling; neither rewrites politely.",
+  "pd386f2cb77": "B correct $30 in turn 1 though turn 2 loops; A wrong both turns."
+}

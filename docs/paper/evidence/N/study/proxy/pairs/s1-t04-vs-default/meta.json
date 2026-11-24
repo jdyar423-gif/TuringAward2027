@@ -1,0 +1,22 @@
+{
+  "name": "s1-t04-vs-default",
+  "format": 2,
+  "n_pairs": 60,
+  "commitment": "ff5fa3035c224b8af101f085454654714ae891e3e7a8398b82e21a6775c584bd",
+  "commitments": [
+    "ff5fa3035c224b8af101f085454654714ae891e3e7a8398b82e21a6775c584bd"
+  ],
+  "added": [
+    60
+  ],
+  "by_category": {
+    "math": 9,
+    "code": 9,
+    "instruct": 12,
+    "writing": 15,
+    "chat": 15
+  },
+  "multi_turn": 15,
+  "created": "2026-11-24 10:17:39",
+  "updated": "2026-11-24 10:17:39"
+}

@@ -1,0 +1,17 @@
+{
+  "p3498559db9": "Both wrong (answer 12,600): A says 17,000, B says 600.",
+  "pd75300bb8d": "Both incoherent \"centralized\" word salad; neither explains elected rule versus hereditary monarch.",
+  "p7d1d2a80b0": "Neither gives {w: len(w)}; A loops degenerate lines, B hardcodes wrong lengths.",
+  "p4a011a15c8": "Both degenerate: many titles plus junk (A HTML tags, B template text).",
+  "p77ebf40199": "Identical circular non-answer: \"because the birds migrate.\"",
+  "p66be35a964": "Both wrong definitions; turn 2 degenerate loops, no famous volcano correctly named.",
+  "pe00061b2c9": "Identical: recursion though a loop was required; explanation falsely claims a for loop.",
+  "pb256215d6a": "A repeats an irrelevant note verbatim; B's tips and note are nonsense.",
+  "p659a9db769": "A self-contradicts (gravity pulls upward); B ignores two-sentence limit, loops, truncated.",
+  "pf1ea2d0282": "Both wrong; Leonardo da Vinci painted it.",
+  "p9eb8d9b959": "Both contradictory, repetitive planting advice; three-step lists vague or looping.",
+  "p94a8d0fdb3": "Neither is a wedding toast; A irrelevant lines, B a recipe.",
+  "pe569eb837c": "Both wrong (answer 25 m/s): A 1.2 kilograms, B 0.5 meters.",
+  "pab242d3ed6": "A incoherent and cut off; B confidently wrong shell-color test.",
+  "p5756e67681": "Both stories incoherent and repetitive; three-sentence retellings are nonsense."
+}

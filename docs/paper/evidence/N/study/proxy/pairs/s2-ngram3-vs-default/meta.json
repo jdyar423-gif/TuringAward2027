@@ -1,0 +1,22 @@
+{
+  "name": "s2-ngram3-vs-default",
+  "format": 2,
+  "n_pairs": 60,
+  "commitment": "b7c6f869572760f9e79d8df4171a243120b657f71e47dd7fffdc1f4ee231983e",
+  "commitments": [
+    "b7c6f869572760f9e79d8df4171a243120b657f71e47dd7fffdc1f4ee231983e"
+  ],
+  "added": [
+    60
+  ],
+  "by_category": {
+    "math": 9,
+    "writing": 15,
+    "chat": 15,
+    "instruct": 12,
+    "code": 9
+  },
+  "multi_turn": 15,
+  "created": "2026-11-24 12:15:15",
+  "updated": "2026-11-24 12:15:15"
+}

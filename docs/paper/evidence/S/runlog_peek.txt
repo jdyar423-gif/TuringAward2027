@@ -1,0 +1,930 @@
+
+===== 2026-11-23 17:34:54 /usr/bin/python3 scripts/run_24h.py --config configs/final.py --out /content/runs/main16 --budget-minutes 1279.7 --override model.table_grad=take --override run.bench_plans=reduced --override run.post_minutes=critic=0,buffer=20 --override run.post_reserve_hours=3.6667 --override optim.micro_seqs=16
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+[   0.04 min] start preflight: slice 180 s (planned 180 s), 76779 s left in the run
+[   0.04 min] preflight WARNING: jax 0.11.2 is not the pinned 0.11.1
+[   0.04 min] preflight: jax 0.11.2 backend tpu devices ['TPU v6 lite']; 44 cores, 185.7 GB RAM, 234.01 GB free disk, HF_TOKEN not set
+[   0.04 min] finished preflight in 0 s
+[   0.04 min] start background: slice 60 s (planned 60 s), 76779 s left in the run
+[   0.04 min] background: started downloads (pid 12271)
+[   0.04 min] background: started tokenize (pid 12272)
+[   0.04 min] background: started library (pid 12273)
+[   0.04 min] background: started gguf (pid 12274)
+[   0.04 min] finished background in 0 s
+[   0.04 min] start benchmark: slice 900 s (planned 900 s), 76779 s left in the run
+[   0.11 min] background: gguf finished
+[   0.11 min] background: started opponents (pid 12391)
+[   3.81 min] benchmark: training shards found; building the benchmark loader
+[   3.99 min] benchmark: loader 1819.6 rows/s with 6 workers
+[   4.68 min] background: downloads finished
+[   5.52 min] benchmark: splash-remat1-ms16-take T=1024: 216,681 tok/s, step 1.210 s, compile 38.5 s, peak 1.98 GiB
+[   6.72 min] benchmark: splash-remat1-ms16-take T=2048: 192,912 tok/s, step 1.359 s, compile 35.4 s, peak 1.98 GiB
+[   9.14 min] benchmark: splash-remat0-ms8-take T=1024: 188,907 tok/s, step 1.388 s, compile 115.4 s, peak 8.65 GiB
+[   9.14 min] benchmark: chosen plan splash-remat1-ms16-take (208,837 tok/s expected)
+[   9.58 min] canary: determinism True, parity {'ok': True, 'loss': 8.475837707519531, 'dense': 8.475837707519531, 'rel': 0.0, 'tol': 0.02}
+[  10.93 min] canary: safe configuration: first 9.0118 last 5.4431 skipped 0 16x8x2048:ok ok=True
+[  11.59 min] canary: full configuration: first 8.4672 last 4.8982 skipped 0 16x8x2048:ok ok=True
+[  11.61 min] benchmark: horizon 1.312e+10 tokens (208,837 tok/s x 62809 s); loader workers 6
+[  11.61 min] finished benchmark in 694 s
+[  11.61 min] start train: slice 62885 s (planned 62442 s), 76085 s left in the run
+[  11.72 min] train: ckpt step=0 reason=init path=ckpt-000001-step-000000000
+[  11.72 min] train: setup step=0
+[  11.72 min] train: set-up (compile 2 shapes, 1 reused from the benchmark, restore) took 5.8 s; step 0
+[  11.72 min] train: stage step=0 p=1.0237623737812247e-10
+[  12.71 min] background: library finished
+[  12.72 min] train: step 50 p 0.001 loss 4.8584 T 1024 tok/s 220,082
+[  12.91 min] library ready: loader.set_library at data index 52
+loader: the epoch caps cut the planned token share of library_qa from 0.0209 to 0.0042 (at most 8 reads of 6.82e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0114 to 0.0049 (at most 8 reads of 8.06e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0033 to 0.0003 (at most 8 reads of 4.19e+05 tokens over a horizon of 1.31e+10 tokens; block 2 at step 128); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of dolly from 0.0040 to 0.0020 (at most 8 reads of 3.23e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0114 to 0.0008 (at most 8 reads of 1.27e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+[  22.73 min] train: step 550 p 0.010 loss 3.1117 T 1024 tok/s 222,448
+[  32.58 min] train: step 1050 p 0.020 loss 2.9499 T 1024 tok/s 222,728
+[  36.79 min] train: ckpt step=1262 reason=interval path=ckpt-000002-step-000001262
+[  42.43 min] train: step 1550 p 0.029 loss 2.9273 T 1024 tok/s 224,177
+[  52.27 min] train: step 2050 p 0.039 loss 2.8177 T 1024 tok/s 222,543
+[  61.83 min] train: ckpt step=2533 reason=interval path=ckpt-000003-step-000002533
+[  62.12 min] train: step 2550 p 0.048 loss 2.7810 T 1024 tok/s 223,021
+[  71.97 min] train: step 3050 p 0.057 loss 2.6955 T 1024 tok/s 224,177
+[  72.88 min] background: tokenize finished
+[  81.82 min] train: step 3550 p 0.067 loss 2.6920 T 1024 tok/s 222,631
+[  86.86 min] train: ckpt step=3804 reason=interval path=ckpt-000004-step-000003804
+[  91.67 min] train: step 4050 p 0.076 loss 2.6414 T 1024 tok/s 222,558
+[ 101.51 min] train: step 4550 p 0.086 loss 2.7457 T 1024 tok/s 223,976
+[ 104.89 min] background: opponents finished
+[ 111.36 min] train: step 5050 p 0.095 loss 2.6809 T 1024 tok/s 222,041
+[ 111.87 min] train: ckpt step=5075 reason=interval path=ckpt-000005-step-000005075
+
+===== 2026-11-24 01:08:22 /usr/bin/python3 scripts/run_24h.py --out /content/runs/main16 --resume
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+[ 453.51 min] preflight WARNING: jax 0.11.2 is not the pinned 0.11.1
+[ 453.51 min] background: started downloads (pid 3143)
+[ 453.51 min] background: started tokenize (pid 3144)
+[ 453.51 min] background: started library (pid 3145)
+[ 453.51 min] background: started gguf (pid 3146)
+[ 453.51 min] start train: slice 56603 s (planned 62442 s), 69803 s left in the run
+[ 453.52 min] train: the training so far used library passages; waiting for the library task to make the library ready on this machine
+[ 453.78 min] background: gguf finished
+[ 453.78 min] background: started opponents (pid 3292)
+[ 459.08 min] background: downloads finished
+[ 465.25 min] background: library finished
+loader: the epoch caps cut the planned token share of library_qa from 0.0209 to 0.0042 (at most 8 reads of 6.82e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0114 to 0.0049 (at most 8 reads of 8.06e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0033 to 0.0003 (at most 8 reads of 4.19e+05 tokens over a horizon of 1.31e+10 tokens; block 2 at step 128); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of dolly from 0.0040 to 0.0020 (at most 8 reads of 3.23e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0114 to 0.0008 (at most 8 reads of 1.27e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+[ 466.96 min] train: restore step=5075 path=ckpt-000005-step-000005075
+[ 466.96 min] train: setup step=5075
+[ 466.96 min] train: set-up (compile 2 shapes, 0 reused from the benchmark, restore) took 94.3 s; step 5075
+[ 466.96 min] train: stage step=5075 p=0.09720301358774258
+[ 466.96 min] train FAILED: RuntimeError: loader worker 0 failed:
+Traceback (most recent call last):
+  File "/content/TuringAward2027/bes/data/loader.py", line 1097, in _worker_main
+    worker.run(block, worker.step_next, None, check)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1001, in run
+    kind, pieces = self.streams[v].row(plan, n)
+                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 841, in row
+    pieces = self._base_row(plan)
+  File "/content/TuringAward2027/bes/data/loader.py", line 860, in _base_row
+    raise RuntimeError(f"stream {self.v}: the continued document cannot be read")
+RuntimeError: stream 0: the continued document cannot be read
+
+Traceback (most recent call last):
+  File "/content/TuringAward2027/bes/train/supervisor.py", line 1468, in _run
+    result = self.fns[name](ctx) or {}
+             ~~~~~~~~~~~~~~^^^^^
+  File "/content/TuringAward2027/scripts/run_24h.py", line 571, in stage_train
+    summary = trainer.run()           # CheckpointError: no final state on disk -> fails
+  File "/content/TuringAward2027/bes/train/train.py", line 842, in run
+    batch = self._fetch(stage)
+  File "/content/TuringAward2027/bes/train/train.py", line 745, in _fetch
+    batch = self._data(index, stage)
+  File "/content/TuringAward2027/bes/train/supervisor.py", line 975, in __call__
+    return self.loader(index, stage)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1899, in __call__
+    self._reset(index, stage)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1868, in _reset
+    states, target, why = self._states_at(blk, index), blk, "reproduce"
+                          ~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1774, in _states_at
+    parts = self._collect("replayed", lambda m: m[2] == blk.id and m[3] == step)
+  File "/content/TuringAward2027/bes/data/loader.py", line 1802, in _collect
+    for w, msg in self._poll():
+                  ~~~~~~~~~~^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1794, in _poll
+    raise RuntimeError(f"loader worker {w} failed:\n{msg[1]}")
+RuntimeError: loader worker 0 failed:
+Traceback (most recent call last):
+  File "/content/TuringAward2027/bes/data/loader.py", line 1097, in _worker_main
+    worker.run(block, worker.step_next, None, check)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1001, in run
+    kind, pieces = self.streams[v].row(plan, n)
+                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 841, in row
+    pieces = self._base_row(plan)
+  File "/content/TuringAward2027/bes/data/loader.py", line 860, in _base_row
+    raise RuntimeError(f"stream {self.v}: the continued document cannot be read")
+RuntimeError: stream 0: the continued document cannot be read
+
+
+[ 466.96 min] emergency export: train failed: RuntimeError: loader worker 0 failed:
+Traceback (most recent call last):
+  File "/content/TuringAward2027/bes/data/loader.py", line 1097, in _worker_main
+    worker.run(block, worker.step_next, None, check)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1001, in run
+    kind, pieces = self.streams[v].row(plan, n)
+                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 841, in row
+    pieces = self._base_row(plan)
+  File "/content/TuringAward2027/bes/data/loader.py", line 860, in _base_row
+    raise RuntimeError(f"stream {self.v}: the continued document cannot be read")
+RuntimeError: stream 0: the continued document cannot be read
+
+export: /content/runs/main16/train/ckpt/ckpt-000005-step-000005075 (train weights) -> /content/runs/main16/final
+export: downloading held-out file karpathy/climbmix-400b-shuffle/shard_00997.parquet
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+export: downloading held-out file HuggingFaceTB/smol-smoltalk/data/test-00000-of-00001.parquet
+export: held-out check passed: loss32 2.47806, loss16 2.47808, |delta| 2.79e-05 < 0.002 nats
+export: done in 61.2 s: /content/runs/main16/final (check True, 0 parts failed)
+run_24h: stage train failed: RuntimeError: loader worker 0 failed:
+Traceback (most recent call last):
+  File "/content/TuringAward2027/bes/data/loader.py", line 1097, in _worker_main
+    worker.run(block, worker.step_next, None, check)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1001, in run
+    kind, pieces = self.streams[v].row(plan, n)
+                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 841, in row
+    pieces = self._base_row(plan)
+  File "/content/TuringAward2027/bes/data/loader.py", line 860, in _base_row
+    raise RuntimeError(f"stream {self.v}: the continued document cannot be read")
+RuntimeError: stream 0: the continued document cannot be read
+
+
+===== 2026-11-24 01:23:08 /usr/bin/python3 scripts/run_24h.py --out /content/runs/main16 --resume
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+[ 468.29 min] preflight WARNING: jax 0.11.2 is not the pinned 0.11.1
+[ 468.29 min] background: started downloads (pid 10630)
+[ 468.29 min] background: started tokenize (pid 10631)
+[ 468.29 min] background: started library (pid 10632)
+[ 468.29 min] background: started gguf (pid 10633)
+[ 468.29 min] start train: slice 55717 s (planned 62442 s), 68917 s left in the run
+loader: the epoch caps cut the planned token share of library_qa from 0.0209 to 0.0042 (at most 8 reads of 6.82e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0114 to 0.0049 (at most 8 reads of 8.06e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0033 to 0.0003 (at most 8 reads of 4.19e+05 tokens over a horizon of 1.31e+10 tokens; block 2 at step 128); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of dolly from 0.0040 to 0.0020 (at most 8 reads of 3.23e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0114 to 0.0008 (at most 8 reads of 1.27e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+[ 468.32 min] background: library finished
+[ 468.39 min] background: gguf finished
+[ 468.39 min] background: started opponents (pid 11254)
+[ 468.49 min] background: downloads finished
+[ 468.51 min] train: restore step=5075 path=ckpt-000005-step-000005075
+[ 468.51 min] train: setup step=5075
+[ 468.51 min] train: set-up (compile 2 shapes, 0 reused from the benchmark, restore) took 12.2 s; step 5075
+[ 468.51 min] train: stage step=5075 p=0.0973497977205359
+[ 468.51 min] train FAILED: RuntimeError: loader worker 1 failed:
+Traceback (most recent call last):
+  File "/content/TuringAward2027/bes/data/loader.py", line 1097, in _worker_main
+    worker.run(block, worker.step_next, None, check)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1001, in run
+    kind, pieces = self.streams[v].row(plan, n)
+                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 841, in row
+    pieces = self._base_row(plan)
+  File "/content/TuringAward2027/bes/data/loader.py", line 860, in _base_row
+    raise RuntimeError(f"stream {self.v}: the continued document cannot be read")
+RuntimeError: stream 1: the continued document cannot be read
+
+Traceback (most recent call last):
+  File "/content/TuringAward2027/bes/train/supervisor.py", line 1468, in _run
+    result = self.fns[name](ctx) or {}
+             ~~~~~~~~~~~~~~^^^^^
+  File "/content/TuringAward2027/scripts/run_24h.py", line 571, in stage_train
+    summary = trainer.run()           # CheckpointError: no final state on disk -> fails
+  File "/content/TuringAward2027/bes/train/train.py", line 842, in run
+    batch = self._fetch(stage)
+  File "/content/TuringAward2027/bes/train/train.py", line 745, in _fetch
+    batch = self._data(index, stage)
+  File "/content/TuringAward2027/bes/train/supervisor.py", line 975, in __call__
+    return self.loader(index, stage)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1899, in __call__
+    self._reset(index, stage)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1868, in _reset
+    states, target, why = self._states_at(blk, index), blk, "reproduce"
+                          ~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1774, in _states_at
+    parts = self._collect("replayed", lambda m: m[2] == blk.id and m[3] == step)
+  File "/content/TuringAward2027/bes/data/loader.py", line 1802, in _collect
+    for w, msg in self._poll():
+                  ~~~~~~~~~~^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1794, in _poll
+    raise RuntimeError(f"loader worker {w} failed:\n{msg[1]}")
+RuntimeError: loader worker 1 failed:
+Traceback (most recent call last):
+  File "/content/TuringAward2027/bes/data/loader.py", line 1097, in _worker_main
+    worker.run(block, worker.step_next, None, check)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1001, in run
+    kind, pieces = self.streams[v].row(plan, n)
+                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 841, in row
+    pieces = self._base_row(plan)
+  File "/content/TuringAward2027/bes/data/loader.py", line 860, in _base_row
+    raise RuntimeError(f"stream {self.v}: the continued document cannot be read")
+RuntimeError: stream 1: the continued document cannot be read
+
+
+[ 468.51 min] emergency export: train failed: RuntimeError: loader worker 1 failed:
+Traceback (most recent call last):
+  File "/content/TuringAward2027/bes/data/loader.py", line 1097, in _worker_main
+    worker.run(block, worker.step_next, None, check)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1001, in run
+    kind, pieces = self.streams[v].row(plan, n)
+                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 841, in row
+    pieces = self._base_row(plan)
+  File "/content/TuringAward2027/bes/data/loader.py", line 860, in _base_row
+    raise RuntimeError(f"stream {self.v}: the continued document cannot be read")
+RuntimeError: stream 1: the continued document cannot be read
+
+export: /content/runs/main16/train/ckpt/ckpt-000005-step-000005075 (train weights) -> /content/runs/main16/final
+export: held-out check passed: loss32 2.47806, loss16 2.47808, |delta| 2.79e-05 < 0.002 nats
+export: done in 6.2 s: /content/runs/main16/final (check True, 0 parts failed)
+run_24h: stage train failed: RuntimeError: loader worker 1 failed:
+Traceback (most recent call last):
+  File "/content/TuringAward2027/bes/data/loader.py", line 1097, in _worker_main
+    worker.run(block, worker.step_next, None, check)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1001, in run
+    kind, pieces = self.streams[v].row(plan, n)
+                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 841, in row
+    pieces = self._base_row(plan)
+  File "/content/TuringAward2027/bes/data/loader.py", line 860, in _base_row
+    raise RuntimeError(f"stream {self.v}: the continued document cannot be read")
+RuntimeError: stream 1: the continued document cannot be read
+
+
+===== 2026-11-24 01:24:08 /usr/bin/python3 scripts/run_24h.py --out /content/runs/main16 --resume
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+[ 469.31 min] preflight WARNING: jax 0.11.2 is not the pinned 0.11.1
+[ 469.31 min] background: started downloads (pid 12175)
+[ 469.31 min] background: started tokenize (pid 12176)
+[ 469.31 min] background: started library (pid 12177)
+[ 469.31 min] background: started gguf (pid 12178)
+[ 469.31 min] start train: slice 55656 s (planned 62442 s), 68856 s left in the run
+loader: the epoch caps cut the planned token share of library_qa from 0.0209 to 0.0042 (at most 8 reads of 6.82e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0114 to 0.0049 (at most 8 reads of 8.06e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0033 to 0.0003 (at most 8 reads of 4.19e+05 tokens over a horizon of 1.31e+10 tokens; block 2 at step 128); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of dolly from 0.0040 to 0.0020 (at most 8 reads of 3.23e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0114 to 0.0008 (at most 8 reads of 1.27e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+[ 469.34 min] background: downloads finished
+[ 469.34 min] background: library finished
+[ 469.38 min] background: gguf finished
+[ 469.38 min] background: started opponents (pid 12732)
+[ 469.52 min] train: restore step=5075 path=ckpt-000005-step-000005075
+[ 469.52 min] train: setup step=5075
+[ 469.52 min] train: set-up (compile 2 shapes, 0 reused from the benchmark, restore) took 11.5 s; step 5075
+[ 469.52 min] train: stage step=5075 p=0.09744581537011554
+[ 469.53 min] train FAILED: RuntimeError: loader worker 2 failed:
+Traceback (most recent call last):
+  File "/content/TuringAward2027/bes/data/loader.py", line 1097, in _worker_main
+    worker.run(block, worker.step_next, None, check)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1001, in run
+    kind, pieces = self.streams[v].row(plan, n)
+                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 841, in row
+    pieces = self._base_row(plan)
+  File "/content/TuringAward2027/bes/data/loader.py", line 860, in _base_row
+    raise RuntimeError(f"stream {self.v}: the continued document cannot be read")
+RuntimeError: stream 2: the continued document cannot be read
+
+Traceback (most recent call last):
+  File "/content/TuringAward2027/bes/train/supervisor.py", line 1468, in _run
+    result = self.fns[name](ctx) or {}
+             ~~~~~~~~~~~~~~^^^^^
+  File "/content/TuringAward2027/scripts/run_24h.py", line 571, in stage_train
+    summary = trainer.run()           # CheckpointError: no final state on disk -> fails
+  File "/content/TuringAward2027/bes/train/train.py", line 842, in run
+    batch = self._fetch(stage)
+  File "/content/TuringAward2027/bes/train/train.py", line 745, in _fetch
+    batch = self._data(index, stage)
+  File "/content/TuringAward2027/bes/train/supervisor.py", line 975, in __call__
+    return self.loader(index, stage)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1899, in __call__
+    self._reset(index, stage)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1868, in _reset
+    states, target, why = self._states_at(blk, index), blk, "reproduce"
+                          ~~~~~~~~~~~~~~~^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1774, in _states_at
+    parts = self._collect("replayed", lambda m: m[2] == blk.id and m[3] == step)
+  File "/content/TuringAward2027/bes/data/loader.py", line 1802, in _collect
+    for w, msg in self._poll():
+                  ~~~~~~~~~~^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1794, in _poll
+    raise RuntimeError(f"loader worker {w} failed:\n{msg[1]}")
+RuntimeError: loader worker 2 failed:
+Traceback (most recent call last):
+  File "/content/TuringAward2027/bes/data/loader.py", line 1097, in _worker_main
+    worker.run(block, worker.step_next, None, check)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1001, in run
+    kind, pieces = self.streams[v].row(plan, n)
+                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 841, in row
+    pieces = self._base_row(plan)
+  File "/content/TuringAward2027/bes/data/loader.py", line 860, in _base_row
+    raise RuntimeError(f"stream {self.v}: the continued document cannot be read")
+RuntimeError: stream 2: the continued document cannot be read
+
+
+[ 469.53 min] emergency export: train failed: RuntimeError: loader worker 2 failed:
+Traceback (most recent call last):
+  File "/content/TuringAward2027/bes/data/loader.py", line 1097, in _worker_main
+    worker.run(block, worker.step_next, None, check)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1001, in run
+    kind, pieces = self.streams[v].row(plan, n)
+                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 841, in row
+    pieces = self._base_row(plan)
+  File "/content/TuringAward2027/bes/data/loader.py", line 860, in _base_row
+    raise RuntimeError(f"stream {self.v}: the continued document cannot be read")
+RuntimeError: stream 2: the continued document cannot be read
+
+export: /content/runs/main16/train/ckpt/ckpt-000005-step-000005075 (train weights) -> /content/runs/main16/final
+export: held-out check passed: loss32 2.47806, loss16 2.47808, |delta| 2.79e-05 < 0.002 nats
+export: done in 5.8 s: /content/runs/main16/final (check True, 0 parts failed)
+run_24h: stage train failed: RuntimeError: loader worker 2 failed:
+Traceback (most recent call last):
+  File "/content/TuringAward2027/bes/data/loader.py", line 1097, in _worker_main
+    worker.run(block, worker.step_next, None, check)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 1001, in run
+    kind, pieces = self.streams[v].row(plan, n)
+                   ~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "/content/TuringAward2027/bes/data/loader.py", line 841, in row
+    pieces = self._base_row(plan)
+  File "/content/TuringAward2027/bes/data/loader.py", line 860, in _base_row
+    raise RuntimeError(f"stream {self.v}: the continued document cannot be read")
+RuntimeError: stream 2: the continued document cannot be read
+
+
+===== 2026-11-24 01:31:09 /usr/bin/python3 scripts/run_24h.py --out /content/runs/main16 --resume
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+[ 476.29 min] preflight WARNING: jax 0.11.2 is not the pinned 0.11.1
+[ 476.29 min] background: the journal's shards are not on this machine: tokenising with 24 workers (the plan's share is 4)
+[ 476.29 min] background: started downloads (pid 15135)
+[ 476.29 min] background: started tokenize (pid 15136)
+[ 476.29 min] background: started library (pid 15137)
+[ 476.29 min] background: started gguf (pid 15138)
+[ 476.29 min] start train: slice 55237 s (planned 62442 s), 68437 s left in the run
+[ 476.30 min] train: waiting for the tokenisation on this machine: 363 of the 409 shards of the journal are not committed yet (e.g. climbmix/1)
+[ 476.33 min] background: downloads finished
+[ 476.33 min] background: library finished
+[ 476.36 min] background: gguf finished
+[ 476.36 min] background: started opponents (pid 15265)
+[ 477.30 min] train: waiting for the tokenisation on this machine: 339 of the 409 shards of the journal are not committed yet (e.g. climbmix/25)
+[ 478.30 min] train: waiting for the tokenisation on this machine: 291 of the 409 shards of the journal are not committed yet (e.g. climbmix/73)
+[ 479.30 min] train: waiting for the tokenisation on this machine: 246 of the 409 shards of the journal are not committed yet (e.g. climbmix/118)
+[ 480.30 min] train: waiting for the tokenisation on this machine: 207 of the 409 shards of the journal are not committed yet (e.g. climbmix/156)
+[ 481.30 min] train: waiting for the tokenisation on this machine: 167 of the 409 shards of the journal are not committed yet (e.g. climbmix/197)
+[ 482.30 min] train: waiting for the tokenisation on this machine: 124 of the 409 shards of the journal are not committed yet (e.g. climbmix/240)
+[ 483.30 min] train: waiting for the tokenisation on this machine: 84 of the 409 shards of the journal are not committed yet (e.g. climbmix/280)
+[ 484.31 min] train: waiting for the tokenisation on this machine: 45 of the 409 shards of the journal are not committed yet (e.g. climbmix/315)
+[ 485.31 min] train: waiting for the tokenisation on this machine: 37 of the 409 shards of the journal are not committed yet (e.g. smol_smoltalk/1)
+[ 486.32 min] train: waiting for the tokenisation on this machine: 34 of the 409 shards of the journal are not committed yet (e.g. smoltalk_magpie_ultra/1)
+[ 487.32 min] train: waiting for the tokenisation on this machine: 34 of the 409 shards of the journal are not committed yet (e.g. smoltalk_magpie_ultra/1)
+[ 488.32 min] train: waiting for the tokenisation on this machine: 28 of the 409 shards of the journal are not committed yet (e.g. tulu3_sft/1)
+[ 489.33 min] train: waiting for the tokenisation on this machine: 25 of the 409 shards of the journal are not committed yet (e.g. tulu3_sft/1)
+[ 490.33 min] train: waiting for the tokenisation on this machine: 25 of the 409 shards of the journal are not committed yet (e.g. tulu3_sft/1)
+[ 491.33 min] train: waiting for the tokenisation on this machine: 25 of the 409 shards of the journal are not committed yet (e.g. tulu3_sft/1)
+[ 492.33 min] train: waiting for the tokenisation on this machine: 24 of the 409 shards of the journal are not committed yet (e.g. synth_rag/0)
+[ 493.34 min] train: waiting for the tokenisation on this machine: 2 of the 409 shards of the journal are not committed yet (e.g. synth_rag/0)
+[ 494.34 min] train: waiting for the tokenisation on this machine: 1 of the 409 shards of the journal are not committed yet (e.g. synth_rag/0)
+[ 494.43 min] background: tokenize finished
+[ 494.51 min] train FAILED: RuntimeError: the training journal used 409 shards, 1 of them are not on this machine (e.g. synth_rag/0) and the tokenisation has finished: 
+Traceback (most recent call last):
+  File "/content/TuringAward2027/bes/train/supervisor.py", line 1468, in _run
+    result = self.fns[name](ctx) or {}
+             ~~~~~~~~~~~~~~^^^^^
+  File "/content/TuringAward2027/scripts/run_24h.py", line 578, in stage_train
+    self._wait_for_shards(ctx, SV.tok_root(ecfg, self.paths.out), want)
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/content/TuringAward2027/scripts/run_24h.py", line 180, in _wait_for_shards
+    raise RuntimeError(f"the training journal used {total} shards, {len(missing)} of them are "
+                       f"not on this machine (e.g. {missing[0]}) and the tokenisation has "
+                       f"{st.get('state')}: {st.get('error')}")
+RuntimeError: the training journal used 409 shards, 1 of them are not on this machine (e.g. synth_rag/0) and the tokenisation has finished: 
+
+[ 494.51 min] emergency export: train failed: RuntimeError: the training journal used 409 shards, 1 of them are not on this machine (e.g. synth_rag/0) and the tokenisation has finished: 
+export: /content/runs/main16/train/ckpt/ckpt-000005-step-000005075 (train weights) -> /content/runs/main16/final
+export: held-out check passed: loss32 2.47806, loss16 2.47808, |delta| 2.79e-05 < 0.002 nats
+export: done in 9.1 s: /content/runs/main16/final (check True, 0 parts failed)
+run_24h: stage train failed: RuntimeError: the training journal used 409 shards, 1 of them are not on this machine (e.g. synth_rag/0) and the tokenisation has finished: 
+
+===== 2026-11-24 01:53:10 /usr/bin/python3 scripts/run_24h.py --out /content/runs/main16 --resume
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+[ 498.31 min] preflight WARNING: jax 0.11.2 is not the pinned 0.11.1
+[ 498.31 min] background: the journal's shards are not on this machine: tokenising with 24 workers (the plan's share is 4)
+[ 498.31 min] background: started downloads (pid 21249)
+[ 498.31 min] background: started tokenize (pid 21250)
+[ 498.31 min] background: started library (pid 21251)
+[ 498.31 min] background: started gguf (pid 21252)
+[ 498.31 min] start train: slice 53916 s (planned 62442 s), 67116 s left in the run
+[ 498.31 min] train: waiting for the tokenisation on this machine: 1 of the 409 shards of the journal are not committed yet (e.g. synth_rag/0)
+[ 498.34 min] background: library finished
+[ 498.41 min] background: gguf finished
+[ 498.41 min] background: started opponents (pid 21352)
+[ 498.48 min] background: downloads finished
+[ 499.04 min] background: tokenize finished
+[ 499.06 min] train: all 409 shards of the journal are committed on this machine
+loader: the epoch caps cut the planned token share of library_qa from 0.0209 to 0.0042 (at most 8 reads of 6.82e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0114 to 0.0049 (at most 8 reads of 8.06e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0033 to 0.0003 (at most 8 reads of 4.19e+05 tokens over a horizon of 1.31e+10 tokens; block 2 at step 128); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of dolly from 0.0040 to 0.0020 (at most 8 reads of 3.23e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0114 to 0.0008 (at most 8 reads of 1.27e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+[ 499.33 min] train: restore step=5075 path=ckpt-000005-step-000005075
+[ 499.33 min] train: setup step=5075
+[ 499.33 min] train: set-up (compile 2 shapes, 0 reused from the benchmark, restore) took 15.4 s; step 5075
+[ 499.33 min] train: stage step=5075 p=0.10035761949242437
+[ 499.91 min] train: step 5100 p 0.101 loss 2.6349 T 1024 tok/s 213,649
+[ 509.99 min] train: step 5600 p 0.111 loss 2.6619 T 1024 tok/s 215,449
+[ 520.07 min] train: step 6100 p 0.121 loss 2.6080 T 1024 tok/s 214,842
+[ 524.41 min] train: ckpt step=6313 reason=interval path=ckpt-000006-step-000006313
+[ 530.15 min] train: step 6600 p 0.131 loss 2.6799 T 1024 tok/s 215,830
+[ 531.07 min] stop requested (SIGTERM); the current stage stops at its next check
+[ 531.12 min] train: ckpt step=6647 reason=final path=ckpt-000007-step-000006647
+[ 531.12 min] train: end step=6647 reason=requested p=0.13219461068747748
+[ 531.14 min] interrupted in train: training stopped at step 6647 on request (final checkpoint /content/runs/main16/train/ckpt/ckpt-000007-step-000006647)
+[ 531.14 min] stage table:
+stage      status      planned  allotted      used    down tries  reason
+preflight  finished      180.0     180.0       0.0     0.0     1  
+background finished       60.0      60.0       0.0     0.0     1  
+benchmark  finished      900.0     900.0     694.0     0.0     1  
+train      pending     62441.9   53915.6    9922.4 20488.1     6  interrupted: training stopped at step 6647 on request (final checkpoint /content/runs/main16/train/c
+sample     pending      3000.0         -       0.0     0.0     0  
+critic     pending         0.0         -       0.0     0.0     0  
+prefopt    pending      3600.0         -       0.0     0.0     0  
+select     pending      2700.0         -       0.0     0.0     0  
+judge      pending      1800.0         -       0.0     0.0     0  
+export     pending       900.0         -       0.0     0.0     0  
+
+===== 2026-11-24 02:28:48 /usr/bin/python3 scripts/run_24h.py --out /content/runs/main16 --resume
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+[ 533.95 min] preflight WARNING: jax 0.11.2 is not the pinned 0.11.1
+[ 533.95 min] background: started downloads (pid 31904)
+[ 533.95 min] background: started tokenize (pid 31905)
+[ 533.95 min] background: started library (pid 31906)
+[ 533.95 min] background: started gguf (pid 31907)
+[ 533.95 min] start train: slice 51777 s (planned 62442 s), 64977 s left in the run
+loader: the epoch caps cut the planned token share of library_qa from 0.0209 to 0.0042 (at most 8 reads of 6.82e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0114 to 0.0049 (at most 8 reads of 8.06e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0033 to 0.0003 (at most 8 reads of 4.19e+05 tokens over a horizon of 1.31e+10 tokens; block 2 at step 128); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of dolly from 0.0040 to 0.0020 (at most 8 reads of 3.23e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0114 to 0.0008 (at most 8 reads of 1.27e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+[ 533.99 min] background: downloads finished
+[ 533.99 min] background: library finished
+[ 534.02 min] background: gguf finished
+[ 534.02 min] background: started opponents (pid 32565)
+[ 534.09 min] train: restore step=6647 path=ckpt-000007-step-000006647
+[ 534.09 min] train: setup step=6647
+[ 534.09 min] train: set-up (compile 2 shapes, 0 reused from the benchmark, restore) took 7.4 s; step 6647
+[ 534.09 min] train: stage step=6647 p=0.13258836508556263
+[ 534.15 min] background: tokenize finished
+[ 534.27 min] train: step 6650 p 0.133 loss 2.6380 T 1024 tok/s 60,820
+[ 544.36 min] train: step 7150 p 0.143 loss 2.6371 T 1024 tok/s 217,161
+[ 554.44 min] train: step 7650 p 0.153 loss 2.5442 T 1024 tok/s 219,131
+[ 559.16 min] train: ckpt step=7882 reason=interval path=ckpt-000008-step-000007882
+[ 564.52 min] train: step 8150 p 0.163 loss 2.6306 T 1024 tok/s 217,889
+[ 574.60 min] train: step 8650 p 0.173 loss 2.5362 T 1024 tok/s 217,617
+[ 574.76 min] stop requested (SIGTERM); the current stage stops at its next check
+[ 574.81 min] train: ckpt step=8659 reason=final path=ckpt-000009-step-000008659
+[ 574.81 min] train: end step=8659 reason=requested p=0.17350224681028745
+[ 574.83 min] interrupted in train: training stopped at step 8659 on request (final checkpoint /content/runs/main16/train/ckpt/ckpt-000009-step-000008659)
+[ 574.84 min] stage table:
+stage      status      planned  allotted      used    down tries  reason
+preflight  finished      180.0     180.0       0.0     0.0     1  
+background finished       60.0      60.0       0.0     0.0     1  
+benchmark  finished      900.0     900.0     694.0     0.0     1  
+train      pending     62441.9   51777.0   12375.3 20488.1     7  interrupted: training stopped at step 8659 on request (final checkpoint /content/runs/main16/train/c
+sample     pending      3000.0         -       0.0     0.0     0  
+critic     pending         0.0         -       0.0     0.0     0  
+prefopt    pending      3600.0         -       0.0     0.0     0  
+select     pending      2700.0         -       0.0     0.0     0  
+judge      pending      1800.0         -       0.0     0.0     0  
+export     pending       900.0         -       0.0     0.0     0  
+
+===== 2026-11-24 03:15:26 /usr/bin/python3 scripts/run_24h.py --out /content/runs/main16 --resume
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+[ 580.58 min] preflight WARNING: jax 0.11.2 is not the pinned 0.11.1
+[ 580.59 min] background: started downloads (pid 45922)
+[ 580.59 min] background: started tokenize (pid 45923)
+[ 580.59 min] background: started library (pid 45924)
+[ 580.59 min] background: started gguf (pid 45925)
+[ 580.59 min] start train: slice 48979 s (planned 62442 s), 62179 s left in the run
+loader: the epoch caps cut the planned token share of library_qa from 0.0209 to 0.0042 (at most 8 reads of 6.82e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0114 to 0.0049 (at most 8 reads of 8.06e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0033 to 0.0003 (at most 8 reads of 4.19e+05 tokens over a horizon of 1.31e+10 tokens; block 2 at step 128); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of dolly from 0.0040 to 0.0020 (at most 8 reads of 3.23e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0114 to 0.0008 (at most 8 reads of 1.27e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+[ 580.62 min] background: downloads finished
+[ 580.62 min] background: library finished
+[ 580.65 min] background: gguf finished
+[ 580.65 min] background: started opponents (pid 46579)
+[ 580.71 min] train: restore step=8659 path=ckpt-000009-step-000008659
+[ 580.71 min] train: setup step=8659
+[ 580.71 min] train: set-up (compile 2 shapes, 0 reused from the benchmark, restore) took 6.9 s; step 8659
+[ 580.71 min] train: stage step=8659 p=0.1745380225923587
+[ 580.79 min] background: tokenize finished
+[ 581.61 min] train: step 8700 p 0.175 loss 2.6042 T 1024 tok/s 217,536
+[ 590.26 min] background: opponents finished
+[ 591.69 min] train: step 9200 p 0.186 loss 2.5893 T 1024 tok/s 216,378
+[ 594.33 min] stop requested (SIGTERM); the current stage stops at its next check
+[ 594.37 min] train: ckpt step=9332 reason=final path=ckpt-000010-step-000009332
+[ 594.37 min] train: end step=9332 reason=requested p=0.18833804444462104
+[ 594.38 min] interrupted in train: training stopped at step 9332 on request (final checkpoint /content/runs/main16/train/ckpt/ckpt-000010-step-000009332)
+[ 594.38 min] stage table:
+stage      status      planned  allotted      used    down tries  reason
+preflight  finished      180.0     180.0       0.0     0.0     1  
+background finished       60.0      60.0       0.0     0.0     1  
+benchmark  finished      900.0     900.0     694.0     0.0     1  
+train      pending     62441.9   48979.0   13202.8 20488.1     8  interrupted: training stopped at step 9332 on request (final checkpoint /content/runs/main16/train/c
+sample     pending      3000.0         -       0.0     0.0     0  
+critic     pending         0.0         -       0.0     0.0     0  
+prefopt    pending      3600.0         -       0.0     0.0     0  
+select     pending      2700.0         -       0.0     0.0     0  
+judge      pending      1800.0         -       0.0     0.0     0  
+export     pending       900.0         -       0.0     0.0     0  
+
+===== 2026-11-24 03:30:29 /usr/bin/python3 scripts/run_24h.py --out /content/runs/main16 --resume
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+[ 595.64 min] preflight WARNING: jax 0.11.2 is not the pinned 0.11.1
+[ 595.64 min] background: started downloads (pid 50952)
+[ 595.64 min] background: started tokenize (pid 50953)
+[ 595.64 min] background: started library (pid 50954)
+[ 595.64 min] background: started gguf (pid 50955)
+[ 595.64 min] start train: slice 48076 s (planned 62442 s), 61276 s left in the run
+loader: the epoch caps cut the planned token share of library_qa from 0.0209 to 0.0042 (at most 8 reads of 6.82e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0114 to 0.0049 (at most 8 reads of 8.06e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0033 to 0.0003 (at most 8 reads of 4.19e+05 tokens over a horizon of 1.31e+10 tokens; block 2 at step 128); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of dolly from 0.0040 to 0.0020 (at most 8 reads of 3.23e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0114 to 0.0008 (at most 8 reads of 1.27e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+[ 595.65 min] train: every micro-batch is cut into 4 pieces on the device: 16 x 16 x 1024 -> 64 x 4 x 1024, 16 x 8 x 2048 -> 64 x 2 x 2048
+[ 595.67 min] background: downloads finished
+[ 595.67 min] background: library finished
+[ 595.71 min] background: gguf finished
+[ 595.71 min] background: started opponents (pid 51598)
+[ 595.81 min] background: opponents finished
+[ 595.84 min] background: tokenize finished
+[ 596.49 min] train: restore step=9332 path=ckpt-000010-step-000009332
+[ 596.49 min] train: setup step=9332
+[ 596.49 min] train: set-up (compile 2 shapes, 0 reused from the benchmark, restore) took 50.3 s; step 9332
+[ 596.49 min] train: stage step=9332 p=0.1887424074057641
+[ 596.90 min] train: step 9350 p 0.189 loss 2.6174 T 1024 tok/s 228,015
+[ 606.00 min] train: step 9850 p 0.198 loss 2.5761 T 1024 tok/s 241,104
+[ 613.12 min] stop requested (SIGTERM); the current stage stops at its next check
+[ 613.15 min] train: ckpt step=10242 reason=final path=ckpt-000011-step-000010242
+[ 613.15 min] train: end step=10242 reason=requested p=0.20561613747465718
+[ 613.16 min] interrupted in train: training stopped at step 10242 on request (final checkpoint /content/runs/main16/train/ckpt/ckpt-000011-step-000010242)
+[ 613.16 min] stage table:
+stage      status      planned  allotted      used    down tries  reason
+preflight  finished      180.0     180.0       0.0     0.0     1  
+background finished       60.0      60.0       0.0     0.0     1  
+benchmark  finished      900.0     900.0     694.0     0.0     1  
+train      pending     62441.9   48075.7   14253.9 20488.1     9  interrupted: training stopped at step 10242 on request (final checkpoint /content/runs/main16/train/
+sample     pending      3000.0         -       0.0     0.0     0  
+critic     pending         0.0         -       0.0     0.0     0  
+prefopt    pending      3600.0         -       0.0     0.0     0  
+select     pending      2700.0         -       0.0     0.0     0  
+judge      pending      1800.0         -       0.0     0.0     0  
+export     pending       900.0         -       0.0     0.0     0  
+
+===== 2026-11-24 03:57:17 /usr/bin/python3 scripts/run_24h.py --out /content/runs/main16 --resume
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+[ 622.44 min] preflight WARNING: jax 0.11.2 is not the pinned 0.11.1
+[ 622.44 min] background: started downloads (pid 64836)
+[ 622.44 min] background: started tokenize (pid 64837)
+[ 622.44 min] background: started library (pid 64838)
+[ 622.44 min] background: started gguf (pid 64839)
+[ 622.44 min] start train: slice 46468 s (planned 62442 s), 59668 s left in the run
+loader: the epoch caps cut the planned token share of library_qa from 0.0209 to 0.0042 (at most 8 reads of 6.82e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0114 to 0.0049 (at most 8 reads of 8.06e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0033 to 0.0003 (at most 8 reads of 4.19e+05 tokens over a horizon of 1.31e+10 tokens; block 2 at step 128); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of dolly from 0.0040 to 0.0020 (at most 8 reads of 3.23e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0114 to 0.0008 (at most 8 reads of 1.27e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+[ 622.45 min] train: every micro-batch is cut into 4 pieces on the device: 16 x 16 x 1024 -> 64 x 4 x 1024, 16 x 8 x 2048 -> 64 x 2 x 2048
+[ 622.47 min] background: downloads finished
+[ 622.47 min] background: library finished
+[ 622.51 min] background: gguf finished
+[ 622.51 min] background: started opponents (pid 65499)
+[ 622.57 min] train: restore step=10242 path=ckpt-000011-step-000010242
+[ 622.57 min] train: setup step=10242
+[ 622.57 min] train: set-up (compile 2 shapes, 0 reused from the benchmark, restore) took 7.2 s; step 10242
+[ 622.57 min] train: stage step=10242 p=0.20759731314080307
+[ 622.61 min] background: opponents finished
+[ 622.64 min] background: tokenize finished
+[ 622.74 min] train: step 10250 p 0.208 loss 2.5398 T 1024 tok/s 246,229
+[ 631.84 min] train: step 10750 p 0.217 loss 2.5566 T 1024 tok/s 240,263
+[ 640.94 min] train: step 11250 p 0.226 loss 2.5361 T 1024 tok/s 240,545
+[ 647.63 min] train: ckpt step=11616 reason=interval path=ckpt-000012-step-000011616
+[ 650.05 min] train: step 11750 p 0.236 loss 2.5529 T 1024 tok/s 240,140
+[ 655.70 min] stop requested (SIGTERM); the current stage stops at its next check
+[ 655.75 min] train: ckpt step=12062 reason=final path=ckpt-000013-step-000012062
+[ 655.75 min] train: end step=12062 reason=requested p=0.24153232247934198
+[ 655.75 min] interrupted in train: training stopped at step 12062 on request (final checkpoint /content/runs/main16/train/ckpt/ckpt-000013-step-000012062)
+[ 655.76 min] stage table:
+stage      status      planned  allotted      used    down tries  reason
+preflight  finished      180.0     180.0       0.0     0.0     1  
+background finished       60.0      60.0       0.0     0.0     1  
+benchmark  finished      900.0     900.0     694.0     0.0     1  
+train      pending     62441.9   46467.9   16252.8 20488.1    10  interrupted: training stopped at step 12062 on request (final checkpoint /content/runs/main16/train/
+sample     pending      3000.0         -       0.0     0.0     0  
+critic     pending         0.0         -       0.0     0.0     0  
+prefopt    pending      3600.0         -       0.0     0.0     0  
+select     pending      2700.0         -       0.0     0.0     0  
+judge      pending      1800.0         -       0.0     0.0     0  
+export     pending       900.0         -       0.0     0.0     0  
+
+===== 2026-11-24 04:31:51 /usr/bin/python3 scripts/run_24h.py --out /content/runs/main16 --resume
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+post_plan: the post-training plan of this run is sample=3 critic=0 prefopt=60 select=35 judge=0 export=5 buffer=15 (118 minutes after training; the configuration's reserve was 220)
+[ 657.01 min] preflight WARNING: jax 0.11.2 is not the pinned 0.11.1
+[ 657.01 min] background: started downloads (pid 74792)
+[ 657.01 min] background: started tokenize (pid 74793)
+[ 657.01 min] background: started library (pid 74794)
+[ 657.01 min] background: started gguf (pid 74795)
+[ 657.01 min] start train: slice 50514 s (planned 68562 s), 57594 s left in the run
+loader: the epoch caps cut the planned token share of library_qa from 0.0209 to 0.0042 (at most 8 reads of 6.82e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0114 to 0.0049 (at most 8 reads of 8.06e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0033 to 0.0003 (at most 8 reads of 4.19e+05 tokens over a horizon of 1.31e+10 tokens; block 2 at step 128); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of dolly from 0.0040 to 0.0020 (at most 8 reads of 3.23e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0114 to 0.0008 (at most 8 reads of 1.27e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+[ 657.02 min] train: micro-batches are cut into pieces on the device: 16 x 16 x 1024 -> 64 x 4 x 1024, 16 x 8 x 2048 -> 64 x 2 x 2048
+[ 657.05 min] background: downloads finished
+[ 657.05 min] background: library finished
+[ 657.08 min] background: gguf finished
+[ 657.08 min] background: started opponents (pid 75453)
+[ 657.15 min] train: restore step=12062 path=ckpt-000013-step-000012062
+[ 657.15 min] train: setup step=12062
+[ 657.15 min] train: set-up (compile 2 shapes, 0 reused from the benchmark, restore) took 7.4 s; step 12062
+[ 657.15 min] train: stage step=12062 p=0.218987020085991
+[ 657.18 min] background: opponents finished
+[ 657.21 min] background: tokenize finished
+[ 657.89 min] train: step 12100 p 0.220 loss 2.6105 T 1024 tok/s 239,837
+[ 667.00 min] train: step 12600 p 0.228 loss 2.5733 T 1024 tok/s 239,463
+[ 676.10 min] train: step 13100 p 0.237 loss 2.5218 T 1024 tok/s 239,521
+[ 682.20 min] train: ckpt step=13434 reason=interval path=ckpt-000014-step-000013434
+[ 685.21 min] train: step 13600 p 0.245 loss 2.6031 T 1024 tok/s 239,773
+[ 694.31 min] train: step 14100 p 0.253 loss 2.5643 T 1024 tok/s 239,455
+[ 703.41 min] train: step 14600 p 0.262 loss 2.5301 T 1024 tok/s 239,479
+[ 707.24 min] train: ckpt step=14809 reason=interval path=ckpt-000015-step-000014809
+[ 712.52 min] train: step 15100 p 0.270 loss 2.6044 T 1024 tok/s 238,815
+[ 721.62 min] train: step 15600 p 0.279 loss 2.5685 T 1024 tok/s 239,421
+[ 730.72 min] train: step 16100 p 0.287 loss 2.6227 T 1024 tok/s 239,394
+[ 732.27 min] train: ckpt step=16184 reason=interval path=ckpt-000016-step-000016184
+[ 739.83 min] train: step 16600 p 0.296 loss 2.5792 T 1024 tok/s 239,677
+[ 748.93 min] train: step 17100 p 0.304 loss 2.6045 T 1024 tok/s 239,435
+[ 757.31 min] train: ckpt step=17559 reason=interval path=ckpt-000017-step-000017559
+[ 758.04 min] train: step 17600 p 0.313 loss 2.5092 T 1024 tok/s 239,684
+[ 767.14 min] train: step 18100 p 0.321 loss 2.5045 T 1024 tok/s 239,699
+[ 776.24 min] train: step 18600 p 0.329 loss 2.6278 T 1024 tok/s 239,434
+[ 777.15 min] train: eval step=18651 result={'sidecar': 'started on ckpt-000017-step-000017559'}
+[ 782.34 min] train: ckpt step=18934 reason=interval path=ckpt-000018-step-000018934
+[ 785.35 min] train: step 19100 p 0.338 loss 2.4963 T 1024 tok/s 239,365
+[ 794.45 min] train: step 19600 p 0.346 loss 2.5219 T 1024 tok/s 239,659
+[ 803.55 min] train: step 20100 p 0.355 loss 2.6447 T 1024 tok/s 239,500
+[ 807.38 min] train: ckpt step=20309 reason=interval path=ckpt-000019-step-000020309
+[ 812.66 min] train: step 20600 p 0.363 loss 2.4918 T 1024 tok/s 239,404
+[ 821.76 min] train: step 21100 p 0.372 loss 2.5448 T 1024 tok/s 239,545
+[ 830.86 min] train: step 21600 p 0.380 loss 2.5028 T 1024 tok/s 239,388
+[ 832.42 min] train: ckpt step=21684 reason=interval path=ckpt-000020-step-000021684
+[ 839.97 min] train: step 22100 p 0.389 loss 2.5584 T 1024 tok/s 239,405
+[ 849.07 min] train: step 22600 p 0.397 loss 2.5293 T 1024 tok/s 239,694
+[ 849.29 min] stop requested (SIGTERM); the current stage stops at its next check
+[ 849.33 min] train: ckpt step=22613 reason=final path=ckpt-000021-step-000022613
+[ 849.33 min] train: end step=22613 reason=requested p=0.39727928804310814
+[ 849.34 min] interrupted in train: training stopped at step 22613 on request (final checkpoint /content/runs/main16/train/ckpt/ckpt-000021-step-000022613)
+[ 849.34 min] stage table:
+stage      status      planned  allotted      used    down tries  reason
+preflight  finished      180.0     180.0       0.0     0.0     1  
+background finished       60.0      60.0       0.0     0.0     1  
+benchmark  finished      900.0     900.0     694.0     0.0     1  
+train      pending     68562.0   50513.5   27792.4 20488.1    11  interrupted: training stopped at step 22613 on request (final checkpoint /content/runs/main16/train/
+sample     pending       180.0         -       0.0     0.0     0  
+critic     pending         0.0         -       0.0     0.0     0  
+prefopt    pending      3600.0         -       0.0     0.0     0  
+select     pending      2100.0         -       0.0     0.0     0  
+judge      pending         0.0         -       0.0     0.0     0  
+export     pending       300.0         -       0.0     0.0     0  
+
+===== 2026-11-24 07:52:42 /usr/bin/python3 scripts/run_24h.py --out /content/runs/main16 --resume
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+post_plan: the post-training plan of this run is sample=3 critic=0 prefopt=60 select=35 judge=0 export=5 buffer=15 (118 minutes after training; the configuration's reserve was 220)
+fast: the speed switches of this run are kernel=onetile:save relu2=1 ce=0 (now on: kernel=onetile:save relu2=1 ce=0 io=0)
+[ 857.86 min] preflight WARNING: jax 0.11.2 is not the pinned 0.11.1
+[ 857.86 min] background: started downloads (pid 136246)
+[ 857.86 min] background: started tokenize (pid 136247)
+[ 857.86 min] background: started library (pid 136248)
+[ 857.86 min] background: started gguf (pid 136249)
+[ 857.86 min] start train: slice 38463 s (planned 68562 s), 45543 s left in the run
+loader: the epoch caps cut the planned token share of library_qa from 0.0209 to 0.0042 (at most 8 reads of 6.82e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0114 to 0.0049 (at most 8 reads of 8.06e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0033 to 0.0003 (at most 8 reads of 4.19e+05 tokens over a horizon of 1.31e+10 tokens; block 2 at step 128); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of dolly from 0.0040 to 0.0020 (at most 8 reads of 3.23e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0114 to 0.0008 (at most 8 reads of 1.27e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+[ 857.88 min] train: micro-batches are cut into pieces on the device: 16 x 16 x 1024 -> 64 x 4 x 1024, 16 x 8 x 2048 -> 64 x 2 x 2048
+[ 857.90 min] background: downloads finished
+[ 857.90 min] background: library finished
+[ 857.93 min] background: gguf finished
+[ 857.93 min] background: started opponents (pid 136901)
+[ 858.03 min] background: opponents finished
+[ 858.06 min] background: tokenize finished
+[ 858.68 min] train: restore step=22613 path=ckpt-000021-step-000022613
+[ 858.68 min] train: setup step=22613
+[ 858.68 min] train: set-up (compile 2 shapes, 0 reused from the benchmark, restore) took 48.1 s; step 22613
+[ 858.68 min] train: stage step=22613 p=0.400756070984061
+[ 859.30 min] train: step 22650 p 0.401 loss 2.5525 T 1024 tok/s 281,051
+[ 867.07 min] train: step 23150 p 0.409 loss 2.5182 T 1024 tok/s 281,374
+[ 874.83 min] train: step 23650 p 0.416 loss 2.4725 T 1024 tok/s 282,923
+[ 882.60 min] train: step 24150 p 0.423 loss 2.4976 T 1024 tok/s 281,456
+[ 883.74 min] train: ckpt step=24221 reason=interval path=ckpt-000022-step-000024221
+[ 890.38 min] train: step 24650 p 0.430 loss 2.5625 T 1024 tok/s 281,448
+[ 898.15 min] train: step 25150 p 0.438 loss 2.5820 T 1024 tok/s 283,271
+[ 900.15 min] stop requested (SIGTERM); the current stage stops at its next check
+[ 900.18 min] train: ckpt step=25280 reason=final path=ckpt-000023-step-000025280
+[ 900.18 min] train: end step=25280 reason=requested p=0.43959379284277267
+[ 900.19 min] interrupted in train: training stopped at step 25280 on request (final checkpoint /content/runs/main16/train/ckpt/ckpt-000023-step-000025280)
+[ 900.19 min] stage table:
+stage      status      planned  allotted      used    down tries  reason
+preflight  finished      180.0     180.0       0.0     0.0     1  
+background finished       60.0      60.0       0.0     0.0     1  
+benchmark  finished      900.0     900.0     694.0     0.0     1  
+train      pending     68562.0   38462.5   30331.9 20488.1    12  interrupted: training stopped at step 25280 on request (final checkpoint /content/runs/main16/train/
+sample     pending       180.0         -       0.0     0.0     0  
+critic     pending         0.0         -       0.0     0.0     0  
+prefopt    pending      3600.0         -       0.0     0.0     0  
+select     pending      2100.0         -       0.0     0.0     0  
+judge      pending         0.0         -       0.0     0.0     0  
+export     pending       300.0         -       0.0     0.0     0  
+
+===== 2026-11-24 08:36:19 /usr/bin/python3 scripts/run_24h.py --out /content/runs/main16 --resume
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+post_plan: the post-training plan of this run is sample=3 critic=0 prefopt=60 select=35 judge=0 export=5 buffer=15 (118 minutes after training; the configuration's reserve was 220)
+fast: the speed switches of this run are kernel=onetile:save relu2=1 ce=0 (now on: kernel=onetile:save relu2=1 ce=0 io=0)
+[ 901.47 min] preflight WARNING: jax 0.11.2 is not the pinned 0.11.1
+[ 901.47 min] background: started downloads (pid 150084)
+[ 901.47 min] background: started tokenize (pid 150085)
+[ 901.47 min] background: started library (pid 150086)
+[ 901.47 min] background: started gguf (pid 150087)
+[ 901.47 min] start train: slice 35846 s (planned 68562 s), 42926 s left in the run
+loader: the epoch caps cut the planned token share of library_qa from 0.0209 to 0.0042 (at most 8 reads of 6.82e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0114 to 0.0049 (at most 8 reads of 8.06e+06 tokens over a horizon of 1.31e+10 tokens; block 1 at step 64); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0033 to 0.0003 (at most 8 reads of 4.19e+05 tokens over a horizon of 1.31e+10 tokens; block 2 at step 128); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of dolly from 0.0040 to 0.0020 (at most 8 reads of 3.23e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0114 to 0.0008 (at most 8 reads of 1.27e+06 tokens over a horizon of 1.3e+10 tokens; block 4 at step 256); the rest of its share goes to other sources
+[ 901.48 min] train: micro-batches are cut into pieces on the device: 16 x 16 x 1024 -> 64 x 4 x 1024, 16 x 8 x 2048 -> 64 x 2 x 2048
+[ 901.50 min] background: downloads finished
+[ 901.50 min] background: library finished
+[ 901.54 min] background: gguf finished
+[ 901.54 min] background: started opponents (pid 150733)
+[ 901.61 min] train: restore step=25280 path=ckpt-000023-step-000025280
+[ 901.61 min] train: setup step=25280
+[ 901.61 min] train: set-up (compile 2 shapes, 0 reused from the benchmark, restore) took 7.6 s; step 25280
+[ 901.61 min] train: stage step=25280 p=0.44018133987327757
+[ 901.64 min] background: opponents finished
+[ 901.67 min] background: tokenize finished
+[ 901.93 min] train: step 25300 p 0.440 loss 2.4850 T 1024 tok/s 282,464
+[ 909.70 min] train: step 25800 p 0.448 loss 2.5416 T 1024 tok/s 280,696
+[ 917.47 min] train: step 26300 p 0.455 loss 2.5334 T 1024 tok/s 278,566
+[ 925.24 min] train: step 26800 p 0.462 loss 2.5380 T 1024 tok/s 264,186
+[ 926.67 min] train: ckpt step=26890 reason=interval path=ckpt-000024-step-000026890
+[ 933.01 min] train: step 27300 p 0.470 loss 2.5003 T 1024 tok/s 276,753
+[ 940.78 min] train: step 27800 p 0.477 loss 2.4410 T 1024 tok/s 280,339
+[ 948.55 min] train: step 28300 p 0.484 loss 2.4992 T 1024 tok/s 264,481
+[ 951.71 min] train: ckpt step=28501 reason=interval path=ckpt-000025-step-000028501
+[ 956.32 min] train: step 28800 p 0.491 loss 2.4418 T 1024 tok/s 280,547
+[ 964.09 min] train: step 29300 p 0.499 loss 2.4366 T 1024 tok/s 280,370
+[ 970.63 min] stop requested (SIGTERM); the current stage stops at its next check
+[ 970.67 min] train: ckpt step=29722 reason=final path=ckpt-000026-step-000029722
+[ 970.67 min] train: end step=29722 reason=requested p=0.5048928438726943
+[ 970.68 min] interrupted in train: training stopped at step 29722 on request (final checkpoint /content/runs/main16/train/ckpt/ckpt-000026-step-000029722)
+[ 970.69 min] stage table:
+stage      status      planned  allotted      used    down tries  reason
+preflight  finished      180.0     180.0       0.0     0.0     1  
+background finished       60.0      60.0       0.0     0.0     1  
+benchmark  finished      900.0     900.0     694.0     0.0     1  
+train      pending     68562.0   35846.1   34484.8 20488.1    13  interrupted: training stopped at step 29722 on request (final checkpoint /content/runs/main16/train/
+sample     pending       180.0         -       0.0     0.0     0  
+critic     pending         0.0         -       0.0     0.0     0  
+prefopt    pending      3600.0         -       0.0     0.0     0  
+select     pending      2100.0         -       0.0     0.0     0  
+judge      pending         0.0         -       0.0     0.0     0  
+export     pending       300.0         -       0.0     0.0     0  
+
+===== 2026-11-24 09:57:36 /usr/bin/python3 scripts/run_24h.py --out /content/runs/main16 --resume
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+post_plan: the post-training plan of this run is sample=3 critic=0 prefopt=60 select=35 judge=0 export=5 buffer=15 (118 minutes after training; the configuration's reserve was 220)
+fast: the speed switches of this run are kernel=onetile:save relu2=1 ce=0 (now on: kernel=onetile:save relu2=1 ce=0 io=0)
+[ 982.76 min] preflight WARNING: jax 0.11.2 is not the pinned 0.11.1
+[ 982.76 min] background: started downloads (pid 176658)
+[ 982.76 min] background: started tokenize (pid 176659)
+[ 982.76 min] background: started library (pid 176660)
+[ 982.76 min] background: started gguf (pid 176661)
+[ 982.76 min] start train: slice 30969 s (planned 68562 s), 38049 s left in the run
+[ 982.76 min] train: this run continues configs/final.py from step 29722 (7.791e+09 tokens, p 0.504884): the loader plans for the rest, at most 3.96 reads of a source
+[ 982.77 min] train: micro-batches are cut into pieces on the device: 16 x 16 x 1024 -> 64 x 4 x 1024, 16 x 8 x 2048 -> 64 x 2 x 2048
+[ 982.79 min] background: downloads finished
+[ 982.79 min] background: library finished
+[ 982.82 min] background: gguf finished
+[ 982.82 min] background: started opponents (pid 177251)
+[ 982.93 min] background: opponents finished
+[ 982.96 min] background: tokenize finished
+[ 983.84 min] train: restore step=29722 path=ckpt-000000-step-000029722
+[ 983.84 min] train: setup step=29722
+[ 983.84 min] train: set-up (compile 2 shapes, 0 reused from the benchmark, restore) took 64.3 s; step 29722
+[ 983.84 min] train: stage step=29722 p=0.5112049025722579
+loader: the epoch caps cut the planned token share of dolly from 0.0044 to 0.0017 (at most 3.96093 reads of 3.23e+06 tokens over a horizon of 7.45e+09 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0126 to 0.0007 (at most 3.96093 reads of 1.27e+06 tokens over a horizon of 7.45e+09 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0079 to 0.0043 (at most 3.96093 reads of 8.06e+06 tokens over a horizon of 7.45e+09 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0032 to 0.0002 (at most 3.96093 reads of 4.19e+05 tokens over a horizon of 7.45e+09 tokens; block 0 at step 0); the rest of its share goes to other sources
+[ 984.54 min] train: step 29750 p 0.512 loss 2.4118 T 1024 tok/s 178,523
+[ 996.81 min] train: step 30250 p 0.523 loss 2.4232 T 1024 tok/s 177,824
+[1009.02 min] train: ckpt step=30742 reason=interval path=ckpt-000001-step-000030742
+[1009.09 min] train: step 30750 p 0.535 loss 2.4594 T 1024 tok/s 179,098
+[1021.36 min] train: step 31250 p 0.547 loss 2.3805 T 1024 tok/s 177,779
+[1033.63 min] train: step 31750 p 0.558 loss 2.4179 T 1024 tok/s 177,783
+[1034.07 min] train: ckpt step=31762 reason=interval path=ckpt-000002-step-000031762
+[1037.59 min] stop requested (SIGTERM); the current stage stops at its next check
+[1037.70 min] train: ckpt step=31912 reason=final path=ckpt-000003-step-000031912
+[1037.70 min] train: end step=31912 reason=requested p=0.5622829211092284
+[1037.71 min] interrupted in train: training stopped at step 31912 on request (final checkpoint /content/runs/main16/train/ckpt/ckpt-000003-step-000031912)
+[1037.71 min] stage table:
+stage      status      planned  allotted      used    down tries  reason
+preflight  finished      180.0     180.0       0.0     0.0     1  
+background finished       60.0      60.0       0.0     0.0     1  
+benchmark  finished      900.0     900.0     694.0     0.0     1  
+train      pending     68562.0   30968.8   37781.9 20488.1    14  interrupted: training stopped at step 31912 on request (final checkpoint /content/runs/main16/train/
+sample     pending       180.0         -       0.0     0.0     0  
+critic     pending         0.0         -       0.0     0.0     0  
+prefopt    pending      3600.0         -       0.0     0.0     0  
+select     pending      2100.0         -       0.0     0.0     0  
+judge      pending         0.0         -       0.0     0.0     0  
+export     pending       300.0         -       0.0     0.0     0  
+
+===== 2026-11-24 10:56:45 /usr/bin/python3 scripts/run_24h.py --out /content/runs/main16 --resume
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+post_plan: the post-training plan of this run is sample=3 critic=0 prefopt=60 select=35 judge=0 export=5 buffer=15 (118 minutes after training; the configuration's reserve was 220)
+fast: the speed switches of this run are kernel=onetile:save relu2=1 ce=0 flat=1 rows=1 tokn=1 (now on: kernel=onetile:save relu2=1 ce=0 io=0 flat=1 rows=1 tokn=1)
+[1041.90 min] preflight WARNING: jax 0.11.2 is not the pinned 0.11.1
+[1041.90 min] background: started downloads (pid 195399)
+[1041.90 min] background: started tokenize (pid 195400)
+[1041.90 min] background: started library (pid 195401)
+[1041.90 min] background: started gguf (pid 195402)
+[1041.90 min] start train: slice 27420 s (planned 68562 s), 34500 s left in the run
+[1041.91 min] train: this run continues configs/final.py from step 29722 (7.791e+09 tokens, p 0.504884): the loader plans for the rest, at most 3.96 reads of a source
+loader: the epoch caps cut the planned token share of dolly from 0.0044 to 0.0017 (at most 3.96093 reads of 3.23e+06 tokens over a horizon of 7.45e+09 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of gsm8k from 0.0126 to 0.0007 (at most 3.96093 reads of 1.27e+06 tokens over a horizon of 7.45e+09 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_constraints from 0.0079 to 0.0043 (at most 3.96093 reads of 8.06e+06 tokens over a horizon of 7.45e+09 tokens; block 0 at step 0); the rest of its share goes to other sources
+loader: the epoch caps cut the planned token share of smoltalk_everyday from 0.0032 to 0.0002 (at most 3.96093 reads of 4.19e+05 tokens over a horizon of 7.45e+09 tokens; block 0 at step 0); the rest of its share goes to other sources
+[1041.91 min] train: micro-batches are cut into pieces on the device: 16 x 16 x 1024 -> 64 x 4 x 1024, 16 x 8 x 2048 -> 64 x 2 x 2048
+[1041.94 min] background: downloads finished
+[1041.94 min] background: library finished
+[1041.97 min] background: gguf finished
+[1041.97 min] background: started opponents (pid 195992)
+[1042.07 min] background: opponents finished
+[1042.11 min] background: tokenize finished
+[1042.93 min] train: restore step=31912 path=ckpt-000003-step-000031912
+[1042.93 min] train: setup step=31912
+[1042.93 min] train: set-up (compile 2 shapes, 0 reused from the benchmark, restore) took 60.9 s; step 31912
+[1042.93 min] train: stage step=31912 p=0.5650862761087954
+[1043.79 min] train: step 31950 p 0.566 loss 2.4585 T 1024 tok/s 196,733

@@ -1,0 +1,91 @@
+period,source,blocks,reads,draws,refusal,deflection,heldout,too_long,other_fail,refusal_pct_reads,deflection_pct_reads
+before rules,climbmix,104,926372,926372,0,0,0,0,0,0.0,0.0
+before rules,dolly,98,9323,9119,0,0,27,177,0,0.0,0.0
+before rules,fineweb_edu,99,70749,70749,0,0,0,0,0,0.0,0.0
+before rules,glaive_rag,101,14987,14133,0,0,67,787,0,0.0,0.0
+before rules,gsm8k,49,1066,1060,0,0,6,0,0,0.0,0.0
+before rules,hotpot_qa,100,11858,11777,0,0,28,53,0,0.0,0.0
+before rules,library_qa,103,75214,75186,0,0,0,0,28,0.0,0.0
+before rules,library_read,103,164237,164208,0,0,0,0,29,0.0,0.0
+before rules,neural_bridge_rag,100,15174,7584,0,0,45,7545,0,0.0,0.0
+before rules,orca_math,100,91039,90583,0,0,268,188,0,0.0,0.0
+before rules,rag_instruct,101,13784,13566,0,0,27,191,0,0.0,0.0
+before rules,simplewiki,93,113888,113888,0,0,0,0,0,0.0,0.0
+before rules,smol_smoltalk,104,93917,91492,0,0,278,2147,0,0.0,0.0
+before rules,smoltalk_constraints,103,20699,20559,0,0,68,72,0,0.0,0.0
+before rules,smoltalk_magpie_ultra,104,50330,49728,0,0,160,442,0,0.0,0.0
+before rules,smoltalk_rewrite,103,13223,13183,0,0,40,0,0,0.0,0.0
+before rules,smoltalk_summarize,102,19184,15181,0,0,60,3943,0,0.0,0.0
+before rules,smoltalk_systemchats,102,8137,8118,0,0,17,2,0,0.0,0.0
+before rules,squad_v2,101,33536,33430,0,0,104,2,0,0.0,0.0
+before rules,synth,104,58620,57211,0,0,158,1251,0,0.0,0.0
+before rules,synth_rag,102,37720,33260,0,0,101,4359,0,0.0,0.0
+before rules,tulu3_sft,104,80878,57801,0,0,251,22826,0,0.0,0.0
+before rules,ultrachat,103,20510,20253,0,0,67,190,0,0.0,0.0
+refusal rule,climbmix,294,2581015,2581015,0,0,0,0,0,0.0,0.0
+refusal rule,dolly,279,25182,24618,0,0,74,490,0,0.0,0.0
+refusal rule,fineweb_edu,294,210634,210634,0,0,0,0,0,0.0,0.0
+refusal rule,glaive_rag,294,43475,41036,0,0,136,2303,0,0.0,0.0
+refusal rule,gsm8k,155,3619,3611,0,0,8,0,0,0.0,0.0
+refusal rule,hotpot_qa,294,35509,35226,0,0,121,162,0,0.0,0.0
+refusal rule,library_qa,294,208182,208114,0,0,0,0,68,0.0,0.0
+refusal rule,library_read,294,438490,438408,0,0,0,0,82,0.0,0.0
+refusal rule,neural_bridge_rag,294,44985,22445,0,0,140,22400,0,0.0,0.0
+refusal rule,orca_math,294,269104,267762,2,0,832,508,0,0.001,0.0
+refusal rule,rag_instruct,294,40069,39380,0,0,122,567,0,0.0,0.0
+refusal rule,simplewiki,294,362556,362556,0,0,0,0,0,0.0,0.0
+refusal rule,smol_smoltalk,294,259430,252753,21,0,768,5888,0,0.008,0.0
+refusal rule,smoltalk_constraints,294,55935,55531,0,0,169,235,0,0.0,0.0
+refusal rule,smoltalk_magpie_ultra,294,139041,137369,0,0,361,1311,0,0.0,0.0
+refusal rule,smoltalk_rewrite,294,37643,37531,0,0,110,2,0,0.0,0.0
+refusal rule,smoltalk_summarize,294,55457,43945,0,0,169,11343,0,0.0,0.0
+refusal rule,smoltalk_systemchats,293,23739,23492,161,0,65,21,0,0.678,0.0
+refusal rule,squad_v2,294,97380,97076,0,0,291,13,0,0.0,0.0
+refusal rule,synth,294,162552,157127,1395,0,468,3562,0,0.858,0.0
+refusal rule,synth_rag,294,108362,94561,1096,0,341,12364,0,1.011,0.0
+refusal rule,tulu3_sft,294,231603,153582,11487,0,684,65850,0,4.96,0.0
+refusal rule,ultrachat,294,58692,57738,231,0,172,551,0,0.394,0.0
+"refusal + deflection, final",climbmix,70,606419,606419,0,0,0,0,0,0.0,0.0
+"refusal + deflection, final",dolly,64,5092,4983,0,0,16,93,0,0.0,0.0
+"refusal + deflection, final",fineweb_edu,70,50046,50046,0,0,0,0,0,0.0,0.0
+"refusal + deflection, final",glaive_rag,70,10258,9702,0,0,29,527,0,0.0,0.0
+"refusal + deflection, final",gsm8k,37,896,892,0,0,4,0,0,0.0,0.0
+"refusal + deflection, final",hotpot_qa,70,8359,8294,0,0,18,47,0,0.0,0.0
+"refusal + deflection, final",library_qa,70,45960,45943,0,0,0,0,17,0.0,0.0
+"refusal + deflection, final",library_read,70,93622,93601,0,0,0,0,21,0.0,0.0
+"refusal + deflection, final",neural_bridge_rag,69,10566,5304,0,0,36,5226,0,0.0,0.0
+"refusal + deflection, final",orca_math,70,63106,62782,0,0,191,133,0,0.0,0.0
+"refusal + deflection, final",rag_instruct,70,9465,9295,0,0,26,144,0,0.0,0.0
+"refusal + deflection, final",simplewiki,70,86367,86367,0,0,0,0,0,0.0,0.0
+"refusal + deflection, final",smol_smoltalk,70,61511,59667,4,273,174,1393,0,0.007,0.444
+"refusal + deflection, final",smoltalk_constraints,69,11985,11879,0,6,38,62,0,0.0,0.05
+"refusal + deflection, final",smoltalk_magpie_ultra,70,32874,32420,0,64,102,288,0,0.0,0.195
+"refusal + deflection, final",smoltalk_rewrite,70,8859,8832,0,0,27,0,0,0.0,0.0
+"refusal + deflection, final",smoltalk_summarize,69,13089,10376,0,0,43,2670,0,0.0,0.0
+"refusal + deflection, final",smoltalk_systemchats,69,8040,5593,55,2366,21,5,0,0.684,29.428
+"refusal + deflection, final",squad_v2,70,23067,22991,0,0,72,4,0,0.0,0.0
+"refusal + deflection, final",synth,70,38425,36982,350,131,101,861,0,0.911,0.341
+"refusal + deflection, final",synth_rag,70,25576,22279,269,0,78,2950,0,1.052,0.0
+"refusal + deflection, final",tulu3_sft,70,54941,35943,2636,745,152,15465,0,4.798,1.356
+"refusal + deflection, final",ultrachat,70,15281,13628,71,1404,36,142,0,0.465,9.188
+"refusal + deflection, v9",climbmix,39,318607,318607,0,0,0,0,0,0.0,0.0
+"refusal + deflection, v9",dolly,34,2664,2606,0,0,6,52,0,0.0,0.0
+"refusal + deflection, v9",fineweb_edu,39,26018,26018,0,0,0,0,0,0.0,0.0
+"refusal + deflection, v9",glaive_rag,39,5660,5319,0,0,19,322,0,0.0,0.0
+"refusal + deflection, v9",gsm8k,13,133,133,0,0,0,0,0,0.0,0.0
+"refusal + deflection, v9",hotpot_qa,38,4626,4583,0,0,19,24,0,0.0,0.0
+"refusal + deflection, v9",neural_bridge_rag,38,5729,2875,0,0,15,2839,0,0.0,0.0
+"refusal + deflection, v9",orca_math,39,35032,34860,0,0,107,65,0,0.0,0.0
+"refusal + deflection, v9",rag_instruct,39,5191,5098,0,0,17,76,0,0.0,0.0
+"refusal + deflection, v9",simplewiki,39,45620,45620,0,0,0,0,0,0.0,0.0
+"refusal + deflection, v9",smol_smoltalk,39,34135,33071,2,153,99,810,0,0.006,0.448
+"refusal + deflection, v9",smoltalk_constraints,38,6255,6212,0,1,18,24,0,0.0,0.016
+"refusal + deflection, v9",smoltalk_magpie_ultra,39,18235,18022,0,36,54,123,0,0.0,0.197
+"refusal + deflection, v9",smoltalk_rewrite,38,4854,4843,0,0,10,1,0,0.0,0.0
+"refusal + deflection, v9",smoltalk_summarize,38,7084,5601,0,0,12,1471,0,0.0,0.0
+"refusal + deflection, v9",smoltalk_systemchats,37,4352,2983,28,1319,20,2,0,0.643,30.308
+"refusal + deflection, v9",squad_v2,39,12573,12539,0,0,33,1,0,0.0,0.0
+"refusal + deflection, v9",synth,39,21305,20537,181,76,42,469,0,0.85,0.357
+"refusal + deflection, v9",synth_rag,39,14184,12346,136,0,34,1668,0,0.959,0.0
+"refusal + deflection, v9",tulu3_sft,39,30777,19988,1538,446,89,8716,0,4.997,1.449
+"refusal + deflection, v9",ultrachat,39,8454,7551,40,758,33,72,0,0.473,8.966

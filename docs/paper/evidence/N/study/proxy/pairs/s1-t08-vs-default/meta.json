@@ -1,0 +1,22 @@
+{
+  "name": "s1-t08-vs-default",
+  "format": 2,
+  "n_pairs": 60,
+  "commitment": "d467580b86d9a303c20b07a93924ae011ade23999ba3f31385f991a7d7720cf3",
+  "commitments": [
+    "d467580b86d9a303c20b07a93924ae011ade23999ba3f31385f991a7d7720cf3"
+  ],
+  "added": [
+    60
+  ],
+  "by_category": {
+    "instruct": 12,
+    "math": 9,
+    "chat": 15,
+    "writing": 15,
+    "code": 9
+  },
+  "multi_turn": 15,
+  "created": "2026-11-24 10:17:42",
+  "updated": "2026-11-24 10:17:42"
+}

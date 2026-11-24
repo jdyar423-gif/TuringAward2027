@@ -1,0 +1,22 @@
+{
+  "name": "s1-short-vs-default",
+  "format": 2,
+  "n_pairs": 60,
+  "commitment": "6d4e6934ef50a039e9d8f83c191479b132d0ccdb5e158c40af5b4e2afd5d32b3",
+  "commitments": [
+    "6d4e6934ef50a039e9d8f83c191479b132d0ccdb5e158c40af5b4e2afd5d32b3"
+  ],
+  "added": [
+    60
+  ],
+  "by_category": {
+    "math": 9,
+    "instruct": 12,
+    "chat": 15,
+    "code": 9,
+    "writing": 15
+  },
+  "multi_turn": 15,
+  "created": "2026-11-24 10:17:41",
+  "updated": "2026-11-24 10:17:41"
+}

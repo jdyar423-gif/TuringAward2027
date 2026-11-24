@@ -1,0 +1,17 @@
+{
+  "pa356b73ec4": "Both long and off-prompt; A gibberish words, B repetitive loops, no homecoming.",
+  "pcb43b0f240": "A incoherent ('renegade', solar called non-energy); B correctly names fossil fuels despite flaws.",
+  "pe999c5852d": "Both wrong about rainbows; A tautological, B invents 'rainbugs' and truncates.",
+  "pb6d1e3e832": "A circular nonsense; B repetitive but notes listening involves understanding meaning.",
+  "p85cfc51df0": "A gives several usable tips; B loops 'Read more' with contradictory advice.",
+  "p7e1c1e0f7a": "Both add extra titles and degenerate text; A leaks '<<Title>>' template.",
+  "pa3f42543d7": "Both invent 2 hours; correct is 25 m/s. A says 45, B none.",
+  "pa558020cc5": "B gives correct expansion though omits 5040; A is nonsensical.",
+  "pe67255a84b": "Neither adds the dinner invitation; both thank-you notes are garbled.",
+  "pc79b4f12e0": "Identical JSON missing the required 'city' key.",
+  "p668026db15": "Neither has strangers meeting in an outage; A off-prompt and repetitive, B incoherent.",
+  "pcd89438058": "Both fail turn 2: rehash turn 1, nothing goes wrong; turn 1 incoherent.",
+  "p2f5dc64e7d": "Both code examples have syntax errors; explanations are wrong.",
+  "pb456391c1a": "Neither mentions ice's lower density; both circular or nonsensical.",
+  "p61a7de6e8c": "Both one sentence; A plausibly says wintering south, B gives wrong reason."
+}

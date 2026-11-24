@@ -1,0 +1,23 @@
+utc,config,program,what,seq_len,tok_per_s,step_s,source
+2026-11-23 03:13:27,v9,before the glue rewrite,start-up benchmark splash-remat1-ms32-sorted,1024,88146,2.974,/tmp/claude-0/-home-user/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/v9.log
+2026-11-23 03:15:35,v9,before the glue rewrite,start-up benchmark splash-remat1-ms32-sorted,2048,86604,3.027,/tmp/claude-0/-home-user/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/v9.log
+2026-11-23 03:17:27,v9,before the glue rewrite,start-up benchmark splash-remat0-ms16-sorted,1024,91908,2.852,/tmp/claude-0/-home-user/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/v9.log
+2026-11-23 03:19:27,v9,before the glue rewrite,start-up benchmark splash-remat0-ms16-sorted,2048,90091,2.91,/tmp/claude-0/-home-user/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/v9.log
+2026-11-23 03:27:24,final,before the glue rewrite,start-up benchmark splash-remat1-ms32-onehot,1024,111893,2.343,/tmp/claude-0/-home-user/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/final.log
+2026-11-23 03:29:14,final,before the glue rewrite,start-up benchmark splash-remat1-ms32-onehot,2048,105912,2.475,/tmp/claude-0/-home-user/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/final.log
+2026-11-23 03:30:46,final,before the glue rewrite,start-up benchmark splash-remat0-ms16-onehot,1024,116986,2.241,/tmp/claude-0/-home-user/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/final.log
+2026-11-23 04:17:59,final,before the glue rewrite,"training (monitor), step 72",1024,116718,,/tmp/claude-0/-home-user/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/colab_bes24h_final.log
+2026-11-23 04:28:00,final,before the glue rewrite,"training (monitor), step 301",1024,115394,,/tmp/claude-0/-home-user/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/colab_bes24h_final.log
+2026-11-23 04:36:42,final,after the glue rewrite,start-up benchmark splash-remat1-ms32-onehot,1024,201877,1.299,/home/user/turingaward2027/docs/tpu_profile/final_b.run.log
+2026-11-23 04:38:07,final,after the glue rewrite,start-up benchmark splash-remat1-ms32-onehot,2048,185472,1.413,/home/user/turingaward2027/docs/tpu_profile/final_b.run.log
+2026-11-23 04:39:24,final,after the glue rewrite,start-up benchmark splash-remat0-ms16-onehot,1024,166440,1.575,/home/user/turingaward2027/docs/tpu_profile/final_b.run.log
+2026-11-23 04:40:36,final,after the glue rewrite,start-up benchmark splash-remat1-ms32-sorted,1024,201918,1.298,/home/user/turingaward2027/docs/tpu_profile/final_b.run.log
+2026-11-23 04:41:49,final,after the glue rewrite,start-up benchmark splash-remat1-ms32-sorted,2048,183653,1.427,/home/user/turingaward2027/docs/tpu_profile/final_b.run.log
+2026-11-23 04:42:48,final,after the glue rewrite,start-up benchmark splash-remat1-ms32-take,1024,204006,1.285,/home/user/turingaward2027/docs/tpu_profile/final_b.run.log
+2026-11-23 04:43:43,final,after the glue rewrite,start-up benchmark splash-remat1-ms32-take,2048,185077,1.416,/home/user/turingaward2027/docs/tpu_profile/final_b.run.log
+2026-11-23 04:45:11,final,after the glue rewrite,start-up benchmark xla-remat1-ms32-take,1024,104570,2.507,/home/user/turingaward2027/docs/tpu_profile/final_b.run.log
+2026-11-23 04:48:32,final,after the glue rewrite,"training, step 50",1024,204699,,/home/user/turingaward2027/docs/tpu_profile/final_b.run.log
+2026-11-23 17:40:25,final,after the glue rewrite,start-up benchmark splash-remat1-ms16-take,1024,216681,1.21,paper/data/_src/final/run.log
+2026-11-23 17:41:37,final,after the glue rewrite,start-up benchmark splash-remat1-ms16-take,2048,192912,1.359,paper/data/_src/final/run.log
+2026-11-23 17:44:02,final,after the glue rewrite,start-up benchmark splash-remat0-ms8-take,1024,188907,1.388,paper/data/_src/final/run.log
+2026-11-23 17:47:37,final,after the glue rewrite,"training, step 50",1024,220082,,/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/data/_src/final/run/../run.log

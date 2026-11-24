@@ -1,0 +1,17 @@
+{
+  "p503290b429": "A incoherent, never requests quiet after 10 pm; B makes the request despite odd reasons.",
+  "pa596a1aa24": "Neither gives float or sniff test; A invents pH/microscope tests, B is nonsense.",
+  "pad9f72b319": "A gives exactly two correct sentences; B is one circular sentence, breaking the count.",
+  "pb3f54c2f28": "B's note is incoherent and turn 2 repeats it verbatim, ignoring the neighbor request.",
+  "pb19b0db7ae": "Both have redundant emissions bullets; B's third repeats its first; A shorter.",
+  "p95e11dec8c": "B's story incoherent, its retelling a looping copy; A coherent though four sentences.",
+  "pbef9e2209c": "B's code is meaningless garbage; A has a docstring bug but correct area/perimeter methods.",
+  "pc02e7991c5": "Correct answer 12,600; A says 600 (and 6,000), B says 12.",
+  "p57d7059bcf": "A's merge loop correct but tail crashes and reverses; B uses forbidden sorted() on .keys().",
+  "pb4ee3b4163": "A congratulates the friend before confused lines; B is about the writer's own job.",
+  "p04ea892cbe": "A mostly correct (one liquid-shape slip); B is degenerate and factually wrong.",
+  "p9f2f153768": "A's note incoherent and turn 2 repeats it without the dinner invitation.",
+  "p5e55cf0aa3": "A is circular word salad; B has false frequency claims but correct core summary.",
+  "p211ab695fa": "A's rewrite repeats its story verbatim with no 'honey'; B uses honey thrice.",
+  "p20b18c5a02": "Correct is 25 m/s; A says 45, B says 324,000."
+}

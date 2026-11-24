@@ -1,0 +1,22 @@
+{
+  "name": "s2-default-vs-falcon",
+  "format": 2,
+  "n_pairs": 60,
+  "commitment": "7443993785097ad6c39d2fe2ffbab3b21c260802c6a407cc22073a1b0bd11227",
+  "commitments": [
+    "7443993785097ad6c39d2fe2ffbab3b21c260802c6a407cc22073a1b0bd11227"
+  ],
+  "added": [
+    60
+  ],
+  "by_category": {
+    "instruct": 12,
+    "math": 9,
+    "chat": 15,
+    "writing": 15,
+    "code": 9
+  },
+  "multi_turn": 15,
+  "created": "2026-11-24 12:15:14",
+  "updated": "2026-11-24 12:15:14"
+}

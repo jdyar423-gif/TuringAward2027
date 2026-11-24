@@ -1,0 +1,17 @@
+{
+  "p914a6c43a0": "Both wrongly call it a file-directory check; nonsense, broken code.",
+  "p47d1bf8c52": "Identical replies; both omit the required 'city' key.",
+  "pd2211f8d1c": "Both misdefine for loops; wrong outputs, A loops phrases, B's example crashes.",
+  "pd380aaf442": "Neither rewrite uses 'honey'; both stories incoherent, A repeats sentences.",
+  "pba594feb50": "A gives a correct Rectangle area class; B's class is broken. Neither adds perimeter.",
+  "p86d588814b": "Both circular nonsense; neither mentions Earth's 365.24-day orbit.",
+  "p5d8da17327": "A is confident nonsense; B deflects absurdly. Neither explains ice's lower density.",
+  "p9abb001688": "Neither is an email asking the neighbor for quiet; both incoherent assistant chatter.",
+  "p79b13ac0bf": "A always returns an empty list; B has a syntax error. Neither transposes.",
+  "pab7953b573": "A refuses; B writes a reversed-role message. Neither adds a dinner invitation.",
+  "p0a75d15dd9": "Answer is 5040; A says 49, B gives no number.",
+  "pc95317e7c1": "Neither mentions lemonade or advertises anything; both meaningless fragments.",
+  "p4838205750": "A falsely links rainbows to telescopes; B circular with nonsense word. Both useless.",
+  "pbb2a2e9725": "B gives a coherent main-point sentence; A ends in garbled quote junk.",
+  "pd23bec21af": "Correct answer is 56; both conclude 100 with broken arithmetic."
+}

@@ -1,0 +1,17 @@
+{
+  "p8e2cd5dfc6": "A gives wrong code and confused examples; B's code has syntax errors.",
+  "p802e4fa5ca": "A's empty-list guard fixes the crash; B rambles, contradicts itself, cut off.",
+  "pc102d5ef63": "A gives no paragraph; B false history and uses forbidden word 'games'.",
+  "p0b3722578a": "A loops 'democracy is a constitutional monarchy'; B incoherent with invented words.",
+  "p6b8abcc147": "A only boxes 'A Sunday morning'; B calls morning evening, ignores turn 2.",
+  "p892feae400": "A correct loop factorial; B uses recursion despite loop requirement, false explanation.",
+  "p9e1637e6bd": "Both explain the __name__ check wrongly; A broken code, B meaningless one-liner.",
+  "p6e46b29446": "A incoherent, never asks about pets or parking; B is boxed meta-text.",
+  "p0b4146f3df": "No correct comprehension; A wrong lengths, duplicate key; B rambles without valid code.",
+  "p78cc6133f3": "A boxes 'Volcano'; B circular definition then ash loop; no volcanoes named.",
+  "p3969367285": "A is about sender's own job, no congratulations; B degenerate rambling.",
+  "p206158d680": "B weak but on-topic story; A only boxed meta-text, no story.",
+  "p357b826d63": "B valid JSON but missing city key; A invalid JSON plus long explanation.",
+  "p43b793bd02": "B gives usable tips and three numbered steps; A repeats 'adding seeds' nonsense.",
+  "pd0bc727033": "A mostly incoherent date talk; B false sealed-container claim; both useless."
+}

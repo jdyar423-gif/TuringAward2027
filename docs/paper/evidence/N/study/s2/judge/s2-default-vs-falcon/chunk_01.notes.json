@@ -1,0 +1,17 @@
+{
+  "pd1edc7df75": "A incoherent, conflates pets and parking; B role-confused but asks both questions.",
+  "pedd743cbda": "A describes holiday plans (double P.S. minor); B vague, assistant-speak, not plans.",
+  "p82ad8b44f7": "Correct answer 56; A gives 168 with fabricated output, B gives 160.",
+  "pab65c77a9e": "A is not a rewrite; B invents details, drops 'broke' and 'ignored emails'.",
+  "pa2cdfd2c45": "B correct 0.3 in turn 1; A wrong; both reach 50% by faulty reasoning.",
+  "p928524ff8e": "A gives four steps not three, but B's steps never explain planting.",
+  "pb0fb910d5c": "A is degenerate, looping, off-topic; B too long but tells the story.",
+  "p30c3dde678": "A's tips are a degenerate 'Read more' loop; B useful though turn 2 unfocused.",
+  "p1ceb446744": "Neither explains calendar drift; A hallucinates earthworm eggs, B calls leap years ages.",
+  "p889bc91e53": "A loops repetitive sun sentences and ignores 'goes wrong'; B answers both turns.",
+  "p0313dc0e6d": "Both right at $30, both wrong for three shirts ($120, $10).",
+  "p716802e222": "A's routine just repeats its list verbatim; B gives an actual routine.",
+  "pcb94a415a9": "A's code works but recursive, not loop; B's helper recurses infinitely and crashes.",
+  "p3b5b60865d": "Neither mentions refrigerant or compressor; A invents electromagnetic induction, B incoherent.",
+  "pfe6dc0056e": "A gives one correctly bracketed title; B multiple titles plus degenerate text."
+}

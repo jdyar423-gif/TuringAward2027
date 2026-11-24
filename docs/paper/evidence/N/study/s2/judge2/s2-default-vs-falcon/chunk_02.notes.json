@@ -1,0 +1,17 @@
+{
+  "p5e55cf0aa3": "A has factual errors but correct core distinction; B is circular, repetitive nonsense.",
+  "p61b611f837": "Both emails role-confused: A never thanks, incoherent; B written from employer's perspective.",
+  "p716802e222": "B's second turn repeats first answer verbatim, no routine; A gives actual routine.",
+  "p82ad8b44f7": "Correct answer 56; A says 160, B says 168 with fabricated output.",
+  "pad9f72b319": "A is one circular sentence, violating two-sentence rule; B correct, two sentences.",
+  "pc02e7991c5": "Correct is 12,600; A is nonsense, B forgets adding growth, says 600.",
+  "p5d8ad6fe69": "A correctly gives $78; B reports discount $42 as new price.",
+  "p39c04d8705": "B computes $11.52 correctly; A claims 18% of $64 is $108.",
+  "pf9443352a0": "A is rambling repetitive incoherence; B is emoji fragments, no actual toast.",
+  "p04ea892cbe": "A is factually wrong and degenerates; B mostly correct, one liquid-shape error.",
+  "p190b195d4a": "Both are all-caps gibberish; neither is a coherent lemonade advertisement.",
+  "pef341e2e40": "A is meaningless; B gives correct definitions despite errors like elected French king.",
+  "pfccc74ded9": "A fixes four errors but keeps 'Their'; B makes sentence worse, fixes nothing.",
+  "p6d6ebc9cdc": "A adds valid empty-list check; B's code is invalid Python syntax.",
+  "pf6c73a5a7b": "A claims ice denser than water, many errors; B is circular gibberish."
+}

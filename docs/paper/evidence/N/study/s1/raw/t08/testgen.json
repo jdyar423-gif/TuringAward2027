@@ -1,0 +1,2131 @@
+{
+  "status": "complete",
+  "out": "/content/bes_cli/study/s1/t08",
+  "started": "2026-11-24 09:41:10",
+  "run_id": "ours-export-step25280-2efdca545a4e2f2c/dev-s1-t08-abbdeb7de0-s0",
+  "key": "ours-export-step25280-2efdca545a4e2f2c",
+  "root": "/content/bes_cli/study/s1/t08/proxy",
+  "split": "dev",
+  "settings": {
+    "temperature": 0.8,
+    "top_p": 0.9,
+    "top_k": 0,
+    "min_p": 0.0,
+    "typical_p": 1.0,
+    "repeat_penalty": 1.0,
+    "presence_penalty": 0.0,
+    "frequency_penalty": 0.0,
+    "max_tokens": 768,
+    "system_prompt": null,
+    "strip_think": false,
+    "samples": 1,
+    "select": "first",
+    "extra": {
+      "particles": 6,
+      "use_critic": false,
+      "use_library": false
+    }
+  },
+  "settings_hash": "abbdeb7de0",
+  "overrides": [
+    "extra.particles=6",
+    "extra.use_library=true",
+    "max_tokens=768",
+    "temperature=0.6",
+    "top_p=0.9",
+    "temperature=0.8",
+    "extra.use_library=false"
+  ],
+  "cache": "elastic",
+  "cache_step": 256,
+  "export": {
+    "dir": "/content/bes_cli/study/s1/default/export",
+    "step": 25280,
+    "source": {
+      "checkpoint": "/content/bes_cli/study/s1/default/source/run/train/ckpt/ckpt-000023-step-000025280",
+      "config_hash": "0a7e9b33372a07ee",
+      "fingerprint": "a716e86064e2fe4c36b93540af307c3aa0034edfb979027897c43e63cbf821a4",
+      "seq": 23,
+      "step": 25280,
+      "weights": "train"
+    },
+    "weights_sha256": "b5ff047b6b155e6393782f645b9f793a8615c403eb030d7d83ba830e33cf7a92",
+    "library": null,
+    "decode_choice": {
+      "chosen": "default",
+      "overrides": [
+        "extra.particles=6",
+        "extra.use_library=true",
+        "max_tokens=768",
+        "temperature=0.6",
+        "top_p=0.9"
+      ],
+      "settings": {
+        "max_tokens": 768,
+        "min_p": 0.0,
+        "particles": 6,
+        "repeat_penalty": 1.0,
+        "system_prompt": null,
+        "temperature": 0.6,
+        "top_k": 0,
+        "top_p": 0.9,
+        "use_critic": false,
+        "use_library": true
+      }
+    },
+    "notes": [
+      "decoding with float32 activations on cpu (the configuration says bfloat16)"
+    ],
+    "verified": true,
+    "load_s": 1.15,
+    "how": "export directory"
+  },
+  "total": 60,
+  "done": 60,
+  "missing": 0,
+  "missing_ids": [],
+  "failed": {},
+  "unstarted": 0,
+  "reused": 0,
+  "new_replies": 75,
+  "wall_s": 985.1,
+  "stopped": null,
+  "dispatch_closed": null,
+  "workers": 16,
+  "workers_ready": 16,
+  "decode_mode": {
+    "mode": "elastic",
+    "lengths": {
+      "256": 195,
+      "512": 451,
+      "768": 707,
+      "1024": 963,
+      "2048": 1987,
+      "3072": 3011
+    }
+  },
+  "calibration": {
+    "role": "calibrate",
+    "elastic_ok": true,
+    "lengths": {
+      "256": 195,
+      "512": 451,
+      "768": 707,
+      "1024": 963,
+      "2048": 1987,
+      "3072": 3011
+    },
+    "candidates": [
+      256,
+      512,
+      768,
+      1024,
+      2048,
+      3072
+    ],
+    "reference_slots": 5248,
+    "particles": 6,
+    "max_new_tokens": 768,
+    "cache_step": 256,
+    "failed": [],
+    "checks": 30,
+    "slot_bytes": 98304,
+    "probe_tokens": 3070,
+    "end_to_end": {
+      "ok": true,
+      "lengths": [
+        256,
+        512,
+        768,
+        1024,
+        2048,
+        3072
+      ]
+    },
+    "seconds": 260.9
+  },
+  "speculation": {
+    "tasks": 21,
+    "kept_replies": 15,
+    "dropped_replies": 0,
+    "prompts_done": 6,
+    "in_flight": 15
+  },
+  "max_busy": null,
+  "cores_per_worker": 1,
+  "threads": 1,
+  "cost": {
+    "replies_per_min": 4.623,
+    "prompts_per_min": 3.699,
+    "generation_s": 973.3,
+    "reply_seconds": {
+      "n": 75,
+      "mean": 181.18,
+      "median": 143.69,
+      "p90": 365.16,
+      "max": 905.46,
+      "min": 2.49
+    },
+    "reply_seconds_by_particles": {
+      "6": {
+        "n": 75,
+        "mean": 181.18,
+        "median": 143.69,
+        "p90": 365.16,
+        "max": 905.46,
+        "min": 2.49
+      }
+    },
+    "ms_per_step": {
+      "n": 75,
+      "mean": 300.6,
+      "median": 296.37,
+      "p90": 466.61,
+      "max": 627.42,
+      "min": 129.51
+    },
+    "tokens": {
+      "n": 75,
+      "mean": 172.69,
+      "median": 139.0,
+      "p90": 354.0,
+      "max": 768.0,
+      "min": 9.0
+    },
+    "steps": {
+      "n": 75,
+      "mean": 569.6,
+      "median": 582.0,
+      "p90": 957.0,
+      "max": 1718.0,
+      "min": 15.0
+    },
+    "prompt_seconds": {
+      "n": 60,
+      "mean": 226.56,
+      "median": 163.59,
+      "p90": 573.55,
+      "max": 925.15,
+      "min": 2.5
+    },
+    "startup": {
+      "import_s": {
+        "n": 16,
+        "mean": 0.66,
+        "median": 0.59,
+        "p90": 0.96,
+        "max": 0.97,
+        "min": 0.43
+      },
+      "load_s": {
+        "n": 16,
+        "mean": 0.82,
+        "median": 0.81,
+        "p90": 1.06,
+        "max": 1.11,
+        "min": 0.62
+      },
+      "compile_s": {
+        "n": 16,
+        "mean": 28.53,
+        "median": 11.43,
+        "p90": 24.49,
+        "max": 260.88,
+        "min": 9.21
+      },
+      "ready_s": {
+        "n": 16,
+        "mean": 30.01,
+        "median": 12.9,
+        "p90": 26.56,
+        "max": 262.02,
+        "min": 10.27
+      }
+    },
+    "worker_max_rss_mb": 4407.51171875,
+    "mem_available_gb_end": 146.58688735961914
+  },
+  "worker_details": [
+    {
+      "index": 0,
+      "cores": [
+        24
+      ],
+      "restarts": 0,
+      "prompts": 4,
+      "busy_s": 520.1,
+      "max_rss_mb": 4407.5,
+      "pid": 168603,
+      "affinity": [
+        24
+      ],
+      "backend": "cpu",
+      "platforms": [
+        "cpu"
+      ],
+      "jax_platforms": "cpu",
+      "cache": "elastic",
+      "import_s": 0.48,
+      "load_s": 0.65,
+      "compile_s": 260.88,
+      "ready_s": 262.02,
+      "rss_mb": 707.7,
+      "warmup": {
+        "role": "calibrate",
+        "elastic_ok": true,
+        "lengths": {
+          "256": 195,
+          "512": 451,
+          "768": 707,
+          "1024": 963,
+          "2048": 1987,
+          "3072": 3011
+        },
+        "candidates": [
+          256,
+          512,
+          768,
+          1024,
+          2048,
+          3072
+        ],
+        "reference_slots": 5248,
+        "particles": 6,
+        "max_new_tokens": 768,
+        "cache_step": 256,
+        "failed": [],
+        "checks": 30,
+        "slot_bytes": 98304,
+        "probe_tokens": 3070,
+        "end_to_end": {
+          "ok": true,
+          "lengths": [
+            256,
+            512,
+            768,
+            1024,
+            2048,
+            3072
+          ]
+        },
+        "seconds": 260.9
+      }
+    },
+    {
+      "index": 1,
+      "cores": [
+        25
+      ],
+      "restarts": 0,
+      "prompts": 3,
+      "busy_s": 971.8,
+      "max_rss_mb": 2493.6,
+      "pid": 168604,
+      "affinity": [
+        25
+      ],
+      "backend": "cpu",
+      "platforms": [
+        "cpu"
+      ],
+      "jax_platforms": "cpu",
+      "cache": "elastic",
+      "import_s": 0.47,
+      "load_s": 0.65,
+      "compile_s": 10.43,
+      "ready_s": 11.55,
+      "rss_mb": 627.0,
+      "warmup": {
+        "role": "warm",
+        "compiled_slots": [
+          256,
+          512
+        ],
+        "seconds": 10.4
+      }
+    },
+    {
+      "index": 2,
+      "cores": [
+        26
+      ],
+      "restarts": 0,
+      "prompts": 7,
+      "busy_s": 938.7,
+      "max_rss_mb": 1755.4,
+      "pid": 168605,
+      "affinity": [
+        26
+      ],
+      "backend": "cpu",
+      "platforms": [
+        "cpu"
+      ],
+      "jax_platforms": "cpu",
+      "cache": "elastic",
+      "import_s": 0.76,
+      "load_s": 0.94,
+      "compile_s": 17.23,
+      "ready_s": 18.93,
+      "rss_mb": 630.1,
+      "warmup": {
+        "role": "warm",
+        "compiled_slots": [
+          256,
+          512
+        ],
+        "seconds": 17.2
+      }
+    },
+    {
+      "index": 3,
+      "cores": [
+        27
+      ],
+      "restarts": 0,
+      "prompts": 3,
+      "busy_s": 935.2,
+      "max_rss_mb": 2467.5,
+      "pid": 168606,
+      "affinity": [
+        27
+      ],
+      "backend": "cpu",
+      "platforms": [
+        "cpu"
+      ],
+      "jax_platforms": "cpu",
+      "cache": "elastic",
+      "import_s": 0.46,
+      "load_s": 0.64,
+      "compile_s": 10.26,
+      "ready_s": 11.37,
+      "rss_mb": 627.1,
+      "warmup": {
+        "role": "warm",
+        "compiled_slots": [
+          256,
+          512
+        ],
+        "seconds": 10.3
+      }
+    },
+    {
+      "index": 4,
+      "cores": [
+        28
+      ],
+      "restarts": 0,
+      "prompts": 1,
+      "busy_s": 909.8,
+      "max_rss_mb": 3655.2,
+      "pid": 168607,
+      "affinity": [
+        28
+      ],
+      "backend": "cpu",
+      "platforms": [
+        "cpu"
+      ],
+      "jax_platforms": "cpu",
+      "cache": "elastic",
+      "import_s": 0.73,
+      "load_s": 0.91,
+      "compile_s": 12.28,
+      "ready_s": 13.92,
+      "rss_mb": 631.0,
+      "warmup": {
+        "role": "warm",
+        "compiled_slots": [
+          256,
+          512
+        ],
+        "seconds": 12.3
+      }
+    },
+    {
+      "index": 5,
+      "cores": [
+        29
+      ],
+      "restarts": 0,
+      "prompts": 4,
+      "busy_s": 893.1,
+      "max_rss_mb": 2464.6,
+      "pid": 168608,
+      "affinity": [
+        29
+      ],
+      "backend": "cpu",
+      "platforms": [
+        "cpu"
+      ],
+      "jax_platforms": "cpu",
+      "cache": "elastic",
+      "import_s": 0.46,
+      "load_s": 0.63,
+      "compile_s": 10.5,
+      "ready_s": 11.6,
+      "rss_mb": 633.7,
+      "warmup": {
+        "role": "warm",
+        "compiled_slots": [
+          256,
+          512
+        ],
+        "seconds": 10.5
+      }
+    },
+    {
+      "index": 6,
+      "cores": [
+        30
+      ],
+      "restarts": 0,
+      "prompts": 2,
+      "busy_s": 828.4,
+      "max_rss_mb": 2424.4,
+      "pid": 168609,
+      "affinity": [
+        30
+      ],
+      "backend": "cpu",
+      "platforms": [
+        "cpu"
+      ],
+      "jax_platforms": "cpu",
+      "cache": "elastic",
+      "import_s": 0.86,
+      "load_s": 1.0,
+      "compile_s": 11.72,
+      "ready_s": 13.58,
+      "rss_mb": 621.6,
+      "warmup": {
+        "role": "warm",
+        "compiled_slots": [
+          256,
+          512
+        ],
+        "seconds": 11.7
+      }
+    },
+    {
+      "index": 7,
+      "cores": [
+        31
+      ],
+      "restarts": 0,
+      "prompts": 4,
+      "busy_s": 903.2,
+      "max_rss_mb": 1774.8,
+      "pid": 168610,
+      "affinity": [
+        31
+      ],
+      "backend": "cpu",
+      "platforms": [
+        "cpu"
+      ],
+      "jax_platforms": "cpu",
+      "cache": "elastic",
+      "import_s": 0.96,
+      "load_s": 1.11,
+      "compile_s": 24.49,
+      "ready_s": 26.56,
+      "rss_mb": 626.9,
+      "warmup": {
+        "role": "warm",
+        "compiled_slots": [
+          256,
+          512
+        ],
+        "seconds": 24.5
+      }
+    },
+    {
+      "index": 8,
+      "cores": [
+        32
+      ],
+      "restarts": 0,
+      "prompts": 4,
+      "busy_s": 813.8,
+      "max_rss_mb": 1745.5,
+      "pid": 168611,
+      "affinity": [
+        32
+      ],
+      "backend": "cpu",
+      "platforms": [
+        "cpu"
+      ],
+      "jax_platforms": "cpu",
+      "cache": "elastic",
+      "import_s": 0.57,
+      "load_s": 0.77,
+      "compile_s": 11.12,
+      "ready_s": 12.45,
+      "rss_mb": 630.4,
+      "warmup": {
+        "role": "warm",
+        "compiled_slots": [
+          256,
+          512
+        ],
+        "seconds": 11.1
+      }
+    },
+    {
+      "index": 9,
+      "cores": [
+        33
+      ],
+      "restarts": 0,
+      "prompts": 3,
+      "busy_s": 891.5,
+      "max_rss_mb": 2447.8,
+      "pid": 168612,
+      "affinity": [
+        33
+      ],
+      "backend": "cpu",
+      "platforms": [
+        "cpu"
+      ],
+      "jax_platforms": "cpu",
+      "cache": "elastic",
+      "import_s": 0.97,
+      "load_s": 0.91,
+      "compile_s": 11.64,
+      "ready_s": 13.51,
+      "rss_mb": 624.0,
+      "warmup": {
+        "role": "warm",
+        "compiled_slots": [
+          256,
+          512
+        ],
+        "seconds": 11.6
+      }
+    },
+    {
+      "index": 10,
+      "cores": [
+        34
+      ],
+      "restarts": 0,
+      "prompts": 2,
+      "busy_s": 762.5,
+      "max_rss_mb": 2478.9,
+      "pid": 168613,
+      "affinity": [
+        34
+      ],
+      "backend": "cpu",
+      "platforms": [
+        "cpu"
+      ],
+      "jax_platforms": "cpu",
+      "cache": "elastic",
+      "import_s": 0.87,
+      "load_s": 1.06,
+      "compile_s": 22.42,
+      "ready_s": 24.35,
+      "rss_mb": 632.5,
+      "warmup": {
+        "role": "warm",
+        "compiled_slots": [
+          256,
+          512
+        ],
+        "seconds": 22.4
+      }
+    },
+    {
+      "index": 11,
+      "cores": [
+        35
+      ],
+      "restarts": 0,
+      "prompts": 3,
+      "busy_s": 880.1,
+      "max_rss_mb": 1723.5,
+      "pid": 168614,
+      "affinity": [
+        35
+      ],
+      "backend": "cpu",
+      "platforms": [
+        "cpu"
+      ],
+      "jax_platforms": "cpu",
+      "cache": "elastic",
+      "import_s": 0.58,
+      "load_s": 0.78,
+      "compile_s": 11.22,
+      "ready_s": 12.58,
+      "rss_mb": 629.3,
+      "warmup": {
+        "role": "warm",
+        "compiled_slots": [
+          256,
+          512
+        ],
+        "seconds": 11.2
+      }
+    },
+    {
+      "index": 12,
+      "cores": [
+        36
+      ],
+      "restarts": 0,
+      "prompts": 4,
+      "busy_s": 776.7,
+      "max_rss_mb": 1759.3,
+      "pid": 168615,
+      "affinity": [
+        36
+      ],
+      "backend": "cpu",
+      "platforms": [
+        "cpu"
+      ],
+      "jax_platforms": "cpu",
+      "cache": "elastic",
+      "import_s": 0.61,
+      "load_s": 0.84,
+      "compile_s": 11.17,
+      "ready_s": 12.61,
+      "rss_mb": 626.7,
+      "warmup": {
+        "role": "warm",
+        "compiled_slots": [
+          256,
+          512
+        ],
+        "seconds": 11.2
+      }
+    },
+    {
+      "index": 13,
+      "cores": [
+        37
+      ],
+      "restarts": 0,
+      "prompts": 1,
+      "busy_s": 925.1,
+      "max_rss_mb": 3632.1,
+      "pid": 168616,
+      "affinity": [
+        37
+      ],
+      "backend": "cpu",
+      "platforms": [
+        "cpu"
+      ],
+      "jax_platforms": "cpu",
+      "cache": "elastic",
+      "import_s": 0.56,
+      "load_s": 0.8,
+      "compile_s": 11.83,
+      "ready_s": 13.19,
+      "rss_mb": 629.5,
+      "warmup": {
+        "role": "warm",
+        "compiled_slots": [
+          256,
+          512
+        ],
+        "seconds": 11.8
+      }
+    },
+    {
+      "index": 14,
+      "cores": [
+        38
+      ],
+      "restarts": 0,
+      "prompts": 7,
+      "busy_s": 835.0,
+      "max_rss_mb": 2430.7,
+      "pid": 168617,
+      "affinity": [
+        38
+      ],
+      "backend": "cpu",
+      "platforms": [
+        "cpu"
+      ],
+      "jax_platforms": "cpu",
+      "cache": "elastic",
+      "import_s": 0.43,
+      "load_s": 0.62,
+      "compile_s": 9.21,
+      "ready_s": 10.27,
+      "rss_mb": 626.8,
+      "warmup": {
+        "role": "warm",
+        "compiled_slots": [
+          256,
+          512
+        ],
+        "seconds": 9.2
+      }
+    },
+    {
+      "index": 15,
+      "cores": [
+        39
+      ],
+      "restarts": 0,
+      "prompts": 8,
+      "busy_s": 808.7,
+      "max_rss_mb": 2475.7,
+      "pid": 168618,
+      "affinity": [
+        39
+      ],
+      "backend": "cpu",
+      "platforms": [
+        "cpu"
+      ],
+      "jax_platforms": "cpu",
+      "cache": "elastic",
+      "import_s": 0.73,
+      "load_s": 0.81,
+      "compile_s": 10.15,
+      "ready_s": 11.69,
+      "rss_mb": 628.0,
+      "warmup": {
+        "role": "warm",
+        "compiled_slots": [
+          256,
+          512
+        ],
+        "seconds": 10.1
+      }
+    }
+  ],
+  "events": [
+    "worker 0: stopped (exit 0)",
+    "worker 10: stopped (exit 0)",
+    "worker 12: stopped (exit 0)",
+    "worker 15: stopped (exit 0)",
+    "worker 8: stopped (exit 0)",
+    "worker 6: stopped (exit 0)",
+    "worker 14: stopped (exit 0)",
+    "worker 11: stopped (exit 0)",
+    "worker 5: stopped (exit 0)",
+    "worker 9: stopped (exit 0)",
+    "worker 4: stopped (exit 0)",
+    "worker 7: stopped (exit 0)",
+    "worker 13: stopped (exit 0)",
+    "worker 3: stopped (exit 0)",
+    "worker 2: stopped (exit 0)"
+  ],
+  "files": {
+    "outputs": "/content/bes_cli/study/s1/t08/proxy/outputs/ours-export-step25280-2efdca545a4e2f2c/dev-s1-t08-abbdeb7de0-s0.jsonl",
+    "meta": "/content/bes_cli/study/s1/t08/proxy/outputs/ours-export-step25280-2efdca545a4e2f2c/dev-s1-t08-abbdeb7de0-s0.meta.json",
+    "cache": "/content/bes_cli/study/s1/t08/proxy/cache/ours-export-step25280-2efdca545a4e2f2c.jsonl",
+    "replies": "/content/bes_cli/study/s1/t08/replies.jsonl",
+    "summary": "/content/bes_cli/study/s1/t08/testgen.json",
+    "log": "/content/bes_cli/study/s1/t08/testgen.log",
+    "bundle": "/content/bes_cli/study/s1/t08/testgen.tar.gz"
+  },
+  "per_prompt": [
+    {
+      "prompt_id": "instruct-012",
+      "worker": 2,
+      "seconds": 21.1,
+      "cpu_s": 21.05,
+      "turns": 2,
+      "rss_mb": 692.7,
+      "hwm_mb": 1348.6
+    },
+    {
+      "prompt_id": "writing-031",
+      "worker": 2,
+      "seconds": 39.93,
+      "cpu_s": 39.75,
+      "turns": 1,
+      "rss_mb": 695.9,
+      "hwm_mb": 1348.6
+    },
+    {
+      "prompt_id": "writing-056",
+      "worker": 5,
+      "seconds": 155.82,
+      "cpu_s": 155.62,
+      "turns": 2,
+      "rss_mb": 700.1,
+      "hwm_mb": 1415.0
+    },
+    {
+      "prompt_id": "math-004",
+      "worker": 7,
+      "seconds": 194.78,
+      "cpu_s": 194.44,
+      "turns": 2,
+      "rss_mb": 715.1,
+      "hwm_mb": 1432.3
+    },
+    {
+      "prompt_id": "writing-087",
+      "worker": 2,
+      "seconds": 146.26,
+      "cpu_s": 145.62,
+      "turns": 1,
+      "rss_mb": 711.9,
+      "hwm_mb": 1424.1
+    },
+    {
+      "prompt_id": "writing-006",
+      "worker": 2,
+      "seconds": 16.95,
+      "cpu_s": 16.47,
+      "turns": 1,
+      "rss_mb": 725.5,
+      "hwm_mb": 1444.2
+    },
+    {
+      "prompt_id": "math-060",
+      "worker": 10,
+      "seconds": 239.36,
+      "cpu_s": 239.02,
+      "turns": 2,
+      "rss_mb": 725.4,
+      "hwm_mb": 1441.0
+    },
+    {
+      "prompt_id": "writing-080",
+      "worker": 14,
+      "seconds": 257.85,
+      "cpu_s": 256.12,
+      "turns": 2,
+      "rss_mb": 707.7,
+      "hwm_mb": 2430.7
+    },
+    {
+      "prompt_id": "code-040",
+      "worker": 15,
+      "seconds": 256.47,
+      "cpu_s": 255.38,
+      "turns": 2,
+      "rss_mb": 735.7,
+      "hwm_mb": 2459.4
+    },
+    {
+      "prompt_id": "writing-062",
+      "worker": 5,
+      "seconds": 105.48,
+      "cpu_s": 105.39,
+      "turns": 1,
+      "rss_mb": 700.7,
+      "hwm_mb": 1419.6
+    },
+    {
+      "prompt_id": "writing-025",
+      "worker": 14,
+      "seconds": 47.87,
+      "cpu_s": 47.8,
+      "turns": 1,
+      "rss_mb": 708.7,
+      "hwm_mb": 2430.7
+    },
+    {
+      "prompt_id": "writing-065",
+      "worker": 15,
+      "seconds": 62.15,
+      "cpu_s": 62.09,
+      "turns": 1,
+      "rss_mb": 736.7,
+      "hwm_mb": 2459.4
+    },
+    {
+      "prompt_id": "code-041",
+      "worker": 14,
+      "seconds": 32.28,
+      "cpu_s": 32.09,
+      "turns": 1,
+      "rss_mb": 708.7,
+      "hwm_mb": 2430.7
+    },
+    {
+      "prompt_id": "writing-061",
+      "worker": 0,
+      "seconds": 91.07,
+      "cpu_s": 90.42,
+      "turns": 1,
+      "rss_mb": 751.6,
+      "hwm_mb": 4407.0
+    },
+    {
+      "prompt_id": "writing-096",
+      "worker": 3,
+      "seconds": 356.69,
+      "cpu_s": 355.21,
+      "turns": 2,
+      "rss_mb": 737.3,
+      "hwm_mb": 1743.5
+    },
+    {
+      "prompt_id": "writing-046",
+      "worker": 2,
+      "seconds": 232.86,
+      "cpu_s": 219.72,
+      "turns": 1,
+      "rss_mb": 748.0,
+      "hwm_mb": 1748.8
+    },
+    {
+      "prompt_id": "code-057",
+      "worker": 14,
+      "seconds": 139.75,
+      "cpu_s": 125.72,
+      "turns": 1,
+      "rss_mb": 708.8,
+      "hwm_mb": 2430.7
+    },
+    {
+      "prompt_id": "code-009",
+      "worker": 15,
+      "seconds": 177.66,
+      "cpu_s": 158.34,
+      "turns": 1,
+      "rss_mb": 749.0,
+      "hwm_mb": 2475.7
+    },
+    {
+      "prompt_id": "chat-072",
+      "worker": 11,
+      "seconds": 527.13,
+      "cpu_s": 492.37,
+      "turns": 2,
+      "rss_mb": 723.8,
+      "hwm_mb": 1723.5
+    },
+    {
+      "prompt_id": "instruct-048",
+      "worker": 6,
+      "seconds": 548.58,
+      "cpu_s": 517.14,
+      "turns": 2,
+      "rss_mb": 700.9,
+      "hwm_mb": 2423.1
+    },
+    {
+      "prompt_id": "code-024",
+      "worker": 8,
+      "seconds": 573.55,
+      "cpu_s": 542.74,
+      "turns": 2,
+      "rss_mb": 740.8,
+      "hwm_mb": 1745.5
+    },
+    {
+      "prompt_id": "writing-063",
+      "worker": 7,
+      "seconds": 367.36,
+      "cpu_s": 334.94,
+      "turns": 1,
+      "rss_mb": 733.1,
+      "hwm_mb": 1733.4
+    },
+    {
+      "prompt_id": "chat-010",
+      "worker": 8,
+      "seconds": 15.04,
+      "cpu_s": 7.14,
+      "turns": 1,
+      "rss_mb": 740.8,
+      "hwm_mb": 1745.5
+    },
+    {
+      "prompt_id": "writing-060",
+      "worker": 1,
+      "seconds": 590.1,
+      "cpu_s": 554.17,
+      "turns": 2,
+      "rss_mb": 765.8,
+      "hwm_mb": 2493.1
+    },
+    {
+      "prompt_id": "code-045",
+      "worker": 0,
+      "seconds": 252.24,
+      "cpu_s": 216.52,
+      "turns": 1,
+      "rss_mb": 751.7,
+      "hwm_mb": 4407.0
+    },
+    {
+      "prompt_id": "chat-015",
+      "worker": 15,
+      "seconds": 107.32,
+      "cpu_s": 95.58,
+      "turns": 1,
+      "rss_mb": 749.0,
+      "hwm_mb": 2475.7
+    },
+    {
+      "prompt_id": "chat-034",
+      "worker": 15,
+      "seconds": 2.5,
+      "cpu_s": 2.49,
+      "turns": 1,
+      "rss_mb": 749.0,
+      "hwm_mb": 2475.7
+    },
+    {
+      "prompt_id": "code-017",
+      "worker": 14,
+      "seconds": 141.28,
+      "cpu_s": 128.1,
+      "turns": 1,
+      "rss_mb": 710.1,
+      "hwm_mb": 2430.7
+    },
+    {
+      "prompt_id": "code-015",
+      "worker": 3,
+      "seconds": 268.92,
+      "cpu_s": 239.16,
+      "turns": 1,
+      "rss_mb": 737.3,
+      "hwm_mb": 1743.5
+    },
+    {
+      "prompt_id": "chat-088",
+      "worker": 12,
+      "seconds": 633.35,
+      "cpu_s": 592.06,
+      "turns": 2,
+      "rss_mb": 751.6,
+      "hwm_mb": 1759.3
+    },
+    {
+      "prompt_id": "chat-032",
+      "worker": 9,
+      "seconds": 654.09,
+      "cpu_s": 617.21,
+      "turns": 2,
+      "rss_mb": 725.8,
+      "hwm_mb": 2447.8
+    },
+    {
+      "prompt_id": "writing-035",
+      "worker": 5,
+      "seconds": 398.07,
+      "cpu_s": 362.89,
+      "turns": 1,
+      "rss_mb": 743.7,
+      "hwm_mb": 2464.6
+    },
+    {
+      "prompt_id": "instruct-006",
+      "worker": 9,
+      "seconds": 9.99,
+      "cpu_s": 9.99,
+      "turns": 1,
+      "rss_mb": 756.0,
+      "hwm_mb": 2447.8
+    },
+    {
+      "prompt_id": "chat-030",
+      "worker": 1,
+      "seconds": 95.57,
+      "cpu_s": 95.24,
+      "turns": 1,
+      "rss_mb": 766.2,
+      "hwm_mb": 2493.1
+    },
+    {
+      "prompt_id": "chat-050",
+      "worker": 14,
+      "seconds": 74.69,
+      "cpu_s": 70.74,
+      "turns": 1,
+      "rss_mb": 710.2,
+      "hwm_mb": 2430.7
+    },
+    {
+      "prompt_id": "chat-043",
+      "worker": 7,
+      "seconds": 121.45,
+      "cpu_s": 109.72,
+      "turns": 1,
+      "rss_mb": 733.6,
+      "hwm_mb": 1733.4
+    },
+    {
+      "prompt_id": "instruct-023",
+      "worker": 12,
+      "seconds": 65.01,
+      "cpu_s": 60.12,
+      "turns": 1,
+      "rss_mb": 751.6,
+      "hwm_mb": 1759.3
+    },
+    {
+      "prompt_id": "chat-037",
+      "worker": 15,
+      "seconds": 99.59,
+      "cpu_s": 96.53,
+      "turns": 1,
+      "rss_mb": 749.5,
+      "hwm_mb": 2475.7
+    },
+    {
+      "prompt_id": "chat-066",
+      "worker": 8,
+      "seconds": 120.11,
+      "cpu_s": 113.65,
+      "turns": 1,
+      "rss_mb": 740.8,
+      "hwm_mb": 1745.5
+    },
+    {
+      "prompt_id": "chat-023",
+      "worker": 11,
+      "seconds": 181.58,
+      "cpu_s": 168.26,
+      "turns": 1,
+      "rss_mb": 724.5,
+      "hwm_mb": 1723.5
+    },
+    {
+      "prompt_id": "chat-067",
+      "worker": 0,
+      "seconds": 138.16,
+      "cpu_s": 123.83,
+      "turns": 1,
+      "rss_mb": 756.9,
+      "hwm_mb": 4407.0
+    },
+    {
+      "prompt_id": "instruct-071",
+      "worker": 12,
+      "seconds": 36.41,
+      "cpu_s": 29.4,
+      "turns": 1,
+      "rss_mb": 751.6,
+      "hwm_mb": 1759.3
+    },
+    {
+      "prompt_id": "code-025",
+      "worker": 2,
+      "seconds": 288.57,
+      "cpu_s": 258.27,
+      "turns": 1,
+      "rss_mb": 748.7,
+      "hwm_mb": 1755.4
+    },
+    {
+      "prompt_id": "math-051",
+      "worker": 15,
+      "seconds": 60.28,
+      "cpu_s": 49.33,
+      "turns": 1,
+      "rss_mb": 746.5,
+      "hwm_mb": 2475.7
+    },
+    {
+      "prompt_id": "math-035",
+      "worker": 0,
+      "seconds": 38.67,
+      "cpu_s": 30.8,
+      "turns": 1,
+      "rss_mb": 756.9,
+      "hwm_mb": 4407.0
+    },
+    {
+      "prompt_id": "writing-041",
+      "worker": 10,
+      "seconds": 523.1,
+      "cpu_s": 468.32,
+      "turns": 1,
+      "rss_mb": 755.2,
+      "hwm_mb": 2478.9
+    },
+    {
+      "prompt_id": "math-022",
+      "worker": 12,
+      "seconds": 41.97,
+      "cpu_s": 37.85,
+      "turns": 1,
+      "rss_mb": 751.6,
+      "hwm_mb": 1759.3
+    },
+    {
+      "prompt_id": "math-021",
+      "worker": 15,
+      "seconds": 42.78,
+      "cpu_s": 40.99,
+      "turns": 1,
+      "rss_mb": 744.5,
+      "hwm_mb": 2475.7
+    },
+    {
+      "prompt_id": "math-018",
+      "worker": 8,
+      "seconds": 105.07,
+      "cpu_s": 94.03,
+      "turns": 1,
+      "rss_mb": 740.8,
+      "hwm_mb": 1745.5
+    },
+    {
+      "prompt_id": "chat-059",
+      "worker": 6,
+      "seconds": 279.78,
+      "cpu_s": 247.15,
+      "turns": 1,
+      "rss_mb": 715.7,
+      "hwm_mb": 2423.1
+    },
+    {
+      "prompt_id": "instruct-055",
+      "worker": 14,
+      "seconds": 141.26,
+      "cpu_s": 126.26,
+      "turns": 1,
+      "rss_mb": 745.7,
+      "hwm_mb": 2430.7
+    },
+    {
+      "prompt_id": "math-013",
+      "worker": 11,
+      "seconds": 171.36,
+      "cpu_s": 149.99,
+      "turns": 1,
+      "rss_mb": 724.5,
+      "hwm_mb": 1723.5
+    },
+    {
+      "prompt_id": "instruct-009",
+      "worker": 5,
+      "seconds": 233.75,
+      "cpu_s": 202.55,
+      "turns": 1,
+      "rss_mb": 744.3,
+      "hwm_mb": 2464.6
+    },
+    {
+      "prompt_id": "instruct-039",
+      "worker": 9,
+      "seconds": 227.45,
+      "cpu_s": 196.3,
+      "turns": 1,
+      "rss_mb": 767.9,
+      "hwm_mb": 2447.8
+    },
+    {
+      "prompt_id": "instruct-064",
+      "worker": 4,
+      "seconds": 909.84,
+      "cpu_s": 832.03,
+      "turns": 2,
+      "rss_mb": 775.8,
+      "hwm_mb": 3655.2
+    },
+    {
+      "prompt_id": "instruct-045",
+      "worker": 7,
+      "seconds": 219.61,
+      "cpu_s": 194.81,
+      "turns": 1,
+      "rss_mb": 768.3,
+      "hwm_mb": 1774.8
+    },
+    {
+      "prompt_id": "chat-100",
+      "worker": 13,
+      "seconds": 925.15,
+      "cpu_s": 864.03,
+      "turns": 2,
+      "rss_mb": 752.9,
+      "hwm_mb": 3632.1
+    },
+    {
+      "prompt_id": "instruct-022",
+      "worker": 3,
+      "seconds": 309.6,
+      "cpu_s": 272.18,
+      "turns": 1,
+      "rss_mb": 744.9,
+      "hwm_mb": 2467.5
+    },
+    {
+      "prompt_id": "math-003",
+      "worker": 2,
+      "seconds": 193.05,
+      "cpu_s": 176.54,
+      "turns": 1,
+      "rss_mb": 748.7,
+      "hwm_mb": 1755.4
+    },
+    {
+      "prompt_id": "instruct-035",
+      "worker": 1,
+      "seconds": 286.1,
+      "cpu_s": 246.64,
+      "turns": 1,
+      "rss_mb": 766.2,
+      "hwm_mb": 2493.6
+    }
+  ],
+  "per_reply": [
+    {
+      "prompt_id": "instruct-012",
+      "turn": 0,
+      "seconds": 12.635097508999024,
+      "tokens": 15,
+      "prompt_tokens": 11,
+      "steps": 72,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-100",
+      "turn": 0,
+      "seconds": 19.59028232000128,
+      "tokens": 37,
+      "prompt_tokens": 10,
+      "steps": 79,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "instruct-012",
+      "turn": 1,
+      "seconds": 8.429682859998138,
+      "tokens": 15,
+      "prompt_tokens": 40,
+      "steps": 43,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-056",
+      "turn": 0,
+      "seconds": 56.4342366230012,
+      "tokens": 137,
+      "prompt_tokens": 20,
+      "steps": 280,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-080",
+      "turn": 0,
+      "seconds": 68.70803157699993,
+      "tokens": 155,
+      "prompt_tokens": 18,
+      "steps": 470,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-031",
+      "turn": 0,
+      "seconds": 39.9041908399995,
+      "tokens": 25,
+      "prompt_tokens": 47,
+      "steps": 197,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "code-040",
+      "turn": 0,
+      "seconds": 87.24019621199841,
+      "tokens": 233,
+      "prompt_tokens": 14,
+      "steps": 581,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "math-004",
+      "turn": 0,
+      "seconds": 104.91652088000046,
+      "tokens": 149,
+      "prompt_tokens": 28,
+      "steps": 354,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-056",
+      "turn": 1,
+      "seconds": 99.31140234000122,
+      "tokens": 137,
+      "prompt_tokens": 173,
+      "steps": 357,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "math-060",
+      "turn": 0,
+      "seconds": 143.69422485500036,
+      "tokens": 126,
+      "prompt_tokens": 42,
+      "steps": 289,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "instruct-048",
+      "turn": 0,
+      "seconds": 158.26535588700062,
+      "tokens": 126,
+      "prompt_tokens": 12,
+      "steps": 493,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-096",
+      "turn": 0,
+      "seconds": 172.67574439099917,
+      "tokens": 169,
+      "prompt_tokens": 21,
+      "steps": 665,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "math-004",
+      "turn": 1,
+      "seconds": 89.76346602699778,
+      "tokens": 43,
+      "prompt_tokens": 201,
+      "steps": 235,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-087",
+      "turn": 0,
+      "seconds": 146.20895332999862,
+      "tokens": 119,
+      "prompt_tokens": 16,
+      "steps": 575,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-006",
+      "turn": 0,
+      "seconds": 16.92170729799909,
+      "tokens": 25,
+      "prompt_tokens": 140,
+      "steps": 50,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "math-060",
+      "turn": 1,
+      "seconds": 95.46352451500206,
+      "tokens": 99,
+      "prompt_tokens": 196,
+      "steps": 247,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-080",
+      "turn": 1,
+      "seconds": 189.01921868700083,
+      "tokens": 155,
+      "prompt_tokens": 187,
+      "steps": 907,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "code-040",
+      "turn": 1,
+      "seconds": 169.11186068199822,
+      "tokens": 261,
+      "prompt_tokens": 277,
+      "steps": 768,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-062",
+      "turn": 0,
+      "seconds": 105.42020764300105,
+      "tokens": 146,
+      "prompt_tokens": 23,
+      "steps": 445,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "code-024",
+      "turn": 0,
+      "seconds": 277.9249501459999,
+      "tokens": 175,
+      "prompt_tokens": 19,
+      "steps": 768,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-032",
+      "turn": 0,
+      "seconds": 288.6704273819996,
+      "tokens": 523,
+      "prompt_tokens": 12,
+      "steps": 787,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-060",
+      "turn": 0,
+      "seconds": 291.1508248169994,
+      "tokens": 103,
+      "prompt_tokens": 16,
+      "steps": 957,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-025",
+      "turn": 0,
+      "seconds": 47.837132275999465,
+      "tokens": 68,
+      "prompt_tokens": 40,
+      "steps": 366,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-088",
+      "turn": 0,
+      "seconds": 314.5547949920001,
+      "tokens": 183,
+      "prompt_tokens": 16,
+      "steps": 848,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-065",
+      "turn": 0,
+      "seconds": 62.10219080200113,
+      "tokens": 135,
+      "prompt_tokens": 24,
+      "steps": 457,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-072",
+      "turn": 0,
+      "seconds": 325.9134203300018,
+      "tokens": 128,
+      "prompt_tokens": 16,
+      "steps": 873,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "code-041",
+      "turn": 0,
+      "seconds": 32.24920241899963,
+      "tokens": 141,
+      "prompt_tokens": 46,
+      "steps": 249,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-061",
+      "turn": 0,
+      "seconds": 91.02900414800024,
+      "tokens": 145,
+      "prompt_tokens": 22,
+      "steps": 376,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-096",
+      "turn": 1,
+      "seconds": 183.85344536099728,
+      "tokens": 285,
+      "prompt_tokens": 209,
+      "steps": 601,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "instruct-064",
+      "turn": 0,
+      "seconds": 395.85339397999996,
+      "tokens": 423,
+      "prompt_tokens": 12,
+      "steps": 1135,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-046",
+      "turn": 0,
+      "seconds": 232.74147918200106,
+      "tokens": 473,
+      "prompt_tokens": 20,
+      "steps": 788,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "code-057",
+      "turn": 0,
+      "seconds": 139.70683506299974,
+      "tokens": 179,
+      "prompt_tokens": 22,
+      "steps": 768,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "code-009",
+      "turn": 0,
+      "seconds": 177.56796474099974,
+      "tokens": 190,
+      "prompt_tokens": 28,
+      "steps": 918,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-072",
+      "turn": 1,
+      "seconds": 201.0100437760011,
+      "tokens": 81,
+      "prompt_tokens": 170,
+      "steps": 446,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "instruct-048",
+      "turn": 1,
+      "seconds": 390.0877268029981,
+      "tokens": 768,
+      "prompt_tokens": 160,
+      "steps": 836,
+      "particles": 6,
+      "finish": "length"
+    },
+    {
+      "prompt_id": "code-024",
+      "turn": 1,
+      "seconds": 295.41021129599903,
+      "tokens": 221,
+      "prompt_tokens": 208,
+      "steps": 652,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-063",
+      "turn": 0,
+      "seconds": 367.27602332899914,
+      "tokens": 246,
+      "prompt_tokens": 21,
+      "steps": 883,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-010",
+      "turn": 0,
+      "seconds": 15.017957675998332,
+      "tokens": 11,
+      "prompt_tokens": 19,
+      "steps": 26,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-060",
+      "turn": 1,
+      "seconds": 298.7046748590001,
+      "tokens": 65,
+      "prompt_tokens": 133,
+      "steps": 821,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "code-045",
+      "turn": 0,
+      "seconds": 252.1712000239968,
+      "tokens": 134,
+      "prompt_tokens": 21,
+      "steps": 768,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-015",
+      "turn": 0,
+      "seconds": 107.27763554599733,
+      "tokens": 184,
+      "prompt_tokens": 12,
+      "steps": 634,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-034",
+      "turn": 0,
+      "seconds": 2.4875838549996843,
+      "tokens": 9,
+      "prompt_tokens": 15,
+      "steps": 15,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "code-017",
+      "turn": 0,
+      "seconds": 141.23250961099984,
+      "tokens": 243,
+      "prompt_tokens": 21,
+      "steps": 795,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "code-015",
+      "turn": 0,
+      "seconds": 268.8312381959986,
+      "tokens": 349,
+      "prompt_tokens": 27,
+      "steps": 837,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-088",
+      "turn": 1,
+      "seconds": 318.5893780450024,
+      "tokens": 354,
+      "prompt_tokens": 217,
+      "steps": 670,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-032",
+      "turn": 1,
+      "seconds": 365.1600610690002,
+      "tokens": 356,
+      "prompt_tokens": 548,
+      "steps": 582,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-035",
+      "turn": 0,
+      "seconds": 397.93043903000216,
+      "tokens": 504,
+      "prompt_tokens": 23,
+      "steps": 1059,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "instruct-006",
+      "turn": 0,
+      "seconds": 9.96656540800177,
+      "tokens": 9,
+      "prompt_tokens": 20,
+      "steps": 32,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-030",
+      "turn": 0,
+      "seconds": 95.51674570400064,
+      "tokens": 198,
+      "prompt_tokens": 11,
+      "steps": 387,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-050",
+      "turn": 0,
+      "seconds": 74.622115123002,
+      "tokens": 238,
+      "prompt_tokens": 20,
+      "steps": 495,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-043",
+      "turn": 0,
+      "seconds": 121.35467454500031,
+      "tokens": 245,
+      "prompt_tokens": 16,
+      "steps": 356,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "instruct-023",
+      "turn": 0,
+      "seconds": 64.96639768100067,
+      "tokens": 94,
+      "prompt_tokens": 32,
+      "steps": 208,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-037",
+      "turn": 0,
+      "seconds": 99.53668901700075,
+      "tokens": 139,
+      "prompt_tokens": 20,
+      "steps": 642,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-066",
+      "turn": 0,
+      "seconds": 120.06256262399984,
+      "tokens": 110,
+      "prompt_tokens": 15,
+      "steps": 367,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-023",
+      "turn": 0,
+      "seconds": 181.48200140500194,
+      "tokens": 258,
+      "prompt_tokens": 14,
+      "steps": 501,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-067",
+      "turn": 0,
+      "seconds": 138.10076505600227,
+      "tokens": 151,
+      "prompt_tokens": 13,
+      "steps": 482,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "instruct-071",
+      "turn": 0,
+      "seconds": 36.384536080000544,
+      "tokens": 15,
+      "prompt_tokens": 27,
+      "steps": 111,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "code-025",
+      "turn": 0,
+      "seconds": 288.49362855599975,
+      "tokens": 254,
+      "prompt_tokens": 23,
+      "steps": 888,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "math-051",
+      "turn": 0,
+      "seconds": 60.25335346800057,
+      "tokens": 167,
+      "prompt_tokens": 52,
+      "steps": 365,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "math-035",
+      "turn": 0,
+      "seconds": 38.63725108700237,
+      "tokens": 113,
+      "prompt_tokens": 26,
+      "steps": 144,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "writing-041",
+      "turn": 0,
+      "seconds": 522.8946704830014,
+      "tokens": 215,
+      "prompt_tokens": 21,
+      "steps": 1068,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "math-022",
+      "turn": 0,
+      "seconds": 41.934069920000184,
+      "tokens": 59,
+      "prompt_tokens": 23,
+      "steps": 147,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "math-021",
+      "turn": 0,
+      "seconds": 42.74762643899885,
+      "tokens": 74,
+      "prompt_tokens": 28,
+      "steps": 302,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "math-018",
+      "turn": 0,
+      "seconds": 105.02078537800116,
+      "tokens": 68,
+      "prompt_tokens": 30,
+      "steps": 362,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-059",
+      "turn": 0,
+      "seconds": 279.69768697100153,
+      "tokens": 144,
+      "prompt_tokens": 18,
+      "steps": 741,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "instruct-055",
+      "turn": 0,
+      "seconds": 141.2048042910028,
+      "tokens": 84,
+      "prompt_tokens": 17,
+      "steps": 809,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "math-013",
+      "turn": 0,
+      "seconds": 171.3020182600012,
+      "tokens": 128,
+      "prompt_tokens": 15,
+      "steps": 589,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "instruct-009",
+      "turn": 0,
+      "seconds": 233.6746170990009,
+      "tokens": 26,
+      "prompt_tokens": 41,
+      "steps": 768,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "instruct-039",
+      "turn": 0,
+      "seconds": 227.39072362799925,
+      "tokens": 225,
+      "prompt_tokens": 29,
+      "steps": 708,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "instruct-064",
+      "turn": 1,
+      "seconds": 513.7007124350021,
+      "tokens": 133,
+      "prompt_tokens": 449,
+      "steps": 999,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "instruct-045",
+      "turn": 0,
+      "seconds": 219.5697156999995,
+      "tokens": 28,
+      "prompt_tokens": 16,
+      "steps": 774,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "chat-100",
+      "turn": 1,
+      "seconds": 905.4557260639995,
+      "tokens": 768,
+      "prompt_tokens": 61,
+      "steps": 1718,
+      "particles": 6,
+      "finish": "length"
+    },
+    {
+      "prompt_id": "instruct-022",
+      "turn": 0,
+      "seconds": 309.47954649500025,
+      "tokens": 59,
+      "prompt_tokens": 36,
+      "steps": 961,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "math-003",
+      "turn": 0,
+      "seconds": 192.99314078099997,
+      "tokens": 63,
+      "prompt_tokens": 18,
+      "steps": 779,
+      "particles": 6,
+      "finish": "stop"
+    },
+    {
+      "prompt_id": "instruct-035",
+      "turn": 0,
+      "seconds": 286.01212931100235,
+      "tokens": 39,
+      "prompt_tokens": 15,
+      "steps": 995,
+      "particles": 6,
+      "finish": "stop"
+    }
+  ],
+  "finished": "2026-11-24 09:57:35"
+}

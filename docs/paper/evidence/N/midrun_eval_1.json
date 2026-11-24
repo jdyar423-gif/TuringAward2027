@@ -1,0 +1,387 @@
+{
+ "time": 1795518350.3741918,
+ "runs": [
+  {
+   "run": "/content/runs/main16_final",
+   "config": "configs/final.py",
+   "overrides": [
+    "model.table_grad=take",
+    "run.bench_plans=reduced",
+    "run.post_minutes=critic=0,buffer=20",
+    "run.post_reserve_hours=3.6667",
+    "optim.micro_seqs=16",
+    "run.deadline_hours=21.328333333333333",
+    "model.attn_impl=splash",
+    "model.remat=true",
+    "optim.micro_seqs=16",
+    "model.table_grad=take"
+   ],
+   "plan": "splash-remat1-ms16-take",
+   "horizon_tokens": 13116792508.08106,
+   "ladder": {
+    "groups": [],
+    "overrides": [],
+    "rung": 0,
+    "switches": null
+   },
+   "heldout": {
+    "web": {
+     "source": "karpathy/climbmix-400b-shuffle/shard_00997.parquet",
+     "why": "beyond the run's ClimbMix download cap (files are taken in listing order up to the cap)",
+     "file": "found on disk",
+     "in_training_downloads": false,
+     "held_out": true,
+     "rows": 64,
+     "weighted_tokens": 65442.0
+    },
+    "chat": {
+     "source": "HuggingFaceTB/smol-smoltalk/data/test-00000-of-00001.parquet",
+     "why": "the test split; the registry reads the train files only",
+     "file": "found on disk",
+     "in_training_downloads": false,
+     "held_out": true,
+     "rows": 64,
+     "weighted_tokens": 60438.0
+    },
+    "proxy": {
+     "source": "bes/eval/proxy/prompts.jsonl (user turns)",
+     "held_out": true,
+     "rows": 12,
+     "weighted_tokens": 11094.0
+    }
+   },
+   "seq_len": 1024,
+   "checkpoints": [
+    {
+     "name": "ckpt-000024-step-000026890",
+     "step": 26890,
+     "tokens": 7049052160,
+     "train_seconds": 29680.616848945618,
+     "reason": "interval",
+     "consts": "stored",
+     "by_domain": {
+      "web": {
+       "loss": 2.7952221468533205,
+       "weight": 65442.0,
+       "assistant_loss": null,
+       "assistant_weight": 0.0,
+       "tape_gain": 0.013398774305799641
+      },
+      "chat": {
+       "loss": 1.629963812993274,
+       "weight": 60438.0,
+       "assistant_loss": 1.5269065947739462,
+       "assistant_weight": 49319.0,
+       "tape_gain": 0.030109673440196893
+      },
+      "proxy": {
+       "loss": 2.6331943575919414,
+       "weight": 11094.0,
+       "assistant_loss": null,
+       "assistant_weight": 0.0,
+       "tape_gain": -0.00021690617437762876
+      }
+     },
+     "loss": 2.2679438350868595,
+     "weight": 136974.0,
+     "eval_seconds": 44.3
+    },
+    {
+     "name": "ckpt-000025-step-000028501",
+     "step": 28501,
+     "tokens": 7471366144,
+     "train_seconds": 31182.38022685051,
+     "reason": "interval",
+     "consts": "stored",
+     "by_domain": {
+      "web": {
+       "loss": 2.7904938425915313,
+       "weight": 65442.0,
+       "assistant_loss": null,
+       "assistant_weight": 0.0,
+       "tape_gain": 0.01521612752128161
+      },
+      "chat": {
+       "loss": 1.6216686062835055,
+       "weight": 60438.0,
+       "assistant_loss": 1.5190977084452746,
+       "assistant_weight": 49319.0,
+       "tape_gain": 0.029839087658975635
+      },
+      "proxy": {
+       "loss": 2.6382497014151793,
+       "weight": 11094.0,
+       "assistant_loss": null,
+       "assistant_weight": 0.0,
+       "tape_gain": -0.00012822526893860957
+      }
+     },
+     "loss": 2.2624340930463993,
+     "weight": 136974.0,
+     "eval_seconds": 43.5
+    },
+    {
+     "name": "ckpt-000026-step-000029722",
+     "step": 29722,
+     "tokens": 7791443968,
+     "train_seconds": 32320.749530553818,
+     "reason": "final",
+     "consts": "stored",
+     "by_domain": {
+      "web": {
+       "loss": 2.7885831872115765,
+       "weight": 65442.0,
+       "assistant_loss": null,
+       "assistant_weight": 0.0,
+       "tape_gain": 0.01271208321782905
+      },
+      "chat": {
+       "loss": 1.6182601223309425,
+       "weight": 60438.0,
+       "assistant_loss": 1.5164046223628318,
+       "assistant_weight": 49319.0,
+       "tape_gain": 0.028577443000959536
+      },
+      "proxy": {
+       "loss": 2.636081616470615,
+       "weight": 11094.0,
+       "assistant_loss": null,
+       "assistant_weight": 0.0,
+       "tape_gain": -0.00017582797478988638
+      }
+     },
+     "loss": 2.25984169013143,
+     "weight": 136974.0,
+     "eval_seconds": 43.8
+    }
+   ]
+  },
+  {
+   "run": "/content/runs/main16",
+   "config": "configs/v9.py",
+   "overrides": [
+    "model.table_grad=take",
+    "run.bench_plans=reduced",
+    "run.post_minutes=critic=0,buffer=20",
+    "run.post_reserve_hours=3.6667",
+    "optim.micro_seqs=16",
+    "run.deadline_hours=21.328333333333333",
+    "run.seed=1",
+    "model.attn_impl=splash",
+    "model.remat=true",
+    "optim.micro_seqs=16",
+    "model.table_grad=take"
+   ],
+   "plan": "splash-remat1-ms16-take",
+   "horizon_tokens": 13116792508.08106,
+   "ladder": {
+    "groups": [],
+    "overrides": [],
+    "rung": 0,
+    "switches": null
+   },
+   "heldout": {
+    "web": {
+     "source": "karpathy/climbmix-400b-shuffle/shard_00997.parquet",
+     "why": "beyond the run's ClimbMix download cap (files are taken in listing order up to the cap)",
+     "file": "found on disk",
+     "in_training_downloads": false,
+     "held_out": true,
+     "rows": 64,
+     "weighted_tokens": 65442.0
+    },
+    "chat": {
+     "source": "HuggingFaceTB/smol-smoltalk/data/test-00000-of-00001.parquet",
+     "why": "the test split; the registry reads the train files only",
+     "file": "found on disk",
+     "in_training_downloads": false,
+     "held_out": true,
+     "rows": 64,
+     "weighted_tokens": 60438.0
+    },
+    "proxy": {
+     "source": "bes/eval/proxy/prompts.jsonl (user turns)",
+     "held_out": true,
+     "rows": 12,
+     "weighted_tokens": 11094.0
+    }
+   },
+   "seq_len": 1024,
+   "checkpoints": [
+    {
+     "name": "ckpt-000001-step-000030742",
+     "step": 30742,
+     "tokens": 8058830848,
+     "train_seconds": 33823.53645992279,
+     "reason": "interval",
+     "consts": "stored",
+     "by_domain": {
+      "web": {
+       "loss": 2.7739149623903607,
+       "weight": 65442.0,
+       "assistant_loss": null,
+       "assistant_weight": 0.0,
+       "tape_gain": 0.015976563660572346
+      },
+      "chat": {
+       "loss": 1.6021722577527797,
+       "weight": 60438.0,
+       "assistant_loss": 1.49935641008663,
+       "assistant_weight": 49319.0,
+       "tape_gain": 0.02918034144042502
+      },
+      "proxy": {
+       "loss": 2.611213162801965,
+       "weight": 11094.0,
+       "assistant_loss": null,
+       "assistant_weight": 0.0,
+       "tape_gain": -0.0001668412586844635
+      }
+     },
+     "loss": 2.243720915728076,
+     "weight": 136974.0,
+     "eval_seconds": 42.5
+    },
+    {
+     "name": "ckpt-000002-step-000031762",
+     "step": 31762,
+     "tokens": 8326217728,
+     "train_seconds": 35325.6958758831,
+     "reason": "interval",
+     "consts": "stored",
+     "by_domain": {
+      "web": {
+       "loss": 2.7665821034752147,
+       "weight": 65442.0,
+       "assistant_loss": null,
+       "assistant_weight": 0.0,
+       "tape_gain": 0.012062097069840396
+      },
+      "chat": {
+       "loss": 1.594967414954168,
+       "weight": 60438.0,
+       "assistant_loss": 1.4918300435525609,
+       "assistant_weight": 49319.0,
+       "tape_gain": 0.0271057987414402
+      },
+      "proxy": {
+       "loss": 2.610467581012259,
+       "weight": 11094.0,
+       "assistant_loss": null,
+       "assistant_weight": 0.0,
+       "tape_gain": -0.00016626448346895344
+      }
+     },
+     "loss": 2.236978068716508,
+     "weight": 136974.0,
+     "eval_seconds": 41.6
+    },
+    {
+     "name": "ckpt-000003-step-000031912",
+     "step": 31912,
+     "tokens": 8365539328,
+     "train_seconds": 35547.0484855175,
+     "reason": "final",
+     "consts": "stored",
+     "by_domain": {
+      "web": {
+       "loss": 2.766236138727805,
+       "weight": 65442.0,
+       "assistant_loss": null,
+       "assistant_weight": 0.0,
+       "tape_gain": 0.01266482114201671
+      },
+      "chat": {
+       "loss": 1.586488813949833,
+       "weight": 60438.0,
+       "assistant_loss": 1.4829630841593757,
+       "assistant_weight": 49319.0,
+       "tape_gain": 0.030122502797291152
+      },
+      "proxy": {
+       "loss": 2.6187114093203534,
+       "weight": 11094.0,
+       "assistant_loss": null,
+       "assistant_weight": 0.0,
+       "tape_gain": -0.00010163973747031994
+      }
+     },
+     "loss": 2.2337394009310163,
+     "weight": 136974.0,
+     "eval_seconds": 41.1
+    }
+   ]
+  }
+ ],
+ "comparison": {
+  "a": "/content/runs/main16_final",
+  "b": "/content/runs/main16",
+  "same_rows": true,
+  "difference": "b - a",
+  "newest": {
+   "a": "ckpt-000026-step-000029722",
+   "b": "ckpt-000003-step-000031912",
+   "a_tokens": 7791443968,
+   "b_tokens": 8365539328,
+   "a_train_seconds": 32320.749530553818,
+   "b_train_seconds": 35547.0484855175,
+   "delta": {
+    "loss": -0.026102289200413686,
+    "web": -0.02234704848377156,
+    "chat": -0.03177130838110953,
+    "proxy": -0.017370207150261496,
+    "chat.assistant": -0.03344153820345608
+   }
+  },
+  "matched_train_seconds": {
+   "train_seconds": 32320.749530553818,
+   "a": {
+    "loss": 2.25984169013143,
+    "web": 2.7885831872115765,
+    "chat": 1.6182601223309425,
+    "proxy": 2.636081616470615,
+    "chat.assistant": 1.5164046223628318
+   },
+   "b": {
+    "loss": null,
+    "web": null,
+    "chat": null,
+    "proxy": null,
+    "chat.assistant": null
+   },
+   "delta": {
+    "loss": null,
+    "web": null,
+    "chat": null,
+    "proxy": null,
+    "chat.assistant": null
+   }
+  },
+  "matched_tokens": {
+   "tokens": 7791443968.0,
+   "a": {
+    "loss": 2.25984169013143,
+    "web": 2.7885831872115765,
+    "chat": 1.6182601223309425,
+    "proxy": 2.636081616470615,
+    "chat.assistant": 1.5164046223628318
+   },
+   "b": {
+    "loss": null,
+    "web": null,
+    "chat": null,
+    "proxy": null,
+    "chat.assistant": null
+   },
+   "delta": {
+    "loss": null,
+    "web": null,
+    "chat": null,
+    "proxy": null,
+    "chat.assistant": null
+   }
+  }
+ },
+ "rows": 64,
+ "device": "cpu"
+}

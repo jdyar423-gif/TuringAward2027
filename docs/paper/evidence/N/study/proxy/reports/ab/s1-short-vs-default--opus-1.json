@@ -1,0 +1,258 @@
+{
+  "x": "ours-export-step25280-2efdca545a4e2f2c/dev-s1-short-37e897ff55-s0",
+  "y": "ours-export-step25280-2efdca545a4e2f2c/dev-s1-default-9a89782942-s0",
+  "pairset": "s1-short-vs-default",
+  "n_pairs": 60,
+  "n_rated": 60,
+  "overall": {
+    "n": 60,
+    "wins": 1,
+    "losses": 1,
+    "ties": 3,
+    "both_bad": 55,
+    "score": 0.5,
+    "score_ci95": [
+      0.3774,
+      0.6226
+    ],
+    "decisive": 2,
+    "win_rate_decisive": 0.5,
+    "win_rate_decisive_ci95": [
+      0.0945,
+      0.9055
+    ],
+    "sign_test_p": 1.0
+  },
+  "by_category": {
+    "chat": {
+      "n": 15,
+      "wins": 0,
+      "losses": 0,
+      "ties": 0,
+      "both_bad": 15,
+      "score": 0.5,
+      "score_ci95": [
+        0.2742,
+        0.7258
+      ],
+      "decisive": 0,
+      "win_rate_decisive": null,
+      "win_rate_decisive_ci95": null,
+      "sign_test_p": 1.0
+    },
+    "code": {
+      "n": 9,
+      "wins": 0,
+      "losses": 0,
+      "ties": 1,
+      "both_bad": 8,
+      "score": 0.5,
+      "score_ci95": [
+        0.2265,
+        0.7735
+      ],
+      "decisive": 0,
+      "win_rate_decisive": null,
+      "win_rate_decisive_ci95": null,
+      "sign_test_p": 1.0
+    },
+    "instruct": {
+      "n": 12,
+      "wins": 1,
+      "losses": 1,
+      "ties": 2,
+      "both_bad": 8,
+      "score": 0.5,
+      "score_ci95": [
+        0.2538,
+        0.7462
+      ],
+      "decisive": 2,
+      "win_rate_decisive": 0.5,
+      "win_rate_decisive_ci95": [
+        0.0945,
+        0.9055
+      ],
+      "sign_test_p": 1.0
+    },
+    "math": {
+      "n": 9,
+      "wins": 0,
+      "losses": 0,
+      "ties": 0,
+      "both_bad": 9,
+      "score": 0.5,
+      "score_ci95": [
+        0.2265,
+        0.7735
+      ],
+      "decisive": 0,
+      "win_rate_decisive": null,
+      "win_rate_decisive_ci95": null,
+      "sign_test_p": 1.0
+    },
+    "writing": {
+      "n": 15,
+      "wins": 0,
+      "losses": 0,
+      "ties": 0,
+      "both_bad": 15,
+      "score": 0.5,
+      "score_ci95": [
+        0.2742,
+        0.7258
+      ],
+      "decisive": 0,
+      "win_rate_decisive": null,
+      "win_rate_decisive_ci95": null,
+      "sign_test_p": 1.0
+    }
+  },
+  "by_turns": {
+    "single_turn": {
+      "n": 45,
+      "wins": 1,
+      "losses": 0,
+      "ties": 3,
+      "both_bad": 41,
+      "score": 0.5111,
+      "score_ci95": [
+        0.37,
+        0.6504
+      ],
+      "decisive": 1,
+      "win_rate_decisive": 1.0,
+      "win_rate_decisive_ci95": [
+        0.2065,
+        1.0
+      ],
+      "sign_test_p": 1.0
+    },
+    "multi_turn": {
+      "n": 15,
+      "wins": 0,
+      "losses": 1,
+      "ties": 0,
+      "both_bad": 14,
+      "score": 0.4667,
+      "score_ci95": [
+        0.2481,
+        0.6988
+      ],
+      "decisive": 1,
+      "win_rate_decisive": 0.0,
+      "win_rate_decisive_ci95": [
+        0.0,
+        0.7935
+      ],
+      "sign_test_p": 1.0
+    }
+  },
+  "by_length": {
+    "x_shorter": {
+      "n": 7,
+      "wins": 1,
+      "losses": 1,
+      "ties": 0,
+      "both_bad": 5,
+      "score": 0.5,
+      "score_ci95": [
+        0.2024,
+        0.7976
+      ],
+      "decisive": 2,
+      "win_rate_decisive": 0.5,
+      "win_rate_decisive_ci95": [
+        0.0945,
+        0.9055
+      ],
+      "sign_test_p": 1.0
+    },
+    "similar": {
+      "n": 53,
+      "wins": 0,
+      "losses": 0,
+      "ties": 3,
+      "both_bad": 50,
+      "score": 0.5,
+      "score_ci95": [
+        0.37,
+        0.63
+      ],
+      "decisive": 0,
+      "win_rate_decisive": null,
+      "win_rate_decisive_ci95": null,
+      "sign_test_p": 1.0
+    },
+    "x_longer": {
+      "n": 0
+    }
+  },
+  "power": {
+    "delta_0.03": 43558,
+    "delta_0.05": 15651,
+    "delta_0.10": 3877
+  },
+  "per_prompt_score": {
+    "math-060": 0.5,
+    "chat-034": 0.5,
+    "writing-061": 0.5,
+    "chat-015": 0.5,
+    "writing-096": 0.5,
+    "code-045": 0.5,
+    "writing-041": 0.5,
+    "writing-087": 0.5,
+    "chat-050": 0.5,
+    "instruct-023": 0.5,
+    "writing-056": 0.5,
+    "chat-066": 0.5,
+    "math-018": 0.5,
+    "chat-100": 0.5,
+    "writing-080": 0.5,
+    "writing-035": 0.5,
+    "chat-032": 0.5,
+    "code-017": 0.5,
+    "math-051": 0.5,
+    "chat-037": 0.5,
+    "math-013": 0.5,
+    "instruct-012": 0.5,
+    "code-025": 0.5,
+    "instruct-048": 0.5,
+    "instruct-071": 0.5,
+    "chat-043": 0.5,
+    "instruct-022": 1.0,
+    "chat-088": 0.5,
+    "chat-030": 0.5,
+    "code-041": 0.5,
+    "code-057": 0.5,
+    "instruct-006": 0.5,
+    "code-024": 0.5,
+    "code-040": 0.5,
+    "chat-023": 0.5,
+    "writing-065": 0.5,
+    "instruct-009": 0.5,
+    "chat-059": 0.5,
+    "writing-031": 0.5,
+    "code-009": 0.5,
+    "math-021": 0.5,
+    "writing-025": 0.5,
+    "writing-060": 0.5,
+    "chat-067": 0.5,
+    "instruct-045": 0.5,
+    "chat-010": 0.5,
+    "code-015": 0.5,
+    "writing-046": 0.5,
+    "instruct-055": 0.5,
+    "instruct-035": 0.5,
+    "math-035": 0.5,
+    "math-003": 0.5,
+    "chat-072": 0.5,
+    "writing-006": 0.5,
+    "instruct-039": 0.5,
+    "math-004": 0.5,
+    "writing-063": 0.5,
+    "math-022": 0.5,
+    "writing-062": 0.5,
+    "instruct-064": 0.0
+  }
+}

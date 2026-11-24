@@ -1,0 +1,156 @@
+{
+ "rows": [
+  [
+   "final take 64x4x1024",
+   1944.7,
+   514.944,
+   0.781,
+   19033736,
+   884.5,
+   "chip_kernels_0745.txt (ce on)"
+  ],
+  [
+   "v9 take 64x4x1024",
+   3141.8,
+   1276.8,
+   0.809,
+   19631240,
+   1433.1,
+   "v9_measA.txt"
+  ],
+  [
+   "v9 take 32x8x1024",
+   3237.6,
+   1526.688,
+   0.809,
+   19631240,
+   1491.5,
+   "v9_measA.txt"
+  ],
+  [
+   "v9 sorted 64x4x1024",
+   3390.7,
+   1622.528,
+   0.809,
+   19631240,
+   1789.0,
+   "v9_measB_sorted.txt"
+  ],
+  [
+   "v9 take+flat 64x4x1024",
+   3053.6,
+   1236.736,
+   0.809,
+   19631240,
+   1406.4,
+   "v9_measD.txt"
+  ],
+  [
+   "v9 take+flat+rows 64x4x1024",
+   2825.6,
+   1129.984,
+   0.809,
+   19631240,
+   1295.2,
+   "v9_measD.txt"
+  ]
+ ],
+ "loo": {
+  "estimated cycles": {
+   "loo_rel_err": [
+    -0.4,
+    0.056,
+    0.051,
+    -0.129,
+    0.037,
+    0.028
+   ],
+   "loo_mean_abs_rel_err": 0.117,
+   "spearman_all": 1.0,
+   "spearman_v9_only": 1.0
+  },
+  "estimated HBM bytes": {
+   "loo_rel_err": [
+    -0.093,
+    -0.006,
+    0.111,
+    -0.099,
+    -0.008,
+    0.022
+   ],
+   "loo_mean_abs_rel_err": 0.057,
+   "spearman_all": 1.0,
+   "spearman_v9_only": 1.0
+  },
+  "analytic FLOP per token": {
+   "loo_rel_err": [
+    0.664,
+    0.044,
+    -0.007,
+    -0.214,
+    0.068,
+    0.181
+   ],
+   "loo_mean_abs_rel_err": 0.196,
+   "spearman_all": 0.655,
+   "spearman_v9_only": NaN
+  },
+  "numbers read per token": {
+   "loo_rel_err": [
+    null,
+    0.044,
+    -0.007,
+    -0.214,
+    0.068,
+    0.181
+   ],
+   "loo_mean_abs_rel_err": 0.103,
+   "spearman_all": 0.655,
+   "spearman_v9_only": NaN
+  }
+ },
+ "diffs": [
+  {
+   "change": "v9 - final (take, 64x4x1024)",
+   "predicted_ms": 623.7,
+   "measured_ms": 548.6,
+   "ratio": 1.14
+  },
+  {
+   "change": "sorted - take (v9)",
+   "predicted_ms": 129.7,
+   "measured_ms": 355.9,
+   "ratio": 0.36
+  },
+  {
+   "change": "8-row - 4-row pieces (v9, take)",
+   "predicted_ms": 49.9,
+   "measured_ms": 58.4,
+   "ratio": 0.85
+  },
+  {
+   "change": "8-row - 4-row pieces (final; chip: splash kernels, 03:09)",
+   "predicted_ms": 53.7,
+   "measured_ms": 18.2,
+   "ratio": 2.95
+  },
+  {
+   "change": "flat (v9)",
+   "predicted_ms": -45.9,
+   "measured_ms": -26.7,
+   "ratio": 1.72
+  },
+  {
+   "change": "rows (v9, on flat)",
+   "predicted_ms": -118.9,
+   "measured_ms": -111.2,
+   "ratio": 1.07
+  },
+  {
+   "change": "tokn (v9; predicted on flat, measured on flat+rows)",
+   "predicted_ms": -63.6,
+   "measured_ms": -8.1,
+   "ratio": 7.85
+  }
+ ]
+}

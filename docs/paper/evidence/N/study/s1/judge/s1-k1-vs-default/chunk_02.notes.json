@@ -1,0 +1,17 @@
+{
+  "pf985f7a733": "Identical replies; both omit the required \"city\" key.",
+  "p0ca780564b": "A is a usable if confused thank-you email; B is one garbled subject line.",
+  "p66895e11a0": "Identical incoherent explanations; never mention density or hydrogen-bonded lattice; factually wrong.",
+  "paa16256b2d": "Both wrong both turns (correct 0.3 and 50%); garbled reasoning, A cut off.",
+  "p1d91e08c14": "Both call sorted()/sort() despite the ban; broken code, degenerate, truncated.",
+  "pf283686f32": "Both wrong: $19.20/$120 and $50/nonsense; correct is $30 then $90.",
+  "p49393f49bd": "Neither email asks about pets or parking; both rambling nonsense.",
+  "p3946df59a7": "Both wrong (answer 707): A says 168, B loops on 476=47*47.",
+  "p1c35f23506": "Neither writes a neighbor email asking for quiet; both off-topic nonsense.",
+  "p251ce4f536": "Both nonsense; neither mentions the ~365.25-day solar year.",
+  "pc21bc77e33": "Neither corrects the sentence; both keep errors and garble meaning.",
+  "pde2848b72b": "Both define rainbow wrongly (lens/telescope); A's turn 2 is cut off.",
+  "pe94142cba0": "A is just a name; B writes about own job, never congratulates.",
+  "pe81cd05622": "Both wrong: flavor/health nonsense; neither mentions the released eye-irritating sulfur compound.",
+  "pe0cfb1610e": "Identical; exactly three bullets, plausible advantages, some false claims in both."
+}

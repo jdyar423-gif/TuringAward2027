@@ -1,0 +1,7 @@
+/usr/local/lib/python3.13/dist-packages/jax/_src/cloud_tpu_init.py:90: UserWarning: Transparent hugepages are not enabled. TPU runtime startup and shutdown time should be significantly improved on TPU v5e and newer. If not already set, you may need to enable transparent hugepages in your VM image (sudo sh -c "echo always > /sys/kernel/mm/transparent_hugepage/enabled")
+  warnings.warn(
+tpu_kernels: configs/v9.py ['model.table_grad=onehot', 'optim.micro_seqs=4'], device TPU v6 lite, piece 4 x 1024 (lengths [1024]), kernels ['onetile:save+relu2']
+  onetile:save+relu2 @ 1024                    23.38 ms     175,213 tok/s  loss 9.014906  (reference)  (compile 21 s, 4 Mosaic calls)
+                           whole step   64 x  4 x 1024     1484.8 ms     176,556 tok/s  loss 9.014899  (compile 22 s)
+BEST @ 1024: onetile:save+relu2 23.38 ms x1.000 vs the reference
+KERNELS {"results": [{"kernel": "onetile:save+relu2", "t": 1024, "rows": 4, "ok": true, "ms": 23.377232699931483, "ms_all": [23.261, 23.386, 23.374, 23.399, 23.332, 23.38], "tokens_per_s": 175213.2107583463, "loss": 9.01490592956543, "compile_s": 21.0, "mosaic_calls": 4, "steps": [{"a": 64, "rows": 4, "ms": 1484.7658786663185, "tokens_per_s": 176555.78146466377, "loss": 9.014899253845215, "compile_s": 22.3}], "reference": true}], "device": "TPU v6 lite", "seconds": 64.8, "config": "configs/v9.py", "overrides": ["model.table_grad=onehot", "optim.micro_seqs=4"]}

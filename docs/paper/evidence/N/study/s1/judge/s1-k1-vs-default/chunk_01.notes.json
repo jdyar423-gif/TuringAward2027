@@ -1,0 +1,17 @@
+{
+  "pe2538f47fd": "Both classes broken: no width/height, invalid methods; B degenerates into loops.",
+  "p144d656303": "A loops 'he knows he's not alone'; B incoherent with no story arc.",
+  "p711ec2d7ed": "Both name antimatter etc.; correct answer is solid, liquid, gas.",
+  "p7409a8b97a": "Correct tip is $11.52; A says $4, B miscalculates $12.60.",
+  "p51e82896b1": "Identical nonsense explanation and broken code; main-module guard never explained.",
+  "p581bb0d989": "Both falsely claim Greek/Roman origins; A long, uses 'game'; B uses 'games'.",
+  "p47976120c2": "Both wrong: A says fridge keeps food warm; B self-contradictory nonsense.",
+  "p3206339108": "Correct price is $78; A says $360, B says $35700.",
+  "p56e9c9a679": "A inverts renewable/non-renewable; B misdefines non-renewable, then degenerates into loops.",
+  "pdf54975f48": "Identical; empty-list guard fixes the crash, explanation slightly wrong.",
+  "pccfc50a442": "Identical; both repeat the original review verbatim, not made polite.",
+  "p8d1aae4bf8": "Neither gives a working command; A empty shebangs, B looping pseudo-code.",
+  "pa2e0beb1db": "Correct is 5040; A degenerate digit string, B says 49.",
+  "ped2af79d50": "Both muddled and wrong; neither explains passive hearing versus active listening.",
+  "pf6d05809b9": "B is only 'P.S.'; A is a note ending with P.S., lacks plans."
+}

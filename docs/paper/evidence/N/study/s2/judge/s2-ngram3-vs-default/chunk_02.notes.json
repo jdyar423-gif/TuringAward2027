@@ -1,0 +1,17 @@
+{
+  "p69454ccbf5": "A wrongly says fridges heat air via fans; B degenerates into misspelled nonsense.",
+  "p5740b47591": "Both answer with nutrition claims, never mentioning the irritant gas; off-topic and false.",
+  "pca0301dd47": "Identical lowercase replies; red, green, blue is a valid primary set.",
+  "p67b297d77d": "Both name the states but explain differences with incoherent, false composition claims.",
+  "pfc62f248bf": "Both conflate pets and parking into 'parking for pets'; neither asks either question properly.",
+  "pe5a8f016a7": "A at least raises the noise problem; B never makes the request. Both miss 10pm.",
+  "p0550e01c26": "A's second turn copies turn one verbatim; B at least attempts a routine.",
+  "p56cccec5b6": "Identical body, weak on actual plans; both P.S. lines acceptable and equivalent.",
+  "p19119a5d86": "Both call sorted() despite the ban and call .keys() on lists; broken.",
+  "p8000b305b0": "Both are all-caps word salad with no mention of lemonade.",
+  "p2bf9467523": "Neither rewrites the review; both give confused meta-commentary, omitting the broken blender.",
+  "pb6f8ca2b78": "Both define democracy and monarchy wrongly; B also garbles words (monastery, demolition).",
+  "p6c8b8116d1": "Same wrong definition; turn two invents or misplaces volcanoes in both (Crater Lake in Peru).",
+  "p04690d8157": "Both get $30 right; turn two fails in both: A says $10, B cut off.",
+  "pe2a723c1e9": "A is incoherent, eerie prose off the prompt; B degenerates into 'stronger' loops."
+}

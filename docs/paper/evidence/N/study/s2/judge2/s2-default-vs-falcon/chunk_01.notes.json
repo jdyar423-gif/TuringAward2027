@@ -1,0 +1,17 @@
+{
+  "pf613b48a63": "B is incoherent, not a post, nonsense in turn 2; A usable despite four versions.",
+  "pb9cbe7e1be": "Both lowercase; RGB and RYB are both valid primary color sets.",
+  "p7160400b98": "A omits the required 'city' key; B includes all three.",
+  "pa2cdfd2c45": "A correct 0.3 in turn 1, B wrong; both turn-2 reasonings bogus.",
+  "pba039abcc8": "Neither mentions the sulfur irritant gas; both give fabricated health/digestion claims.",
+  "pf7bb35e366": "B entirely wrong (Peru); A names real volcanoes though many facts and locations wrong.",
+  "p09beef2d5f": "A ignores the outage and second stranger, repeats itself; B is on topic.",
+  "p80f59ce00d": "B circular and wrong; A explains refraction though wrong colors and exceeds 20 words.",
+  "pbc19542fbf": "B says where birds go, not why; A answers why in one sentence.",
+  "pfb7523efd9": "Neither explains import vs direct run; A degenerate, B fabricates subprocess/sys.path claims.",
+  "p503290b429": "B is incoherent and never makes the request; A asks, though oddly reasoned.",
+  "pedd743cbda": "A barely mentions own holiday plans; B describes plans, minor flaw: two P.S. lines.",
+  "p14b347e41a": "B calls loop a function, example has syntax error; A correct examples.",
+  "pb19b0db7ae": "Both three bullets with redundancy; equal quality, B shorter.",
+  "pb3f54c2f28": "A's advice incoherent and turn 2 repeats turn 1; B writes the neighbor note."
+}

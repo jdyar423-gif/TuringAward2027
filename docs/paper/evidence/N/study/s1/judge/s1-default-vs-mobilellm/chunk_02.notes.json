@@ -1,0 +1,17 @@
+{
+  "p80e7982ab3": "B gives real titles like <<Saving Money>> amid junk; A outputs placeholder <<title>>.",
+  "pe902dd9a47": "A is gibberish; B reverses roles and never adds the dinner invitation.",
+  "p818e995bbb": "Both wrong: A says antimatter states, B loops on '3D lattice'; neither names solid/liquid/gas.",
+  "p813e5aa554": "Both wrong: neither names Shakespeare (A boxes the title, B says CRICKS).",
+  "p5cf8a873af": "A is caps but never mentions lemonade; B rambles and outputs 'ABC'.",
+  "pa8780c36e3": "B reaches correct 12,600; A wrongly answers 600 with 0.5 multiplier.",
+  "p8a44c90661": "A gives usable study tips; B loops boxed 'negative thoughts' answers, cut off.",
+  "paee55e283b": "No working merge: A rambles and calls sorted; B calls sort/sorted, violating constraint.",
+  "pb0fa0d65de": "A is incoherent; B wrongly claims ice is denser than water and loops.",
+  "pdf4a9421b7": "Neither is a toast: A gives a bell-pepper recipe, B 'happy roll day'.",
+  "p3ee269d669": "B gets correct $78; A sets up wrong equation and answers $360.",
+  "p4379e6de19": "A's first post is on-topic though turn 2 repeats it; B loops nonsense.",
+  "pb249b37c85": "A: holiday note ending in P.S., though no plans; B loops 'P.S. S.'",
+  "p60b164caa7": "No working class: A flip-flops and omits perimeter; B's code is broken nonsense.",
+  "p3f360024b1": "B is a usable thank-you email despite role slips; A loops boxed nonsense."
+}

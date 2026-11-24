@@ -1,0 +1,17 @@
+{
+  "p1a08050c06": "A degenerates into 'stronger' loop; B is a coherent-enough story on premise.",
+  "p095b340f75": "A's turn-two comprehension code is correct; B gives hardcoded dict with wrong lengths.",
+  "pcb94a415a9": "A's helper recurses infinitely, crashes; B's recursive version works though ignores loop.",
+  "p1ceb446744": "A is absurdly wrong; B invents reasons like elliptical orbits, earthworm eggs.",
+  "pd1edc7df75": "A answers as the hotel itself; B conflates pets and parking, role-confused.",
+  "pfe6dc0056e": "B gives one correctly bracketed title; A gives many titles plus degenerate text.",
+  "p928524ff8e": "A never explains actual planting; B explains steps but gives four, not three.",
+  "paa892f6b51": "B accurately summarizes in 26 words; A garbled, misses reasons and remedies.",
+  "pd85d3d1be1": "A's transpose code correct despite wrong stated output; B's code is syntax error.",
+  "p57d7059bcf": "A uses forbidden sorted() on .keys(); B has right merge loop, buggy tail.",
+  "pd165fca051": "A correctly computes 5040; B never gives the numeric value.",
+  "p211ab695fa": "B's rewrite repeats original with no 'honey'; A uses honey as required.",
+  "p891075e4b7": "A is gibberish non-Bash; B's 'stat -d' does not count files.",
+  "pf1a7ff01f2": "A correctly names Leonardo despite invented details; B wrongly says John Kerr.",
+  "pb0fb910d5c": "A too long but tells story; B degenerates into repetitive incoherent loops."
+}

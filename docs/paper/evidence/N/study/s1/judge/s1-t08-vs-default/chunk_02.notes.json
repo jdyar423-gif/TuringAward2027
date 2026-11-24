@@ -1,0 +1,17 @@
+{
+  "pb3cf6bb81e": "Both incoherent and wrong; A loops on 'centralized', B calls monarchy elected.",
+  "p467e005042": "Both call sorted()/sort() despite the ban; broken code, B degenerates and is cut off.",
+  "p633457fa14": "A refuses then rambles; B's note is role-reversed; neither adds a dinner invitation.",
+  "p5119824b43": "Neither is a lemonade ad: A off-topic question, B gibberish.",
+  "pe8eb75e330": "B is a usable thank-you email template despite slips; A is not an email.",
+  "p59b5a2f879": "Neither gives a working command; both are fake shebangs or pseudo-code.",
+  "p86eafb120b": "A's example crashes and misexplains loops; B has no for loop at all.",
+  "pff6d940341": "A gives valid lowercase primaries (RGB); B's 'pure, black, white' is wrong.",
+  "pf55371bbc3": "Both incoherent; no umbrella finds home; B long and says it never returns.",
+  "p70d856208f": "Neither is a bedtime story: A plotless, repetitive; B off-topic with meta commentary.",
+  "p8bbb0bab17": "Both turn-1 lists mix nonsense; both routines repetitive and contradictory, unusable.",
+  "p0b417b83eb": "Both wrong: blame nutrients/health benefits, not sulfur compounds irritating eyes.",
+  "pa96e40926d": "B gives correct main point before breaking off; A merely echoes the instruction.",
+  "pdbed60bea6": "Both wrong; answer is Leonardo da Vinci.",
+  "p8148c12a8c": "Both wrong (correct 56): A says 100, B says 60 with garbled text."
+}

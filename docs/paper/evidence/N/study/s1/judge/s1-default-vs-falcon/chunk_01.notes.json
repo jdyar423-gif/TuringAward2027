@@ -1,0 +1,17 @@
+{
+  "pf5caaf0ab4": "A accurate though redundant; B claims motor is renewable energy source.",
+  "p6bf5e927d9": "A tautological non-answer; B correct single sentence.",
+  "p1cfd48c292": "A incoherent; B wrong explanation with absurd content like earthworm eggs.",
+  "p681ecfa7e1": "Both completely wrong; neither mentions sulfur compounds irritating eyes.",
+  "pffac250adf": "A's turn-two comprehension correct (apple length typo); B hardcodes wrong values.",
+  "p0472cb5f45": "A correctly names Shakespeare; B wrong ('CRICKS').",
+  "pf0c90c5880": "A repeats irrelevant note, ignores neighbor; B gives advice and on-topic note.",
+  "pcacf630db8": "A has correct area/perimeter logic despite syntax slips; B nonsensical code.",
+  "p66deca6805": "A emoji nonsense without toast; B outputs a bell-pepper recipe.",
+  "p94122cf34c": "A incoherent fragment; B meandering but on-topic story with an arc.",
+  "p4a900b17bc": "A includes 'honey' twice; B repeats degenerate story without 'honey'.",
+  "p96907b8b79": "Correct is 25 m/s; A says 324000, B says 0.5.",
+  "p4d7b494f94": "Both lowercase and valid: RGB additive versus RYB traditional primaries.",
+  "pfe4fd6dc6a": "A incoherent and cut off; B confident nonsense (pH, microscope), no float test.",
+  "pc33b0ca470": "A describes plans and ends with P.S.; B not about holiday plans."
+}

@@ -1,0 +1,17 @@
+{
+  "p33274dc682": "A opens with misplaced P.S., incoherent; B omits holiday plans entirely.",
+  "pcb315a1671": "Both wrong: 7! is 5040; A says 49, B calls it prime.",
+  "p7abe7620f1": "Correct answer is 707; A gives 160, B gives 168.",
+  "p38f795a81c": "A never defines listening; B contradictory, repetitive, mostly wrong.",
+  "p122a5da836": "A's first post is on-topic; B refuses harmless request. Both fail turn two.",
+  "pea34d8d45d": "A suggests thermometer nonsense; B degenerates into 'check the date of the date'.",
+  "pe1795887f6": "Identical replies; both omit the required 'city' key.",
+  "p274f7c9663": "B adds correct empty-list guard; A leaves code unchanged, broken example.",
+  "p76c6951cea": "A outputs literal placeholder <<title>>; B gives usable <<Saving Money>> amid clutter.",
+  "paf15f1efcd": "Both three bullets; A falsely claims 30-50 year lifespan, B calls motor renewable.",
+  "p6f71d17417": "Both misexplain the __name__ check as file-existence nonsense with broken code.",
+  "pcc69e42dec": "A inverts renewable and non-renewable; B circular and self-contradictory.",
+  "pce1a37c211": "A is a tautology; B is nonsense about tails.",
+  "p954cf62805": "A inverts request, asks neighbor for tips; B incoherent, not an email.",
+  "peb97955084": "Neither mentions lower density; A wrong mechanisms, B degenerate repetition."
+}

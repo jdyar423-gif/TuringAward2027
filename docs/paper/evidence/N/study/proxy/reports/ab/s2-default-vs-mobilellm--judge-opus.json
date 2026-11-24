@@ -1,0 +1,295 @@
+{
+  "x": "ours-export-step31912-5e12a59158a3b192/dev-s2-default-9a89782942-s0",
+  "y": "mobilellm-f680f0533368-qwen3/recommended-d9f149b0d3-s0",
+  "pairset": "s2-default-vs-mobilellm",
+  "n_pairs": 60,
+  "n_rated": 60,
+  "overall": {
+    "n": 60,
+    "wins": 20,
+    "losses": 7,
+    "ties": 33,
+    "both_bad": 0,
+    "score": 0.6083,
+    "score_ci95": [
+      0.4819,
+      0.7217
+    ],
+    "decisive": 27,
+    "win_rate_decisive": 0.7407,
+    "win_rate_decisive_ci95": [
+      0.5532,
+      0.8683
+    ],
+    "sign_test_p": 0.019157
+  },
+  "by_category": {
+    "chat": {
+      "n": 15,
+      "wins": 5,
+      "losses": 0,
+      "ties": 10,
+      "both_bad": 0,
+      "score": 0.6667,
+      "score_ci95": [
+        0.4171,
+        0.8482
+      ],
+      "decisive": 5,
+      "win_rate_decisive": 1.0,
+      "win_rate_decisive_ci95": [
+        0.5655,
+        1.0
+      ],
+      "sign_test_p": 0.0625
+    },
+    "code": {
+      "n": 9,
+      "wins": 1,
+      "losses": 2,
+      "ties": 6,
+      "both_bad": 0,
+      "score": 0.4444,
+      "score_ci95": [
+        0.1888,
+        0.7333
+      ],
+      "decisive": 3,
+      "win_rate_decisive": 0.3333,
+      "win_rate_decisive_ci95": [
+        0.0615,
+        0.7923
+      ],
+      "sign_test_p": 1.0
+    },
+    "instruct": {
+      "n": 12,
+      "wins": 9,
+      "losses": 0,
+      "ties": 3,
+      "both_bad": 0,
+      "score": 0.875,
+      "score_ci95": [
+        0.5975,
+        0.9706
+      ],
+      "decisive": 9,
+      "win_rate_decisive": 1.0,
+      "win_rate_decisive_ci95": [
+        0.7009,
+        1.0
+      ],
+      "sign_test_p": 0.003906
+    },
+    "math": {
+      "n": 9,
+      "wins": 0,
+      "losses": 5,
+      "ties": 4,
+      "both_bad": 0,
+      "score": 0.2222,
+      "score_ci95": [
+        0.0632,
+        0.5474
+      ],
+      "decisive": 5,
+      "win_rate_decisive": 0.0,
+      "win_rate_decisive_ci95": [
+        0.0,
+        0.4345
+      ],
+      "sign_test_p": 0.0625
+    },
+    "writing": {
+      "n": 15,
+      "wins": 5,
+      "losses": 0,
+      "ties": 10,
+      "both_bad": 0,
+      "score": 0.6667,
+      "score_ci95": [
+        0.4171,
+        0.8482
+      ],
+      "decisive": 5,
+      "win_rate_decisive": 1.0,
+      "win_rate_decisive_ci95": [
+        0.5655,
+        1.0
+      ],
+      "sign_test_p": 0.0625
+    }
+  },
+  "by_turns": {
+    "single_turn": {
+      "n": 45,
+      "wins": 13,
+      "losses": 7,
+      "ties": 25,
+      "both_bad": 0,
+      "score": 0.5667,
+      "score_ci95": [
+        0.4224,
+        0.7005
+      ],
+      "decisive": 20,
+      "win_rate_decisive": 0.65,
+      "win_rate_decisive_ci95": [
+        0.4329,
+        0.8188
+      ],
+      "sign_test_p": 0.263176
+    },
+    "multi_turn": {
+      "n": 15,
+      "wins": 7,
+      "losses": 0,
+      "ties": 8,
+      "both_bad": 0,
+      "score": 0.7333,
+      "score_ci95": [
+        0.4805,
+        0.891
+      ],
+      "decisive": 7,
+      "win_rate_decisive": 1.0,
+      "win_rate_decisive_ci95": [
+        0.6457,
+        1.0
+      ],
+      "sign_test_p": 0.015625
+    }
+  },
+  "by_length": {
+    "x_shorter": {
+      "n": 44,
+      "wins": 17,
+      "losses": 4,
+      "ties": 23,
+      "both_bad": 0,
+      "score": 0.6477,
+      "score_ci95": [
+        0.5,
+        0.7717
+      ],
+      "decisive": 21,
+      "win_rate_decisive": 0.8095,
+      "win_rate_decisive_ci95": [
+        0.6,
+        0.9233
+      ],
+      "sign_test_p": 0.007197
+    },
+    "similar": {
+      "n": 7,
+      "wins": 1,
+      "losses": 3,
+      "ties": 3,
+      "both_bad": 0,
+      "score": 0.3571,
+      "score_ci95": [
+        0.1181,
+        0.6974
+      ],
+      "decisive": 4,
+      "win_rate_decisive": 0.25,
+      "win_rate_decisive_ci95": [
+        0.0456,
+        0.6994
+      ],
+      "sign_test_p": 0.625
+    },
+    "x_longer": {
+      "n": 9,
+      "wins": 2,
+      "losses": 0,
+      "ties": 7,
+      "both_bad": 0,
+      "score": 0.6111,
+      "score_ci95": [
+        0.3092,
+        0.8466
+      ],
+      "decisive": 2,
+      "win_rate_decisive": 1.0,
+      "win_rate_decisive_ci95": [
+        0.3424,
+        1.0
+      ],
+      "sign_test_p": 0.5
+    }
+  },
+  "power": {
+    "delta_0.03": 4840,
+    "delta_0.05": 1739,
+    "delta_0.10": 431
+  },
+  "per_prompt_score": {
+    "writing-056": 1.0,
+    "code-057": 0.5,
+    "math-021": 0.0,
+    "instruct-048": 1.0,
+    "chat-023": 0.5,
+    "instruct-012": 0.5,
+    "chat-072": 0.5,
+    "math-060": 0.5,
+    "chat-066": 0.5,
+    "math-018": 0.0,
+    "code-024": 0.5,
+    "instruct-064": 1.0,
+    "instruct-035": 1.0,
+    "chat-032": 1.0,
+    "instruct-006": 1.0,
+    "chat-088": 1.0,
+    "writing-062": 1.0,
+    "writing-063": 0.5,
+    "writing-060": 1.0,
+    "writing-096": 1.0,
+    "instruct-071": 0.5,
+    "writing-061": 1.0,
+    "chat-050": 0.5,
+    "writing-031": 0.5,
+    "instruct-023": 1.0,
+    "writing-025": 0.5,
+    "writing-035": 0.5,
+    "instruct-009": 1.0,
+    "writing-006": 0.5,
+    "writing-065": 0.5,
+    "chat-034": 0.5,
+    "math-035": 0.5,
+    "chat-100": 0.5,
+    "chat-015": 0.5,
+    "instruct-022": 1.0,
+    "math-004": 0.5,
+    "writing-087": 0.5,
+    "chat-043": 0.5,
+    "chat-067": 1.0,
+    "writing-080": 0.5,
+    "code-015": 0.5,
+    "chat-030": 0.5,
+    "code-017": 0.0,
+    "instruct-045": 1.0,
+    "chat-059": 1.0,
+    "math-003": 0.5,
+    "chat-037": 1.0,
+    "code-040": 0.5,
+    "code-025": 1.0,
+    "writing-046": 0.5,
+    "math-013": 0.0,
+    "code-009": 0.5,
+    "writing-041": 0.5,
+    "math-022": 0.0,
+    "math-051": 0.0,
+    "instruct-039": 0.5,
+    "code-045": 0.5,
+    "code-041": 0.0,
+    "instruct-055": 1.0,
+    "chat-010": 0.5
+  },
+  "judge": {
+    "orders_agree": 0.9833,
+    "first_position_pref_mean": 0.0083,
+    "format_mass_mean": 1.0,
+    "clipped": 0
+  }
+}

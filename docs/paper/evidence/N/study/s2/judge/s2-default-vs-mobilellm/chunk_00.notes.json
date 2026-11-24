@@ -1,0 +1,17 @@
+{
+  "pd6379466e6": "A gives correct 5040; B only writes the product, never computes the value.",
+  "p1f577af271": "Both wrong: A calls rainbow a rainy season; B loops, ignores 20-word limit.",
+  "pd0699d29a7": "No story in A, only boxed meta-text; B degenerates into 'stronger' loops.",
+  "pb10883d4ca": "A incoherent sun list (evening), ignores turn 2; B only boxes 'A Sunday morning'.",
+  "pffbd56966f": "A confidently wrong (Raymond Jones); B non-answer boxing the title. Shakespeare missing.",
+  "pa854f7fea2": "Both right $30; turn 2 neither gives $90: A loops, B says $10.",
+  "p659d83056e": "A repeats false 'democracy is constitutional monarchy' endlessly; B's definitions are wrong.",
+  "p305f25d47e": "Neither gives working class; A nonsense code, B loops, cut off, no perimeter.",
+  "pa7a30f93f6": "A's first line is a usable wrapped title despite junk; B outputs literal <<title>>.",
+  "p285777605d": "A wrong turn 1, lucky 50% via bad math; B right 0.3, ignores turn 2.",
+  "pe5ac3852d1": "A gives no paragraph, only boxed description; B false Greek/Roman origins, cashmere nonsense.",
+  "p4aeaff631c": "A all-caps gibberish, no lemonade; B meta-reasoning ending in boxed 'ABC'.",
+  "p1ab5680858": "Neither explains refrigerant heat transfer; A garbled Carnot loops, B wrong fan-heating story.",
+  "pce50afc5ac": "A loops, cut off, no code; B calls it decorator, wrong lengths, no comprehension.",
+  "pb4f80f8568": "A repeatedly claims ice is denser than water (false); B incoherent circular text."
+}

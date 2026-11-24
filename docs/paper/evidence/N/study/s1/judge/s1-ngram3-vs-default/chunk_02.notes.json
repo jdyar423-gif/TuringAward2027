@@ -1,0 +1,17 @@
+{
+  "p976a972dcc": "Neither corrects the sentence; A garbles the meaning, B adds nonsense words.",
+  "pa191a69827": "A says gravity pulls upward, contradicting itself; B keeps the correct downward pull.",
+  "p69e2072872": "Both degenerate after <<Saving Money>>; A adds malformed brackets and irrelevant junk.",
+  "p8837b09582": "A gives usable steps and three real numbered steps; B loops, contradicts, circular steps.",
+  "p00f9b9e502": "Both call sorted()/sort() despite the ban, broken syntax; B also loops, truncates.",
+  "p191ac903fe": "Identical wrong answer 'CRICKS'; Shakespeare wrote it.",
+  "pa0925531c0": "Both misexplain it as a file-existence check, with gibberish code.",
+  "p77c7edfca2": "Both output recipes instead of a wedding toast; off topic.",
+  "p38ca52aa2a": "Neither gives a real command such as ls | wc -l.",
+  "p2cf95156e4": "Identical false definition repeated in both turns; rainbows are not telescope light.",
+  "pe920197fbf": "Neither shows a working comprehension; turn-2 lengths wrong or code unrelated.",
+  "pa47aa625e1": "Both repeat the original rude review unchanged; no rewrite done.",
+  "p812925d3f8": "Both incoherent, garbled terms and loops; the key difference is never stated.",
+  "pa9c67b1426": "Both claim 7! = 49; the correct value is 5040.",
+  "pc681a73370": "Both incoherent, no density explanation; B also deflects the question."
+}

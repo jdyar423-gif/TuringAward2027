@@ -1,0 +1,17 @@
+{
+  "pab70994c02": "A incoherent and contradictory, lacks the premise; B clumsy but a genuine outage story.",
+  "p486bf7dca6": "A outputs a degenerate list of placeholder titles; B gives one correctly wrapped title.",
+  "p21f6bf21f3": "A calls sorted(), degenerates, cut off; B has right two-pointer loop but crashing tail.",
+  "pbbb1429d05": "B repeats its first reply verbatim, ignoring tones; A gives tone versions, though four.",
+  "p1ca2d69f75": "A is an accurate 26-word summary; B is a degenerate, cut-off non-summary.",
+  "p944c32e130": "A works though recursive, not a loop; B's helper recurses infinitely and crashes.",
+  "pe1df0f0de4": "Both flawed; A's frequency claims false but summary distinction right; B incoherent.",
+  "pf2eca7289a": "A is nonsense, not an email to the neighbor; B odd but usable request.",
+  "pb9ab17ecca": "A correctly computes 5040; B wrongly claims 7! equals 49.",
+  "pbc7b26dd98": "A one sentence, circular but not false; B says gravity pulls upward.",
+  "pd51678880d": "Both answer 600 instead of 12,600; B also contradicts itself with 6,000.",
+  "p2c2bd01f2d": "B degenerates into repeated 'take a break' items; A gives coherent habits and routine.",
+  "p71c00ac877": "A degenerates into a word loop; B names real volcanoes despite location errors.",
+  "p12b034a344": "A mostly correct despite liquid-shape slip; B is antimatter nonsense.",
+  "pfab2b4aa63": "A has a syntax error and nonsense; B's comprehension is correct, stated output wrong."
+}

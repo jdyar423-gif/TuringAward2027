@@ -1,0 +1,17 @@
+{
+  "p14b347e41a": "A's code is a syntax error and its explanation incoherent; B's example works.",
+  "p7160400b98": "B omits the required 'city' key; A includes all three keys.",
+  "p39c04d8705": "B's $108 is wrong; A correctly computes $11.52, then rounds to $12.",
+  "p190b195d4a": "Both are all-caps gibberish; neither is a usable lemonade advertisement.",
+  "p61b611f837": "A inverts roles, praising the interviewer like a candidate; B is garbled and never thanks.",
+  "p5d8ad6fe69": "A gives the $42 discount as the new price; B correctly gets $78.",
+  "p462ec1c1fb": "A states finite vs replenishable correctly despite errors; B is confused and self-contradictory.",
+  "pdf5b3ecd48": "A correctly gives 707; B dodges with a false divisible-by-2 claim.",
+  "pf1a7ff01f2": "A names the wrong painter; B correctly says Leonardo despite invented details.",
+  "p80f59ce00d": "A is nonsense in both turns; B explains refraction, though turn 2 exceeds 20 words.",
+  "p0d945d0434": "B names a wrong author; A correctly says Shakespeare.",
+  "pd85d3d1be1": "A's code is broken; B's comprehension transposes correctly despite a wrong example output.",
+  "pd165fca051": "A never states the value; B correctly computes 5040.",
+  "p09beef2d5f": "B ignores the power outage and loops on 'strong bond'; A is on-topic though muddled.",
+  "pf9443352a0": "No usable toast: A is empty emoji placeholders, B rambling incoherent repetition."
+}

@@ -1,0 +1,17 @@
+{
+  "p3165ebe28d": "Identical incoherent imagery; no umbrella lost or finding its way home.",
+  "paf9f4486bc": "Turn two both junk, no routine: A repeats breaks, B contradicts itself.",
+  "p3980772561": "Identical; recursive code ignores 'using a loop', explanation falsely claims loop.",
+  "p30e6939f11": "Identical wrong arithmetic (3/5 of 240 is 144); answer should be 56.",
+  "pb263f013b4": "Identical; calls states of matter 'antimatter', never names solid, liquid, gas.",
+  "pcc4a1cb647": "Identical wrong answer 49; 7! is 5040.",
+  "pf56818774d": "Identical false definition (telescope light) repeated in both turns.",
+  "p95e97aeccc": "Identical; wrong definition, broken code (len of int, index error).",
+  "peb39b669a3": "Identical; incoherent story, rewrite never uses the word 'honey'.",
+  "paa7ae41ab2": "Identical; caps and short, but no lemonade or advertisement content.",
+  "pe64610dbc0": "Identical false explanation (health benefits, blackberries); omits irritant gas mechanism.",
+  "pa17eff5c48": "A spews template junk like <<Title>>, <<Final Review>>; B shorter, usable titles.",
+  "pd6d9776dcc": "Both useless: A degenerate 'period' repetition, B language list and absurd 15-minute answer.",
+  "p037bade1c8": "Identical incoherent text; never mentions ice being less dense than water.",
+  "p2fe3f51506": "Identical; correct empty-list fix, though explanation wrongly mentions list comprehension."
+}

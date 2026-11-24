@@ -1,0 +1,17 @@
+{
+  "pf3b9e95e1c": "B returns 0, fixing the crash; A still raises, explanation self-contradictory.",
+  "p2177e4d6ba": "A invents electromagnetic induction; B says fridge keeps food warm; both wrong.",
+  "pea6e7baf67": "A correct $78; B sets up a wrong equation, answers $360.",
+  "p3e877f23a6": "A muddles perspective but asks about pets and parking; B incoherent, off-topic.",
+  "p0c2e29643c": "A gives meaningless shebangs; B invents nonexistent 'stat -d'; neither counts files.",
+  "p8a965a662c": "A never mentions lemonade; B is gibberish; neither is a usable ad.",
+  "p2bcdd55573": "A mostly fabricated but conveys run-directly gist; B nonsense with syntax errors.",
+  "pf8d0a99915": "A wrong definition and broken example; B gives a correct simple loop example.",
+  "p998e5d83de": "B echoes the original; A invents details, drops broke-after-two-days and ignored-emails facts.",
+  "p560fa6b11e": "B degenerate in both turns; A real story, though retelling has four sentences.",
+  "p7b514bb4c2": "A wrongly says $12.60; B computes $11.52 correctly, then rounds.",
+  "p98abdf2e8c": "A fixes almost nothing; B fixes most errors but keeps 'Their going'.",
+  "p49055bded1": "A is nonsense calling morning an evening; B on-topic in both turns despite flaws.",
+  "p69c31673f7": "B degenerates into 'period or period' repetition; A relevant tips, no single pick.",
+  "p191c5cbbf5": "A wrong (telescope) both turns; B explains refraction, but wrong colors, 28 words."
+}

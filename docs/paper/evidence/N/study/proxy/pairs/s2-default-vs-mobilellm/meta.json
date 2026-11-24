@@ -1,0 +1,22 @@
+{
+  "name": "s2-default-vs-mobilellm",
+  "format": 2,
+  "n_pairs": 60,
+  "commitment": "1b740c8b4b66309f9ee5f05fb8bfb257a6b70e954d5e60b930eaa2fc5f205730",
+  "commitments": [
+    "1b740c8b4b66309f9ee5f05fb8bfb257a6b70e954d5e60b930eaa2fc5f205730"
+  ],
+  "added": [
+    60
+  ],
+  "by_category": {
+    "math": 9,
+    "code": 9,
+    "instruct": 12,
+    "writing": 15,
+    "chat": 15
+  },
+  "multi_turn": 15,
+  "created": "2026-11-24 12:15:15",
+  "updated": "2026-11-24 12:15:15"
+}

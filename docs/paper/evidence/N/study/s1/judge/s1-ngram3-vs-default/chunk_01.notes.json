@@ -1,0 +1,17 @@
+{
+  "p34d49ccb44": "Identical recursive code violates 'using a loop'; both falsely claim a for loop.",
+  "p1d0e48981e": "Both incoherent; A loops on checking the date, B suggests freezing eggs.",
+  "pd429cb102b": "A's routine loops on 'take a break' and isn't short; B's routine is usable.",
+  "p85a5593b6d": "Both wrong: 56 muffins remain; A is garbled, B says 100.",
+  "pd6914824d5": "Both give broken, non-runnable code; neither has working area or perimeter methods.",
+  "p308713816e": "A's first paragraph classifies sources correctly; B inverts renewable and non-renewable.",
+  "p49aadcbc43": "Both stories incoherent with no comforting resolution; unusable as bedtime stories.",
+  "p9e282cb633": "Both wrong: 18% of $64 is $11.52; A says $48, B $12.60.",
+  "p6d5c835018": "B roughly conveys listening as processing sound; A wrongly ties listening to body language.",
+  "p93f6d30e73": "Same correct fix; B adds a wrong alternative function and false claims.",
+  "p0c90e62125": "Both three bullets; B wrongly calls the motor a renewable energy source.",
+  "pd7bfc86894": "Identical wrong answer 'DEI'; the painter was Leonardo da Vinci.",
+  "p78156fabfc": "Both wrong in both turns; correct answers are $30 and $90.",
+  "pa2395f105a": "Identical, all lowercase; red, green, blue are valid additive primaries.",
+  "p1df68de62e": "Both degenerate; A loops on 'ash as a type', B lists fabricated volcanoes."
+}

@@ -1,0 +1,22 @@
+{
+  "name": "s1-k1-vs-default",
+  "format": 2,
+  "n_pairs": 60,
+  "commitment": "9cfd8a47a49e82e52da05e43606b1a9e38ee5e62d943cec1775fe3786d63ab95",
+  "commitments": [
+    "9cfd8a47a49e82e52da05e43606b1a9e38ee5e62d943cec1775fe3786d63ab95"
+  ],
+  "added": [
+    60
+  ],
+  "by_category": {
+    "math": 9,
+    "code": 9,
+    "writing": 15,
+    "instruct": 12,
+    "chat": 15
+  },
+  "multi_turn": 15,
+  "created": "2026-11-24 10:17:40",
+  "updated": "2026-11-24 10:17:40"
+}

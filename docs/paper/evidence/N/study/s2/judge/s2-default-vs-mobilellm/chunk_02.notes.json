@@ -1,0 +1,17 @@
+{
+  "pa883666113": "A is incoherent rambling, not a toast; B is nonsense boxed phrase.",
+  "p31f0185276": "A loops 'adding seeds to the seed'; B weak but on-topic, gives three steps.",
+  "p3ecf4bf73e": "A only boxed non-answers; B repetitive but gives tips and answers follow-up.",
+  "pac2efa6c41": "A circular but notes listening means understanding; B wrongly says 'duration', loops.",
+  "p37b3651091": "A gives coherent habits list (repeats it in turn 2); B degenerate boxed loops.",
+  "pab64ab0c91": "Both wrong: A blames cutting pain, B discusses digestion; neither mentions sulfur gas.",
+  "pe0eef55b2e": "B correctly gives $11.52; A wrongly says $108.",
+  "pd00a312a24": "A degenerate nonsense; B on-topic with loop syntax, though example has syntax error.",
+  "p2eec6d1975": "A reaches correct $78; B wrongly gives $42 (the discount).",
+  "pfa698717aa": "B gives three relevant bullets; A is nonsense about distances, cut off.",
+  "pbe029485b6": "Correct is 707; B says 697, A says 'divisible by 2' (false).",
+  "p155a2534dc": "A gives a short bear story but ignores 'honey'; B degenerate boxed loops.",
+  "pa2674ddcf6": "Correct is 25 m/s; A says 45, B loops 'Wait, no' without answer.",
+  "pf6ae185b42": "A degenerate but includes working empty-list guard; B code is syntax error, false claim.",
+  "p704c604717": "Neither corrects the sentence; A rambles and is cut off, B adds errors."
+}

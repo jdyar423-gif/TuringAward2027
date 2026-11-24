@@ -1,0 +1,337 @@
+{
+ "rate.rt2_16rows": {
+  "value": {
+   "median_tok_per_s": 222031,
+   "n": 101,
+   "min": 199135,
+   "max": 225408,
+   "achieved_median": 221859,
+   "achieved_n": 100,
+   "first_step": 50,
+   "last_step": 5050,
+   "first_utc": "17:47:35",
+   "last_utc": "19:26:13"
+  },
+  "how": "runtime 2, final, 16-row micro-batches, splash kernel: median of the train log's per-step tok_per_s over the step records with 0 < step <= 5075 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.rt3_same": {
+  "value": {
+   "median_tok_per_s": 216548,
+   "n": 85,
+   "min": 60820,
+   "max": 222177,
+   "achieved_median": 216706,
+   "achieved_n": 82,
+   "first_step": 5100,
+   "last_step": 9300,
+   "first_utc": "01:54:46",
+   "last_utc": "03:28:34"
+  },
+  "how": "runtime 3, the same program, before the pieces: median of the train log's per-step tok_per_s over the step records with 5075 < step <= 9332 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.pieces": {
+  "value": {
+   "median_tok_per_s": 240131,
+   "n": 266,
+   "min": 228015,
+   "max": 246229,
+   "achieved_median": 239984,
+   "achieved_n": 264,
+   "first_step": 9350,
+   "last_step": 22600,
+   "first_utc": "03:31:46",
+   "last_utc": "07:43:56"
+  },
+  "how": "4 pieces per micro-batch: median of the train log's per-step tok_per_s over the step records with 9332 < step <= 22613 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.kernel_to_deflection": {
+  "value": {
+   "median_tok_per_s": 281387,
+   "n": 53,
+   "min": 270471,
+   "max": 283271,
+   "achieved_median": 281171,
+   "achieved_n": 52,
+   "first_step": 22650,
+   "last_step": 25250,
+   "first_utc": "07:54:10",
+   "last_utc": "08:34:34"
+  },
+  "how": "one-tile kernel + ReLU^2 backward, to the deflection rule: median of the train log's per-step tok_per_s over the step records with 22613 < step <= 25280 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.kernel_to_graft": {
+  "value": {
+   "median_tok_per_s": 281389,
+   "n": 142,
+   "min": 255222,
+   "max": 284130,
+   "achieved_median": 281207,
+   "achieved_n": 141,
+   "first_step": 22650,
+   "last_step": 29700,
+   "first_utc": "07:54:10",
+   "last_utc": "09:45:11"
+  },
+  "how": "one-tile kernel + ReLU^2 backward, to the graft: median of the train log's per-step tok_per_s over the step records with 22613 < step <= 29722 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.prekernel_21000": {
+  "value": {
+   "median_tok_per_s": 240143,
+   "n": 32,
+   "min": 232858,
+   "max": 241305,
+   "achieved_median": 239984,
+   "achieved_n": 31,
+   "first_step": 21050,
+   "last_step": 22600,
+   "first_utc": "07:15:43",
+   "last_utc": "07:43:56"
+  },
+  "how": "the 1,600 steps before the kernel switch: median of the train log's per-step tok_per_s over the step records with 21000 < step <= 22613 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.final_25300_29700": {
+  "value": {
+   "median_tok_per_s": 281399,
+   "n": 89,
+   "min": 255222,
+   "max": 284130,
+   "achieved_median": 281220,
+   "achieved_n": 88,
+   "first_step": 25300,
+   "last_step": 29700,
+   "first_utc": "08:36:48",
+   "last_utc": "09:45:11"
+  },
+  "how": "final, steps 25,300-29,700 (review item 26): median of the train log's per-step tok_per_s over the step records with 25250 < step <= 29700 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.v9_take": {
+  "value": {
+   "median_tok_per_s": 178087,
+   "n": 44,
+   "min": 174098,
+   "max": 179098,
+   "achieved_median": 178009,
+   "achieved_n": 43,
+   "first_step": 29750,
+   "last_step": 31900,
+   "first_utc": "09:59:24",
+   "last_utc": "10:52:11"
+  },
+  "how": "v9 as grafted (take), before the three switches: median of the train log's per-step tok_per_s over the step records with 29722 < step <= 31912 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.v9_switches_1024": {
+  "value": {
+   "median_tok_per_s": 196874,
+   "n": 99,
+   "min": 143462,
+   "max": 200081,
+   "achieved_median": 196879,
+   "achieved_n": 98,
+   "first_step": 31950,
+   "last_step": 36850,
+   "first_utc": "10:58:39",
+   "last_utc": "12:47:27"
+  },
+  "how": "v9 with flat, rows, tokn at 1,024 tokens: median of the train log's per-step tok_per_s over the step records with 31912 < step <= 1000000000 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.v9_switches_2048": {
+  "value": {
+   "median_tok_per_s": 188980,
+   "n": 16,
+   "first_step": 36900,
+   "first_utc": "12:48:36"
+  },
+  "how": "v9 with the switches at 2,048 tokens (from p = 0.67)"
+ },
+ "ratio.kernel_gain_live": {
+  "value": 0.1717,
+  "how": "median after the kernel switch (to 25,280) / median of the 1,600 steps before, minus 1"
+ },
+ "ratio.final_over_v9_take_live": {
+  "value": 1.5801,
+  "how": "final 25,300-29,700 median / v9 (take) median"
+ },
+ "ratio.final_over_v9_switches_live": {
+  "value": 1.4293,
+  "how": "final 25,300-29,700 median / v9 with the switches median (1,024 tokens)"
+ },
+ "ratio.v9_switches_gain_live": {
+  "value": 0.1055,
+  "how": "v9 with the switches / v9 as grafted, live medians, minus 1"
+ },
+ "ratio.reference_to_kernel_live": {
+  "value": [
+   2.405,
+   2.512
+  ],
+  "how": "final's live median after the kernel / the 112-117k live rate of the reference implementation (TPU_NOTES)"
+ },
+ "loss.v9_to_34350": {
+  "value": {
+   "mean": 2.4675,
+   "sd": 0.0399,
+   "n": 93
+  },
+  "how": "v9 step losses from the graft to step 34,350 (all at 1,024 tokens)"
+ },
+ "loss.v9_all": {
+  "value": {
+   "mean": 2.4485,
+   "sd": 0.049,
+   "n": 159,
+   "first_step": 29750,
+   "last_step": 37650
+  },
+  "how": "v9 step losses (each the mean over a 262,144-token step), every logged step after the graft"
+ },
+ "loss.final_p045_050": {
+  "value": {
+   "mean": 2.4962,
+   "sd_sample": 0.0373,
+   "n": 68,
+   "min": 2.4158,
+   "max": 2.5698
+  },
+  "how": "final step losses with 0.45 <= p < 0.50 (sample sd)"
+ },
+ "loss.final_p000_001": {
+  "value": {
+   "mean": 3.613,
+   "sd_sample": 0.535,
+   "sd_population": 0.507,
+   "n": 10
+  },
+  "how": "final step losses with p < 0.01"
+ },
+ "p.graft": {
+  "value": {
+   "final_end_event": 0.5049,
+   "v9_stage_event": 0.5112,
+   "last_final_step_record": 0.5045,
+   "first_v9_step_record": 0.5118
+  },
+  "how": "p at the stop (end event of step 29,722), at the restore (stage event), and of the nearest step records"
+ },
+ "v9.newest_step": {
+  "value": {
+   "step": 37650,
+   "p": 0.6873,
+   "utc": "13:05:57",
+   "loss": 2.3192
+  },
+  "how": "the newest step record of the extracted v9 log"
+ },
+ "proj.v9_total": {
+  "value": {
+   "t1024_s": 6614,
+   "t2048_s": 20806,
+   "live1024": 196874,
+   "live2048_used": 188980,
+   "live2048_is_measured": true,
+   "remaining_tokens": 5234000000.0,
+   "total_tokens": 13600000000.0,
+   "final_projected_total": 15880000000.0,
+   "deficit": 2280000000.0,
+   "deficit_share": 0.144
+  },
+  "how": "tokens at 18:33:49 projected from the 10:57:50 restart (step 31,912, p = 0.5651, slice 27,420 s, p linear in time, 2,048 tokens from p = 0.67) at the live v9 median at 1,024; at 2,048 the measured live median if it exists, else 1,510.2 x (1,287.1 / 1,433.1) ms synthetic scaled by live/synthetic at 1,024; final's projected total 1.588e10 is the first draft's (lead_work/scripts/projections.py)"
+ },
+ "proj.v9_scratch_at_graft": {
+  "value": 6020000000.0,
+  "how": "a v9 started from scratch in the 30,969 s left at the graft, at the rates with the switches (optimistic: the switches did not exist at 09:45)"
+ },
+ "power.falcon_dev": {
+  "value": {
+   "tie_rate": 0.25,
+   "n_for_10pt": 259,
+   "n_for_5pt": 1044,
+   "mde_decisive_at_n200": 0.113,
+   "mde_decisive_at_n189": 0.117
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.mobilellm_dev": {
+  "value": {
+   "tie_rate": 0.6167,
+   "n_for_10pt": 506,
+   "n_for_5pt": 2042,
+   "mde_decisive_at_n200": 0.158,
+   "mde_decisive_at_n189": 0.162
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.protocol_30pct": {
+  "value": {
+   "tie_rate": 0.3,
+   "n_for_10pt": 277,
+   "n_for_5pt": 1118,
+   "mde_decisive_at_n200": 0.117,
+   "mde_decisive_at_n189": 0.121
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.falcon_dev_v9_two_readings": {
+  "value": {
+   "tie_rate": 0.3,
+   "n_for_10pt": 277,
+   "n_for_5pt": 1118,
+   "mde_decisive_at_n200": 0.117,
+   "mde_decisive_at_n189": 0.121
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.mobilellm_dev_v9_two_readings": {
+  "value": {
+   "tie_rate": 0.55,
+   "n_for_10pt": 431,
+   "n_for_5pt": 1739,
+   "mde_decisive_at_n200": 0.146,
+   "mde_decisive_at_n189": 0.15
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.score_halfwidth_n200": {
+  "value": 0.069,
+  "how": "normal half-width of a score near 0.5 at n = 200"
+ },
+ "heldout.three_point": {
+  "value": {
+   "slope_per_min": -0.000186,
+   "pred_at_592.5": 2.2495,
+   "v9_at_592.5": 2.2337,
+   "gap": 0.0158,
+   "pi95_halfwidth_t1": 0.025
+  },
+  "how": "least-squares line through final's three held-out losses (training minutes 494.7, 519.7, 538.7), 95% prediction interval with t(1 dof) = 12.706 (review1_work/stats.py)"
+ },
+ "flop.final_1024": {
+  "value": {
+   "analytic_GFLOP_per_token": 0.781,
+   "executed_GFLOP_per_token": [
+    1.179,
+    1.195
+   ],
+   "live_rate": 281399,
+   "analytic_TFLOP_s": 220,
+   "executed_TFLOP_s": [
+    332,
+    336
+   ],
+   "executed_share_of_814": [
+    0.408,
+    0.413
+   ],
+   "analytic_share_of_814": 0.27
+  },
+  "how": "analytic: forward + backward = 3 x forward multiply-adds, causal attention, no recomputation; executed: the loop body's products 4 x (forward, rematerialised forward, two backward), the rotation's q and k as two products each, attention over the 62.5% of the score square the one-tile strips cover, its forward once (save) and its backward 2.0 or 2.5 times the forward, the head 3 x; FLOP = 2 x MAC"
+ },
+ "loops.time": {
+  "value": {
+   "one_loop_ms": 42.9,
+   "eight_loops_ms": 289.0,
+   "per_loop_ms": 35.2,
+   "non_block_ms_estimate": 7.7
+  },
+  "how": "TPU_NOTES l.202: one loop 42.9 ms against 289 ms for eight, 32 x 1,024 micro-batch, reference code"
+ }
+}

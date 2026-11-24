@@ -1,0 +1,8 @@
+source,t,variant,ms,tok_per_s,loss
+docs/tpu_profile/tpu_tune.v6e.txt,1024,warm-up (discarded),158.6,206578,9.01489
+docs/tpu_profile/tpu_tune.v6e.txt,1024,configured,158.3,206973,9.01489
+docs/tpu_profile/tpu_tune.v6e.txt,1024,remat_keep=kernel,161.2,203225,9.01489
+docs/tpu_profile/tpu_tune.v6e.txt,1024,loss_chunk=32768,156.4,209555,9.01489
+docs/tpu_profile/tpu_tune.v6e.txt,1024,micro_seqs=16 (information only),73.3,223417,9.01466
+docs/tpu_profile/tpu_tune.v6e.txt,2048,as chosen above,176.1,186072,9.01472
+docs/tpu_profile/tpu_tune.v6e.txt,2048,splash tiles 2048/2048,177.5,184590,9.01472

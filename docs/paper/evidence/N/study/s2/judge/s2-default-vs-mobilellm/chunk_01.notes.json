@@ -1,0 +1,17 @@
+{
+  "p6b5234f8ef": "Neither rewrites the review; A asks for help, omits breakage; B loops 'garbage'.",
+  "pea9799a421": "A's code is invalid and wrong; B loops with wrong transposes, cut off.",
+  "p9ee6f9cfda": "A repeats one boxed blunt line endlessly; B rambles, never asks for quiet after 10pm.",
+  "pa2f44ced54": "Neither gives reason (solar year ~365.25 days); A loops on rules, B nonsense.",
+  "p7bd82beb8f": "B valid JSON only, though missing 'city'; A invalid set syntax, verbose, cut off.",
+  "pb376ac48a2": "Neither explains __name__ check; A meaningless box, B off-topic file-path nonsense.",
+  "p1238d59e4d": "A correctly gets 12,600; B nonsense with standard deviation, answers 12.",
+  "p3cf4816195": "B correct and all lowercase; A loops about letters, never answers.",
+  "p07db1362cd": "B is a flawed but recognizable thank-you note; A nonsense; neither adds dinner invite.",
+  "p7835a191f4": "A long incoherent statue story, umbrella never goes home; B boxed meta nonsense.",
+  "pbd1984476f": "B one coherent sentence; A circular, two sentences plus box, breaks constraint.",
+  "pe270070aba": "A shows correct 240-144-40=56 amid rambling; B ignores 3/5, wrong 160.",
+  "pc3fd4835f3": "A names solid, liquid, gas correctly, though differences wrong; B lattice-loop nonsense.",
+  "p1096f94852": "Neither gives a Bash command; A gibberish, B looping broken Python.",
+  "p202b9d9f1f": "A comma nonsense; B incoherent note, repeated verbatim, ignores neighbor and plants."
+}

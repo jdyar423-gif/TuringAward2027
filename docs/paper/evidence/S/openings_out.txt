@@ -1,0 +1,24 @@
+climbmix                 no assistant turns (40000 segments sampled)
+dolly                    turns   15011 conv  15011 (0.7 s)  sure_open 0.25%  apology_open 0.04%  as_ai_open 0.03%  dont_have 0.03%  cannot_any 0.03%
+fineweb_edu              no assistant turns (40000 segments sampled)
+glaive_rag               turns   40000 conv  40000 (1.2 s)  apology_open 2.13%  dont_have 1.49%  dont_have_access 0.18%
+gsm8k                    turns    7413 conv   7473 (0.4 s)  
+hotpot_qa                turns   40000 conv  40000 (1.0 s)  sure_open 0.00%  apology_open 0.00%
+neural_bridge_rag        turns    9598 conv   9598 (0.4 s)  
+orca_math                turns   40000 conv  40000 (1.2 s)  sure_open 0.01%  apology_open 0.00%  cannot_any 0.00%  canned_refusal_now 0.00%
+rag_instruct             turns   40000 conv  40000 (1.2 s)  sure_open 0.03%
+simplewiki               no assistant turns (40000 segments sampled)
+smol_smoltalk            turns   89810 conv  40000 (2.4 s)  sure_open 1.73%  apology_open 0.23%  need_more 0.07%  as_ai_open 0.03%  dont_have 0.03%  dont_have_access 0.02%  i_am_ai 0.02%  cannot_any 0.01%  canned_refusal_now 0.00%
+smoltalk_constraints     turns   34424 conv  34424 (1.1 s)  sure_open 3.06%  need_more 0.35%  apology_open 0.02%  dont_have 0.01%  cannot_any 0.01%  dont_have_access 0.00%
+smoltalk_everyday        turns    8630 conv   2260 (0.2 s)  sure_open 0.34%  apology_open 0.21%  i_am_ai 0.19%  dont_have 0.07%  dont_have_access 0.07%  need_more 0.03%
+smoltalk_magpie_ultra    turns  120000 conv  40000 (2.5 s)  apology_open 0.08%  need_more 0.07%  i_am_ai 0.01%  as_ai_open 0.01%  dont_have 0.00%  dont_have_access 0.00%  sure_open 0.00%
+smoltalk_rewrite         turns   40000 conv  40000 (0.9 s)  cannot_any 0.00%
+smoltalk_summarize       turns   40000 conv  40000 (0.9 s)  
+smoltalk_systemchats     turns  107174 conv  34131 (2.3 s)  sure_open 38.85%  apology_open 10.60%  as_ai_open 2.14%  dont_have 1.60%  dont_have_access 1.51%  cannot_any 0.84%  i_am_ai 0.48%  canned_refusal_now 0.40%  need_more 0.06%
+squad_v2                 turns   40000 conv  40000 (0.7 s)  sure_open 0.00%
+synth                    turns   40000 conv  40000 (1.0 s)  cannot_any 1.04%  canned_refusal_now 0.81%  apology_open 0.25%  dont_have 0.03%  sure_open 0.03%  dont_have_access 0.02%
+synth_rag                turns   40000 conv  40000 (1.0 s)  cannot_any 1.21%  canned_refusal_now 0.96%  apology_open 0.26%  dont_have 0.03%  dont_have_access 0.02%
+tulu3_sft                turns   48055 conv  40000 (1.2 s)  apology_open 4.66%  cannot_any 4.30%  canned_refusal_now 4.10%  sure_open 2.76%  as_ai_open 0.35%  dont_have 0.21%  dont_have_access 0.17%  i_am_ai 0.05%  need_more 0.04%
+ultrachat                turns  126646 conv  40000 (2.7 s)  sure_open 38.14%  dont_have 2.81%  dont_have_access 2.21%  apology_open 0.47%  cannot_any 0.36%  canned_refusal_now 0.12%  as_ai_open 0.02%  need_more 0.00%
+ultrafeedback            turns   40000 conv  40000 (1.0 s)  sure_open 11.59%  as_ai_open 2.44%  apology_open 1.66%  cannot_any 1.59%  canned_refusal_now 1.03%  dont_have 0.93%  dont_have_access 0.73%  i_am_ai 0.21%  need_more 0.10%
+wrote /content/bes_cli/openings.json

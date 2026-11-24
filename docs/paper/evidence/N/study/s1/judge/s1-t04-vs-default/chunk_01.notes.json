@@ -1,0 +1,17 @@
+{
+  "pf80aa36b32": "Both call sort/sorted despite the ban; broken code, A degenerates and cuts off.",
+  "p7920892cc7": "B's second answer 1/2 (50%) is correct; A wrong both turns, cut off.",
+  "p7da2e3237a": "A invents fake volcanoes without locations; B degenerates into a repetition loop.",
+  "p465156948a": "Both incoherent beyond 'check the date'; A contradicts itself and cuts off.",
+  "p54b074b736": "Both give three bullets; A's cost bullet contradictory, B has false claims.",
+  "pc03dea2060": "A gives exactly three numbered steps; B ignores format and degenerates into loop.",
+  "p05b591aade": "Both circular non-answers; neither gives a reason birds migrate.",
+  "p1f9d613ff2": "A says the fridge warms food; B nonsense about freezing point. Both wrong.",
+  "p5dacfe6c78": "Correct is 12,600; A says 600, B says 60.",
+  "pc04bae4780": "Neither congratulates the friend; both are about the writer's own job.",
+  "paab273c764": "A's study tips are on-topic; B repetitive, off-topic, copies itself in turn two.",
+  "p65b5769c14": "Neither gives a working comprehension; B's lengths wrong, A's code invalid.",
+  "p4745742d0f": "Both incoherent and wrong; neither mentions elections or hereditary rule.",
+  "p67b2a431eb": "A repeats 'part-time' nonsense; B reverses roles. Neither is sendable.",
+  "pcce71811c2": "A loops and turns the star into a dark man; B incoherent, no arc."
+}
