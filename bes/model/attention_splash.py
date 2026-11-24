@@ -47,7 +47,13 @@ chip:
 * the flag ``save`` on any of them (``"onetile:save"``, ``"blocks:save"``): the rematerialised
   loop step (``bes.model.controller.run_loops``) keeps the forward kernel's output and
   log-sum-exp (:func:`remat_policy`), so its backward pass does not run the forward kernel a
-  second time (same values: the kernel is deterministic).
+  second time (the same values to float rounding: the backward pass reads the output of the
+  forward pass instead of one recomputed from rematerialised operands). With ``onetile`` only
+  the one-tile kernels are kept: lengths beyond ``max_t`` run the configured program, unchanged.
+
+The switch is process-wide and not part of the configuration (nor of its hash): a run that sets
+it records it in its log. Lengths of the training run with ``onetile``: 1024 and 2048 tokens
+(both compiled for the chip; ``max_t=1024`` keeps the configured program at 2048).
 """
 from __future__ import annotations
 
@@ -72,10 +78,21 @@ RESIDUAL_NAME = "attention_residuals"
 #: live in VMEM; 2048 is compiled for the chip); longer ones use the splash kernels
 ONETILE_MAX_T = 2048
 KERNELS = ("", "onetile", "blocks", "tokamax", "xlamap")
+#: the options (``key=value``) and flags each kernel of the switch takes; anything else is refused
+#: (a misspelt ``save`` would otherwise time and run another program than the one asked for)
+SWITCH_KEYS = {
+    "": ((), ("save",)),
+    "onetile": (("bs", "hp", "max_t"), ("save",)),
+    "blocks": (("q", "kv", "kvc", "qdkv", "kvdkv", "kvcdkv", "qdq", "kvdq", "qlayout", "klayout", "vlayout"),
+               ("save", "sep", "fused")),
+    "tokamax": (("block", "kvc", "diag", "grid"), ("save",)),
+    "xlamap": ((), ("save",)),
+}
 
 
 def parse_switch(value: str | None = None) -> tuple[str, dict[str, str], frozenset[str]]:
-    """``"name:key=value,flag,..."`` -> ``(name, {key: value}, {flags})`` (default: the switch)."""
+    """``"name:key=value,flag,..."`` -> ``(name, {key: value}, {flags})`` (default: the switch);
+    ValueError for an unknown kernel, option or flag."""
     s = (FAST_KERNEL if value is None else value).strip()
     name, _, rest = s.partition(":")
     name = name.strip()
@@ -88,32 +105,45 @@ def parse_switch(value: str | None = None) -> tuple[str, dict[str, str], frozens
             opts[key.strip()] = val.strip()
         else:
             flags.add(key)
+    known_opts, known_flags = SWITCH_KEYS[name]
+    bad = sorted(set(opts) - set(known_opts)) + sorted(flags - set(known_flags))
+    if bad:
+        raise ValueError(f"FAST_KERNEL: {name or 'the configured kernels'} take no {bad} in {s!r} "
+                         f"(options {list(known_opts)}, flags {list(known_flags)})")
     return name, opts, frozenset(flags)
 
 
-#: name prefixes of the forward attention kernels (``pallas_call`` names) the ``save`` flag keeps
-FORWARD_KERNELS = ("onetile_fwd", "splash_mha_fwd")
+#: name prefixes of the forward attention kernels (``pallas_call`` names) the ``save`` flag keeps,
+#: per kernel of the switch (the tokamax kernels carry the splash names)
+FORWARD_KERNELS = {"onetile": ("onetile_fwd",), "": ("splash_mha_fwd",), "blocks": ("splash_mha_fwd",),
+                   "tokamax": ("splash_mha_fwd",), "xlamap": ()}
 
 
 def remat_policy():
     """The ``jax.checkpoint`` policy the switch asks of a rematerialised loop step: ``None``
     (recompute everything, the configured behaviour) unless it carries the flag ``save``.
 
-    With ``save``, the named forward residuals (:data:`RESIDUAL_NAME`) and the forward attention
-    kernels themselves are saveable, nothing else. The kernels have to be: JAX never removes a
-    ``pallas_call`` as dead code (its DCE rule keeps every kernel), so a kernel that is not
-    saveable is run again in the backward pass even when all of its outputs were saved. Marked
-    saveable, it is not recomputed, and only the values the backward pass reads become residuals:
-    the named output and log-sum-exp (bfloat16 ``[B, H, T, hd]`` and float32 ``[B, H, T]``, x8
-    for the one-tile kernels), not the splash kernel's other outputs (its running maximum, sum
-    and output, and the 128-lane log-sum-exp)."""
-    if "save" not in parse_switch()[2]:
+    With ``save``, the named forward residuals (:data:`RESIDUAL_NAME`) and the forward kernels of
+    the switch's kernel themselves are saveable, nothing else. The kernels have to be: JAX never
+    removes a ``pallas_call`` as dead code (its DCE rule keeps every kernel), so a kernel that is
+    not saveable is run again in the backward pass even when all of its outputs were saved.
+    Marked saveable, it is not recomputed, and only the values the backward pass reads become
+    residuals: the named output and log-sum-exp (bfloat16 ``[B, H, T, hd]`` and float32
+    ``[B, H, T]``, x8 for the one-tile kernels), not the splash kernel's other outputs (its
+    running maximum, sum and output, and the 128-lane log-sum-exp). Only the switch's own kernel
+    is kept: with ``onetile`` the splash kernels that take the sequences longer than ``max_t``
+    are neither named nor kept, so those lengths run the configured program."""
+    name, _, flags = parse_switch()
+    if "save" not in flags:
         return None
     names = jax.checkpoint_policies.save_only_these_names(RESIDUAL_NAME)
+    prefixes = FORWARD_KERNELS[name]
 
     def keep_attention_forward(prim, *args, **params) -> bool:
         if getattr(prim, "name", "") == "pallas_call":
-            return str(params.get("name") or "").startswith(FORWARD_KERNELS)
+            # jax 0.11 passes the kernel name as ``name`` (older releases: ``name_and_src_info``)
+            kname = params.get("name") or getattr(params.get("name_and_src_info"), "name", "")
+            return bool(prefixes) and str(kname or "").startswith(prefixes)
         return bool(names(prim, *args, **params))
     return keep_attention_forward
 
@@ -283,9 +313,12 @@ def attend_major(q: jax.Array, k: jax.Array, v: jax.Array, seg: jax.Array, cfg, 
         seg = jnp.pad(seg, ((0, 0), (0, tp - t)), constant_values=PAD_SEGMENT)
     interp = use_interpret(cfg) if interpret is None else bool(interpret)
     name, opts, flags = parse_switch()
-    res_name = RESIDUAL_NAME if "save" in flags else None
+    save = "save" in flags
     if name == "onetile" and tp > int(opts.get("max_t", ONETILE_MAX_T)):
-        name = ""                                   # longer than compiled and checked: the splash kernels
+        # longer than compiled and checked: the configured splash path, unchanged (no residual
+        # names; remat_policy keeps only the one-tile kernels)
+        name, save = "", False
+    res_name = RESIDUAL_NAME if save else None
     if name == "onetile":
         from bes.model import attention_onetile as onetile
         y = onetile.attend_major(q, k, v, seg, bs=int(opts.get("bs", 256)), interpret=interp,

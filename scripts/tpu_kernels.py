@@ -11,12 +11,16 @@ at ``data.seq_len``, the same tokens at ``data.seq_len_late``) for each kernel o
 with a synthetic batch (three segments per row, ``BOS`` at every segment start, the loader's
 fields) and freshly initialised parameters, so nothing else may hold the device. Per (kernel,
 length): one compile, warm calls (more for the first program of the process, which runs slow
-for a few calls on the TPU), then the median of ``--calls`` timed calls. It prints the loss and
-the largest gradient difference against the first kernel of the list (the reference, ``""`` =
-the configured splash kernels) so that equality can be seen; the kernels compute the same values
-to float rounding (``tests/model/test_attention_onetile.py``). No new (kernel, length) starts
-after ``--budget-s`` seconds; the kernels are tried in the order given (both lengths of a kernel
-before the next kernel).
+for a few calls on the TPU), then ``--calls`` rounds of ``--per-round`` calls issued back to back
+(the device time of a call, without a host round trip per call; the median over the rounds). It
+prints the loss and the largest gradient difference against the first kernel of the list (the
+reference, ``""`` = the configured splash kernels) so that equality can be seen; the kernels
+compute the same values to float rounding (``tests/model/test_attention_onetile.py``). No new
+(kernel, length) starts after ``--budget-s`` seconds; every kernel is timed at the shorter
+length before any at the longer one, and a ``BEST @ T`` line per length names the fastest kernel
+that ran with the reference's values (loss within 1e-4 relative, and on every parameter leaf a
+relative L2 gradient difference within 5%, or within 3 times that of the yardstick below when it
+ran: far above the rounding differences, far below a wrong kernel).
 
 An entry of ``--kernels`` may add the model's other speed switches (``bes.model.fast``) after
 the kernel, joined by ``+``: ``onetile:save+relu2+ce`` times that kernel with ``FAST_RELU2`` and
@@ -29,16 +33,21 @@ piece at the other lengths), ``--step-lengths`` only at some lengths: which ``mi
 with the chosen kernel.
 
 ``--smoke``: the tiny CPU configuration (``configs/smoke.py`` with the splash path, remat,
-bfloat16 and interpret mode; pieces of 4 x 128 and 2 x 256 tokens), at most two timed calls;
-checks that the script and the kernels run (``--lengths 128 --budget-s 400`` reaches all of them).
+bfloat16 and interpret mode; pieces of 4 x 128 and 2 x 256 tokens), at most two rounds of one
+call; checks that the script and the kernels run (CPU times in interpret mode mean nothing).
 
 The last line is ``KERNELS <json>``: per (kernel, length) ``ms`` (median), ``tokens_per_s``,
 ``loss``, ``loss_diff``, ``grad_rel_diff`` / ``grad_rel_l2`` (the largest max|g - g_ref| /
 max|g_ref| and |g - g_ref| / |g_ref| over the parameter leaves), ``compile_s`` or the reason it
-failed, and ``speedup`` against the reference at the same length. For scale: a change of the
-splash tiles alone (``blocks:kvc=...``, the kind of change the run already took as "same values")
-moves the gradients of the bfloat16 model by about as much (one rounding of a bfloat16
-activation somewhere in 16 block applications).
+failed, ``mosaic_calls`` (kernels in the compiled program: a ``save`` value has fewer than the
+others, or the flag did not take) and ``speedup`` against the reference at the same length. For scale, the last default
+kernel is a change of the splash tiles alone (``blocks:kvc=1024``, the kind of change the run
+already took as "same values"): it moves the gradients of the bfloat16 model by about as much as
+the other kernels (one rounding of a bfloat16 activation somewhere in 16 block applications); a
+kernel far above it (or a loss difference beyond ~1e-4) computes something else and is not a
+candidate. At 2048 tokens the configured kernels round dq once more than the one-tile kernels
+(one bfloat16 dq per 1024-key tile, summed in XLA), so their gradient differences are somewhat
+larger there than at 1024.
 """
 from __future__ import annotations
 
@@ -55,10 +64,15 @@ sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "scripts"))
 
 #: the reference first, then the candidates by their static bundle counts (docs/TPU_NOTES.md,
-#: "Attention kernels for one tile"); "onetile" before "onetile:save" because it changes only the
-#: kernel, the flag also the rematerialisation; tokamax fails fast where it is not installed
-DEFAULT_KERNELS = ("", "onetile", "onetile:save", "blocks:save", "tokamax:diag=1,grid=4",
-                   "onetile:hp=1", "onetile:bs=128,hp=1", "blocks:kvc=1024", "blocks:sep", "xlamap")
+#: "Attention kernels for one tile"; "onetile" before "onetile:save" because it changes only the
+#: kernel, the flag also the rematerialisation), last a tile change of the configured kernels as
+#: the yardstick of "same values to float rounding". Not in the list (``--kernels`` takes any
+#: value): the weaker one-tile variants (``onetile:hp=1``, ``onetile:bs=128,hp=1``), tile and
+#: kernel settings the static counts put behind the configured ones (``blocks:kvc=256``,
+#: ``blocks:sep``), ``xlamap`` (cannot win) and ``tokamax:...`` (behind ``blocks:save`` by the
+#: same counts, and needs ``pip install --no-deps tokamax==0.0.17`` on the runtime).
+YARDSTICK = "blocks:kvc=1024"
+DEFAULT_KERNELS = ("", "onetile", "onetile:save", "blocks:save", YARDSTICK)
 SMOKE_OVERRIDES = ("model.attn_impl=splash", "model.remat=true", "model.act_dtype=bfloat16",
                    "model.table_grad=take", "optim.micro_seqs=4")
 
@@ -93,14 +107,15 @@ def main(argv: Sequence[str] | None = None) -> int:
                          f"(default: {';'.join(DEFAULT_KERNELS)})")
     ap.add_argument("--lengths", default="", help="comma-separated sequence lengths (default: "
                                                    "data.seq_len and data.seq_len_late)")
-    ap.add_argument("--calls", type=int, default=5, help="timed calls per (kernel, length)")
+    ap.add_argument("--calls", type=int, default=5, help="timed rounds per (kernel, length) (median)")
+    ap.add_argument("--per-round", type=int, default=10, help="calls issued back to back per round")
     ap.add_argument("--steps", default="", help="';'-separated entries of --kernels that are also timed as "
                                                 "a whole accumulation step ('all': every entry)")
     ap.add_argument("--step-calls", type=int, default=2, help="timed whole steps per (entry, length, rows)")
     ap.add_argument("--step-rows", default="", help="comma-separated rows per piece at data.seq_len for the "
                                                     "whole steps (default: optim.micro_seqs)")
     ap.add_argument("--step-lengths", default="", help="comma-separated lengths of the whole steps (default: all)")
-    ap.add_argument("--budget-s", type=float, default=150.0, help="no new (kernel, length) after this")
+    ap.add_argument("--budget-s", type=float, default=600.0, help="no new (kernel, length) after this")
     ap.add_argument("--smoke", action="store_true", help="tiny configuration on CPU (interpret mode)")
     args = ap.parse_args(argv)
 
@@ -120,7 +135,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.smoke:
         args.config = str(REPO / "configs" / "smoke.py")
         overrides = list(SMOKE_OVERRIDES) + overrides
-        args.calls = min(args.calls, 2)
+        args.calls, args.per_round = min(args.calls, 2), 1
     kernels = DEFAULT_KERNELS if args.kernels is None else tuple(args.kernels.split(";"))
 
     def setting_of(entry: str) -> dict:
@@ -170,12 +185,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                 worst_l2 = max(worst_l2, float(jnp.linalg.norm((a - b).ravel())) / norm)
         return worst_max, worst_l2
 
-    for kern in kernels:
-        for t in lengths:
+    for t in lengths:
+        for kern in kernels:
             label = f"{kern or '(configured)'} @ {t}"
             rows = max(1, rows1 * t1 // t)
             if time.time() - t_start > args.budget_s:
-                say(f"  budget of {args.budget_s:.0f} s used: {label} and later not timed")
+                say(f"  budget of {args.budget_s:.0f} s used: {label} not timed")
                 out.append({"kernel": kern, "t": t, "rows": rows, "ok": False, "reason": "budget"})
                 continue
             batch = batches[t]
@@ -187,6 +202,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 t0 = time.perf_counter()
                 comp = f.lower(params, batch).compile()
                 comp_s = time.perf_counter() - t0
+                # Mosaic kernels in the compiled program (0 in interpret mode): with ``save`` one
+                # forward kernel fewer per block (the loop step does not run it again)
+                n_mosaic = comp.as_text().count('custom_call_target="tpu_custom_call"')
                 got = comp(params, batch)
                 jax.block_until_ready(got)
                 for _ in range(4 if (first and on_tpu) else 1):  # the first program runs slow at first
@@ -194,11 +212,12 @@ def main(argv: Sequence[str] | None = None) -> int:
                     jax.block_until_ready(got)
                 first = False
                 times = []
-                for _ in range(args.calls):
+                for _ in range(max(1, args.calls)):
                     t0 = time.perf_counter()
-                    got = comp(params, batch)
+                    for _ in range(max(1, args.per_round)):
+                        got = comp(params, batch)
                     jax.block_until_ready(got)
-                    times.append((time.perf_counter() - t0) * 1e3)
+                    times.append((time.perf_counter() - t0) * 1e3 / max(1, args.per_round))
                 for r1 in (step_rows or [rows1]) if kern in whole and (not step_lengths or t in step_lengths) else ():
                     # the trainer's accumulation over all the pieces of a step (the same piece
                     # repeated), as scripts/tpu_micro.py times it
@@ -234,7 +253,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             ms = statistics.median(times)
             rec = {"kernel": kern, "t": t, "rows": rows, "ok": True, "ms": ms,
                    "ms_all": [round(x, 3) for x in times], "tokens_per_s": rows * t / ms * 1e3,
-                   "loss": loss, "compile_s": round(comp_s, 1)}
+                   "loss": loss, "compile_s": round(comp_s, 1), "mosaic_calls": n_mosaic}
             if steps:
                 rec["steps"] = steps
             if t not in ref:
@@ -247,12 +266,25 @@ def main(argv: Sequence[str] | None = None) -> int:
             extra = (f"  dloss {rec['loss_diff']:+.1e}  grad diff max {rec['grad_rel_diff']:.1e} "
                      f"l2 {rec['grad_rel_l2']:.1e}  x{rec['speedup']:.3f}") if "speedup" in rec else "  (reference)"
             say(f"  {label:40s} {ms:9.2f} ms  {rec['tokens_per_s']:10,.0f} tok/s  loss {loss:.6f}"
-                f"{extra}  (compile {comp_s:.0f} s)")
+                f"{extra}  (compile {comp_s:.0f} s, {n_mosaic} Mosaic calls)")
             for st in steps:
                 say(f"  {'':24s} whole step {st['a']:4d} x {st['rows']:2d} x {t:<5d} {st['ms']:9.1f} ms  "
                     f"{st['tokens_per_s']:10,.0f} tok/s  loss {st['loss']:.6f}  (compile {st['compile_s']:.0f} s)")
             out.append(rec)
             del comp, f, got
+    for t in lengths:
+        ran = [r for r in out if r["t"] == t and r["ok"]]
+        yard = [r["grad_rel_l2"] for r in ran if r["kernel"] == YARDSTICK and "grad_rel_l2" in r]
+        tol = max([0.05] + [3.0 * y for y in yard])
+        same = [r for r in ran if r.get("reference") or (abs(r["loss_diff"]) <= 1e-4 * abs(ref[t][0])
+                                                         and r["grad_rel_l2"] <= tol)]
+        for r in ran:
+            if r not in same:
+                say(f"  NOT EQUAL @ {t}: {r['kernel']} (dloss {r['loss_diff']:+.1e}, grad l2 {r['grad_rel_l2']:.1e})")
+        if same:
+            best = min(same, key=lambda r: r["ms"])
+            say(f"BEST @ {t}: {best['kernel'] or '(configured)'} {best['ms']:.2f} ms "
+                f"x{best.get('speedup', 1.0):.3f} vs the reference")
     say("KERNELS " + json.dumps({"results": out, "device": dev, "seconds": round(time.time() - t_start, 1),
                                  "config": args.config, "overrides": overrides}))
     return 0

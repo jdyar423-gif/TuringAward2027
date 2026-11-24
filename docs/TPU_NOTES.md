@@ -316,3 +316,22 @@ issued first. The `save` flag keeps the forward kernel's output and log-sum-exp 
 loop's rematerialisation instead of running the kernel again (JAX never removes a `pallas_call`
 as dead code, so the policy marks the forward kernel itself saveable; residuals 7 MB per block
 application at 4 x 1024). Not timed on the chip yet.
+
+**Review (compile-only and interpret mode, same day).** With the switch at its default the traced
+programs (loss, `value_and_grad` at 4 x 1024 and 2 x 2048, the whole training step with
+`micro_split=4`) and the StableHLO lowered for the chip are byte-identical to the code before the
+switch; `onetile:max_t=1024` and `onetile:save,max_t=1024` lower to the configured program at
+2048 (the flag keeps only the one-tile kernels). Every candidate compiles for `v6e:1x1` inside
+`controller.run_loops` (scan over loops of a checkpointed step, the policy of the switch) at
+4 x 1024 and 2 x 2048, `onetile` also with 2 heads per step at 2048 and as the forward-only
+kernel of an evaluation pass; with `save` the program holds 2 Mosaic calls instead of 3. Bundle
+counts recounted from new dumps: splash 4435 / 6664 per slice (T = 1024), one-tile 3853 / 6755
+per two-head step (T = 1024) and 7080 / 12233 per head (T = 2048), as in the table. At 2048 tokens
+in bfloat16 about 7.5% of the dq elements differ from the configured kernels, by less than 2e-4
+of the scale: the configured fused backward writes one bfloat16 dq per 1024-key tile and sums
+them in XLA, one rounding more than the one-tile kernel's float32 sum (whose dq is the closer
+one to a float32 reference); the splash kernels with a single 2048 tile differ from the
+configured ones in the same way. The `save` rows count no residual traffic: the kept output is
+copied into the loop scan's residual stack and read back (about 0.2 ms per 4 x 1024 piece), so
+`onetile:save` is expected within about 1% of `onetile` and `blocks:save` at -4% to -5% rather
+than -8% (`remat_keep=kernel`, which also kept the 128-lane log-sum-exp, was 2% slower).
