@@ -4,6 +4,17 @@
 
 這個倉庫是 BES-100M-A20M：一個總共至多 1 億個儲存數字（每個數字至多 16 位元，含權重、查表與藏書）、每產生一個 token 至多讀取 2,000 萬個數字的語言模型，設計成在單顆 TPU v6e 上於 24 小時內從零訓練完成。核心原理是「後驗 ∝ 先驗 × 證據」，在三個尺度上能精確算的就精確算：注意力頭帶校準匯點（信心通道在微型消融中增益不足 1%，最終配置關閉）；主機端精確計算的 n-gram 計數頭與候選帶進入輸出律；整段回覆以少量粒子加精確勢函數做 Feynman–Kac 解碼；另附一個門控、離線、凍結的書寫藏書，是否隨模型出貨由訓練後的事實題對照（藏書開與關各答一次）決定。所有程式都在 CPU 容器上開發、測試與彩排，**目前沒有任何數字是在 TPU 上量到的**（`docs/TPU_NOTES.md`）。正式的 24 小時訓練請照 `RUNBOOK.md` 使用 `notebooks/colab_v6e_24h.ipynb`；計畫原文在 `docs/PLAN.md`，核准後的修訂在 `docs/CHANGES.md`。另有不含藏書的替代配置 `configs/v9.py`（每個詞元一頁：私有前饋神經元與注意力輸出增益，外加逐頭的注意力輸出閘門；設計見 `docs/V9.md`），啟動指令相同，只需改用 `--config configs/v9.py`（`RUNBOOK.md` 第 1.4 節）。
 
+### 24 小時訓練的結果（2026-11-24）
+
+`configs/v9.py`（逐詞頁、無藏書，`docs/V9.md`；使用者在訓練中途指定改做這個配置，進行中的 `final` 檢查點以保函數的方式接枝過去，`docs/CHANGES.md` 19.7 節）已在單顆 TPU v6e-1 上從零訓練完成（TPU 配置時間合計 86,054 s，上限 86,400 s；第 51,812 步，1.358×10¹⁰ 個訓練 token）。正式模型在 `release/main16-v9/`：98,036,104 個 16-bit 數字，每產生一個 token 讀取 19,631,240 個。200 題測試集的盲測（Opus 5.5 代理判讀去識別、順序隨機的成對回覆，每對兩次、第二次左右互換；勝／負／平從本模型看，「平」含兩者皆差）：
+
+| 對手（各自的建議設定） | 勝／負／平 | 分數（95% 區間） |
+|---|---|---|
+| MobileLLM-R1.5-140M | 116／15／69 | 0.752 [0.688, 0.807] |
+| Falcon-H1-Tiny-90M-Instruct | 35／108／57 | 0.318 [0.257, 0.385] |
+
+結論照實說：盲測上優於 MobileLLM-R1.5，明顯不如 Falcon-H1-Tiny，「同時超過兩者」的目標只達成一半。MobileLLM-R1.5 在這個評測框架、它的建議設定下有 62.7% 的回覆是退化的，那一項領先的門檻不高；讓 Falcon 也取 6 個樣本再挑一則時結果不變（35／112／53 與 29／116／55）；本模型只用一個粒子時對 Falcon 是 22／122／56。完整數字（對照組、K = 1、精確計分、事先註冊的自動評審、偏離協定之處、過程中的事故）在 `docs/CHANGES.md` 第 19.10 節與 `docs/paper/paper.md`；模型的還原、對話與自己做盲測的指令在 `release/main16-v9/README.md`。
+
 ### 在 Colab 直接開啟
 
 | Notebook | 用途 | 直連 |
@@ -35,6 +46,32 @@
 - 執行階段上跑的是 GitHub 上這個分支的程式，不是本機 clone；原本要在 notebook 第 1 格改的設定，改用 `start` 的選項（`--budget-minutes`、`--config` 等）。
 
 其餘指令（`send stop|resume|package|release`、`url`）與注意事項見 `RUNBOOK.md` 第 2.1 節。這條路線只用替身的 `colab` 指令測試過，沒有在 Colab 上實際執行。
+
+## Result of the 24-hour run (2026-11-24)
+
+`configs/v9.py` (per-token pages, no written library, `docs/V9.md`; the run began as `configs/final.py`
+and its checkpoint was grafted into v9 by a function-preserving map at step 29,722, `docs/CHANGES.md`
+section 19.7) was trained from scratch on one TPU v6e-1 (86,054 s of allocated TPU time against a
+limit of 86,400 s; step 51,812; 1.358e10 training tokens). The official model is in
+`release/main16-v9/`: 98,036,104 stored 16-bit numbers, 19,631,240 read per generated token. Blind
+comparison on the 200 held-out test prompts (Opus 5.5 agents read blinded pairs of replies in random
+order, every pair twice with the sides exchanged; wins / losses / ties are ours, a tie includes
+"both bad"):
+
+| opponent (its recommended settings) | W / L / T | score (95% interval) |
+|---|---|---|
+| MobileLLM-R1.5-140M | 116 / 15 / 69 | 0.752 [0.688, 0.807] |
+| Falcon-H1-Tiny-90M-Instruct | 35 / 108 / 57 | 0.318 [0.257, 0.385] |
+
+Stated plainly: the model is preferred over MobileLLM-R1.5 and is clearly behind Falcon-H1-Tiny, so
+the goal of beating both was half met. MobileLLM-R1.5's replies are degenerate on 62.7% of these
+prompts under its recommended preset in this harness, so that lead clears a low bar. Giving Falcon
+the same six samples per reply does not change the result (35 / 112 / 53 with its own log-probability
+as the selector, 29 / 116 / 55 with our selector); with a single particle our model scores
+22 / 122 / 56 against Falcon. Every number, the control arms, exact scores, the pre-registered
+automatic judge, the deviations from the protocol and the incidents of the run:
+`docs/CHANGES.md` section 19.10 (Chinese) and `docs/paper/paper.md`. Restoring the model, chatting
+with it and running the blind arena yourself: `release/main16-v9/README.md`.
 
 ## What this is
 
@@ -72,8 +109,9 @@ stored-number total drops by its 63.8M.
 
 ## Measured so far
 
-Everything below was measured on a 4-core CPU container (or compiled for the TPU without running
-on it); nothing has run on a TPU.
+The rows below were measured before the TPU run, on a 4-core CPU container (or compiled for the TPU
+without running on it). What was measured on the TPU and after the run is in the section "Result of
+the 24-hour run" above, in `docs/CHANGES.md` section 19 and in `docs/paper/`.
 
 | fact | where |
 |---|---|
