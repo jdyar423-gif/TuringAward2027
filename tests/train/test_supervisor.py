@@ -547,6 +547,64 @@ def _fake_source(data_dir, name, n_files, t_files, t0, sizes=None):
     return rdir, files
 
 
+def test_a_file_two_sources_read_stays_until_both_have_their_shard(tmp_path):
+    """synth and synth_rag read the same raw files. In the run of 23 Nov the one that finished
+    first deleted them, the other got two shards of four, and on the next machine not the same
+    two: the continued training could not find a shard of its journal."""
+    from bes.data import download, shards, tokenize_worker
+
+    out, data = tmp_path / "run", tmp_path / "data_cache"
+    t0 = time.time() - 100.0
+    SV.write_manifest(out, {"budget": {"t0": t0}})
+    paths = SV.RunPaths(out)
+    cfg = dataclasses.replace(Cfg(), run=dataclasses.replace(Cfg().run, data_dir=str(data),
+                                                             tok_root="run"))
+    root = SV.tok_root(cfg, out)
+    rdir, files = _fake_source(data, "synth", 4, [t0 + 1] * 4, t0)
+    assert download.repo_dir("synth_rag", str(data)) == rdir
+
+    def commit(name, i):
+        shards.append_manifest(tokenize_worker.tok_dir(name, root),
+                               {"shard": i, "max_records": None,
+                                "input": {"path": files[i].path, "size": files[i].size}})
+
+    for i in range(4):
+        commit("synth", i)
+    assert SV.prune_raw(paths, cfg, "synth", print) == []            # synth_rag has none yet
+    assert SV.prune_raw(paths, cfg, "synth_rag", print) == []
+    commit("synth_rag", 0)
+    commit("synth_rag", 1)
+    assert SV.prune_raw(paths, cfg, "synth_rag", print) == [files[0].path, files[1].path]
+    assert [(rdir / f.path).exists() for f in files] == [False, False, True, True]
+    commit("synth_rag", 2)
+    commit("synth_rag", 3)
+    # the newest file stays for the sampling prompts of synth, whichever source prunes
+    assert SV.prune_raw(paths, cfg, "synth_rag", print) == [files[2].path]
+    assert SV.prune_raw(paths, cfg, "synth", print) == []
+    assert (rdir / files[3].path).exists()
+
+
+def test_the_marker_of_an_earlier_downloads_task_does_not_end_the_tokenisation(tmp_path):
+    """A continued run starts the downloads again (on a recycled machine they fetch files
+    again); the marker of the earlier process must not let the tokenisation end before them."""
+    out = tmp_path / "run"
+    SV.write_manifest(out, {"budget": {"t0": time.time()}})
+    paths = SV.RunPaths(out)
+    assert not SV._downloads_over(paths)
+    SV.write_marker(paths, "downloads")                 # no process supervisor: the marker counts
+    assert SV._downloads_over(paths)
+    state = lambda **kw: SV.atomic_write_json(paths.background, {"tasks": {"downloads": kw}})  # noqa: E731
+    state(state="waiting", started=None)
+    assert not SV._downloads_over(paths)
+    state(state="running", started=time.time() + 5)     # the marker is older than this task
+    assert not SV._downloads_over(paths)
+    SV.write_marker(paths, "downloads")
+    state(state="running", started=time.time() - 5)
+    assert SV._downloads_over(paths)
+    state(state="finished", started=time.time())
+    assert SV._downloads_over(paths)
+
+
 def test_raw_files_are_deleted_once_their_whole_shard_is_committed(tmp_path, monkeypatch):
     from bes.data import download, shards, tokenize_worker
 
@@ -681,6 +739,33 @@ def _run24():
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
+
+
+def test_run_24h_knows_which_shards_of_the_journal_this_machine_lacks(tmp_path):
+    """A training continued on a recycled machine reads the shards its loader journal lists;
+    the train stage waits until the tokenisation has made them again (24 Nov: it did not, and
+    the first batch failed with 'the continued document cannot be read')."""
+    from bes.data import shards
+
+    R = _run24()
+    journal = tmp_path / "loader_journal.jsonl"
+    assert R._journal_shards(journal) == {}
+    recs = [{"type": "header", "settings": {}},
+            {"type": "block", "id": 0, "new_shards": {"climbmix": [[0, 10, 1000, False, 5], [1, 12, 1200, False, 6]]}},
+            {"type": "block", "id": 1, "new_shards": {}},
+            {"type": "block", "id": 2, "new_shards": {"synth_rag": [[0, 7, 700, True, 9], [3, 8, 800, True, 9]]}}]
+    journal.write_text("".join(json.dumps(r) + "\n" for r in recs) + '{"type": "block", "new_shards": {"torn')
+    want = R._journal_shards(journal)
+    assert {k: [e[0] for e in v] for k, v in want.items()} == {"climbmix": [0, 1], "synth_rag": [0, 3]}
+    root = tmp_path / "data"
+    assert R._missing_shards(root, want) == ["climbmix/0", "climbmix/1", "synth_rag/0", "synth_rag/3"]
+    for name, sid, seg, tok in (("climbmix", 0, 10, 1000), ("climbmix", 1, 12, 1200), ("synth_rag", 3, 8, 800)):
+        (root / "tok" / name).mkdir(parents=True, exist_ok=True)
+        shards.append_manifest(root / "tok" / name, {"shard": sid, "n_segments": seg, "n_tokens": tok})
+    assert R._missing_shards(root, want) == ["synth_rag/0"]
+    shards.append_manifest(root / "tok" / "synth_rag", {"shard": 0, "n_segments": 7, "n_tokens": 701})
+    with pytest.raises(RuntimeError, match="the data differs"):
+        R._missing_shards(root, want)
 
 
 def test_run_24h_refuses_a_second_run_and_a_resume_without_a_run(tmp_path):

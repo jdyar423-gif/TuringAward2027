@@ -590,14 +590,24 @@ def prune_raw(paths: RunPaths, cfg: Cfg, name: str, log: Callable[[str], None]) 
     except Exception:  # noqa: BLE001 - no listing yet
         return []
     done = shards.read_manifest(tokenize_worker.tok_dir(name, tok_root(cfg, paths.out)))
-    keep = {max(f.index for f in files)} if files and src.kind in ("chat", "math") \
-        and src.fmt == "messages" else set()
-    owned = _fetched_since(download.repo_dir(src, cfg.run.data_dir), float(t0))
+    # sources that read the same raw files (one repository, revision and file pattern: synth
+    # and synth_rag): a file goes only when every one of them has committed its whole shard,
+    # and the file one of them keeps for the sampling stage stays
+    rdir = download.repo_dir(src, cfg.run.data_dir)
+    group = [src] + [s for s in (sources.get(n) for n in _tok_sources(cfg) if n != name)
+                     if download.repo_dir(s, cfg.run.data_dir) == rdir and tuple(s.files) == tuple(src.files)]
+    others = [shards.read_manifest(tokenize_worker.tok_dir(s.name, tok_root(cfg, paths.out)))
+              for s in group[1:]]
+    keep = {max(f.index for f in files)} if files and any(
+        s.kind in ("chat", "math") and s.fmt == "messages" for s in group) else set()
+    owned = _fetched_since(rdir, float(t0))
     deleted = []
     for f in files:
         if f.index in keep or f.path not in owned or not _committed_whole(done.get(f.index), f.path,
                                                                            f.size):
             continue
+        if any(not _committed_whole(m.get(f.index), f.path, f.size) for m in others):
+            continue                          # another source has not tokenised this file yet
         try:
             os.unlink(f.local)
             deleted.append(f.path)
@@ -1589,7 +1599,7 @@ def task_tokenize(paths: RunPaths, cfg: Cfg, cp: CorePlan, log: Callable[[str], 
     workers = max(1, len(cp.tokenize))
     failed_rounds = 0
     while True:
-        downloads_over = read_marker(paths, "downloads") is not None or _task_ended(paths, "downloads")
+        downloads_over = _downloads_over(paths)
         new = 0
         errors = []
         for name in _tok_sources(cfg):
@@ -1626,6 +1636,22 @@ def task_tokenize(paths: RunPaths, cfg: Cfg, cp: CorePlan, log: Callable[[str], 
                 write_marker(paths, "tokenize")
                 return 0
         time.sleep(poll_s if new == 0 else 0.5)
+
+
+def _downloads_over(paths: RunPaths) -> bool:
+    """The downloads task of this run of the background tasks has ended. Its marker alone does
+    not say so: a run that is continued starts the task again (on a recycled machine it fetches
+    everything again), and the marker of the earlier process is still there."""
+    st = ((read_json(paths.background) or {}).get("tasks") or {}).get("downloads") or {}
+    if st.get("state") in ("finished", "failed"):
+        return True
+    if st.get("state") == "waiting":
+        return False
+    mark = read_marker(paths, "downloads")
+    if mark is None:
+        return False
+    started = st.get("started")
+    return not started or float(mark.get("time") or 0.0) >= float(started)
 
 
 def _task_ended(paths: RunPaths, name: str) -> bool:
