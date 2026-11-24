@@ -1,0 +1,7 @@
+[16:42:47] start v9_pages on CPUs 5,27
+[16:42:47] start v9_pages_s1 on CPUs 6,28
+[16:42:47] start v9_pages_s2 on CPUs 7,29
+[17:29:42] end v9_pages_s1: exit 0 after 2814 s
+[17:29:53] end v9_pages: exit 0 after 2826 s
+[17:29:56] end v9_pages_s2: exit 0 after 2829 s
+[17:29:56] report: exit 1

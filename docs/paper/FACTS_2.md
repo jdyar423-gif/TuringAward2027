@@ -226,3 +226,53 @@ no power to separate the settings; the default was kept.
   would have given, to set against graft_50.
 - Files: `N/micro_graft/6M/graft_report.txt`, `graft_report.json`, `results_all.jsonl` (15
   records with curves, graft checks, timing), `<arm>.log`, `progress.log`.
+
+## Added 16:52 UTC: held-out loss through the 2,048-token phase
+- `N/heldout_v9.jsonl` (downloaded 16:50; one record per checkpoint; evaluated by the loop on the
+  runtime host, CPU, float32, rows of 1,024 tokens as before; total / web / chat / chat assistant
+  turns / proxy):
+  - 36,422   9.548e9  11.543 h  2.1881  2.7254  1.5413  1.4355  2.5430
+  - 37,522   9.836e9  11.960 h  2.1764  2.7137  1.5225  1.4167  2.5700
+  - 38,604  10.120e9  12.377 h  2.1653  2.7066  1.5042  1.3967  2.5742
+  - 39,686  10.403e9  12.794 h  2.1527  2.7035  1.4838  1.3761  2.5473
+  - 40,768  10.687e9  13.212 h  2.1398  2.6997  1.4627  1.3546  2.5258
+  - 41,850  10.971e9  13.629 h  2.1299  2.6977  1.4443  1.3339  2.5157
+  - 42,932  11.254e9  14.046 h  2.1178  2.6922  1.4230  1.3111  2.5151
+  - 44,014  11.538e9  14.463 h  2.1095  2.6910  1.4112  1.2965  2.4841
+  - 45,096  11.822e9  14.880 h  2.0997  2.6857  1.3942  1.2795  2.4868
+  - 46,178  12.105e9  15.298 h  2.0914  2.6867  1.3790  1.2651  2.4614
+- Observation to explain, not to celebrate: since the phase change (step 36,867) the chat rows
+  fall much faster than the web rows (assistant turns 1.4355 -> 1.2651, -0.170; web 2.7254 ->
+  2.6867, -0.039). Candidate causes that this run cannot separate: the learning-rate decay; the
+  chat sources being read for a second or third time (the stream's `max_epochs`), with held-out
+  conversations that resemble training ones (templated synthetic chats), so that memorisation of
+  the source looks like generalisation on this held-out set; the longer rows. The blind test
+  prompts are independent of the chat sources; they, not this number, say whether replies got
+  better. The second blind study was made at step 31,912 (assistant-turn loss 1.4830).
+- Training log at 16:44: step 46,950, p 0.893, loss 1.8527 (rows of 2,048), 189.0k tokens/s.
+
+## Added 17:35 UTC: the "restart" arms of the micro graft experiment
+- Three runs of `v9_pages` from scratch on a budget of 3,000,000 tokens (732 steps, the first half
+  of the 6M budget's data order, with the schedule of a 3M budget), seeds 0, 1, 2; same machine
+  and layout, 16:42:47 to 17:29:56 UTC. Records: `N/micro_graft/3M/<arm>/results.jsonl`
+  (`results.tar.gz`), logs `N/micro_graft/3M/<arm>.log`. (The driver's report step exits 1 there
+  by design: the report needs all five arm families.)
+- Final held-out loss (2,998,272 tokens), mix = 0.75 web + 0.25 chat as in the report:
+  4.3891, 4.3885, 4.3917 (seeds 0, 1, 2); mean 4.3897 ± 0.0017. Web 4.6317 ± 0.0043, chat
+  3.6637 ± 0.0074, assistant turns 3.6167 ± 0.0106.
+- Against the 6M-budget arms at their end, paired by seed (mean ± sd of three differences, mix):
+  - graft_50 - restart: -0.2342 ± 0.0075 (web -0.2152 ± 0.0065, chat -0.2915 ± 0.0220);
+  - ref (no page, the whole budget) - restart: -0.1985 ± 0.0062;
+  - v9_pages (page from the start, the whole budget) - restart: -0.2504 ± 0.0074.
+  The restart's own schedule is worth -0.0509 ± 0.0086 against `v9_pages` at the same token count
+  inside the 6M-budget run (4.4407): a run that ends at 3M tokens anneals; the comparison above
+  already includes that advantage.
+- Reading: with half of the budget spent on the page-less configuration, continuing with a graft
+  ended 0.234 nats below starting the page configuration again with the half that was left, and
+  0.016 above having had the page from the first step. Even not adding the page at all ended
+  0.199 below the restart: at this width and budget the tokens already trained are worth about
+  four times the whole gain of the page (0.052). This is the comparison the live decision at
+  p = 0.505 rested on (a restart "would have seen fewer tokens than the run already had").
+  Limits as for the main experiment; in addition the restart here reads the same first half of
+  the data again instead of the unseen second half (the pools are sampled without regard to
+  what was seen; about one pass in all), which should not matter and was not tested.

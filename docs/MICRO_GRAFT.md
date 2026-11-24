@@ -156,6 +156,28 @@ time it did not have. A graft's difference from `ref` varies little between seed
 0.0030) because the two share their trunk; the difference between two arms that never shared a
 state varies by 0.010.
 
+### Restart arms: the page configuration from scratch on the half that is left
+
+Three more runs (16:42:47 to 17:29:56 UTC, same machine and layout): `v9_pages` from the first
+step on a budget of 3,000,000 tokens (732 steps, with the schedule of that budget), seeds 0, 1, 2:
+what starting again with the page would give when half of a 6M budget is already spent. Records:
+`docs/paper/evidence/N/micro_graft/3M/` (`python scripts/micro_ablate.py --arms v9_pages --tokens
+3000000 --eval-fracs 0.25,0.5,0.75,1.0 --out ...` per seed).
+
+| arm, at the end of its budget | held-out loss (mix) | arm - restart, paired by seed |
+|---|---|---|
+| restart: `v9_pages`, 3M tokens | 4.3897 ± 0.0017 | |
+| `graft_50`: `ref` for 3M tokens, then the page for 3M | 4.1555 ± 0.0091 | -0.2342 ± 0.0075 |
+| `ref`, 6M tokens, no page | 4.1912 ± 0.0076 | -0.1985 ± 0.0062 |
+| `v9_pages`, 6M tokens | 4.1394 ± 0.0083 | -0.2504 ± 0.0074 |
+
+The restart's own schedule is already counted: it ends 0.0509 ± 0.0086 below `v9_pages` at the
+same token count inside the 6M-budget run. With half of the budget spent without the page,
+continuing with a graft ended 0.234 nats below starting the page configuration again, and 0.016
+above having had the page from the first step; the tokens already trained were worth about four
+times the page. The restart read the first half of the data order again rather than the unseen
+second half (about one pass over the pools in all); that this does not matter was not tested.
+
 Limits. d_model 128 against the 768 of the live run; 6M tokens against 1.36e10; one pass over
 small pools; three seeds, so two degrees of freedom, and a share whose denominator is itself a
 difference of two runs (the per-seed shares of `graft_25` range from 0.86 to 1.33); the schedule
