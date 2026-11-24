@@ -447,3 +447,67 @@ def test_a_reply_that_opens_with_a_stock_refusal_is_a_failed_reply():
     assert not d["refusal"] and not d["degenerate"]
     # an answer that says later what it cannot do is no refusal
     assert not canned_refusal("The capital of France is Paris. I'm sorry, but I can't assist with the second question.")
+
+
+DEFLECTIONS = [
+    "As an AI, I don't have real-time capabilities. As of my last update, I might not know.",
+    "As an AI language model, I am unable to access real-time data.",
+    "As a language model AI, I cannot execute SQL queries but I can explain the result.",
+    "As an artificial intelligence in a medieval fantasy setting, I don't have real-time information.",
+    "As a helpful and respectful assistant, I must point out that the question is nonsensical.",
+    "As a chatbot, I'm not able to recommend specific products.",
+    "Sorry, as an AI, I don't have access to your current location data.",
+    "I'm sorry for any confusion, but as an AI, I'm currently unable to provide weather forecasts.",
+    "I'm sorry for the confusion, but as a personal finance assistant bot, I'm designed to track spending.",
+    "I apologize for any confusion, but as an AI chatbot designed to find recipes, I can't do that.",
+    "I'm really sorry that you're feeling this way, but I'm unable to provide the help that you need.",
+    "I'm an AI and currently, I don't have the capability to book a hotel room.",
+    "I am a large language model, so I cannot browse the web.",
+    "I do not have access to the latest information on that company's research areas.",
+    "I don't have the capability to create a 3d model but I can provide you a description.",
+    "I do not have a morning routine. However, a typical morning routine might look like this:",
+    "Unfortunately, I do not have any specific information regarding the criteria.",
+    "I am not able to send emails. However, you can copy and paste the recipe.",
+    "I am not capable of watching videos, but I do have information about many films.",
+    "I'm sorry, but I don't have access to the latest updates on the latest phone fires.",
+    "I’m sorry, but providing the complete screenplay would be a violation of copyright law.",
+    "I currently don't have the ability to browse the internet.", "**As an AI**, I cannot do that.",
+    "I'm sorry, but I can't assist with that.",
+]
+NOT_DEFLECTIONS = [
+    "", "Sure, here are five tips for roasting vegetables:",
+    "I'm so sorry to hear that you've been laid off. Losing a job is hard, but there are steps you can take.",
+    "I'm sorry to hear that your phone fell into water. First, take it out and turn it off.",
+    "I apologize for the confusion. For this recipe, you will need about 1 head of broccoli.",
+    "Unfortunately, a broken or chipped tooth will not heal on its own.",
+    "Unfortunately, the article does not mention any specific dish.",
+    "Sorry, there is no information about the toppings in the given material.",
+    "I can't wait to help you plan this trip! Let's start with the dates.",
+    "I cannot stress enough how important sleep is.", "I can't help but smile when I think about our trip!",
+    "I can help with that. A virus is much smaller than a bacterium.",
+    "The answer is 10,080 minutes. I can't simplify it further.",
+    "As a result, the total is 42.", "As an example, consider the number 7.",
+    "As a teacher, I would start with the basics.", "As an assistant professor of biology, she studied cells.",
+    "As a child, Sophia had been fascinated by the sea.",
+    "I am happy to help you with your essay.", "I'm a big fan of hiking, so here are my favourite trails.",
+    "\"I can't help you carry that,\" said Tom, \"my arm is broken.\"",
+    "Here's a revised version of your paragraph:", "You're welcome! I'm glad I could help.",
+    "I'm glad to hear you're interested in exercise. While I can't evaluate your past, here is a plan.",
+]
+
+
+def test_an_opening_that_says_what_the_assistant_is_or_lacks_is_recognised():
+    """Seen on 24 Nov at 0.4 of the training: 'My phone fell into a sink full of water' answered
+    with 'I'm sorry, but I don't have access to the latest updates ...'. UltraChat and the
+    system-prompt chats of SmolTalk are full of such openings; the chat stream leaves those
+    conversations out. Reported for a reply, but not a failed reply by itself."""
+    from bes.eval.exact_score import canned_refusal, degenerate_stats, stock_deflection
+
+    assert [t for t in DEFLECTIONS if not stock_deflection(t)] == []
+    assert [t for t in NOT_DEFLECTIONS if stock_deflection(t)] == []
+    assert [t for t in NOT_REFUSALS if canned_refusal(t)] == []            # the refusal rule is unchanged
+    d = degenerate_stats("As an AI, I don't have personal preferences, but many people enjoy hiking.", "stop")
+    assert d["deflection"] and not d["refusal"] and not d["degenerate"]
+    d = degenerate_stats("Take the phone out of the water and switch it off at once.", "stop")
+    assert not d["deflection"] and not d["degenerate"]
+

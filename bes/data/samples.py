@@ -347,13 +347,28 @@ def stock_refusal(ids: Sequence[int] | np.ndarray, tok, head: int = 28) -> bool:
     harmless ones."""
     from bes.eval.exact_score import canned_refusal
 
+    return _some_turn_opens_with(ids, tok, head, canned_refusal)
+
+
+def stock_deflection(ids: Sequence[int] | np.ndarray, tok, head: int = 44) -> bool:
+    """Some assistant turn of the conversation ``ids`` opens by saying what the assistant is or
+    lacks (``bes.eval.exact_score.stock_deflection`` on the first ``head`` tokens of the turn:
+    "As an AI language model, ...", "I don't have access to ...", "I'm sorry for any confusion,
+    but as an AI ..."). The chat training stream leaves such conversations out
+    (``bes.data.loader.DROP_STOCK_DEFLECTIONS``)."""
+    from bes.eval.exact_score import stock_deflection as opens_with_deflection
+
+    return _some_turn_opens_with(ids, tok, head, opens_with_deflection)
+
+
+def _some_turn_opens_with(ids: Sequence[int] | np.ndarray, tok, head: int, test) -> bool:
     arr = np.asarray(ids)
     for pos in np.flatnonzero(arr == ASSISTANT):
         turn = arr[pos + 1: pos + 1 + head]
         special = np.flatnonzero(turn >= FIRST_SPECIAL)
         if special.size:
             turn = turn[:special[0]]
-        if turn.size and canned_refusal(tok.decode(turn)):
+        if turn.size and test(tok.decode(turn)):
             return True
     return False
 

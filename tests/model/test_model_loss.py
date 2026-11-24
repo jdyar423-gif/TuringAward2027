@@ -169,9 +169,12 @@ def test_loss_and_all_gradients_match_a_dense_autodiff_reference():
     assert {"trust", "head", "core", "cand", "emb"} <= seen
 
 
-def test_chunked_ce_memory_stays_per_chunk():
+def test_chunked_ce_memory_stays_per_chunk(monkeypatch):
     """The compiled per-token loss (chunked cross-entropy plus the tape's per-token mixing)
-    keeps O(chunk * V) temporaries, never [n, K, V] or [n, V] for all n."""
+    keeps O(chunk * V) temporaries, never [n, K, V] or [n, V] for all n. This is the reference
+    path: the speed switch ``head.FAST_CE`` keeps every chunk's logits by design (at most
+    ``head.FAST_CE_MAX_RESIDUAL`` bytes), so it is pinned off here whatever its default."""
+    monkeypatch.setattr(head, "FAST_CE", False)
     cfg = tiny_cfg(vocab_size=4096, loss_chunk=256)
     n, d, K = 4096, cfg.d_model, 16
     ph = {"proj": jnp.zeros((d, cfg.head_rank)), "out": jnp.zeros((cfg.vocab_size, cfg.head_rank))}

@@ -723,6 +723,47 @@ def canned_refusal(text: str) -> bool:
     return _REFUSAL.match(head) is not None
 
 
+_APOLOGY = (r"(?:(?:i'm|i\s+am)\s+(?:really\s+|very\s+|so\s+|truly\s+)?sorry|sorry|i\s+apologi[sz]e|"
+            r"my\s+apologies|unfortunately|regrettably)")
+_AN_AI = (r"an?\s+(?:[a-z][a-z-]*\s+){0,3}?(?:ai|a\.i\.|artificial\s+intelligence|language\s+model|"
+          r"chatbot|bot|virtual\s+assistant|computer\s+program)\b")
+_DEFLECTION = re.compile(
+    rf"""^[\s*_>-]*
+        (?:{_APOLOGY}\s*,?\s+but\b
+          |{_APOLOGY}\s+for\s+(?:any|the)\s+(?:confusion|misunderstanding|inconvenience|mix-up)\b
+             [\s,.]+(?:but|however|as)\b
+          |(?:{_APOLOGY}\b[^.!?\n]{{0,80}}?[\s,.!;:-]+(?:but\s+)?)?
+           (?:as\s+(?:{_AN_AI}|an?\s+(?:[a-z][a-z-]*\s+){{0,3}}?assistant\b(?=\s*,|\s+i\b))
+             |i(?:'m|\s+am)\s+(?:just\s+|only\s+|simply\s+)?{_AN_AI}
+             |i\s+(?:currently\s+|actually\s+|personally\s+)?(?:do\s+not|don't)\s+
+                (?:currently\s+|actually\s+|personally\s+)?have\b
+             |i(?:'m|\s+am)\s+(?:incapable\s+of|not\s+capable\s+of|not\s+allowed\s+to|not\s+programmed\s+to|
+                                 not\s+designed\s+to|not\s+equipped\s+to|not\s+authori[sz]ed\s+to)\b
+             |(?:i\s+(?:can't|cannot|can\s+not|am\s+unable\s+to|am\s+not\s+able\s+to|won't\s+be\s+able\s+to|
+                       will\s+not\s+be\s+able\s+to)
+                |i'm\s+(?:unable|not\s+able)\s+to)
+               (?!\s+(?:wait|stress|help\s+but|believe|imagine|thank|emphasi[sz]e|overstate|say\s+enough|
+                       agree\s+more|tell\s+you\s+how|resist))\b))""",
+    re.I | re.X)
+
+
+def stock_deflection(text: str) -> bool:
+    """The reply *opens* by saying what the assistant is or lacks: "As an AI language model, ...",
+    "I'm an AI and ...", "I don't have access to real-time data ...", "I'm sorry for any
+    confusion, but as an AI, I'm unable to ...", "I am not able to send emails. However, ...".
+    Dialogue sets written by a large assistant are full of these openings (24 Nov: 2-3% of the
+    assistant turns of UltraChat, 10% of the system-prompt chats of SmolTalk open with an apology
+    of this kind); a small model learns the opening and gives it to requests it could answer
+    ("My phone fell into a sink" -> "I'm sorry, but I don't have access to the latest updates on
+    ..."). Wider than :func:`canned_refusal` (any verb after "I can't"), so it is used to leave
+    conversations out of the chat training stream, not to fail a reply: for some requests it is
+    the right opening. Also "I'm sorry, but ..." and "I apologize for any confusion, but ..."
+    whatever follows. "I'm sorry to hear that ..." followed by help does not match, nor does
+    "Unfortunately, the article does not say ..."."""
+    head = text[:260].replace("’", "'").replace("‘", "'")
+    return _DEFLECTION.match(head) is not None
+
+
 def degenerate_stats(text: str, finish_reason: str | None = None) -> dict[str, Any]:
     """Diagnostics of one reply.
 
@@ -735,6 +776,8 @@ def degenerate_stats(text: str, finish_reason: str | None = None) -> dict[str, A
     - ``unclosed_fence``: an odd number of ``` fence lines; ``role_leak``: role or template
       markers in the text (the model continued the conversation by itself);
     - ``refusal``: the reply opens with a stock refusal (:func:`canned_refusal`);
+    - ``deflection``: the reply opens by saying what the assistant is or lacks
+      (:func:`stock_deflection`); reported, not part of ``degenerate``;
     - ``degenerate``: any of empty, truncated, loop, repeated_lines, unclosed_fence, role_leak,
       refusal.
     """
@@ -754,7 +797,8 @@ def degenerate_stats(text: str, finish_reason: str | None = None) -> dict[str, A
     return {"words": counts(text)["words"] if text else 0, "empty": empty, "truncated": truncated,
             "loop": period > 0, "loop_period": period, "loop_span": span,
             "repeated_lines": repeated_lines, "rep4": round(rep4, 4), "unclosed_fence": unclosed,
-            "role_leak": leak, "refusal": refusal, "degenerate": any(flags)}
+            "role_leak": leak, "refusal": refusal, "deflection": stock_deflection(text),
+            "degenerate": any(flags)}
 
 
 # ------------------------------------------------------------------------------- per prompt

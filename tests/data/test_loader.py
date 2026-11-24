@@ -1088,8 +1088,10 @@ def test_conversations_with_a_stock_refusal_never_reach_training(tmp_path, tok, 
         pieces = pieces_of(loader, range(60))
         fails = sum(blk["fail"].get("smol_smoltalk/refusal", 0) for blk in loader.stats()["blocks"])
     assert not (pieces & refused) and kept <= pieces and fails > 0
-    # a journal written without the rule: the refusals were trained on ...
+    # a journal written without the rule: the refusals were trained on ... (the later, wider rule
+    # for deflections would leave "I'm sorry, but ..." out as well: off too)
     monkeypatch.setattr(LD, "DROP_STOCK_REFUSALS", False)
+    monkeypatch.setattr(LD, "DROP_STOCK_DEFLECTIONS", False)
     with make(cfg, tok, root, tmp_path / "old.jsonl", lc=lc) as loader:
         before = pieces_of(loader, range(11))
     assert before & refused
@@ -1098,3 +1100,66 @@ def test_conversations_with_a_stock_refusal_never_reach_training(tmp_path, tok, 
     with make(cfg, tok, root, tmp_path / "old.jsonl", lc=lc) as loader:
         after = pieces_of(loader, range(11, 60))
     assert not (after & refused) and len(after) > 20
+
+
+DEFLECTION_TEXT = "As an AI language model, I don't have access to real-time data. However, here is some general advice."
+
+
+def test_chat_conversations_that_open_with_a_deflection_never_reach_training(tmp_path, tok, monkeypatch):
+    """A chat conversation in which an assistant turn opens by saying what the assistant is or
+    lacks ("As an AI language model, I don't have access to ...") is skipped and counted, like a
+    stock refusal; the rule is for sources of kind "chat" only, and a journal written without it
+    is continued with it (the run of 23-24 Nov got the rule at 0.42 of its way)."""
+    from bes.data.samples import stock_deflection, stock_refusal
+
+    def messages(rng, k: int) -> list[dict]:
+        msgs = refusing_messages(rng, 1)                           # k = 1: no refusal in it
+        if k % 4 == 0:
+            turns = [i for i, m in enumerate(msgs) if m["role"] == "assistant"]
+            msgs[turns[(k // 4) % 2]]["content"] = DEFLECTION_TEXT
+        return msgs
+
+    root = tmp_path / "data"
+    rng = np.random.default_rng(7)
+    store: dict[str, list[np.ndarray]] = {}
+    count = iter(range(10 ** 6))
+    write_convs(root, "smol_smoltalk", 0, lambda: messages(rng, next(count)), 160, tok, store)
+    write_docs(root, "climbmix", 0, rng, 100, 8, 60)
+    convs = store["smol_smoltalk"]
+    assert all(stock_deflection(c, tok) == (k % 4 == 0) for k, c in enumerate(convs))
+    assert not any(stock_refusal(c, tok) for c in convs)
+    deflecting = {tuple(c.tolist()) for k, c in enumerate(convs) if k % 4 == 0}
+    kept = {tuple(c.tolist()) for c in convs} - deflecting
+    cfg = small_cfg(seq_len=128, micro_seqs=4, accum=2, hindsight_frac=0.0)
+    st = stage(cfg, chat_frac=1.0, library_frac_base=0.0, library_frac_chat=0.0)
+    lc = dataclasses.replace(LC, heldout_frac=0.0)
+
+    def pieces_of(loader, steps) -> set[tuple]:
+        out: set[tuple] = set()
+        for i in steps:
+            b = loader(i, st)
+            for a in range(b["tokens"].shape[0]):
+                for r in range(b["tokens"].shape[1]):
+                    tokens = b["tokens"][a, r]
+                    out |= {tuple(tokens[s:e].tolist()) for s, e in segments_of(tokens, b["seg"][a, r])
+                            if tokens[s] == BOS}
+        return out
+
+    with make(cfg, tok, root, tmp_path / "j.jsonl", lc=lc) as loader:
+        pieces = pieces_of(loader, range(60))
+        fails = sum(blk["fail"].get("smol_smoltalk/deflection", 0) for blk in loader.stats()["blocks"])
+    assert not (pieces & deflecting) and kept <= pieces and fails > 0
+    # sources of another kind keep such conversations (there "the passage does not say" is the task)
+    monkeypatch.setattr(LD, "DEFLECTION_KINDS", ("none",))
+    with make(cfg, tok, root, tmp_path / "other.jsonl", lc=lc) as loader:
+        assert pieces_of(loader, range(20)) & deflecting
+    monkeypatch.setattr(LD, "DEFLECTION_KINDS", ("chat",))
+    # a journal written without the rule continues with it, from the middle of a block
+    monkeypatch.setattr(LD, "DROP_STOCK_DEFLECTIONS", False)
+    with make(cfg, tok, root, tmp_path / "old.jsonl", lc=lc) as loader:
+        before = pieces_of(loader, range(11))
+    assert before & deflecting
+    monkeypatch.setattr(LD, "DROP_STOCK_DEFLECTIONS", True)
+    with make(cfg, tok, root, tmp_path / "old.jsonl", lc=lc) as loader:
+        after = pieces_of(loader, range(11, 60))
+    assert not (after & deflecting) and len(after) > 20

@@ -151,7 +151,7 @@ from bes.data import shards as SH
 from bes.data import sources as registry
 from bes.data.rag_format import LIBRARY_TASKS, SUITABLE_RULE, RagStats, as_view, library_task, pick_entry
 from bes.data.samples import (Sample, WeightRule, fit, fit_draw, from_tokens, permute_index, rng_for,
-                              stock_refusal)
+                              stock_deflection, stock_refusal)
 
 JOURNAL_FORMAT = "bes-loader-journal/1"
 SHARD_KINDS = ("base", "chat", "rag", "math")
@@ -169,6 +169,15 @@ HELDOUT_KINDS = ("chat", "rag", "math")
 #: running shoes". A function of the data only, so a stream stays reproducible; a journal written
 #: before the rule replays its current block with it (the recorded block starts stay valid).
 DROP_STOCK_REFUSALS = True
+#: Chat conversations in which an assistant turn opens by saying what the assistant is or lacks
+#: ("As an AI language model, ...", "I don't have access to real-time data ...", "I'm sorry for
+#: any confusion, but as an AI ...") are skipped too (``fail/<source>/deflection``). Measured on
+#: the tokenised sources on 24 Nov: 7% of the conversations of UltraChat, about a fifth of the
+#: system-prompt chats of SmolTalk; at 0.4 of the training the model answered "My phone fell
+#: into a sink full of water" with "I'm sorry, but I don't have access to the latest updates".
+#: Only sources of kind "chat": in the retrieval sources "the passage does not say" is the task.
+DROP_STOCK_DEFLECTIONS = True
+DEFLECTION_KINDS = ("chat",)
 
 HELDOUT_RULE = ("heldout/1: h = sm(sm(sm(blake2b64(source)) ^ shard) ^ segment), held out when "
                 "h >> 11 < frac * 2^53 (sm = SplitMix64 finaliser)")
@@ -730,6 +739,11 @@ class Stream:
             return out
         if DROP_STOCK_REFUSALS and roles is not None and stock_refusal(ids, ctx.tok):
             ctx.stats.c[f"fail/{name}/refusal"] += 1                            # never trained
+            ctx.stats.time["read"] += time.process_time() - t0
+            return None
+        if (DROP_STOCK_DEFLECTIONS and roles is not None and kind in DEFLECTION_KINDS
+                and stock_deflection(ids, ctx.tok)):
+            ctx.stats.c[f"fail/{name}/deflection"] += 1                         # never trained
             ctx.stats.time["read"] += time.process_time() - t0
             return None
         s = from_tokens(np.asarray(ids), None if roles is None else np.asarray(roles), source=name, kind=kind)
