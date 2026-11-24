@@ -354,3 +354,27 @@ def test_iterator_data_reopens_only_on_discontinuities():
     assert data(9, short)["i"] == 9 and data(10, short)["i"] == 10
     assert data(11, long)["i"] == 11
     assert opened == [(0, (4, 4, 16)), (9, (4, 4, 16)), (11, (4, 2, 32))]
+
+
+def test_a_run_goes_on_with_its_micro_batches_cut_in_pieces(tmp_path):
+    """The live run of 24 Nov got ``micro_split`` at a sixth of its way: the same configuration
+    hash, the same checkpoints and batches; ten steps whole and ten steps in pieces end where
+    twenty whole steps end, to float rounding."""
+    cfg = M.tiny_cfg()                                   # shapes (4, 4, 16) and (4, 2, 32)
+    clock_a = S.FakeClock(T0)
+    a = trainer(cfg, tmp_path / "split", clock_a, M.Data(clock_a, 1.0), max_steps=10)
+    a.run()
+    clock_b = S.FakeClock(clock_a())
+    b = trainer(cfg, tmp_path / "split", clock_b, M.Data(clock_b, 1.0), max_steps=20, micro_split=2)
+    b.run()
+    clock_c = S.FakeClock(T0)
+    c = trainer(cfg, tmp_path / "whole", clock_c, M.Data(clock_c, 1.0), max_steps=20)
+    c.run()
+    assert [e["event"] for e in b.events][:2] == ["restore", "setup"] and b.step == c.step == 20
+    assert next(e for e in b.events if e["event"] == "setup")["micro_split"] == 2
+    for x, y in zip(jax.tree.leaves(b.state.params), jax.tree.leaves(c.state.params)):
+        np.testing.assert_allclose(np.asarray(x), np.asarray(y), rtol=5e-4, atol=5e-6)
+    assert [h[0] for h in b.history] == [h[0] for h in c.history[10:]]
+    np.testing.assert_allclose([h[3] for h in b.history], [h[3] for h in c.history[10:]], rtol=1e-4)
+    with pytest.raises(ValueError, match="micro_split"):
+        trainer(cfg, tmp_path / "bad", S.FakeClock(T0), M.Data(S.FakeClock(T0), 1.0), micro_split=4)

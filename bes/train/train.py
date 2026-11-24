@@ -158,14 +158,65 @@ def init_state(cfg: Cfg, init_fn: Callable, optimizer_or_role_fn: Any, key: jax.
     return state, opt
 
 
+#: Metrics of the loss function that are sums over a micro-batch's tokens; the others are means
+#: weighted by the tokens' loss weights (``bes.model.model.loss_fn``).
+MICRO_SUMS = frozenset({"ce_sum", "weight", "tokens", "ce_by_role", "weight_by_role"})
+
+
+def split_micro(batch: Mapping[str, Any], k: int) -> dict[str, Any]:
+    """``[A, B, ...]`` -> ``[A * k, B // k, ...]``: every micro-batch cut into ``k`` pieces of
+    whole rows, in order. The update does not change (rows are independent and the accumulation
+    is token-weighted); the tensors of one ``value_and_grad`` get ``k`` times smaller."""
+    out = {}
+    for name, v in batch.items():
+        a, b = v.shape[:2]
+        if b % k:
+            raise ValueError(f"{name}: {b} rows per micro-batch cannot be cut into {k} pieces")
+        out[name] = v.reshape(a * k, b // k, *v.shape[2:])
+    return out
+
+
+def regroup_micro(micro: Any, k: int) -> Any:
+    """Metrics stacked over ``A * k`` pieces as the loss function reports them for the ``A``
+    micro-batches: sums (:data:`MICRO_SUMS`) are added, the others averaged with the pieces'
+    token weights (plain means without a ``weight`` metric); the loss shares are recomputed."""
+    if not isinstance(micro, Mapping):
+        return jax.tree.map(lambda v: jnp.mean(v.reshape(-1, k, *v.shape[1:]), axis=1), micro)
+    cut = {name: v.reshape(-1, k, *v.shape[1:]) for name, v in micro.items()}
+    w = cut.get("weight")
+    out = {}
+    for name, v in cut.items():
+        if name in MICRO_SUMS:
+            out[name] = jnp.sum(v, axis=1)
+        elif w is None:
+            out[name] = jnp.mean(v, axis=1)
+        else:
+            ww = w.reshape(w.shape + (1,) * (v.ndim - 2)).astype(F32)
+            total = jnp.sum(ww, axis=1)
+            mean = jnp.sum(ww * v, axis=1) / jnp.maximum(total, jnp.asarray(1e-9, F32))
+            out[name] = jnp.where(total > 0, mean, jnp.mean(v, axis=1)).astype(v.dtype)
+    if "ce_by_role" in out and "ce_sum" in out and "loss_share_by_role" in out:
+        out["loss_share_by_role"] = out["ce_by_role"] / jnp.maximum(out["ce_sum"][..., None], 1e-9)
+    return out
+
+
 def accumulate(loss_fn: Callable, params: Any, consts: Any, batch: Mapping[str, Any],
-               model_cfg: Any) -> tuple[Any, jax.Array, jax.Array, Any]:
+               model_cfg: Any, micro_split: int = 1) -> tuple[Any, jax.Array, jax.Array, Any]:
     """Token-weighted gradient accumulation over the leading micro-batch axis of ``batch``.
 
     Returns ``(grads float32 tree, loss, weight, micro_metrics)`` with
     ``grads = sum_i W_i grad L_i / W``, ``loss = sum_i W_i L_i / W``, ``W = sum_i W_i`` and
     ``W_i = sum(w_i)``; ``micro_metrics`` stacks the loss function's metrics over ``A``.
+
+    micro_split: cut every micro-batch into this many pieces on the device
+    (:func:`split_micro`) and scan over the pieces; gradients, loss and weight are the same to
+    float rounding, the metrics are regrouped to the ``A`` micro-batches. On the TPU v6e a
+    step is memory-bound outside its matrix products and smaller pieces are faster (4 pieces of
+    a 16 x 1024 micro-batch: +10%, 24 Nov 2026).
     """
+    k = int(micro_split)
+    if k > 1:
+        batch = split_micro(batch, k)
     vg = jax.value_and_grad(loss_fn, has_aux=True)
 
     def body(carry, mb):
@@ -178,19 +229,22 @@ def accumulate(loss_fn: Callable, params: Any, consts: Any, batch: Mapping[str, 
     zeros = jax.tree.map(lambda p: jnp.zeros(np.shape(p), F32), params)
     init = (zeros, jnp.zeros((), F32), jnp.zeros((), F32))
     (gsum, lsum, wsum), micro = jax.lax.scan(body, init, dict(batch))
+    if k > 1:
+        micro = regroup_micro(micro, k)
     inv = 1.0 / jnp.maximum(wsum, jnp.asarray(1e-9, F32))
     return jax.tree.map(lambda g: g * inv, gsum), lsum * inv, wsum, micro
 
 
 def make_train_step(loss_fn: Callable, optimizer: Any, cfg: Cfg, *, donate: bool = True,
-                    skip_nonfinite: bool = True) -> Callable:
-    """The jit-compiled training step described in the module docstring."""
+                    skip_nonfinite: bool = True, micro_split: int = 1) -> Callable:
+    """The jit-compiled training step described in the module docstring (``micro_split``:
+    :func:`accumulate`)."""
     model_cfg = cfg.model
 
     def train_step(state: TrainState, batch: Mapping[str, Any], lr_scale: Any,
                    momentum: Any = None, wd_scale: Any = None, group_lr: Any = None):
         grads, loss, weight, micro = accumulate(loss_fn, state.params, state.consts, batch,
-                                                model_cfg)
+                                                model_cfg, micro_split)
         gnorm = global_norm(grads)
         kw = {}
         if momentum is not None:
@@ -369,7 +423,8 @@ class Trainer:
                  batch_keys: tuple[str, ...] = BATCH_KEYS, eval_fn: Callable | None = None,
                  log_fn: Callable[[dict], None] | None = None, verbose: bool = False,
                  async_ckpt: bool = False, resume: bool = True, force: bool = False,
-                 programs: Mapping[tuple[int, int, int], tuple[str, Any]] | None = None) -> None:
+                 programs: Mapping[tuple[int, int, int], tuple[str, Any]] | None = None,
+                 micro_split: int = 1) -> None:
         self.cfg = cfg
         self.loss_fn, self.init_fn = loss_fn, init_fn
         self.role_fn, self.consts_fn = role_fn, consts_fn
@@ -387,6 +442,10 @@ class Trainer:
         self.guard_cfg = guard_lib.GuardCfg.from_run(cfg.run)
         self.config_hash = config_hash(cfg)
         self.shapes = schedule.shapes(cfg)
+        self.micro_split = int(micro_split)
+        if self.micro_split < 1 or any(b % self.micro_split for _, b, _ in self.shapes):
+            raise ValueError(f"micro_split {micro_split} does not divide the rows per micro-batch of "
+                             f"every shape {self.shapes}")
         self.history: list[tuple[int, float, float, float, int]] = []
         self.events: list[dict] = []
         self.skipped_updates = 0
@@ -447,7 +506,8 @@ class Trainer:
         self._consts_host = jax.device_get(consts)  # the state's copy is donated every step
         self.state, self.optimizer = init_state(self.cfg, self.init_fn, self.role_fn, k_init,
                                                 consts)
-        self.step_fn = make_train_step(self.loss_fn, self.optimizer, self.cfg)
+        self.step_fn = make_train_step(self.loss_fn, self.optimizer, self.cfg,
+                                       micro_split=self.micro_split)
         self.group_lr = lr_inputs(self.cfg)
         self.compiled, self.compile_info = {}, {}
         for shape in self.shapes:
@@ -477,7 +537,8 @@ class Trainer:
         compiled = {"x".join(map(str, s)): {k: v for k, v in c.items() if k != "fingerprint"}
                     for s, c in self.compile_info.items()}
         self._event("setup", shapes=[list(s) for s in self.shapes], deadline=self.deadline,
-                    train_end=self.train_end, ledger=self.ledger.summary(now), compile=compiled)
+                    train_end=self.train_end, ledger=self.ledger.summary(now), compile=compiled,
+                    micro_split=self.micro_split)
 
     def _ckpt_tree(self) -> dict:
         return {"state": self.state, "rng": self.rng}

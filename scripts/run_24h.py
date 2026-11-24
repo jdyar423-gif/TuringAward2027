@@ -189,6 +189,37 @@ class Run:
                          f"{total} shards of the journal are not committed yet (e.g. {missing[0]})")
             time.sleep(poll_s)
 
+    def _micro_split(self, ecfg) -> int:
+        """Into how many pieces the training step cuts every micro-batch on the device
+        (``bes.train.train.accumulate``: same update, smaller tensors, faster on the TPU v6e).
+        It is not part of the configuration (the batches, the journal and the checkpoints do
+        not change): the operator writes one integer into ``<run>/micro_split`` while the run
+        is stopped; it is copied into the manifest (``micro_split``), which a snapshot carries
+        to the next machine. 1 when nothing is set or the number does not divide the rows per
+        micro-batch of every shape of the schedule."""
+        from bes.train import schedule
+
+        want = int((self.reload() or {}).get("micro_split") or 1)
+        path = self.paths.out / "micro_split"
+        if path.exists():
+            try:
+                asked = int(path.read_text().strip())
+            except ValueError:
+                asked = want
+                self.log(f"train: {path} does not hold an integer: ignored")
+            if asked >= 1 and asked != want:
+                SV.update_manifest(self.paths.out, micro_split=asked)
+                want = asked
+        shapes = schedule.shapes(ecfg)
+        if want > 1 and any(b % want for _, b, _ in shapes):
+            self.log(f"train: micro_split {want} does not divide the rows per micro-batch of {shapes}: "
+                     "the micro-batches are not cut")
+            return 1
+        if want > 1:
+            self.log("train: every micro-batch is cut into " + str(want) + " pieces on the device: " +
+                     ", ".join(f"{a} x {b} x {t} -> {a * want} x {b // want} x {t}" for a, b, t in shapes))
+        return max(1, want)
+
     def _catch_up_cores(self) -> tuple[int, ...]:
         """Cores for the tokenisation when the training journal lists shards this machine does
         not hold (a run continued on a recycled machine): the training waits for them, so the
@@ -607,11 +638,12 @@ class Run:
         programs = None
         if self._programs is not None and self._programs[0] == bench.get("plan_key"):
             programs = self._programs[1]
+        split = self._micro_split(ecfg)
         trainer = Trainer(ecfg, loss_fn=M.loss_fn, init_fn=M.init_params, data=gate,
                           role_fn=role_of, consts_fn=SV.make_consts_fn(ecfg.run.switches),
                           out_dir=self.paths.train, deadline=self.sup.deadline,
                           eval_fn=self._sidecar_hook, log_fn=log_fn, async_ckpt=True, resume=True,
-                          programs=programs)
+                          programs=None if split > 1 else programs, micro_split=split)
         remove = self.sup.on_stop(trainer.request_stop)
         try:
             if self.sup.stop_requested:

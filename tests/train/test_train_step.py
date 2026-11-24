@@ -206,3 +206,81 @@ def test_init_state():
     assert set(state.consts) == {"scale"}
     state2, opt2 = init_state(cfg, M.init_fn, opt, jax.random.key(0))
     assert opt2 is opt and state2.consts == {}
+
+
+# ------------------------------------------------------------------ micro-batches cut on the device
+def test_cutting_micro_batches_into_pieces_changes_no_gradient():
+    """accumulate(..., micro_split=k) scans over k times smaller pieces (faster on the TPU v6e:
+    the passes over large tensors are memory-bound) and returns the same gradients, loss and
+    weight; the metrics come back per micro-batch (sums added, means weighted by the tokens)."""
+    cfg, state, _ = setup()
+    batch = make_batch(a=4, b=4, t=8)                 # micro-batch 1 has no weight at all
+    run = lambda k: jax.jit(lambda p, c, b: accumulate(M.loss_fn, p, c, b, None, k))(  # noqa: E731
+        state.params, state.consts, batch)
+    g1, l1, w1, m1 = run(1)
+    for k in (2, 4):
+        g, loss, w, m = run(k)
+        assert float(w) == pytest.approx(float(w1), rel=1e-6)
+        assert float(loss) == pytest.approx(float(l1), rel=1e-6)
+        for name in g1:
+            np.testing.assert_allclose(g[name], g1[name], rtol=2e-5, atol=1e-7)
+        assert m["ce_sum"].shape == (4,) and m["weight"].shape == (4,)
+        np.testing.assert_allclose(m["ce_sum"], m1["ce_sum"], rtol=1e-5, atol=1e-6)
+        np.testing.assert_allclose(m["weight"], m1["weight"], rtol=1e-6)
+        assert float(m["weight"][1]) == 0.0 and np.all(np.isfinite(np.asarray(m["ce_sum"])))
+    with pytest.raises(ValueError, match="cannot be cut"):
+        run(3)
+
+
+def test_a_step_on_pieces_equals_the_step_on_whole_micro_batches():
+    cfg, state, opt = setup()
+    whole = make_train_step(M.loss_fn, opt, cfg, donate=False)
+    pieces = make_train_step(M.loss_fn, opt, cfg, donate=False, micro_split=2)
+    s_a, s_b = state, state
+    for k in range(3):
+        batch = make_batch(a=4, b=4, t=8, seed=k)
+        s_a, m_a = whole(s_a, batch, 0.7, 0.9, 0.5)
+        s_b, m_b = pieces(s_b, batch, 0.7, 0.9, 0.5)
+        assert float(m_a["loss"]) == pytest.approx(float(m_b["loss"]), rel=1e-6)
+        assert float(m_a["grad_norm"]) == pytest.approx(float(m_b["grad_norm"]), rel=1e-5)
+        assert m_b["micro"]["ce_sum"].shape == m_a["micro"]["ce_sum"].shape
+    for name in s_a.params:
+        np.testing.assert_allclose(s_a.params[name], s_b.params[name], rtol=2e-4, atol=2e-6)
+
+
+def test_pieces_of_the_real_loss_function_regroup_to_its_metrics():
+    """The model's own loss on a small configuration with every feature of the batch: the same
+    loss, gradients and metrics whether a micro-batch is one piece, two or four."""
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+    import tpu_tune
+    from bes.config import load_config
+    from bes.model import model as BM
+    from bes.train import supervisor as SV
+
+    root = Path(__file__).resolve().parents[2]
+    cfg = load_config(str(root / "configs" / "smoke.py"), [])
+    mc = cfg.model
+    consts = BM.make_consts(mc, **SV.parse_switches(cfg.run.switches))
+    params = BM.init_params(mc, jax.random.key(0))
+    one = tpu_tune.synth_batch(mc, 8, 32)
+    rng = np.random.default_rng(3)
+    one["w"] = (rng.random(one["w"].shape) < 0.8).astype(np.float32)
+    one["w"][2:4] = 0.0                                  # a piece without weight when cut in four
+    batch = {k: jnp.asarray(np.stack([v, v[::-1]])) for k, v in one.items()}       # A = 2
+    run = lambda k: jax.jit(lambda p, b: accumulate(BM.loss_fn, p, consts, b, mc, k))(params, batch)  # noqa: E731
+    g1, l1, w1, m1 = run(1)
+    for k in (2, 4):
+        g, loss, w, m = run(k)
+        assert float(loss) == pytest.approx(float(l1), rel=2e-6) and float(w) == float(w1)
+        worst = max(float(jnp.max(jnp.abs(a - b)) / (jnp.max(jnp.abs(b)) + 1e-12))
+                    for a, b in zip(jax.tree.leaves(g), jax.tree.leaves(g1)))
+        assert worst < 2e-4, worst
+        assert set(m) == set(m1)
+        for name in ("ce_sum", "weight", "tokens", "ce_by_role", "weight_by_role"):
+            np.testing.assert_allclose(m[name], m1[name], rtol=2e-5, atol=1e-4, err_msg=name)
+        for name in ("loss", "tape_mass", "tape_gain", "loss_share_by_role"):
+            np.testing.assert_allclose(m[name], m1[name], rtol=2e-4, atol=2e-5, err_msg=name)
+        assert m["sink_mass"].shape == m1["sink_mass"].shape
