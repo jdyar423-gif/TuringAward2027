@@ -155,3 +155,21 @@ no power to separate the settings; the default was kept.
 - Housekeeping: six files `ratings/s1-*/judge-opus.jsonl` held single-reading records under the
   wrong source name (my import mistake at 10:20; identical verdicts to `opus-1.jsonl`); moved to
   `N/study/stale_ratings/` and removed from the repository copy.
+
+## Added 14:12 UTC: the second registered judge on the development pairs
+- Judge `gemma4-e4b` (gemma-4-E4B-it Q4_K_M GGUF, SHA-256 85a896a0..., the second judge of
+  docs/EVAL_PROTOCOL.md "from another family"), same procedure, runtime host cores (7.6 to 9.3 s
+  per pair for both orders at 12 threads), rating source `judge-gemma4-e4b-85a896a0`:
+
+  | pair set | W/L/T | score [95%] | orders agree | first-position pref |
+  |---|---|---|---|---|
+  | s1 (final, step 25,280) vs Falcon | 0/4/56 | 0.467 [0.346, 0.591] | 80.0% | -0.087 |
+  | s1 vs MobileLLM | 2/0/58 | 0.517 [0.393, 0.638] | 91.7% | -0.008 |
+  | s2 (v9, step 31,912) vs Falcon | 0/3/57 | 0.475 [0.354, 0.599] | 83.3% | -0.065 |
+  | s2 vs MobileLLM | 2/1/57 | 0.508 [0.385, 0.630] | 93.3% | +0.008 |
+
+- Reading: this judge answers C (tie or both poor) on 93 to 97% of the pairs; where it takes a
+  side it agrees in direction with the other readers (0 wins against Falcon, 3 or 4 losses). As a
+  measuring instrument on these pairs it has almost no resolution; say so, do not average it in.
+- Three readers on the same 60 pairs of s2 vs Falcon, decisive pairs (wins:losses): Opus two
+  readings 3:39; qwen3-4b-2507 1:16; gemma4-e4b 0:3.

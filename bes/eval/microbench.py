@@ -63,6 +63,20 @@ of ``bes.train.schedule`` with progress ``p = tokens done / token budget``. At e
 the model's ``tape_gain``, ``tape_mass`` and ``sink_mass``, and the same losses under
 evaluation-time switches (``views``, by default for the reference arm: tape off, registers off,
 sink off). Per-row sums are stored so the report can compute paired standard errors.
+
+Graft arms
+----------
+An arm with a :class:`Graft` (kind ``graft``) is the micro-scale copy of the live run's switch
+from ``final`` to ``v9`` (``scripts/graft_run.py``, ``docs/CHANGES.md`` 19.7): it trains its
+base arm's configuration (same seed, same batches, same schedule) up to the fraction
+``graft.frac`` of the budget, which must be an evaluation fraction, then carries every leaf the
+two configurations share, with its optimiser slots, the update count and the step, into a fresh
+train state of its own configuration of the same seed (``graft_run.graft_arrays``), checks that
+the loss on held-out rows is unchanged, and trains on to the end at the same schedule positions
+with the batches the base would have seen. The trunk is either a state kept by the base arm
+(``run_arm(keep_states=True)``) or trained inside the graft arm (:func:`run_graft_arm`); the
+record says which. ``scripts/micro_graft_report.py`` compares such arms with the base and the
+target trained from the first step, paired by seed.
 """
 from __future__ import annotations
 
@@ -100,8 +114,10 @@ REF_VIEWS: tuple[tuple[str, tuple[tuple[str, float], ...]], ...] = (
     ("sink_off", (("sink", 0.0),)),
 )
 #: kinds of arms (they decide how the report judges them; ``add_new``: a new component added to
-#: the reference, such as the v9 token pages)
-KINDS = ("reference", "replicate", "remove_evidence", "remove_new", "setting", "probe", "add_new")
+#: the reference, such as the v9 token pages; ``graft``: an arm with a :class:`Graft`, reported by
+#: ``scripts/micro_graft_report.py``, not by the E2 rule)
+KINDS = ("reference", "replicate", "remove_evidence", "remove_new", "setting", "probe", "add_new",
+         "graft")
 
 #: sample files (relative to the samples directory) and the column read
 SOURCES: dict[str, dict[str, Any]] = {
@@ -167,7 +183,11 @@ class Arm:
     evaluation view); seed: data order and initial key; tokens: budget (0 = the queue's);
     kind: one of :data:`KINDS`; component: what the arm removes or changes (report);
     mixture: ``(domain, row share)``; views: ``(name, switches)`` evaluation-time switch sets
-    (empty: :data:`REF_VIEWS` for the reference kind, none otherwise).
+    (empty: :data:`REF_VIEWS` for the reference kind, none otherwise); graft: a :class:`Graft`
+    (kind ``graft`` only): the arm trains ``graft.base`` up to ``graft.frac`` of the budget and
+    continues as its own configuration (:func:`run_graft_arm`). An arm without a graft serialises
+    without a ``graft`` key, so its dict and its :func:`spec_hash` are those of the bench before
+    graft arms existed.
     """
 
     name: str
@@ -180,12 +200,17 @@ class Arm:
     mixture: tuple[tuple[str, float], ...] = DEFAULT_MIXTURE
     views: tuple[tuple[str, tuple[tuple[str, float], ...]], ...] = ()
     note: str = ""
+    graft: "Graft | None" = None
 
     def __post_init__(self):
         if self.kind not in KINDS:
             raise ValueError(f"arm {self.name!r}: unknown kind {self.kind!r} (one of {KINDS})")
         if not self.mixture or any(s < 0 for _, s in self.mixture) or sum(s for _, s in self.mixture) <= 0:
             raise ValueError(f"arm {self.name!r}: the mixture needs positive shares")
+        if (self.graft is not None) != (self.kind == "graft"):
+            raise ValueError(f"arm {self.name!r}: kind 'graft' and a graft spec go together")
+        if self.graft is not None:
+            self.graft.check(self)
 
     def eval_views(self) -> tuple[tuple[str, tuple[tuple[str, float], ...]], ...]:
         if self.views:
@@ -193,12 +218,15 @@ class Arm:
         return REF_VIEWS if self.kind == "reference" else ()
 
     def to_dict(self) -> dict[str, Any]:
-        return {"name": self.name, "overrides": list(self.overrides),
-                "switches": [list(s) for s in self.switches], "seed": self.seed,
-                "tokens": self.tokens, "kind": self.kind, "component": self.component,
-                "mixture": [list(m) for m in self.mixture],
-                "views": [[n, [list(s) for s in sw]] for n, sw in self.eval_views()],
-                "note": self.note}
+        d = {"name": self.name, "overrides": list(self.overrides),
+             "switches": [list(s) for s in self.switches], "seed": self.seed,
+             "tokens": self.tokens, "kind": self.kind, "component": self.component,
+             "mixture": [list(m) for m in self.mixture],
+             "views": [[n, [list(s) for s in sw]] for n, sw in self.eval_views()],
+             "note": self.note}
+        if self.graft is not None:
+            d["graft"] = self.graft.to_dict()
+        return d
 
     @classmethod
     def from_dict(cls, d: Mapping[str, Any]) -> "Arm":
@@ -209,7 +237,49 @@ class Arm:
                    mixture=tuple((str(a), float(b)) for a, b in d.get("mixture", DEFAULT_MIXTURE)),
                    views=tuple((n, tuple((str(a), float(b)) for a, b in sw))
                                for n, sw in d.get("views", ())),
-                   note=d.get("note", ""))
+                   note=d.get("note", ""),
+                   graft=Graft.from_dict(d["graft"]) if d.get("graft") else None)
+
+
+@dataclass(frozen=True)
+class Graft:
+    """The trunk of a graft arm (``docs/E2_ABLATIONS.md`` does not report these arms; see
+    ``scripts/micro_graft_report.py``).
+
+    base: the arm whose configuration (overrides, switches) trains the first ``frac`` of the
+    budget; it must have the graft arm's seed, mixture and budget, so the trunk is the base arm's
+    own computation and the data order continues where the base stops. Its name is where a kept
+    trunk state is looked up (``<out>/arms/<base>/states``, :func:`find_trunk`). frac: the graft
+    point as a fraction of the budget; it must be one of ``Bench.eval_fracs`` (checked by
+    :func:`graft_plan`). target: name of the arm that trains the graft arm's configuration from
+    the first step with the same seed (a label for the report).
+    """
+
+    base: Arm
+    frac: float
+    target: str = ""
+
+    def check(self, arm: Arm) -> None:
+        b = self.base
+        if b.graft is not None:
+            raise ValueError(f"arm {arm.name!r}: the base of a graft cannot itself be a graft arm")
+        if not 0.0 < float(self.frac) < 1.0:
+            raise ValueError(f"arm {arm.name!r}: the graft fraction must lie strictly between 0 and 1")
+        if int(b.seed) != int(arm.seed):
+            raise ValueError(f"arm {arm.name!r}: seed {arm.seed} differs from its base {b.name!r} "
+                             f"(seed {b.seed}); the trunk must be the base arm's run")
+        if tuple(b.mixture) != tuple(arm.mixture):
+            raise ValueError(f"arm {arm.name!r}: the mixture differs from its base {b.name!r}")
+        if int(b.tokens) != int(arm.tokens):
+            raise ValueError(f"arm {arm.name!r}: the budget differs from its base {b.name!r}")
+
+    def to_dict(self) -> dict[str, Any]:
+        base = {k: v for k, v in self.base.to_dict().items() if k not in ("note", "component")}
+        return {"base": base, "frac": float(self.frac), "target": self.target}
+
+    @classmethod
+    def from_dict(cls, d: Mapping[str, Any]) -> "Graft":
+        return cls(base=Arm.from_dict(d["base"]), frac=float(d["frac"]), target=str(d.get("target", "")))
 
 
 def _rel(path: str | os.PathLike) -> str:
@@ -807,7 +877,9 @@ def train_pools(arm: Arm, T: int, tok, bench: Bench, log=None) -> dict[str, Pool
 def run_arm(arm: Arm, out: str | os.PathLike, tokens: int, bench: Bench = Bench(), *,
             log: Callable[[str], None] = print, tok=None, max_steps: int | None = None,
             save_every_eval: bool = True,
-            batch_hook: Callable[[int, Mapping[str, np.ndarray]], None] | None = None) -> dict:
+            batch_hook: Callable[[int, Mapping[str, np.ndarray]], None] | None = None,
+            keep_states: bool = False, trunk: str = "auto",
+            trunk_dirs: Sequence[str | os.PathLike] = ()) -> dict:
     """Train and evaluate one arm; append its record to ``<out>/results.jsonl`` and return it.
 
     The parameters go to ``<out>/arms/<name>/params`` (``bes.train.checkpoint``). At every
@@ -815,7 +887,15 @@ def run_arm(arm: Arm, out: str | os.PathLike, tokens: int, bench: Bench = Bench(
     killed run resumes there (same batches, same compiled step: the continuation equals an
     uninterrupted run). max_steps: stop early (tests); the record then has ``status="partial"``.
     batch_hook: ``batch_hook(step, batch)`` before every step (tests of the pairing).
+    keep_states: also keep the train state of every evaluation checkpoint before the last in
+    ``.../states`` (never pruned or removed), for graft arms of this base (:func:`find_trunk`);
+    it does not change the run. An arm with a :class:`Graft` is run by :func:`run_graft_arm`
+    (``trunk``, ``trunk_dirs``: see there; ``keep_states`` does not apply to it).
     """
+    if arm.graft is not None:
+        return run_graft_arm(arm, out, tokens, bench, log=log, tok=tok, max_steps=max_steps,
+                             save_every_eval=save_every_eval, batch_hook=batch_hook, trunk=trunk,
+                             trunk_dirs=trunk_dirs)
     import jax
     import jax.numpy as jnp
 
@@ -915,6 +995,10 @@ def run_arm(arm: Arm, out: str | os.PathLike, tokens: int, bench: Bench = Bench(
             curve.append(point)
             msg = " ".join(f"{d} {v['loss']:.4f}" for d, v in point["eval"].items())
             log(f"[{arm.name}] eval at {point['tokens']} tokens: {msg}")
+            if keep_states and s + 1 < n_steps:
+                C.save(arm_dir / STATES, {"state": state}, step=s + 1, config_hash=h, keep=0,
+                       meta={"step": s + 1, "curve": curve, "train_log": train_log,
+                             "timing": timing, "skipped": skipped})
             if save_every_eval and s + 1 < n_steps:
                 C.save(state_dir, {"state": state}, step=s + 1, config_hash=h, keep=1,
                        meta={"step": s + 1, "curve": curve, "train_log": train_log,
@@ -969,6 +1053,500 @@ def load_arm(out: str | os.PathLike, name: str, records: Sequence[dict] | None =
     if got is None:
         raise FileNotFoundError(f"no parameters for arm {name!r} in {path}")
     return rec, cfg, got[0]["params"]
+
+
+# ============================================================================== grafts
+#: directory inside ``<out>/arms/<name>/`` where ``run_arm(keep_states=True)`` keeps its states
+STATES = "states"
+#: relative tolerance of the function check at the graft point, the rule of
+#: ``scripts/graft_run.py`` ``function_check``: ``|after - before| <= 1e-6 max(1, |before|)``
+GRAFT_TOL = 1e-6
+#: how a graft arm gets its trunk: a kept state of its base if one is found, else trained in the
+#: graft arm (``auto``); always trained (``train``); only loaded, never trained (``load``)
+TRUNK_MODES = ("auto", "train", "load")
+#: optimiser fields that only act on a group; they may differ between base and target when the
+#: base has no leaf in that group (the target's new tables train with their own rates)
+_GROUP_FIELDS = {"gain": ("lr_gain", "gain_decay"), "page": ("lr_page", "page_decay")}
+
+
+def _graft_run():
+    """``scripts/graft_run.py``, the graft of the live run, imported from its file (the bench
+    reuses its ``graft_arrays``); ``sys.path`` is restored after the import."""
+    import importlib.util
+    import sys
+
+    mod = sys.modules.get("graft_run")
+    if mod is None or not hasattr(mod, "graft_arrays"):
+        spec = importlib.util.spec_from_file_location("graft_run", REPO / "scripts" / "graft_run.py")
+        mod = importlib.util.module_from_spec(spec)
+        saved = list(sys.path)
+        try:
+            spec.loader.exec_module(mod)
+        finally:
+            sys.path[:] = saved
+        sys.modules["graft_run"] = mod
+    return mod
+
+
+@dataclass(frozen=True)
+class GraftPlan:
+    """The checked layout of a graft arm at one budget (:func:`graft_plan`): both
+    configurations, the step shape, the steps, the evaluation steps, the graft step, the base
+    arm's spec hash and the parameter paths only the target has."""
+
+    budget: int
+    base_cfg: Cfg
+    cfg: Cfg
+    shape: tuple[int, int, int]
+    n_steps: int
+    eval_steps: tuple[int, ...]
+    step: int
+    base_hash: str
+    new_params: tuple[str, ...]
+
+
+def _param_shapes(cfg: Cfg) -> dict[str, tuple[tuple[int, ...], str]]:
+    """``{path: (shape, dtype)}`` of the parameter tree of ``cfg`` (abstract: nothing allocated)."""
+    import jax
+
+    from bes.model import model as M
+    from bes.optim.build import path_str
+
+    tree = jax.eval_shape(lambda: M.init_params(cfg.model, jax.random.key(0)))
+    flat, _ = jax.tree_util.tree_flatten_with_path(tree)
+    return {path_str(kp): (tuple(int(d) for d in x.shape), str(x.dtype)) for kp, x in flat}
+
+
+def graft_plan(arm: Arm, tokens: int, bench: Bench = Bench(), *, shapes: bool = True) -> GraftPlan:
+    """Check that ``arm`` (with a :class:`Graft`) can run at this budget and bench; its layout.
+
+    Refused with ``ValueError``: a graft fraction that is not one of ``bench.eval_fracs``;
+    evaluation fractions that do not fall on distinct steps (budget too small); a graft step
+    outside ``(0, n_steps)``; base and target with another step shape; a parameter of the base
+    that the target lacks or has with another shape or dtype; optimiser settings that differ
+    (other than the rate and decay of a group the base has no leaf in), and with them any
+    difference of the schedule: learning-rate factor, momentum or decay factor at any step. The
+    graft changes the model only. shapes=False skips the parameter trees (no JAX import; the
+    group check then assumes the base trains every group but ``gain`` and ``page``, and
+    ``new_params`` is empty): for a parent process that only starts runs."""
+    from bes.train import schedule as S
+
+    g = arm.graft
+    if g is None:
+        raise ValueError(f"arm {arm.name!r} has no graft")
+    budget = int(arm.tokens or tokens)
+    base_cfg, cfg = arm_config(g.base, budget, bench), arm_config(arm, budget, bench)
+    shape = S.micro_shape(cfg, cfg.data.seq_len)
+    if (S.micro_shape(base_cfg, base_cfg.data.seq_len) != shape
+            or base_cfg.optim.tokens_per_step != cfg.optim.tokens_per_step):
+        raise ValueError(f"arm {arm.name!r}: base and target train with different step shapes")
+    n_steps = max(1, budget // cfg.optim.tokens_per_step)
+    fracs = [float(f) for f in bench.eval_fracs]
+    if not any(abs(f - float(g.frac)) <= 1e-9 for f in fracs):
+        raise ValueError(f"arm {arm.name!r}: the graft fraction {g.frac:g} is not an evaluation fraction "
+                         f"(eval_fracs {tuple(fracs)}); add it to the evaluation fractions (--eval-fracs)")
+    steps = [min(n_steps, max(1, int(round(f * n_steps)))) for f in fracs]
+    if len(set(steps)) != len(steps):
+        raise ValueError(f"arm {arm.name!r}: the evaluation fractions {tuple(fracs)} fall on the steps "
+                         f"{steps} of {n_steps}; the budget is too small to tell them apart")
+    step = min(n_steps, max(1, int(round(float(g.frac) * n_steps))))
+    if not 0 < step < n_steps:
+        raise ValueError(f"arm {arm.name!r}: graft step {step} is not inside the run of {n_steps} steps")
+    shapes_b, shapes_t = (_param_shapes(base_cfg), _param_shapes(cfg)) if shapes else ({}, {})
+    bad = [p for p, sd in shapes_b.items() if shapes_t.get(p) != sd]
+    if bad:
+        raise ValueError(f"arm {arm.name!r}: parameters of the base that the target does not have with "
+                         f"the same shape and dtype: {bad[:6]}")
+    groups_b: set[str] = set()
+    if shapes:
+        from bes.roles import role_of
+        groups_b = {getattr(role_of(p), "group", role_of(p)) for p in shapes_b}
+    free = {f for grp, fields in _GROUP_FIELDS.items() if grp not in groups_b for f in fields}
+    ob, ot = dataclasses.asdict(base_cfg.optim), dataclasses.asdict(cfg.optim)
+    diff = sorted(k for k in ob if k not in free and ob[k] != ot.get(k))
+    if diff:
+        raise ValueError(f"arm {arm.name!r}: optimiser settings differ from its base: {diff}")
+    for s in range(n_steps):
+        p = s / n_steps
+        a = (S.lr_factor(p, base_cfg.optim), S.momentum_at(s, p, base_cfg), S.wd_scale_at(p, base_cfg))
+        b = (S.lr_factor(p, cfg.optim), S.momentum_at(s, p, cfg), S.wd_scale_at(p, cfg))
+        if a != b:
+            raise ValueError(f"arm {arm.name!r}: the schedule differs from its base at step {s}: {a} vs {b}")
+    return GraftPlan(budget=budget, base_cfg=base_cfg, cfg=cfg, shape=tuple(shape), n_steps=n_steps,
+                     eval_steps=tuple(sorted(set(steps))), step=step,
+                     base_hash=spec_hash(g.base, budget, bench),
+                     new_params=tuple(sorted(p for p in shapes_t if p not in shapes_b)))
+
+
+def find_trunk(base: Arm, step: int, base_hash: str, dirs: Sequence[str | os.PathLike]
+               ) -> tuple[Any, list[dict]]:
+    """A state of ``base`` at ``step`` kept by ``run_arm(keep_states=True)`` under the spec hash
+    ``base_hash``, looked up in ``<d>/arms/<base>/states`` and ``<d>/<base>/arms/<base>/states``
+    (one ``--out`` sub-directory per arm) for every run directory ``d``, newest first. Returns
+    ``(CkptInfo or None, rejected)``; ``rejected`` lists the candidates at that step that were
+    written under another hash or are unreadable."""
+    from bes.train import checkpoint as C
+
+    rejected: list[dict] = []
+    seen: set[str] = set()
+    for d in dirs:
+        for root in (Path(d) / "arms" / base.name / STATES,
+                     Path(d) / base.name / "arms" / base.name / STATES):
+            key = str(root.resolve())
+            if key in seen:
+                continue
+            seen.add(key)
+            for info in reversed(C.list_checkpoints(root)):
+                if info.step != int(step):
+                    continue
+                try:
+                    man = C.read_manifest(info.path)
+                except C.CheckpointError as e:
+                    rejected.append({"checkpoint": _rel(info.path), "reason": str(e)})
+                    continue
+                if man.get("config_hash") == base_hash:
+                    return info, rejected
+                rejected.append({"checkpoint": _rel(info.path),
+                                 "reason": f"written under spec hash {man.get('config_hash')}, not {base_hash}"})
+    return None, rejected
+
+
+class _Trainee:
+    """One configuration of a graft arm (the trunk's or the target's): its fresh train state
+    exactly as :func:`run_arm` builds that of an arm with this configuration and seed, its
+    optimiser, compiled step, evaluation function, consts, views and loss function."""
+
+    def __init__(self, arm: Arm, cfg: Cfg, views: Sequence[tuple[str, Any]] = ()):
+        self.arm, self.cfg, self.views_spec = arm, cfg, tuple(views)
+        self.switches = dict(arm.switches)
+        self.opt = None
+        self.used = False
+        self._fns = None
+
+    def fresh_state(self):
+        import jax
+        import jax.numpy as jnp
+
+        from bes.model import model as M
+        from bes.optim import build as build_opt
+        from bes.train.train import TrainState
+
+        params = M.init_params(self.cfg.model, jax.random.key(self.arm.seed))
+        opt = build_opt(self.cfg, params)
+        if self.opt is None:
+            self.opt = opt
+        return TrainState(step=jnp.zeros((), jnp.int32), params=params, opt_state=opt.init(params),
+                          consts=M.make_consts(self.cfg.model, **self.switches))
+
+    def fns(self):
+        """``(step_fn, eval_fn, consts, views, loss_fn)``, built once."""
+        if self._fns is None:
+            import jax
+
+            from bes.model import model as M
+            from bes.train.train import make_train_step
+
+            if self.opt is None:
+                self.fresh_state()
+            mcfg = self.cfg.model
+            views = [(name, M.make_consts(mcfg, **{**self.switches, **dict(sw)}))
+                     for name, sw in self.views_spec]
+            self._fns = (make_train_step(M.loss_fn, self.opt, self.cfg), _eval_rows_fn(self.cfg),
+                         M.make_consts(mcfg, **self.switches), views,
+                         jax.jit(lambda p, c, b: M.loss_fn(p, c, b, mcfg)[0]))
+        return self._fns
+
+
+def _restore_graft_state(state_dir: Path, h: str, models: Mapping[str, _Trainee],
+                         log: Callable[[str], None], name: str):
+    """``(phase, state, meta, info)`` of the newest loadable state checkpoint of a graft arm (its
+    template is the trunk's or the target's tree, by the checkpoint's ``phase``), or None."""
+    from bes.train import checkpoint as C
+    from bes.train.train import abstract
+
+    for info in reversed(C.list_checkpoints(state_dir)):
+        try:
+            man = C.read_manifest(info.path)
+        except C.CheckpointError as e:
+            log(f"[{name}] skipping unreadable state checkpoint {info.name} ({e})")
+            continue
+        phase = (man.get("meta") or {}).get("phase")
+        if man.get("config_hash") != h or phase not in models:
+            log(f"[{name}] state checkpoint {info.name} not usable (hash {man.get('config_hash')}, "
+                f"phase {phase}); starting over")
+            return None
+        try:
+            tree, man = C.load(info, {"state": abstract(models[phase].fresh_state())}, config_hash=h)
+        except C.CorruptCheckpointError as e:
+            log(f"[{name}] skipping corrupt state checkpoint {info.name} ({e})")
+            continue
+        return phase, tree["state"], man["meta"], info
+    return None
+
+
+def run_graft_arm(arm: Arm, out: str | os.PathLike, tokens: int, bench: Bench = Bench(), *,
+                  log: Callable[[str], None] = print, tok=None, max_steps: int | None = None,
+                  save_every_eval: bool = True,
+                  batch_hook: Callable[[int, Mapping[str, np.ndarray]], None] | None = None,
+                  trunk: str = "auto", trunk_dirs: Sequence[str | os.PathLike] = ()) -> dict:
+    """Train a graft arm (``arm.graft``) and append its record to ``<out>/results.jsonl``.
+
+    Trunk, steps ``[0, g)`` (``g`` = :func:`graft_plan` ``.step``, an evaluation step): the base
+    arm's own computation, i.e. its configuration, initial parameters (``jax.random.key(seed)``),
+    optimiser, compiled step, schedule and batches. ``trunk="auto"`` first looks for a kept state
+    of the base at step ``g`` with the base arm's spec hash (:func:`find_trunk` in ``out`` and
+    ``trunk_dirs``) and loads it with the base's curve and train log up to ``g``; without one it
+    trains the trunk. ``"train"`` always trains it, ``"load"`` refuses to. ``record["graft"]
+    ["trunk"]["source"]`` is ``"loaded"`` or ``"trained"``.
+
+    Graft, after the evaluation at step ``g``: ``scripts/graft_run.py`` ``graft_arrays`` copies
+    every leaf of the trunk's state checkpoint (parameters, optimiser slots, update count, step)
+    into a fresh train state of the arm's own configuration (the target) of the same seed; the
+    target-only leaves and their slots stay at that fresh state's values, the consts are the
+    target's. Function check: the training loss (``bes.model.model.loss_fn``) of the first
+    ``bench.eval_chunk`` rows of the first held-out set, and the held-out loss of every evaluated
+    domain, before (trunk) and after (grafted) must agree within :data:`GRAFT_TOL` relative;
+    otherwise a ``status="failed"`` record is appended and ``RuntimeError`` raised.
+
+    Target, steps ``[g, n)``: the arm's configuration at the same schedule positions
+    (``p = s / n``) and with the same batches (they depend on the seed and the mixture only). Curve
+    points carry ``phase`` (``trunk`` or ``target``); views are evaluated on the target only. A
+    killed run resumes from ``<out>/arms/<name>/state``, before or after the graft.
+    """
+    import jax
+
+    from bes.optim.build import batch_factor, data_factor, group_lrs
+    from bes.train import checkpoint as C
+    from bes.train import schedule as S
+    from bes.train.train import abstract
+
+    if trunk not in TRUNK_MODES:
+        raise ValueError(f"trunk={trunk!r}: one of {TRUNK_MODES}")
+    out = Path(out)
+    if tok is None:
+        from bes.tokenizer import load as load_tok
+        tok = load_tok()
+    plan = graft_plan(arm, tokens, bench)
+    g, base = arm.graft, arm.graft.base
+    budget, n_steps, gstep, shape, eval_steps = plan.budget, plan.n_steps, plan.step, plan.shape, plan.eval_steps
+    h = spec_hash(arm, budget, bench)
+    arm_dir = out / "arms" / arm.name
+    state_dir = arm_dir / "state"
+    tps = plan.cfg.optim.tokens_per_step
+    log(f"[{arm.name}] {n_steps} steps of {tps} tokens, shape {shape}, seed {arm.seed}, evaluations at "
+        f"steps {list(eval_steps)}; steps [0, {gstep}) as {base.name!r}, then grafted "
+        f"(new leaves {list(plan.new_params)})")
+
+    t_setup = time.time()
+    pools = train_pools(arm, shape[2], tok, bench, log)
+    maker = BatchMaker(pools, arm.mixture, arm.seed, shape, n_steps, tok)
+    sets = eval_sets(bench.eval_domains, bench.eval_rows, shape[2], tok, bench, log)
+    models = {"trunk": _Trainee(base, plan.base_cfg), "target": _Trainee(arm, plan.cfg, arm.eval_views())}
+
+    start, curve, train_log, skipped = 0, [], [], 0
+    timing: dict[str, Any] = {"train_s": 0.0, "eval_s": 0.0, "first_step_s": 0.0, "timed_steps": 0,
+                              "setup_s": 0.0, "resumes": 0, "graft_s": 0.0,
+                              "phases": {ph: {"first_step_s": None, "train_s": 0.0, "timed_steps": 0}
+                                         for ph in models}}
+    phase, state, info_graft = "trunk", None, None
+    trunk_source: dict[str, Any] = {"source": "trained", "spec_hash": plan.base_hash, "rejected": []}
+
+    def meta(step: int) -> dict:
+        return {"step": step, "curve": curve, "train_log": train_log, "timing": timing,
+                "skipped": skipped, "phase": phase, "graft": info_graft}
+
+    def do_graft(trunk_info, trunk_state) -> tuple[Any, dict]:
+        t0 = time.time()
+        tm, gm = models["trunk"], models["target"]
+        fresh = gm.fresh_state()
+        arrays, records, treedef, rep = _graft_run().graft_arrays(trunk_info.path, {"state": fresh})
+        if rep["mismatched"] or rep["left_behind"]:
+            raise RuntimeError(f"[{arm.name}] the trunk does not fit the target: mismatched "
+                               f"{rep['mismatched'][:4]}, left behind {rep['left_behind'][:4]}")
+        paths, _, tdef = C.flatten_with_paths({"state": fresh})
+        by_path = {r["path"]: r for r in records}
+        if any(by_path[p]["stored"] != by_path[p]["dtype"] or by_path[p].get("key_impl") for p in paths):
+            raise RuntimeError(f"[{arm.name}] the train state holds leaves stored in another dtype")
+        new_state = jax.tree_util.tree_unflatten(tdef, [jax.device_put(arrays[p]) for p in paths])["state"]
+        _, _, t_consts, _, t_loss = tm.fns()
+        _, g_eval, g_consts, _, g_loss = gm.fns()
+        n_rows = min(bench.eval_chunk, sets[0].n)
+        rows = {k: v[:n_rows] for k, v in sets[0].batch.items()}
+        before = float(t_loss(trunk_state.params, t_consts, rows))
+        after = float(g_loss(new_state.params, g_consts, rows))
+        held = evaluate(g_eval, new_state.params, g_consts, sets, bench.eval_chunk)
+        heldout = {}
+        for d, ev in held.items():
+            b = curve[-1]["eval"][d]
+            rows_diff = np.abs(np.asarray(ev["ce"], np.float64) - np.asarray(b["ce"], np.float64))
+            heldout[d] = {"before": b["loss"], "after": ev["loss"], "difference": ev["loss"] - b["loss"],
+                          "max_row_difference": float(rows_diff.max()) if rows_diff.size else 0.0}
+        tol = GRAFT_TOL * max(1.0, abs(before))
+        ok = (math.isfinite(before) and math.isfinite(after) and abs(after - before) <= tol
+              and all(abs(v["difference"]) <= GRAFT_TOL * max(1.0, abs(v["before"])) for v in heldout.values()))
+        p_g = gstep / n_steps
+        info = {"base": base.name, "base_spec_hash": plan.base_hash, "target": g.target,
+                "frac": float(g.frac), "step": gstep, "tokens": gstep * tps, "trunk": trunk_source,
+                "check": {"batch": f"the first {n_rows} rows of held-out {sets[0].domain} "
+                                   f"({n_rows} x {shape[2]} positions), bes.model.model.loss_fn",
+                          "loss_before": before, "loss_after": after, "difference": after - before,
+                          "tolerance": tol, "ok": bool(ok)},
+                "heldout": heldout,
+                "leaves": {k: rep[k] for k in ("copied", "copied_params", "copied_param_numbers",
+                                                "new_params", "new_param_numbers", "new_other")},
+                "carried": {"step": int(new_state.step), "count": int(new_state.opt_state.count),
+                            "p": p_g, "lr_factor": S.lr_factor(p_g, plan.cfg.optim),
+                            "momentum": S.momentum_at(gstep, p_g, plan.cfg)},
+                "seconds": round(time.time() - t0, 2)}
+        log(f"[{arm.name}] graft at step {gstep}: {rep['copied_params']} parameter leaves "
+            f"({rep['copied_param_numbers']:,} numbers) carried with their optimiser slots, count "
+            f"{info['carried']['count']}; new {rep['new_params']} ({rep['new_param_numbers']:,} numbers); "
+            f"check loss {before:.7f} -> {after:.7f} (difference {after - before:+.3e}); held-out "
+            + ", ".join(f"{d} {v['difference']:+.2e}" for d, v in heldout.items()))
+        if not ok:
+            append_jsonl(out / RESULTS, {"type": "arm", "status": "failed", "name": arm.name,
+                                         "arm": arm.to_dict(), "spec_hash": h, "tokens": budget,
+                                         "error": "function check failed at the graft point",
+                                         "graft": info, "finished": time.time()})
+            raise RuntimeError(f"[{arm.name}] the grafted model does not compute the trunk's function: "
+                               f"loss {before!r} -> {after!r}, held-out "
+                               f"{ {d: v['difference'] for d, v in heldout.items()} } (tolerance {tol:.2e})")
+        timing["graft_s"] += time.time() - t0
+        return new_state, info
+
+    def save_grafted(arrays_state) -> None:
+        C.save(state_dir, {"state": arrays_state}, step=gstep, config_hash=h, keep=1, meta=meta(gstep))
+
+    got = _restore_graft_state(state_dir, h, models, log, arm.name) if state_dir.exists() else None
+    if got is not None:
+        phase, state, m, info = got
+        start, curve, train_log = int(m["step"]), m["curve"], m["train_log"]
+        timing.update(m["timing"])
+        timing["resumes"] += 1
+        skipped, info_graft = int(m.get("skipped", 0)), m.get("graft")
+        if info_graft:
+            trunk_source = info_graft["trunk"]
+        log(f"[{arm.name}] resumed at step {start} ({phase})")
+        if phase == "trunk" and start == gstep:            # stopped between the trunk's save and the graft
+            state, info_graft = do_graft(info, state)
+            phase = "target"
+            save_grafted(state)
+    else:
+        shutil.rmtree(state_dir, ignore_errors=True)
+        found, rejected = (None, []) if trunk == "train" else find_trunk(base, gstep, plan.base_hash,
+                                                                         [out, *trunk_dirs])
+        for r in rejected:
+            log(f"[{arm.name}] trunk candidate rejected: {r['checkpoint']}: {r['reason']}")
+        if found is None and trunk == "load":
+            raise FileNotFoundError(f"[{arm.name}] trunk='load': no kept state of {base.name!r} at step "
+                                    f"{gstep} with spec hash {plan.base_hash} in {[str(out), *map(str, trunk_dirs)]}")
+        if found is not None:
+            tm = models["trunk"]
+            tree, man = C.load(found, {"state": abstract(tm.fresh_state())}, config_hash=plan.base_hash)
+            m = man["meta"]
+            curve = [{**c, "views": {}, "phase": "trunk"} for c in m["curve"] if int(c["step"]) <= gstep]
+            train_log = [e for e in m["train_log"] if int(e[0]) < gstep]
+            skipped = int(m.get("skipped", 0))
+            if not curve or int(curve[-1]["step"]) != gstep:
+                raise RuntimeError(f"[{arm.name}] {found.path}: no evaluation at the graft step in its meta")
+            trunk_source = {"source": "loaded", "checkpoint": _rel(found.path), "spec_hash": plan.base_hash,
+                            "rejected": rejected}
+            log(f"[{arm.name}] trunk loaded from {_rel(found.path)} (spec hash {plan.base_hash})")
+            state, info_graft = do_graft(found, tree["state"])
+            phase, start = "target", gstep
+            save_grafted(state)
+        else:
+            trunk_source = {"source": "trained", "spec_hash": plan.base_hash, "rejected": rejected}
+            state = models["trunk"].fresh_state()
+    timing["setup_s"] += time.time() - t_setup
+
+    stop = n_steps if max_steps is None else min(n_steps, max_steps)
+    for s in range(start, stop):
+        tr = models[phase]
+        step_fn, eval_fn, consts, views, _ = tr.fns()
+        p = s / n_steps
+        lr = S.lr_factor(p, tr.cfg.optim)
+        mom = S.momentum_at(s, p, tr.cfg)
+        wd = S.wd_scale_at(p, tr.cfg)
+        batch = maker.batch(s)
+        if batch_hook is not None:
+            batch_hook(s, batch)
+        t0 = time.time()
+        state, metrics = step_fn(state, batch, np.float32(lr), np.float32(mom), np.float32(wd))
+        loss = float(metrics["loss"])
+        dt = time.time() - t0
+        ph = timing["phases"][phase]
+        if not tr.used:                                   # compilation: not a timed step
+            tr.used = True
+            if ph["first_step_s"] is None:
+                ph["first_step_s"] = dt
+            if s == 0:
+                timing["first_step_s"] = dt
+        else:
+            ph["train_s"] += dt
+            ph["timed_steps"] += 1
+            timing["train_s"] += dt
+            timing["timed_steps"] += 1
+        skipped += int(metrics["skipped"])
+        if s % bench.log_every == 0 or s == stop - 1:
+            train_log.append([s, loss, round(lr, 6)])
+            log(f"[{arm.name}] step {s:5d}/{n_steps} ({phase}) loss {loss:.4f} lr {lr:.3f} ({dt:.2f} s/step)")
+        if (s + 1) in eval_steps:
+            te = time.time()
+            point = {"step": s + 1, "tokens": (s + 1) * tps, "train_loss": loss,
+                     "eval": evaluate(eval_fn, state.params, consts, sets, bench.eval_chunk),
+                     "views": {name: evaluate(eval_fn, state.params, c, sets, bench.eval_chunk)
+                               for name, c in views},
+                     "phase": phase}
+            timing["eval_s"] += time.time() - te
+            curve.append(point)
+            msg = " ".join(f"{d} {v['loss']:.4f}" for d, v in point["eval"].items())
+            log(f"[{arm.name}] eval at {point['tokens']} tokens ({phase}): {msg}")
+            if phase == "trunk" and s + 1 == gstep:
+                trunk_info = C.save(state_dir, {"state": state}, step=gstep, config_hash=h, keep=1,
+                                    meta=meta(gstep))
+                state, info_graft = do_graft(trunk_info, state)
+                phase = "target"
+                save_grafted(state)
+            elif save_every_eval and s + 1 < n_steps:
+                C.save(state_dir, {"state": state}, step=s + 1, config_hash=h, keep=1, meta=meta(s + 1))
+    done = stop == n_steps
+    cfg = plan.cfg
+    params_dir = arm_dir / "params"
+    if done:
+        shutil.rmtree(params_dir, ignore_errors=True)
+        C.save(params_dir, {"params": state.params}, step=n_steps, config_hash=config_hash(cfg),
+               keep=1, meta={"arm": arm.to_dict(), "tokens": budget, "spec_hash": h})
+    for ph in timing["phases"].values():
+        ph["sec_per_step"] = ph["train_s"] / ph["timed_steps"] if ph["timed_steps"] else None
+    timed = timing["timed_steps"]
+    sec_step = timing["train_s"] / timed if timed else float(timing["first_step_s"] or 0.0)
+    count = lambda c: int(sum(int(np.prod(sh)) for sh, _ in _param_shapes(c).values()))  # noqa: E731
+    rec = {"type": "arm", "status": "done" if done else "partial", "name": arm.name,
+           "arm": arm.to_dict(), "spec_hash": h, "tokens": budget, "steps": n_steps,
+           "steps_run": stop, "shape": list(shape), "tokens_per_step": tps,
+           "config": to_dict(cfg), "config_hash": config_hash(cfg), "bench": bench.to_dict(),
+           "lrs": group_lrs(cfg), "batch_factor": batch_factor(cfg), "data_factor": data_factor(cfg),
+           "n_params": count(cfg), "flops_per_token": flops_per_token(cfg),
+           "timing": {**timing, "sec_per_step": sec_step, "sec_per_mtok": sec_step / tps * 1e6},
+           "peak_rss_mb": peak_rss_mb(), "skipped_steps": skipped,
+           "data": {"token_shares": maker.token_shares(n_steps), "passes": maker.passes,
+                    "pools": {d: p.meta.get("rows") for d, p in pools.items()}},
+           "curve": curve, "train_log": train_log,
+           "params_dir": _rel(params_dir) if done else None,
+           "graft": info_graft,
+           "base": {"name": base.name, "spec_hash": plan.base_hash, "config": to_dict(plan.base_cfg),
+                    "config_hash": config_hash(plan.base_cfg), "n_params": count(plan.base_cfg),
+                    "flops_per_token": flops_per_token(plan.base_cfg)},
+           "host": {"cpus": sorted(os.sched_getaffinity(0)) if hasattr(os, "sched_getaffinity") else None,
+                    "omp_threads": os.environ.get("OMP_NUM_THREADS")},
+           "finished": time.time()}
+    append_jsonl(out / RESULTS, rec)
+    if done:
+        shutil.rmtree(state_dir, ignore_errors=True)
+    log(f"[{arm.name}] {rec['status']}: {sec_step:.2f} s/step, {rec['timing']['sec_per_mtok']:.0f} "
+        f"s per 1M tokens, peak {rec['peak_rss_mb']:.0f} MB, trunk {trunk_source['source']}")
+    return rec
 
 
 # ============================================================================== queue

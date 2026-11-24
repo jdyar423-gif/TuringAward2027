@@ -18,6 +18,26 @@ token neurons in a neuron space of a quarter of ``d_model`` (as 192 of 768), out
 attention gate, selective attention, and the v9 page (the first three together).
 
     python scripts/micro_ablate.py --arms ref,v9_pages --tokens 20000 --out runs/e2_v9_smoke
+
+Graft experiment (:data:`GRAFT_ARMS`, not in the default queue; select them with ``--arms``):
+``graft_25``, ``graft_50``, ``graft_75`` train the reference to 25 / 50 / 75 % of the budget,
+then graft it into ``v9_pages`` (shared leaves with their optimiser slots, update count, step
+and schedule position carried; the page leaves at their initial values; the batches continue)
+and train on to the end (``bes.eval.microbench.run_graft_arm``). With the seed replicates
+(``ref_s1``, ``ref_s2``, ``v9_pages_s1``, ``v9_pages_s2``, ``graft_50_s1``, ...) the 15 runs of
+:data:`GRAFT_EXPERIMENT` give paired comparisons over three seeds. The graft fraction must be an
+evaluation fraction, so these arms need ``--eval-fracs 0.25,0.5,0.75,1.0``; one process per arm
+with its own ``--out`` sub-directory, then ``scripts/micro_graft_report.py`` on the parent:
+
+    python scripts/micro_ablate.py --prepare --arms ref --tokens 1000000 \\
+        --eval-fracs 0.25,0.5,0.75,1.0 --out runs/graft                     # builds the pools once
+    python scripts/micro_ablate.py --arms graft_50_s1 --tokens 1000000 --eval-fracs 0.25,0.5,0.75,1.0 \\
+        --out runs/graft/graft_50_s1 --threads 2 --cpus 6,7 --no-probe   # one of the 15, in parallel
+    python scripts/micro_graft_report.py runs/graft --json runs/graft/graft_report.json
+
+A graft arm trains its trunk itself unless a state of its base kept with ``--keep-states`` (at
+the graft step, under the base arm's spec hash) is found in ``--out`` or a ``--trunk-from``
+directory (``--trunk auto``, the default; ``--trunk train`` always trains it).
 """
 from __future__ import annotations
 
@@ -134,18 +154,64 @@ SKIPPED: tuple[tuple[str, str], ...] = (
                    "sets it to 0 and ModelCfg has no field for it); not run"),
 )
 
+# -- the graft experiment (docs: module docstring): selected with --arms, never in the E2 queue
+_BY_NAME = {a.name: a for a in E2_ARMS}
+#: the reference and the v9 page with seeds 0, 1, 2 (seed 0 and ``ref_s1`` are E2 arms)
+_REFS = {0: _BY_NAME["ref"], 1: _BY_NAME["ref_s1"],
+         2: Arm("ref_s2", seed=2, kind="replicate", component="the reference with seed 2 (data order and init)")}
+_V9S = {0: _BY_NAME["v9_pages"],
+        **{s: Arm(f"v9_pages_s{s}", _PAGES, seed=s, kind="add_new",
+                  component=f"the v9 page of configs/v9.py with seed {s} (data order and init)")
+           for s in (1, 2)}}
+#: graft points (fractions of the budget; each must be an evaluation fraction)
+GRAFT_FRACS = (0.25, 0.5, 0.75)
+
+
+def _graft_arm(frac: float, seed: int) -> Arm:
+    base, target = _REFS[seed], _V9S[seed]
+    name = f"graft_{round(100 * frac)}" + (f"_s{seed}" if seed else "")
+    return Arm(name, target.overrides, target.switches, seed=seed, kind="graft",
+               component=f"{base.name} to {frac:.0%} of the budget, then grafted into {target.name} "
+                         "(shared leaves, optimiser slots, count, step and schedule carried; page "
+                         "leaves at their initial values) and trained to the end",
+               graft=mb.Graft(base=base, frac=frac, target=target.name))
+
+
+#: Arms of the graft experiment that are not E2 arms, in launch order.
+GRAFT_ARMS: tuple[Arm, ...] = (_REFS[2], _V9S[1], _V9S[2]) + tuple(
+    _graft_arm(f, s) for f in GRAFT_FRACS for s in (0, 1, 2))
+#: The 15 runs of the graft experiment: reference, v9 page and the three graft points, seeds 0-2.
+GRAFT_EXPERIMENT: tuple[str, ...] = tuple(
+    [_REFS[s].name for s in (0, 1, 2)] + [_V9S[s].name for s in (0, 1, 2)]
+    + [a.name for a in GRAFT_ARMS if a.kind == "graft"])
+#: every arm ``--arms`` and ``--run-arm`` can name
+ALL_ARMS: tuple[Arm, ...] = E2_ARMS + GRAFT_ARMS
+
 
 def bench_from(args) -> mb.Bench:
+    roots = {k: v for k, v in (("pool_root", getattr(args, "pool_root", "")),
+                               ("samples_dir", getattr(args, "samples_dir", ""))) if v}
     return mb.Bench(seq_len=args.seq_len, micro_rows=args.micro_rows,
                     tokens_per_step=args.tokens_per_step, eval_rows=args.eval_rows,
-                    eval_fracs=tuple(float(x) for x in args.eval_fracs.split(",")))
+                    eval_fracs=tuple(float(x) for x in args.eval_fracs.split(",")), **roots)
 
 
 def bench_args(args) -> list[str]:
     return ["--seq-len", str(args.seq_len), "--micro-rows", str(args.micro_rows),
             "--tokens-per-step", str(args.tokens_per_step), "--eval-rows", str(args.eval_rows),
             "--eval-fracs", args.eval_fracs, "--threads", str(args.threads)] + (
-        ["--cpus", args.cpus] if args.cpus else [])
+        ["--cpus", args.cpus] if args.cpus else []) + (
+        ["--pool-root", args.pool_root] if getattr(args, "pool_root", "") else []) + (
+        ["--samples-dir", args.samples_dir] if getattr(args, "samples_dir", "") else [])
+
+
+def run_args(args) -> list[str]:
+    """Options of a child that change how an arm is run, not what it computes."""
+    out = ["--trunk", args.trunk] if args.trunk != "auto" else []
+    out += ["--keep-states"] if args.keep_states else []
+    for d in args.trunk_from:
+        out += ["--trunk-from", d]
+    return out
 
 
 def select(arms: tuple[Arm, ...], names: str | None) -> list[Arm]:
@@ -238,9 +304,38 @@ def expected(args, probe: dict, arms: list[Arm]) -> list[tuple[str, int, float]]
         steps = max(1, (a.tokens or args.tokens) // cfg.optim.tokens_per_step)
         n_views = 1 + len(a.eval_views())
         eval_tok = len(bench.eval_fracs) * n_views * bench.eval_rows * bench.seq_len * len(bench.eval_domains)
-        sec = steps * probe["sec_per_step"] * ratio + eval_tok * sec_tok * ratio / 3 + probe["compile_s"] + 30
+        if a.graft is not None:
+            # trunk steps at the base's cost, the rest at the target's, two compiled steps and one
+            # more evaluation (the grafted model at the graft point)
+            plan = mb.graft_plan(a, args.tokens, bench, shapes=False)
+            r_base = mb.flops_per_token(plan.base_cfg)["train"] / ref_flops
+            eval_tok += bench.eval_rows * bench.seq_len * len(bench.eval_domains)
+            sec = ((plan.step * r_base + (steps - plan.step) * ratio) * probe["sec_per_step"]
+                   + eval_tok * sec_tok * ratio / 3 + 2 * probe["compile_s"] + 30)
+        else:
+            sec = steps * probe["sec_per_step"] * ratio + eval_tok * sec_tok * ratio / 3 + probe["compile_s"] + 30
         out.append((a.name, steps, sec))
     return out
+
+
+def prepare(args, arms: list[Arm]) -> None:
+    """Build (or find) the training pools of the arms' mixtures and the held-out pools, once,
+    before parallel runs start (two processes building one pool at the same time do the work
+    twice and race on its directory)."""
+    from bes.tokenizer import load as load_tok
+
+    bench = bench_from(args)
+    tok = load_tok()
+    seen = set()
+    for a in arms:
+        if a.mixture in seen:
+            continue
+        seen.add(a.mixture)
+        for d, pool in mb.train_pools(a, bench.seq_len, tok, bench, log).items():
+            log(f"train pool {d}: {pool.meta.get('rows')} rows ({mb._rel(Path(bench.pool_root))}/"
+                f"{mb.pool_key(d, 'train', bench.seq_len, bench.rows_for(d), tok, bench.samples_dir)[0]})")
+    for es in mb.eval_sets(bench.eval_domains, bench.eval_rows, bench.seq_len, tok, bench, log):
+        log(f"held-out {es.domain}: {es.n} rows")
 
 
 # ---------------------------------------------------------------------------- main
@@ -260,6 +355,19 @@ def main() -> int:
     ap.add_argument("--eval-rows", type=int, default=mb.Bench.eval_rows)
     ap.add_argument("--eval-fracs", default=",".join(str(f) for f in mb.Bench.eval_fracs))
     ap.add_argument("--no-probe", action="store_true", help="skip the timing probe")
+    ap.add_argument("--pool-root", default="", help="where the token pools are cached "
+                    "(default data_cache/micro/pools; not part of an arm's identity)")
+    ap.add_argument("--samples-dir", default="", help="where the sample parquet files are read "
+                    "(default data_cache/samples; not part of an arm's identity)")
+    ap.add_argument("--prepare", action="store_true", help="build the pools of the selected arms "
+                    "and the held-out pools, then exit (before starting runs in parallel)")
+    ap.add_argument("--keep-states", action="store_true", help="keep the train state of every "
+                    "evaluation checkpoint before the last in arms/<name>/states (graft trunks)")
+    ap.add_argument("--trunk", default="auto", choices=mb.TRUNK_MODES, help="graft arms: load a kept "
+                    "state of the base at the graft step if there is one (auto), always train the "
+                    "trunk (train), or never train it (load)")
+    ap.add_argument("--trunk-from", action="append", default=[], help="graft arms: another run "
+                    "directory to look for the base's kept states in (repeatable)")
     ap.add_argument("--run-arm", default=None, help=argparse.SUPPRESS)
     ap.add_argument("--timing-probe", action="store_true", help=argparse.SUPPRESS)
     args = ap.parse_args()
@@ -267,6 +375,11 @@ def main() -> int:
     if not out.is_absolute():
         out = REPO / out
     args.out = str(out)
+    args.trunk_from = [str(Path(d) if Path(d).is_absolute() else REPO / d) for d in args.trunk_from]
+    for name in ("pool_root", "samples_dir"):
+        v = getattr(args, name)
+        if v and not Path(v).is_absolute():
+            setattr(args, name, str(REPO / v))
     bench = bench_from(args)
 
     if args.report:
@@ -281,11 +394,23 @@ def main() -> int:
         return 0
     if args.run_arm:
         die_with_parent()
-        arm = select(E2_ARMS, args.run_arm)[0]
-        mb.run_arm(arm, out, args.tokens, bench, log=log)
+        arm = select(ALL_ARMS, args.run_arm)[0]
+        mb.run_arm(arm, out, args.tokens, bench, log=log, keep_states=args.keep_states,
+                   trunk=args.trunk, trunk_dirs=args.trunk_from)
         return 0
 
-    arms = select(E2_ARMS, args.arms)
+    arms = select(ALL_ARMS, args.arms) if args.arms else list(E2_ARMS)
+    for a in arms:
+        if a.graft is not None:
+            try:
+                plan = mb.graft_plan(a, args.tokens, bench, shapes=False)   # the child checks the trees
+            except ValueError as e:
+                raise SystemExit(f"refused: {e}")
+            log(f"{a.name}: graft at step {plan.step} of {plan.n_steps} ({a.graft.frac:g} of the budget), "
+                f"evaluations at steps {list(plan.eval_steps)}")
+    if args.prepare:
+        prepare(args, arms)
+        return 0
     probe = None
     if not args.no_probe:
         out.mkdir(parents=True, exist_ok=True)
@@ -321,7 +446,7 @@ def main() -> int:
 
     def runner(arm: Arm) -> None:
         log(f"start {arm.name}")
-        code = child(args, ["--run-arm", arm.name])
+        code = child(args, ["--run-arm", arm.name] + run_args(args))
         if code != 0:
             failed.append(arm.name)
             log(f"{arm.name} failed with exit code {code}; continuing")
