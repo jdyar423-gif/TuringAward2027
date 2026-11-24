@@ -173,3 +173,56 @@ no power to separate the settings; the default was kept.
   measuring instrument on these pairs it has almost no resolution; say so, do not average it in.
 - Three readers on the same 60 pairs of s2 vs Falcon, decisive pairs (wins:losses): Opus two
   readings 3:39; qwen3-4b-2507 1:16; gemma4-e4b 0:3.
+
+## Added 16:50 UTC: the micro graft experiment (controlled; CPU; the repository's model at the micro width)
+- Code: commit b04478e (`bes/eval/microbench.py` graft arms, `scripts/micro_ablate.py`,
+  `scripts/micro_graft_report.py`, `tests/eval/test_micro_graft.py`, `docs/MICRO_GRAFT.md`);
+  written by one agent, reviewed adversarially by a second (trunk equality, function
+  preservation, carried optimiser state, schedule and data order, unchanged E2 hashes, report
+  arithmetic: `W/micro_graft.md`).
+- Run: 15 arms in parallel on the idle host cores of the training runtime (AMD EPYC 9B14; one
+  physical core = 2 threads per arm; CPU only, `JAX_PLATFORMS=cpu`; a separate clone of the
+  repository at ef5649c plus the patch), 24 Nov 14:12:51 to 16:41:01 UTC; the training rate of the
+  main run did not change (11.57 and 11.59 min per 500 steps before and during).
+  Arms: `ref` (the micro reference, 4,402,372 numbers), `v9_pages` (the v9 page from the first
+  step: output gains and 8 token neurons per token and block in a d/4 space; 14,904,516 numbers),
+  `graft_25`, `graft_50`, `graft_75` (`ref` up to 0.25 / 0.5 / 0.75 of the budget, then grafted into
+  `v9_pages`: the 59 shared leaves with their optimiser state, count and step carried, the 5 new
+  leaves, 10,502,144 numbers, as a fresh `v9_pages` tree of the same seed). Seeds 0, 1, 2 each.
+  Budget 6,000,000 tokens = 1,464 steps of 4,096 tokens (rows of 512), d_model 128; data: web
+  (77%) and chat (23%) pools of 4.20M and 1.79M tokens, so about one pass; held-out: 32 web rows
+  and 32 chat rows (other files). Same data order and schedule in all arms of a seed.
+- Checks inside the run: every graft arm's evaluations before its graft equal `ref`'s of the same
+  seed exactly; the loss on held-out rows before and after each of the 9 grafts differs by
+  exactly 0 (also per row).
+- Results at the end (5,996,544 tokens), held-out loss, mix of web and chat (nats per token),
+  mean ± sd over 3 seeds: ref 4.1912 ± 0.0076; v9_pages 4.1394 ± 0.0083; graft_25 4.1363 ± 0.0075;
+  graft_50 4.1555 ± 0.0091; graft_75 4.1789 ± 0.0074.
+  Paired by seed (mean ± sd of the three differences):
+  - v9_pages - ref: -0.0519 ± 0.0107 (-1.24%); web -0.0464 ± 0.0118; chat -0.0683 ± 0.0089;
+    assistant turns -0.0689 ± 0.0107. Over training: -0.0164 at 1.5M, -0.0329 at 3.0M,
+    -0.0494 at 4.5M tokens.
+  - graft_25 - ref: -0.0550 ± 0.0010; graft_25 - v9_pages: -0.0031 ± 0.0113 (no difference).
+  - graft_50 - ref: -0.0358 ± 0.0030; graft_50 - v9_pages: +0.0161 ± 0.0096.
+  - graft_75 - ref: -0.0123 ± 0.0004; graft_75 - v9_pages: +0.0396 ± 0.0103.
+  Share of the page gain recovered, (ref - graft) / (ref - v9_pages), ratio of the mean
+  differences (per seed in brackets): graft_25 1.06 (0.86, 1.33, 1.08); graft_50 0.69 (0.62, 0.87,
+  0.64); graft_75 0.24 (0.20, 0.29, 0.24). By domain the shares are the same within 0.04.
+  One checkpoint after a graft (1.5M tokens later): graft_25 has -0.0192 of ref (v9_pages had
+  -0.0164 after its first 1.5M tokens); graft_50 -0.0161; graft_75 -0.0123.
+- What it says, and for what: at the micro width a graft never did worse than not grafting; a
+  graft at half the budget recovered about 0.7 of what the page gives when it is there from the
+  start, a graft at a quarter all of it, a graft at three quarters about a quarter. The gain of a
+  graft after its first 1.5M tokens is about the gain the from-scratch page had after its first
+  1.5M tokens (-0.012 to -0.019 against -0.016): the page learns at about the same rate whenever
+  it is added, and what a late graft loses is time.
+- Limits (say them): d_model 128 against 768; 6M tokens against 1.36e10; one pass over a small
+  pool; three seeds (2 degrees of freedom; the per-seed shares of graft_25 range from 0.86 to
+  1.33 because the denominator is a difference of two runs); the schedule is in tokens, not wall
+  clock; the data stream does not change at the graft (the live one did); the page's effect is
+  1.2% here. It is evidence about the mechanism, not about the size of the effect in the live run.
+- Being run now (16:43 to about 17:40): "restart" arms, `v9_pages` from scratch on a budget of
+  3,000,000 tokens with its own schedule (three seeds): what a restart with the remaining half
+  would have given, to set against graft_50.
+- Files: `N/micro_graft/6M/graft_report.txt`, `graft_report.json`, `results_all.jsonl` (15
+  records with curves, graft checks, timing), `<arm>.log`, `progress.log`.

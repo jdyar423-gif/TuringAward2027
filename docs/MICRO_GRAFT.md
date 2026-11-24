@@ -115,6 +115,54 @@ from these numbers (not measured): about 11-12 minutes per arm at 1M tokens, 21-
 peaks: 3 x 1.7 + 3 x 2.0 + 9 x 2.3 GB); with less, run them in two waves (`ARMS=... FIRST_CPU=...`).
 How much fifteen simultaneous runs slow each other down (memory bandwidth) was not measured.
 
+## Results (24 Nov 2026, 6,000,000 tokens, three seeds)
+
+Run next to the 24-hour training, on the idle host cores of its runtime (AMD EPYC 9B14; one
+physical core, two threads, per arm; CPU only; a separate clone of the repository), 14:12:51 to
+16:41:01 UTC; 4.6 to 6.2 s per step with 15 arms at once. Budget 6,000,000 tokens = 1,464 steps of
+4,096 tokens; training pools of 4.20M (web) and 1.79M (chat) tokens, so about one pass; held-out:
+32 web rows and 32 chat rows. The records are in `docs/paper/evidence/N/micro_graft/6M/`
+(`results_all.jsonl`, `graft_report.txt`, `graft_report.json`, the logs).
+
+Inside the run: every graft arm's evaluations before its graft equal those of `ref` with the same
+seed exactly, and at each of the nine grafts the held-out loss after equals the loss before, with
+a difference of exactly 0 (per row as well).
+
+Held-out loss at the end (5,996,544 tokens; mix of web and chat; nats per token; mean ± standard
+deviation over the three seeds), and the differences paired by seed:
+
+| arm | loss | arm - `ref` | arm - `v9_pages` | share of the page gain recovered |
+|---|---|---|---|---|
+| `ref` | 4.1912 ± 0.0076 | | +0.0519 ± 0.0107 | 0 |
+| `v9_pages` (page from the first step) | 4.1394 ± 0.0083 | -0.0519 ± 0.0107 (-1.24%) | | 1 |
+| `graft_25` (page grafted at 0.25) | 4.1363 ± 0.0075 | -0.0550 ± 0.0010 | -0.0031 ± 0.0113 | 1.06 (per seed 0.86, 1.33, 1.08) |
+| `graft_50` (page grafted at 0.5) | 4.1555 ± 0.0091 | -0.0358 ± 0.0030 | +0.0161 ± 0.0096 | 0.69 (0.62, 0.87, 0.64) |
+| `graft_75` (page grafted at 0.75) | 4.1789 ± 0.0074 | -0.0123 ± 0.0004 | +0.0396 ± 0.0103 | 0.24 (0.20, 0.29, 0.24) |
+
+The share is (`ref` - graft) / (`ref` - `v9_pages`), given as the ratio of the mean differences;
+per domain (web, chat, assistant turns) it is the same within 0.04. `v9_pages` - `ref` over
+training: -0.0164 at 1.5M tokens, -0.0329 at 3.0M, -0.0494 at 4.5M, -0.0519 at the end; by domain
+at the end: web -0.0464 ± 0.0118, chat -0.0683 ± 0.0089, assistant turns -0.0689 ± 0.0107.
+One checkpoint (1.5M tokens) after its graft an arm is -0.0192 (`graft_25`), -0.0161 (`graft_50`)
+and -0.0123 (`graft_75`) from `ref`; the page from the first step was -0.0164 after its first
+1.5M tokens.
+
+Reading. At this width a graft never did worse than not grafting; grafted at a quarter of the
+budget the page ended where the page trained from the first step ended, grafted at half it
+recovered about 0.7 of that gain, grafted at three quarters about a quarter. In its first 1.5M
+tokens a grafted page gained about what the from-scratch page gained in its first 1.5M tokens:
+the page learns at about the same rate whenever it is added, and what a late graft loses is the
+time it did not have. A graft's difference from `ref` varies little between seeds (0.0004 to
+0.0030) because the two share their trunk; the difference between two arms that never shared a
+state varies by 0.010.
+
+Limits. d_model 128 against the 768 of the live run; 6M tokens against 1.36e10; one pass over
+small pools; three seeds, so two degrees of freedom, and a share whose denominator is itself a
+difference of two runs (the per-seed shares of `graft_25` range from 0.86 to 1.33); the schedule
+counts tokens, not wall-clock time; the data stream does not change at the graft, as it did in
+the live run; the page is worth 1.2% here. This is evidence about the mechanism of a graft, not
+about the size of its effect in the live run.
+
 ## Report (`scripts/micro_graft_report.py`)
 
 Reads `results.jsonl` in the given directories and their sub-directories (newest finished

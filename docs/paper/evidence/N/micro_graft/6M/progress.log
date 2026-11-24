@@ -1,0 +1,31 @@
+[14:12:51] start ref on CPUs 2,24
+[14:12:51] start ref_s1 on CPUs 3,25
+[14:12:51] start v9_pages on CPUs 5,27
+[14:12:51] start ref_s2 on CPUs 4,26
+[14:12:51] start v9_pages_s1 on CPUs 6,28
+[14:12:51] start v9_pages_s2 on CPUs 7,29
+[14:12:51] start graft_25 on CPUs 8,30
+[14:12:51] start graft_25_s1 on CPUs 9,31
+[14:12:51] start graft_25_s2 on CPUs 10,32
+[14:12:51] start graft_50 on CPUs 11,33
+[14:12:51] start graft_50_s1 on CPUs 12,34
+[14:12:51] start graft_50_s2 on CPUs 13,35
+[14:12:51] start graft_75 on CPUs 14,36
+[14:12:51] start graft_75_s1 on CPUs 15,37
+[14:12:51] start graft_75_s2 on CPUs 16,38
+[15:39:26] end graft_75_s2: exit 0 after 5194 s
+[16:10:12] end ref_s2: exit 0 after 7040 s
+[16:11:08] end ref_s1: exit 0 after 7097 s
+[16:12:03] end ref: exit 0 after 7151 s
+[16:17:29] end v9_pages_s1: exit 0 after 7478 s
+[16:18:12] end v9_pages_s2: exit 0 after 7521 s
+[16:18:12] end v9_pages: exit 0 after 7521 s
+[16:36:55] end graft_75: exit 0 after 8643 s
+[16:37:41] end graft_75_s1: exit 0 after 8690 s
+[16:38:58] end graft_50_s1: exit 0 after 8767 s
+[16:40:05] end graft_50: exit 0 after 8834 s
+[16:40:31] end graft_50_s2: exit 0 after 8860 s
+[16:40:36] end graft_25: exit 0 after 8865 s
+[16:40:42] end graft_25_s2: exit 0 after 8871 s
+[16:41:01] end graft_25_s1: exit 0 after 8889 s
+[16:41:01] report: exit 0
