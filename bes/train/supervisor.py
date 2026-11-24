@@ -1760,7 +1760,9 @@ def task_opponents(paths: RunPaths, cfg: Cfg, cp: CorePlan, log: Callable[[str],
     end = deadline - sum(specs[n].planned_s for n in ("judge", "export", "buffer"))
     root = proxy_root(cfg, paths.out)
     ps = prompt_set.load()
-    runs = {}
+    # the runs an earlier process of this machine recorded stay recorded (their replies are in
+    # the harness cache): a task started again after ``end`` must not leave the judge with none
+    runs = dict((read_marker(paths, "opponents_progress") or {}).get("runs") or {})
     for split in ("test", "dev"):
         todo = prompt_set.select(ps, split, None, cfg.run.eval_limit or None)
         for name, preset in _arms(cfg):

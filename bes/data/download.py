@@ -162,12 +162,13 @@ def static_prefix(pattern: str) -> str:
 def get_listing(repo: str, revision: str, prefix: str, directory: Path, *,
                 lister: Lister | None = None, refresh: bool = False, retries: int = 6,
                 log: Callable[[str], None] = _log_stderr,
-                sleep: Callable[[float], None] = time.sleep) -> tuple[str, list[RemoteFile]]:
+                sleep: Callable[[float], None] = time.sleep,
+                fallback: str = "main") -> tuple[str, list[RemoteFile]]:
     """Cached ``(commit, files)`` of ``repo`` at ``revision`` under ``prefix``.
 
     The cache ``listing.<prefix>.json`` is written atomically on the first call; later calls
-    read it (no network) unless ``refresh``. If a pinned commit no longer exists on the Hub, the
-    default branch is listed instead and a warning is logged.
+    read it (no network) unless ``refresh``. If a pinned commit no longer exists on the Hub,
+    ``fallback`` (default: the default branch) is listed instead and a warning is logged.
     """
     cache = directory / f"listing.{_slug(prefix)}.json"
     if cache.exists() and not refresh:
@@ -186,8 +187,8 @@ def get_listing(repo: str, revision: str, prefix: str, directory: Path, *,
 
         if not (isinstance(exc, hf_errors.RevisionNotFoundError) and _SHA_RE.match(revision)):
             raise
-        log(f"[download] {repo}: pinned commit {revision} not found; listing the default branch")
-        commit, files = call("main")
+        log(f"[download] {repo}: pinned commit {revision} not found; listing {fallback}")
+        commit, files = call(fallback)
     files = sorted(files, key=lambda f: f.path)
     blob = {"repo": repo, "revision": revision, "commit": commit, "prefix": prefix,
             "files": [asdict(f) for f in files]}
@@ -205,10 +206,16 @@ def source_listing(source: str | sources.Source, root: str | Path | None = None,
     """
     src = sources.get(source)
     rdir = repo_dir(src, root)
+    # a ref (refs/convert/parquet) can move between the machines of one run, and only the cached
+    # listing of a machine pins it: list the commit the registry verified when there is one
+    rev = src.revision
+    if not _SHA_RE.match(rev) and _SHA_RE.match(src.verified_sha or ""):
+        rev = src.verified_sha
     commits, matched = set(), {}
     for prefix in sorted({static_prefix(p) for p in src.files}):
-        commit, files = get_listing(src.repo, src.revision, prefix, rdir, lister=lister,
-                                    refresh=refresh, retries=retries, log=log, sleep=sleep)
+        commit, files = get_listing(src.repo, rev, prefix, rdir, lister=lister,
+                                    refresh=refresh, retries=retries, log=log, sleep=sleep,
+                                    fallback=src.revision if rev != src.revision else "main")
         commits.add(commit)
         for f in files:
             if any(fnmatch.fnmatchcase(f.path, pat) for pat in src.files):

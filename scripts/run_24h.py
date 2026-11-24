@@ -153,8 +153,11 @@ class Run:
                 raise RuntimeError("the training journal used the library and the library task failed on "
                                    f"this machine: {st.get('error')}")
             if ctx.now() > ctx.hard_deadline - 60.0:
-                raise RuntimeError("the training journal used the library and it was not ready before the "
-                                   "end of the training window")
+                # nothing more can be trained: the run goes on with the checkpoint it has (a failed
+                # essential stage would end the process and its background tasks)
+                raise SV.StageSkipped("the training journal used the library and it was not ready on this "
+                                      "machine before the end of the training window: the newest "
+                                      "checkpoint is the trained state")
             time.sleep(poll_s)
 
     def _wait_for_shards(self, ctx: SV.StageContext, root: Path, want: dict[str, list[list]],
@@ -181,44 +184,53 @@ class Run:
                                    f"not on this machine (e.g. {missing[0]}) and the tokenisation has "
                                    f"{st.get('state')}: {st.get('error')}")
             if ctx.now() > ctx.hard_deadline - 60.0:
-                raise RuntimeError(f"{len(missing)} of the {total} shards the training journal used were "
-                                   "not tokenised on this machine before the end of the training window")
+                raise SV.StageSkipped(f"{len(missing)} of the {total} shards the training journal used were "
+                                      "not tokenised on this machine before the end of the training window: "
+                                      "the newest checkpoint is the trained state")
             if time.time() - told >= 60.0:
                 told = time.time()
                 self.log(f"train: waiting for the tokenisation on this machine: {len(missing)} of the "
                          f"{total} shards of the journal are not committed yet (e.g. {missing[0]})")
             time.sleep(poll_s)
 
-    def _micro_split(self, ecfg) -> int:
+    def _micro_split(self, ecfg):
         """Into how many pieces the training step cuts every micro-batch on the device
-        (``bes.train.train.accumulate``: same update, smaller tensors, faster on the TPU v6e).
-        It is not part of the configuration (the batches, the journal and the checkpoints do
-        not change): the operator writes one integer into ``<run>/micro_split`` while the run
-        is stopped; it is copied into the manifest (``micro_split``), which a snapshot carries
-        to the next machine. 1 when nothing is set or the number does not divide the rows per
-        micro-batch of every shape of the schedule."""
+        (``bes.train.train.accumulate``: same update, smaller tensors, faster on the TPU v6e):
+        one number, or ``{seq_len: pieces}``. It is not part of the configuration (the batches,
+        the journal and the checkpoints do not change): the operator writes ``4`` or
+        ``1024:4,2048:8`` into ``<run>/micro_split`` while the run is stopped; it is copied into
+        the manifest (``micro_split``), which a snapshot carries to the next machine. 1 when
+        nothing is set; a number that does not divide the rows per micro-batch of a shape of the
+        schedule is not used for that shape."""
         from bes.train import schedule
+        from bes.train.train import parse_micro_split, split_for
 
-        want = int((self.reload() or {}).get("micro_split") or 1)
+        text = str((self.reload() or {}).get("micro_split") or "1")
         path = self.paths.out / "micro_split"
         if path.exists():
+            asked = path.read_text().strip()
             try:
-                asked = int(path.read_text().strip())
+                parse_micro_split(asked)
             except ValueError:
-                asked = want
-                self.log(f"train: {path} does not hold an integer: ignored")
-            if asked >= 1 and asked != want:
+                self.log(f"train: {path} holds neither a number nor seq_len:pieces pairs: ignored")
+                asked = text
+            if asked != text:
                 SV.update_manifest(self.paths.out, micro_split=asked)
-                want = asked
+                text = asked
+        want = parse_micro_split(text)
         shapes = schedule.shapes(ecfg)
-        if want > 1 and any(b % want for _, b, _ in shapes):
-            self.log(f"train: micro_split {want} does not divide the rows per micro-batch of {shapes}: "
-                     "the micro-batches are not cut")
-            return 1
-        if want > 1:
-            self.log("train: every micro-batch is cut into " + str(want) + " pieces on the device: " +
-                     ", ".join(f"{a} x {b} x {t} -> {a * want} x {b // want} x {t}" for a, b, t in shapes))
-        return max(1, want)
+        split = {}
+        for a, b, t in shapes:
+            k = split_for(want, t)
+            if k < 1 or b % k:
+                self.log(f"train: micro_split {k} does not divide the {b} rows per micro-batch at "
+                         f"length {t}: those micro-batches are not cut")
+                k = 1
+            split[int(t)] = k
+        if any(k > 1 for k in split.values()):
+            self.log("train: micro-batches are cut into pieces on the device: " + ", ".join(
+                f"{a} x {b} x {t} -> {a * split[t]} x {b // split[t]} x {t}" for a, b, t in shapes))
+        return split
 
     def _catch_up_cores(self) -> tuple[int, ...]:
         """Cores for the tokenisation when the training journal lists shards this machine does
@@ -231,9 +243,34 @@ class Run:
                 return cp.tokenize
         except Exception:  # noqa: BLE001 - the train stage reports what is wrong with the data
             return cp.tokenize
-        spare = [c for c in cp.cores if c not in cp.trainer and c not in cp.downloads]
+        # not the library build's cores: a journal that used the library waits for it as well
+        spare = [c for c in cp.cores if c not in cp.trainer and c not in cp.downloads and c not in cp.library]
         n = min(24, len(spare) - 4)
         return tuple(sorted(spare[-n:])) if n > len(cp.tokenize) else cp.tokenize
+
+    def _busy(self, names: Sequence[str]) -> list[str]:
+        """The background tasks among ``names`` that this process has not seen end yet."""
+        bg = getattr(self, "bg", None)
+        st = (bg.status() if bg is not None else {}) or {}
+        return [n for n in names if (st.get(n) or {}).get("state") in ("waiting", "running", "backoff")]
+
+    def _await_tasks(self, ctx: SV.StageContext, names: Sequence[str], until: float,
+                     ready: Any = None, poll_s: float = 10.0) -> None:
+        """A post-training stage on a machine whose background work is not done: a run continued
+        on a recycled machine downloads, tokenises and builds again what a snapshot does not hold
+        (the library and its ready marker, the shards, the GGUF files, the opponents' replies).
+        Wait while a task of ``names`` is still running, until ``ready()`` holds or until
+        ``until`` (ledger time); then the stage goes on with what there is. An uninterrupted run,
+        whose tasks ended long ago, does not wait."""
+        told = 0.0
+        while self._busy(names) and not (ready is not None and ready()):
+            if ctx.stop_requested() or ctx.now() >= until:
+                return
+            if time.time() - told >= 60.0:
+                told = time.time()
+                self.log(f"{ctx.name}: waiting for the background tasks {self._busy(names)} on this machine "
+                         f"(at most {max(0.0, until - ctx.now()) / 60:.1f} min more)")
+            time.sleep(poll_s)
 
     def tasks(self) -> list[SV.TaskSpec]:
         out, cp = self.paths.out, self.cp
@@ -643,7 +680,8 @@ class Run:
                           role_fn=role_of, consts_fn=SV.make_consts_fn(ecfg.run.switches),
                           out_dir=self.paths.train, deadline=self.sup.deadline,
                           eval_fn=self._sidecar_hook, log_fn=log_fn, async_ckpt=True, resume=True,
-                          programs=None if split > 1 else programs, micro_split=split)
+                          programs=None if any(k > 1 for k in split.values()) else programs,
+                          micro_split=split)
         remove = self.sup.on_stop(trainer.request_stop)
         try:
             if self.sup.stop_requested:
@@ -796,6 +834,8 @@ class Run:
         from bes.model import generate as G
 
         ecfg = self.effective()
+        if self._busy(("library", "tokenize")):    # the passages and the held-out conversations
+            self._await_tasks(ctx, ("library", "tokenize"), ctx.started + 0.3 * ctx.slice_s)
         params, consts, info, _, _ = self.latest_params(ecfg, prefer_post=False)
         lib = self.library_ready() if ecfg.decode.use_library else None
         tok = self.tok()
@@ -996,6 +1036,8 @@ class Run:
         relabelled = self.relabelled
         groups: dict[str, list] = {"sampled": sampled}
         ratio: dict[str, float] = {"sampled": 0.0}
+        if self._busy(("tokenize",)):              # UltraFeedback is the last source it tokenises
+            self._await_tasks(ctx, ("tokenize",), ctx.started + 0.25 * ctx.slice_s)
         uf = SV.tok_root(ecfg, self.paths.out) / "tok" / "ultrafeedback"
         if uf.exists():
             pairs, counts = prefs.pairs_from_shards(uf)
@@ -1090,6 +1132,10 @@ class Run:
         from bes.eval.proxy.run_ours import CallableBackend
 
         ecfg = self.effective()
+        if ecfg.decode.use_library and self._busy(("library",)):
+            # without the library on this disk the rule below records "no library was built"
+            self._await_tasks(ctx, ("library",), ctx.started + 0.4 * ctx.slice_s,
+                              ready=lambda: bool(self.library_path()))
         _, _, info, ckpt, source = self.latest_params(ecfg)
         gen = self._generator(ecfg, ckpt)
         backend = CallableBackend(gen)
@@ -1259,8 +1305,16 @@ class Run:
         root = SV.proxy_root(ecfg, self.paths.out)
         ps = prompt_set.load()
         todo = prompt_set.select(ps, "test", None, ecfg.run.eval_limit or None)
-        mk = SV.read_marker(self.paths, "opponents") or SV.read_marker(self.paths, "opponents_progress") or {}
-        opp_runs = {k: v for k, v in (mk.get("runs") or {}).items() if k.endswith("/test") and v.get("done")}
+
+        def test_runs() -> dict:
+            mk = SV.read_marker(self.paths, "opponents") or SV.read_marker(self.paths, "opponents_progress") or {}
+            return {k: v for k, v in (mk.get("runs") or {}).items() if k.endswith("/test") and v.get("done")}
+
+        if self._busy(("gguf", "opponents")):     # replies of a recycled machine come again first
+            n_arms = len(ecfg.run.eval_opponents.replace(",", " ").split())
+            self._await_tasks(ctx, ("gguf", "opponents"), ctx.started + 0.5 * ctx.slice_s,
+                              ready=lambda: len(test_runs()) >= n_arms)
+        opp_runs = test_runs()
         if not opp_runs:
             raise SV.StageSkipped("no opponent replies on the test split yet (background task "
                                   f"'opponents': {(self.bg.status() if self.bg else {}).get('opponents')})")
@@ -1316,6 +1370,15 @@ class Run:
             note = f"no checkpoint to export: {e}"
             (final / "EXPORT_NOTE.txt").write_text(note + "\n")
             return {"exported": False, "note": note}
+        if ((man.get("decode") or {}).get("library") or {}).get("ship") is True and not self.library_path() \
+                and self._busy(("library",)):
+            # the decode selection shipped the library and this machine is building it again (a
+            # snapshot holds neither the library nor its marker): an export now would leave it out
+            self._await_tasks(ctx, ("library",), ctx.run_deadline - ctx.slice_s,
+                              ready=lambda: bool(self.library_path()))
+            if not self.library_path():
+                self.log("export: WARNING the decode selection shipped the library, but it is not ready "
+                         "on this machine: exported without it")
         reports = {"stages": str(self.paths.stages), "manifest": str(self.paths.manifest),
                    "health": str(self.paths.health), "post": str(self.paths.post),
                    "proxy": str(SV.proxy_root(ecfg, self.paths.out) / "reports")}

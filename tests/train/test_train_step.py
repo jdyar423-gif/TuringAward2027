@@ -284,3 +284,24 @@ def test_pieces_of_the_real_loss_function_regroup_to_its_metrics():
         for name in ("loss", "tape_mass", "tape_gain", "loss_share_by_role"):
             np.testing.assert_allclose(m[name], m1[name], rtol=2e-4, atol=2e-5, err_msg=name)
         assert m["sink_mass"].shape == m1["sink_mass"].shape
+
+
+def test_pieces_can_differ_by_sequence_length():
+    from bes.train.train import parse_micro_split, split_for
+
+    assert parse_micro_split("4") == 4 and parse_micro_split("16:4, 32:2") == {16: 4, 32: 2}
+    assert split_for(4, 99) == 4 and split_for({16: 4}, 16) == 4 and split_for({16: 4}, 32) == 1
+    with pytest.raises(ValueError):
+        parse_micro_split("four")
+    cfg, state, _ = setup()
+    batch = make_batch(a=4, b=4, t=8)
+    run = lambda k: jax.jit(lambda p, c, b: accumulate(M.loss_fn, p, c, b, None, k))(  # noqa: E731
+        state.params, state.consts, batch)
+    g1, l1, _, m1 = run(1)
+    g, loss, _, m = run({8: 2, 16: 4})                # the batch has length 8: two pieces
+    assert float(loss) == pytest.approx(float(l1), rel=1e-6) and m["ce_sum"].shape == m1["ce_sum"].shape
+    for name in g1:
+        np.testing.assert_allclose(g[name], g1[name], rtol=2e-5, atol=1e-7)
+    g, loss, _, m = run({16: 4})                      # no entry for length 8: whole micro-batches
+    for name in g1:
+        np.testing.assert_array_equal(np.asarray(g[name]), np.asarray(g1[name]))

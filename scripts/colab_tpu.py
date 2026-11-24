@@ -744,9 +744,12 @@ class Supervisor:
         with tarfile.open(tar_path, "w") as tar:
             for rel in files:
                 try:
-                    tar.add(os.path.join(run, rel), arcname="run/" + rel, recursive=False)
+                    f = open(os.path.join(run, rel), "rb")
                 except OSError:              # rotated away between the listing and the copy
-                    pass
+                    continue
+                with f:                      # header and data of one inode: a record rewritten
+                    tar.addfile(tar.gettarinfo(arcname="run/" + rel, fileobj=f), f)   # meanwhile
+                                             # (os.replace) is packed whole, old or new
             log = self.ns.get("LOG")
             if log and os.path.isfile(log):
                 tar.add(log, arcname="run.log", recursive=False)

@@ -163,6 +163,22 @@ def init_state(cfg: Cfg, init_fn: Callable, optimizer_or_role_fn: Any, key: jax.
 MICRO_SUMS = frozenset({"ce_sum", "weight", "tokens", "ce_by_role", "weight_by_role"})
 
 
+def split_for(micro_split: Any, seq_len: int) -> int:
+    """The number of pieces for batches of ``seq_len``: ``micro_split`` is one number for every
+    length or a mapping ``{seq_len: pieces}`` (1 for a length it does not name)."""
+    if isinstance(micro_split, Mapping):
+        return int(micro_split.get(int(seq_len), 1))
+    return int(micro_split)
+
+
+def parse_micro_split(text: str) -> int | dict[int, int]:
+    """``"4"`` -> 4; ``"1024:4,2048:8"`` -> ``{1024: 4, 2048: 8}`` (ValueError otherwise)."""
+    text = str(text).strip()
+    if ":" not in text:
+        return int(text)
+    return {int(a): int(b) for a, b in (item.split(":", 1) for item in text.replace(" ", ",").split(",") if item)}
+
+
 def split_micro(batch: Mapping[str, Any], k: int) -> dict[str, Any]:
     """``[A, B, ...]`` -> ``[A * k, B // k, ...]``: every micro-batch cut into ``k`` pieces of
     whole rows, in order. The update does not change (rows are independent and the accumulation
@@ -208,13 +224,14 @@ def accumulate(loss_fn: Callable, params: Any, consts: Any, batch: Mapping[str, 
     ``grads = sum_i W_i grad L_i / W``, ``loss = sum_i W_i L_i / W``, ``W = sum_i W_i`` and
     ``W_i = sum(w_i)``; ``micro_metrics`` stacks the loss function's metrics over ``A``.
 
-    micro_split: cut every micro-batch into this many pieces on the device
-    (:func:`split_micro`) and scan over the pieces; gradients, loss and weight are the same to
+    micro_split: cut every micro-batch into this many pieces on the device (one number, or
+    ``{seq_len: pieces}``: :func:`split_for`, :func:`split_micro`) and scan over the pieces;
+    gradients, loss and weight are the same to
     float rounding, the metrics are regrouped to the ``A`` micro-batches. On the TPU v6e a
     step is memory-bound outside its matrix products and smaller pieces are faster (4 pieces of
     a 16 x 1024 micro-batch: +10%, 24 Nov 2026).
     """
-    k = int(micro_split)
+    k = split_for(micro_split, int(np.shape(batch["w"])[2]) if "w" in batch else 0)
     if k > 1:
         batch = split_micro(batch, k)
     vg = jax.value_and_grad(loss_fn, has_aux=True)
@@ -442,8 +459,9 @@ class Trainer:
         self.guard_cfg = guard_lib.GuardCfg.from_run(cfg.run)
         self.config_hash = config_hash(cfg)
         self.shapes = schedule.shapes(cfg)
-        self.micro_split = int(micro_split)
-        if self.micro_split < 1 or any(b % self.micro_split for _, b, _ in self.shapes):
+        self.micro_split = dict(micro_split) if isinstance(micro_split, Mapping) else int(micro_split)
+        if any(split_for(self.micro_split, t) < 1 or b % split_for(self.micro_split, t)
+               for _, b, t in self.shapes):
             raise ValueError(f"micro_split {micro_split} does not divide the rows per micro-batch of "
                              f"every shape {self.shapes}")
         self.history: list[tuple[int, float, float, float, int]] = []
