@@ -115,3 +115,43 @@ no power to separate the settings; the default was kept.
   same run made 500 steps in 11.10-11.17 min = 196.6 thousand); loss 2.3542, p 0.683.
   (Synthetic-batch measurement before the switches: 1,510.2 ms at 2 x 2048 against 1,433.1 ms at
   4 x 1024, +5.4%; live with the three switches: +4.2%.)
+
+## Added 13:32 UTC: the two opponents against each other (reference for the scale)
+- Pair set `ref-falcon-vs-mobilellm-test`: Falcon-H1-Tiny-90M-Instruct (x) against
+  MobileLLM-R1.5-140M (y, recommended preset, qwen3 template), the 200 TEST prompts (52 two-turn),
+  Opus readers, two readings on exchanged sides (source judge-opus): Falcon 144 wins / 6 losses /
+  50 ties-or-both-bad, score 0.845 [0.788, 0.889], decisive 0.960 [0.915, 0.982]; the two orders
+  agree on 93.5% of pairs; first-position preference +0.013. By category: chat 37/1/12, code
+  17/2/11, instruct 31/0/9, math 15/3/12, writing 44/0/6; two-turn 39/1/12.
+  Report: `N/study/proxy/reports/ab/ref-falcon-vs-mobilellm-test--judge-opus.{md,json}`.
+- Reading: the two opponents are far apart on this prompt set. MobileLLM-R1.5 is a reasoning
+  model; the readers' notes describe many of its replies as looping meta-reasoning with boxed
+  answers. "Ahead of MobileLLM-R1.5" on these prompts is therefore a low bar, and the paper must
+  say so; "behind Falcon-H1-Tiny" is the comparison that matters.
+- This set involves no reply of ours: it does not open the test split for our model.
+
+## Added 13:52 UTC: the pre-registered automatic judge on the development pairs
+- Judge `qwen3-4b-2507` (Qwen3-4B-Instruct-2507, Q4_K_M GGUF, SHA-256 3605803b..., the default
+  judge of docs/EVAL_PROTOCOL.md section 5), `python -m bes.eval.proxy judge`, both orders, a side
+  only when both orders pick the same reply; run on the runtime's idle host cores (12 threads per
+  set, 13.1 to 17.2 s per pair for both orders), rating source `judge-qwen3-4b-2507-3605803b`:
+
+  | pair set | W/L/T | score [95%] | decisive | sign p | orders agree | first-position pref | clipped |
+  |---|---|---|---|---|---|---|---|
+  | s1 (final, step 25,280) vs Falcon | 2/16/42 | 0.383 [0.271, 0.510] | 0.111 | 0.0013 | 63.3% | -0.096 | 0 |
+  | s1 vs MobileLLM | 7/4/49 | 0.525 [0.401, 0.646] | 0.636 | 0.55 | 78.3% | -0.000 | 30 pairs |
+  | s2 (v9, step 31,912) vs Falcon | 1/16/43 | 0.375 [0.264, 0.501] | 0.059 | 0.0003 | 60.0% | -0.114 | 0 |
+  | s2 vs MobileLLM | 7/2/51 | 0.542 [0.417, 0.661] | 0.778 | 0.18 | 80.0% | -0.000 | 30 pairs |
+
+- Against the Opus readers on the same pairs (s2): vs Falcon both gave a side in 16 pairs, the
+  same side in 14 and opposite sides in 2; in 26 pairs the Opus readers gave a side where the
+  4B judge's two orders disagreed or said C; 1 the other way; 17 both tie. vs MobileLLM: both a
+  side in 6 pairs, all 6 the same side; 21 Opus side / judge tie; 3 the other way; 30 both tie.
+- Reading: the pre-registered judge points the same way (behind Falcon, 1 or 2 wins to 16 losses;
+  no significant difference to MobileLLM) with far fewer decisive pairs: its two orders agree on
+  only 60 to 63% of the Falcon pairs and it prefers the second-shown reply there (-0.10, -0.11).
+  The final report gives both: the registered judge as registered, the Opus readers as the
+  stronger reading, named as a deviation.
+- Housekeeping: six files `ratings/s1-*/judge-opus.jsonl` held single-reading records under the
+  wrong source name (my import mistake at 10:20; identical verdicts to `opus-1.jsonl`); moved to
+  `N/study/stale_ratings/` and removed from the repository copy.

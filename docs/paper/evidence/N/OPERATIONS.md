@@ -289,6 +289,40 @@ Colab CLI: `export PATH=/root/.local/bin:$PATH GOOGLE_APPLICATION_CREDENTIALS=/r
 - If the user prefers Drive or no publication: they say so; do not use the Colab credential for
   anything else (no Drive API from here).
 
+## State at 13:20 (what runs, what is owed)
+- Training: T=2048 since 12:48, 1.388 s/step = 188.8k tok/s; ends 18:33:45.
+- Pushed: 111b402 (CHANGES 19.9), ef5649c (docs/paper: first revision + figures + data + evidence).
+  `bash $S/scripts/paper_sync.sh` copies paper/figures/data/analysis/evidence into docs/paper again
+  (`--with-test` only after ALL blind readings of test pairs are finished: it adds keys/outputs).
+- Paper: first workflow done (REVIEW_1/RESPONSE_1). Title now "What a Parameter Budget Does Not
+  Count". It found: 11 test prompts were seen mid-run (189 untouched, not 193); my 12:10 cleanup
+  deleted local final checkpoints 5,075/22,613/26,890 (trend has 3 points). Protocol deviation to
+  repair: the pre-registered judge is `qwen3-4b-2507` (GGUF, both orders; second judge
+  `gemma4-e4b`), my Opus readers are an addition.
+  - Figures pass 2: workflow wf_aead8f09-b31 (task wksb41gda).
+  - Final revision (after the test results): feed FACTS_2.md + final numbers + micro-graft result;
+    then the zh-TW version; then `paper_sync.sh --with-test`, commit, push.
+- Pre-registered judge on dev pairs: runs on the runtime host since 13:15
+  (`bash $S/scripts/judge_remote.sh fetch devq` shows progress and copies the ratings into
+  `$N/study/proxy/ratings/<set>/judge-qwen3-4b-2507.jsonl` when done; then
+  `python -m bes.eval.proxy --root $N/study/proxy score --pairs SET --source judge-qwen3-4b-2507`).
+  For the TEST pairs the same must run: on the runtime if time allows (cores are busy with the
+  generations after 18:36), else on a CPU Colab runtime after the TPU is released
+  (`colab new -s bes-cpu --high-mem`; the judge GGUF is 2.5 GB from the Hub;
+  `scripts/judge_driver.py`-like call: `python -m bes.eval.proxy --root ROOT judge --pairs SET
+  --judge qwen3-4b-2507 --threads 8`). Measure the speed from the dev pass first.
+- Micro-graft experiment: workflow wf_ad9c3744-513 (task wjuhxpzq7) writes
+  `$N/wf/micro_graft.patch` and `micro_graft.md`. Then: copy the repo on the runtime without
+  `data_cache/tok` to `/content/bes_cli/microrepo`, apply the patch there, run 15 arms (5 x 3
+  seeds) in parallel on cores 2-21,24-43 (2 threads each), all must END BY 18:20 (kill:
+  `pkill -f micro_ablate.py` in a host cell) because the test generation needs the cores at 18:36.
+- Reference judges (opponents against each other, test split): wf_b440ed0e-80c, 18/28 chunk
+  files at 13:17; then `bash $S/scripts/score2.sh ref-falcon-vs-mobilellm-test
+  $N/final_eval/ref/ref-falcon-vs-mobilellm-test/r1 $N/final_eval/ref/ref-falcon-vs-mobilellm-test/r2`.
+- Endgame generation now pins itself off cores 0,1 (+siblings): `endgame_testgen.sh TAG 58`
+  uploads and runs `endgame_driver.py` (40 workers). Probe on the live run directory worked
+  (12:52-12:56, 4 dev prompts, export of step 36,422 in 34 s).
+
 ## 巡檢清單 (what a check-in does)
 1. `cut -d' ' -f1 /proc/uptime` (small = the container slept: everything below must be restarted);
    `pgrep -af "alloc_loop_resume|presence.sh|watch_loop|budget_guard|anchor"`;
