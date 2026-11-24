@@ -58,6 +58,19 @@ INTERVENTIONS = [
          src="docs/CHANGES.md 19.7; v9_measD.txt; v9_measD.log; resume_v9b.log; live manifest.json 'fast'"),
 ]
 
+# changes of the schedule's data phase (bes/train/schedule.py data_phase_at; no stop of the run):
+# make_data.py finds the train log's 'stage' event whose phase is this one and takes its step and time
+PHASES = [
+    dict(id="P1", phase="long", short="rows of 2,048 tokens (p = 0.67)",
+         long="Rows of 2,048 tokens (8 x 2,048 per micro-batch) from p = 0.67 (data.late_from); the chat share "
+              "ramps from 0.25 towards 0.7 at p = 0.92; no stop of the run",
+         src="train_log.jsonl stage event (phase long); configs/v9.py; bes/train/schedule.py"),
+    dict(id="P2", phase="tail", short="chat-heavy tail, loss on assistant tokens only (p = 0.92)",
+         long="Chat-heavy tail from p = 0.92 (data.tail_from): chat share 0.7, loss on assistant tokens only "
+              "(data.assistant_only_from), so the training loss is computed on other tokens from here on",
+         src="train_log.jsonl stage event (phase tail); bes/config.py; bes/train/schedule.py"),
+]
+
 # pauses of the run for measurements on the chip (no change to training)
 MEASUREMENTS = [
     dict(id="M1", step=8659, short="pause: micro-batch pieces timed",

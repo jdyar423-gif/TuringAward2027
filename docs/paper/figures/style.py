@@ -12,9 +12,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import paths as P  # noqa: E402
 
 sys.path.append(P.PYLIB)            # private matplotlib (appended: the venv's numpy stays first)
-os.environ["MPLCONFIGDIR"] = os.path.join(P.FIG, "_work", "mplconfig")   # font cache stays under paper/
+os.environ["MPLCONFIGDIR"] = os.path.join(P.WORK, "mplconfig")   # font cache next to the scripts that run
 os.makedirs(os.environ["MPLCONFIGDIR"], exist_ok=True)
-import matplotlib  # noqa: E402
+try:
+    import matplotlib  # noqa: E402
+except ImportError:
+    sys.exit(f"style.py: matplotlib not found (the venv has none; the private copy is {P.PYLIB}, or set "
+             "PAPER_FIGURES_PYLIB)")
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
@@ -47,6 +51,7 @@ FS_LABEL = 7.5                    # axis labels
 FS_TITLE = 8.0                    # panel titles
 
 COL_W = 3.40                      # one column (in)
+DPI = 200                         # PNG resolution
 FULL_W = 7.00                     # both columns (in)
 
 
@@ -92,7 +97,7 @@ def setup():
         "figure.facecolor": WHITE,
         "axes.facecolor": WHITE,
         "savefig.facecolor": WHITE,
-        "savefig.dpi": 300,
+        "savefig.dpi": DPI,
         "svg.fonttype": "path",               # glyphs as outlines: the SVG looks the same everywhere
         "svg.hashsalt": "bes-paper",          # stable ids: re-runs give identical SVG for identical data
         "path.simplify": True,
@@ -111,13 +116,45 @@ def grid_x(ax):
 
 
 def save(fig, name):
-    """Write FIG/<name>.svg (text outlined) and FIG/<name>.png (300 dpi)."""
-    svg = os.path.join(P.FIG, name + ".svg")
-    png = os.path.join(P.FIG, name + ".png")
+    """Write FIG/<name>.svg (text outlined) and FIG/<name>.png (DPI dots per inch)."""
+    svg = os.path.join(P.FIG_OUT, name + ".svg")
+    png = os.path.join(P.FIG_OUT, name + ".png")
     fig.savefig(svg, metadata={"Date": None, "Creator": "paper/figures (matplotlib)"})
-    fig.savefig(png, dpi=300)
+    fig.savefig(png, dpi=DPI)
     print("wrote", svg, "and", png)
 
 
 def thousands(x, _pos=None):
     return f"{x:,.0f}"
+
+
+def tag_lanes(ax, items, y0=0.975, dy=0.075, min_sep_in=0.19, fontsize=None, line_to=None, linestyle="-",
+              dry=False):
+    """Labelled tags at data x positions near the top of ax (y in axes coordinates), in as many
+    lanes as needed so that two tags in one lane are at least min_sep_in inches apart. items:
+    (x, label[, linestyle]). A hairline is drawn from each tag down to line_to (axes y) when given.
+    With dry=True nothing is drawn. Returns the number of lanes used (set xlim first)."""
+    from matplotlib.transforms import blended_transform_factory
+    fig = ax.figure
+    fig.canvas.draw()
+    tr = blended_transform_factory(ax.transData, ax.transAxes)
+    ends = []
+    fs = fontsize or FS
+    for x, lab, *rest in sorted(items, key=lambda it: it[0]):
+        ls = rest[0] if rest else linestyle
+        xp = ax.transData.transform((x, 0))[0]
+        lane = next((i for i, e in enumerate(ends) if xp - e >= min_sep_in * fig.dpi), len(ends))
+        if lane == len(ends):
+            ends.append(xp)
+        else:
+            ends[lane] = xp
+        y = y0 - lane * dy
+        if dry:
+            continue
+        if line_to is not None:
+            ax.plot([x, x], [line_to, y], transform=tr, color=MUTED, lw=0.5, ls=ls, zorder=1, clip_on=False)
+        ax.text(x, y, lab, transform=tr, ha="center", va="center", fontsize=fs - (0.5 if len(lab) > 1 else 0),
+                color=INK, zorder=6, clip_on=False,
+                bbox=dict(boxstyle="circle,pad=0.16" if len(lab) == 1 else "round,pad=0.16", fc=WHITE, ec=MUTED,
+                          lw=0.5))
+    return len(ends)

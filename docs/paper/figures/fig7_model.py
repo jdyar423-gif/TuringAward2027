@@ -2,9 +2,10 @@
 
 Facts drawn from: docs/SPEC_MODEL_TRAIN.md 4.1-4.3 (forward pass, attention, parameter tree),
 docs/V9.md 4-5 (token pages), bes/model/model.py (init_params, block, forward), bes/config.py
-(ModelCfg defaults, CAND_SLOTS = 16, REG_FIELDS), and the numbers of paper/data/ledger_leaves.csv and
-ledger_final_export.csv (stored / read per token, standard reading of docs/ACCOUNTING.md).
-Writes F7_model.svg/png.
+(ModelCfg defaults, CAND_SLOTS = 16, REG_FIELDS). Every count printed is read from
+paper/data/ledger_leaves.csv (the parameter leaves of both checkpoints' manifests, with the read rules
+of bes/budget.py) and ledger_final_export.csv (final's library and index, from its export's
+accounting): stored / read per token, standard reading of docs/ACCOUNTING.md. Writes F7_model.svg/png.
 """
 import os
 import sys
@@ -88,7 +89,7 @@ def main():
                                 ec=st.INK2, lw=0.8, zorder=1))
     ax.text(xC + 0.08, 3.48, "shared looped core: 2 blocks applied 8 times (r = 1 … 8)", ha="left", va="top",
             fontsize=FS, fontweight="semibold")
-    ax.text(xC + 0.08, 3.34, f"{core[0]:,} / all (norms, lanes, sink, critic: {small[0]:,} / all)", ha="left",
+    ax.text(xC + 0.08, 3.34, f"{core[0]:,} / all (attention and feed-forward matrices)", ha="left",
             va="top", fontsize=FS, color=st.INK2)
     ax.text(xC + 0.08, 3.17, "u = Σₙ αᵣₙ · laneₙ", ha="left", va="top", fontsize=FS, color=st.INK)
     bx, bw = xC + 0.08, wC - 0.36
@@ -102,9 +103,9 @@ def main():
                                     boxstyle="round,pad=0.0,rounding_size=0.04", fc=ORANGE_FILL, ec=st.V9, lw=0.7,
                                     zorder=3))
         ax.text(bx + 0.09, y + 0.30, "v9: attention output × (1 + gain of x) before Wₒ;",
-                ha="left", va="top", fontsize=FS - 0.4, color=st.INK, zorder=4)
+                ha="left", va="top", fontsize=FS, color=st.INK, zorder=4)
         ax.text(bx + 0.09, y + 0.18, "+ 8 private ReLU² neurons of x in 192 dims",
-                ha="left", va="top", fontsize=FS - 0.4, color=st.INK, zorder=4)
+                ha="left", va="top", fontsize=FS, color=st.INK, zorder=4)
 
     block(2.08, "block 1 (+ value embedding of loop r)")
     block(1.04, "block 2")
@@ -139,9 +140,8 @@ def main():
 
     ax.text(0.08, 0.30, f"Totals: final {tot_f:,} stored, {read_f:,} read per token (with the worst-case retrieval);"
             f" v9 {tot_v:,} stored, {read_v:,} read per token.", ha="left", va="top", fontsize=FS, color=st.INK)
-    ax.text(0.08, 0.14, "Default decoding (both): 6 particles steered by exact potentials, one chosen by a satisficing "
-            "rule; the setting used in the evaluation is chosen after training [TBD].", ha="left", va="top",
-            fontsize=FS, color=st.INK2)
+    ax.text(0.08, 0.14, f"Counted in both totals, not drawn: {C.small_group(L)}, {small[0]:,} / all.", ha="left",
+            va="top", fontsize=FS, color=st.INK2)
     st.save(fig, "F7_model")
     print("core", core, "head", head, "emb", emb, "ve", ve, "tables", tables, "small", small, "gain", gain,
           "page", page, "pages tables", pages_tab, "proj", pages_proj, "lib", lib_total, lib_read)

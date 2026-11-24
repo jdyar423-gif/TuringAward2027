@@ -218,11 +218,14 @@ U = 0 and G = 0, so Π_i = 0 and the gain multiplies by 1, exactly (Section 6.2)
 ![Figure 1](figures/F7_model.svg)
 
 **Figure 1.** BES-100M-A20M at one token position, with stored numbers / numbers read per generated
-token (standard reading) for each part. Gray: shared by both configurations; blue: `final` only (the
-written library); orange: `v9` only (attention-output gains and private token neurons in each block).
-The looped core applies two weight-shared blocks eight times; the output law adds the masses of up to
-16 candidate next tokens to the network's distribution and renormalises in closed form. A schematic,
-not a data figure.
+token (standard reading) for each part, read from the two checkpoints' manifests and `final`'s export
+accounting (`data/ledger_leaves.csv`, `data/ledger_final_export.csv`), as in Table 1. Gray: shared by
+both configurations; blue: `final` only (the written library); orange: `v9` only (attention-output
+gains and private token neurons in each block). The 15 small dense leaves (306,776 numbers: norm
+gains, attention scalars, the sink, lane weights, the projections of the candidate tape and of the trust
+features, the critic) are counted in both totals and not drawn. The looped core applies two
+weight-shared blocks eight times; the output law adds the masses of up to 16 candidate next tokens to
+the network's distribution and renormalises in closed form. A schematic: only the counts are data.
 
 ### 4.2 The ledgers and their audit
 
@@ -304,10 +307,14 @@ tokens and 1.219× at 2,048 than the library's splash kernel [61] (Figure 2).
 
 **Figure 2.** One value-and-gradient of a piece of 4,096 tokens (left 4 × 1,024, right 2 × 2,048) of
 `configs/final.py` on the chip, eight kernel configurations measured in one pause (24 November
-07:44–07:52). Dots: median of 30 timings; whiskers: minimum and maximum; right: speed-up against the
-configured splash kernel. Blue: the configuration adopted at step 22,613. `save`: forward kernel
-outputs kept through recomputation; `relu2`, `ce`: hand-written backward passes of ReLU² and of the
-cross-entropy head; `io`: splash accumulators in on-chip memory.
+07:44–07:52; `wf/chip_kernels_0745.txt`). Dots: median of 30 timings. The 30 timings of a dot span
+0.09–0.47 ms from minimum to maximum, less than the width of a dot, so the ranges are not drawn; they
+overlap for the adopted configuration and the same with `ce` (both lengths) and, at 2,048 tokens, for
+one-tile + save against both of these, for splash + save against one-tile and for the configured splash
+kernel against splash + io: those orderings are not resolved by the measurement. Vertical line: median
+of the configured splash kernel; right: speed-up against it. Blue, ringed: the configuration adopted at
+step 22,613. `save`: forward kernel outputs kept through recomputation; `relu2`, `ce`: hand-written
+backward passes of ReLU² and of the cross-entropy head; `io`: splash accumulators in on-chip memory.
 
 **Equality, stated honestly.** On the chip, with freshly initialised parameters and a synthetic batch,
 the adopted kernel's loss differed from the configured kernel's by at most 9.5 × 10⁻⁷; its gradients
@@ -343,12 +350,36 @@ live rate rose 17.2%, from 240,143 (n = 32, steps 21,050–22,600) to 281,387 (n
 22,650–25,250). The live rate is about 5% below the synthetic one; the trainer's main thread used
 2.9% of a core, so the host is not the limit (`docs/CHANGES.md` §19.6).
 
-![Figure 3](figures/F2_throughput.svg)
+![Figure 3](figures/F9_waterfall.svg)
 
-**Figure 3.** Training throughput of run main16 against UTC time on the three runtimes (axis broken
-where no runtime was held). Lines: the rate achieved between consecutive step records; diamonds:
-start-up benchmarks; light bands: TPU held but not training; dark bands: no TPU. Numbers on the lines:
-median of each stretch in 10³ tokens/s (achieved-rate medians, within 0.1% of Table 2's).
+**Figure 3.** Training throughput by cause (Table 2), the changes in the order they happened. Upper
+part, before run main16 (runtime 1, 32-row micro-batches, training runs discarded): start-up benchmarks
+(hollow bars) and single log lines of training (dots; the reference row's two dots are the two monitor
+readings on disk, 116,718 and 115,394 tokens/s, drawn one above the other). Lower part, run main16: each
+bar spans the live rate before and after one change, and the first bar starts at zero. The live rate is
+the median, over the step records (every 50th step) in the window printed under the stage (n records,
+first and last step, UTC), of the rate the trainer logs with each record: 262,144 tokens ÷ its running
+average of the time per step (weight 0.2 on the newest step; time the trainer books to checkpoint
+writes is not counted). Records to step 37,650 (24 November, 13:05:57 UTC), the newest record of the
+paper's live numbers; the 2,048-token stage was still running then. Diamonds: Table 2's synthetic or
+start-up-benchmark value of the same stage (`final`'s synthetic step timed with the `ce` backward on).
+The change from 32 to 16 rows per micro-batch falls between the two parts (benchmark against live
+rate). A bar is a before-and-after difference of medians, not the effect of one change alone: the step
+from runtime 2 to runtime 3 changed no code, and the graft changed the configuration.
+
+![Figure 4](figures/F2_throughput.svg)
+
+**Figure 4.** Training throughput against UTC time on the three runtimes (axis broken where no runtime
+was held). Runtime 1 (23 November) holds runs before run main16, all discarded: start-up benchmarks
+(diamonds) of `final` before and after the glue rewrite and of `v9` before it (orange), and single log
+lines of `final`'s training (dots). Runtimes 2 and 3, run main16: lines, the rate achieved between
+consecutive step records (tokens ÷ wall time, checkpoint writes included); numbers, the live rate of
+each stretch in 10³ tokens/s with its number of step records n (Table 2, Figure 3); in runtime 2, the
+start-up benchmark (diamond) and the first log line (dot). Light gray bands: TPU held but not training;
+hatched: no TPU. Tags: restore times of the restarts of Table C2; P1 (dashed): rows of 2,048 tokens from
+p = 0.67, without a stop. Records to step 37,650 (24 November, 13:05:57 UTC), the newest record of the
+paper's live numbers. A change of level at a tag is a before-and-after difference, not the effect of
+that change alone.
 
 ### 5.3 The cost of the pages: an intervention series
 
@@ -384,14 +415,19 @@ reliable where it matters most. Before the core was rewritten, `v9` already cost
 step than `final` (88–92 against 112–117 thousand tokens/s on 23 November); at the switch it cost
 0.55 s more: as the core became faster, the pages did not.
 
-![Figure 4](figures/F4_v9cost.svg)
+![Figure 5](figures/F4_v9cost.svg)
 
-**Figure 4.** One accumulation step of 262,144 tokens on a synthetic batch, timed on the chip, by
+**Figure 5.** One accumulation step of 262,144 tokens on a synthetic batch, timed on the chip, by
 configuration, table-gradient mode and piece size; ratios against `final`'s fastest step of the same
-length. Black ticks: the run's own median step time (262,144 ÷ achieved rate). `final` was timed with
-the hand-written cross-entropy backward on, which the run does not use (0.177 ms slower per piece at
-1,024 tokens). `v9` at the switch (09:45–09:58) and with the three switches added one by one
-(10:53–10:56).
+length. Each bar is one timing, the mean of a few whole steps run back to back after a warm call
+(`scripts/tpu_kernels.py`, 2 by default; the count used was not recorded), so no spread can be shown;
+`final` was timed at 07:44–07:52, `v9` at the switch (09:45–09:58) and with the three switches added one
+by one (10:53–10:56). Black ticks: 262,144 ÷ the live rate of the run, with its number of step records
+n: Table 3's windows (`final` steps 25,300–29,700; `v9` before and after the switches) and, at 2,048
+tokens, steps 36,900–37,650 (to 13:05:57 UTC on 24 November, the newest record of the paper's live
+numbers), where `v9` runs with the switches, which were not timed there on a synthetic batch, so only
+its live tick is shown. `final` was timed with the hand-written cross-entropy backward on, which the run
+does not use (0.177 ms slower per piece at 1,024 tokens).
 
 ### 5.4 Which count predicts the step time?
 
@@ -421,6 +457,21 @@ through all six gives 492.5 ms plus 0.73 ms per GB (a marginal 1.37 TB/s), with 
 +118 ms. This is consistent with bytes moved, not parameters, setting the step time in this
 implementation, on a test too small to establish it; the attention kernels, invisible to the compiler's
 model, and the half-second intercept are explained by no count.
+
+![Figure 6](figures/F10_costmodel.svg)
+
+**Figure 6.** The compiler's estimates against the chip. (a) The six configurations with a compiled
+program and a whole-step time on the chip (Table 4), one row each, sorted by the measured step (bar; one
+timing each, as in Figure 5). Markers: each static count's leave-one-out prediction of the step (a
+straight line fitted to the other five configurations), joined to the bar by its error; the key gives
+the mean and the largest absolute error of each count. FLOP and reads per token take only two values
+here and give the same predictions: for a `v9` configuration the mean of the other four `v9` steps; for
+`final` the fit is undefined and no marker is drawn. (b) The seven changes with a compile-only
+prediction and a chip measurement (Table 5): predicted against measured change of the step, absolute
+values on logarithmic axes; triangles up: the change made the step slower, down: faster; the number
+after each label: predicted ÷ measured; the sign was right for all seven. Six configurations, five of
+them layout variants of one model, chosen after the measurements: the figure shows how the counts did
+here, not that bytes moved predict step time in general.
 
 Differences are harder than totals. For every change with both a compile-only prediction and a chip
 measurement, Table 5 compares the two: the cost model had the sign right every time and the size wrong
@@ -546,14 +597,16 @@ these rates, the run will have seen about 1.36 × 10¹⁰ tokens at 18:33:49, ab
 than `final` would have seen without the switch, by a projection in which `final`'s own 2,048-token
 rate is a scaled estimate [TBD: tokens trained, from the trainer's ledger at 18:34 UTC].
 
-![Figure 5](figures/F6_graft.svg)
+![Figure 7](figures/F6_graft.svg)
 
-**Figure 5.** Stored numbers of the two configurations at step 29,722, to scale. Blue: the 59
-parameter leaves both share (34,531,720 numbers), carried with their optimiser slots; gray: `final`'s
-written library and index (63,768,391), which `v9` does not have; orange: `v9`'s five new leaves
-(63,504,384) at initialisation (`gain/o` and `page/val` zero, `page/key` normal, `page/pin` and
-`page/pout` uniform), with fresh optimiser slots. Right: what else was carried, what is new, and the
-check (Table 6).
+**Figure 7.** Stored numbers of the two configurations at step 29,722, to scale, from both checkpoints'
+manifests and `final`'s export accounting (`data/ledger_leaves.csv`, `data/ledger_final_export.csv`).
+Colours as in Figure 1. Gray: the 59 parameter leaves both share (34,531,720 numbers), carried with
+their optimiser slots; blue: `final`'s written library and index (63,768,391), which `v9` does not have;
+orange: `v9`'s five new leaves (63,504,384) at initialisation (`gain/o` and `page/val` zero, `page/key`
+normal, `page/pin` and `page/pout` uniform), with fresh optimiser slots. Right: what else was carried,
+what is new, and the checks (Table 6; gradients, Section 6.4), each read from the run's logs and
+manifests or the check outputs (`data/graft_facts.csv`).
 
 ### 6.4 Verification
 
@@ -632,14 +685,19 @@ input tokens (0.066 nats on the rarest quarter of the held-out positions, 1–16
 token, against 0.032 on the most frequent quarter, 497–4,425), while the improvement since the graft is
 the same in every quarter (−0.049 to −0.051).
 
-![Figure 6](figures/F8_heldout.svg)
+![Figure 8](figures/F8_heldout.svg)
 
-**Figure 6.** Held-out loss of the checkpoints around the graft, as evaluated on the runtime, against
-training minutes of the kept trajectory (web 64 rows, chat 64 rows and proxy 12 rows, 140 rows and
-136,974 weighted tokens in all). The gray line is the least-squares line through `final`'s three
-points, extended past the graft: an extrapolation with one residual degree of freedom, whose 95%
-prediction interval at 592.5 minutes is ±0.025 nats, wider than the gap it seems to show. Table 7 gives
-the comparisons with their intervals.
+**Figure 8.** Held-out loss of the checkpoints around the graft on the comparison set of Table 7 (64 web
+and 64 chat rows of 1,024 tokens, 125,880 weighted tokens; float32, dense attention), against training
+minutes of the kept trajectory. The 12 proxy rows (11,094 tokens; they hold user turns of the test
+prompts) are left out; with them the runtime evaluated 140 rows, 136,974 weighted tokens. Filled points:
+the runtime's evaluations (`scripts/midrun_eval.py`); rings: checkpoints evaluated again on the CPU of the
+development container, which agree to 10⁻⁸; open diamonds: `v9` with its pages (token neurons and gains)
+switched off at evaluation. Gray line: the least-squares line through `final`'s three points, extended
+(Table 7, line in minutes); band: its 95% prediction interval with one residual degree of freedom
+(t = 12.71). The arrow gives `v9`'s distance from the line at the newest checkpoint, rounded. Up to step
+35,294 every `v9` point lies inside the band: the figure does not show that `v9` is ahead of a continued
+`final`, and the data stream also changed at the graft.
 
 ### 6.6 What one run cannot show
 
@@ -739,6 +797,17 @@ mostly on instruction-following (9 / 0 / 3) and two-turn prompts (7 / 0 / 8), an
 maths pair (0 / 5 / 4). The exact scores are consistent with this: MobileLLM-R1.5's replies ran into the
 token limit in 42 of 75 turns, and both opponents answer more maths prompts correctly. Our replies were
 shorter than the opponent's in 38 to 45 of the 60 pairs.
+
+![Figure 9](figures/F11_blind.svg)
+
+**Figure 9.** Blind pairwise comparisons on the first 60 development prompts (Table 8): `final` at step
+25,280 read once per pair, `v9` at step 31,912 read twice on exchanged sides (a side wins only when both
+readings choose it; ties include "both bad" and readings that disagree). Bars: pairs our reply won, ties
+or "both bad", and pairs the opponent won; dots and whiskers: the score (wins + ties/2)/n with its 95%
+Wilson interval; vertical line: 0.5. Readers: Opus 5.5 agents, not the pre-registered judge (Section
+7.2). With 60 pairs a score's 95% interval spans about ±12 points; the two studies differ in checkpoint,
+configuration and number of readings, so the change between them is not an effect of `v9`. The
+test-split comparison is [TBD: after the evaluation of 24–25 November 2026].
 
 On held-out web text from our own training distribution (ClimbMix, 62% of `final`'s training tokens
 over its logged loader blocks), our model needs 1.00 bits per byte and the opponents 1.57 and 1.50,
@@ -1139,11 +1208,19 @@ text and 0.029 on chat at step 29,722.
 ![Figure C1](figures/F1_loss.svg)
 
 **Figure C1.** Training loss of run main16 against training tokens: (a) the whole run on logarithmic
-tokens; (b) from 10⁹ tokens on, linear. Dots: the loss of one optimiser step, logged every 50th step;
-lines: a Gaussian kernel average over log₁₀(tokens) (σ = 0.03 decades), separately for `final` (blue)
-and `v9` (orange). Near the graft the `v9` line is a one-sided average that already includes later,
-lower points; it must not be read as a level change across the graft, where the data stream changed.
-Vertical lines: the events of Table C2. (c, d) The learning-rate factor and progress p as logged.
+tokens; (b) from 10⁹ tokens on, linear. Dots: the loss of one optimiser step (the mean over its 262,144
+tokens), logged every 50th step: 594 records of `final` (steps 50–29,700) and 159 of `v9` (steps
+29,750–37,650; records to 13:05:57 UTC on 24 November, the newest record of the paper's live numbers).
+Lines: a centred average over log₁₀(tokens), computed separately within each stretch between restarts
+and phase changes: each record is weighted by a Gaussian (σ = 0.03 decades, cut at 3σ) times 1/tokens,
+so that the window is centred on the record (to within 0.001 decades), and near the end of a stretch
+the window shrinks symmetrically instead of becoming one-sided; the line is drawn where it averages at
+least 15 records (the 16 records at 2,048 tokens are too few for a line). A step at a restart would show
+as a break between two lines; near the ends of a stretch the line rests on fewer records and wanders by
+about ±0.01 nats. Vertical lines: the restarts of Table C2 (solid; M1, M2: measurement pauses) and the
+switch to rows of 2,048 tokens at p = 0.67 (P1, dashed). (c, d) The learning-rate factor and progress p
+as logged. The loss mixes 22 sources whose shares change with p and the data rules, and the stream
+changed at the graft: levels on either side of a restart do not compare configurations.
 
 **C.4 After training.** The 118 minutes after training are planned as follows (`docs/CHANGES.md` §19.5;
 `bes/train/prefopt.py`). Sampling (3 minutes) adds a few pairs of the model's own replies. Preference
@@ -1247,10 +1324,13 @@ scanned responses open with "As an AI …").
 **Figure D1.** (a) Share of each source's assistant turns whose opening (first 44 tokens) matches a stock
 pattern, from the scan of the tokenised sources (24 November 08:20; all segments of small sources,
 40,000 sampled otherwise); "Sure …" is a control that no rule removes; a turn can match several
-patterns. (b) Share of each chat source's conversations that the stock-refusal rule (gray, live since
-step 6,647) and, in addition, the deflection rule (violet, live since step 25,280) leave out, measured
-with the loader's functions on 30,000 sampled conversations per source (2,260 for smoltalk_everyday,
-all it has). Black ticks: share of reads the live loader actually skipped for either rule since 08:36.
+patterns. (b) Share of each chat source's conversations that the stock-refusal rule (light gray, live
+since step 6,647) and, in addition, the deflection rule (violet, live since step 25,280) leave out,
+measured with the loader's functions on 30,000 sampled conversations per source (2,260 for
+smoltalk_everyday, all it has). Black ticks and the column on the right: share of reads the live loader
+actually skipped for either rule from step 25,280 to step 37,650 (13:05:57 UTC on 24 November, the
+newest record of the paper's live numbers; `final` and `v9` together), with the number of reads. In both
+panels "<0.1" means above 0 and below 0.05%, and "0" means none.
 
 ## Appendix E. Decoding
 

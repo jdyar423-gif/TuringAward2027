@@ -17,7 +17,7 @@ utc,config,program,what,seq_len,tok_per_s,step_s,source
 2026-11-23 04:43:43,final,after the glue rewrite,start-up benchmark splash-remat1-ms32-take,2048,185077,1.416,/home/user/turingaward2027/docs/tpu_profile/final_b.run.log
 2026-11-23 04:45:11,final,after the glue rewrite,start-up benchmark xla-remat1-ms32-take,1024,104570,2.507,/home/user/turingaward2027/docs/tpu_profile/final_b.run.log
 2026-11-23 04:48:32,final,after the glue rewrite,"training, step 50",1024,204699,,/home/user/turingaward2027/docs/tpu_profile/final_b.run.log
-2026-11-23 17:40:25,final,after the glue rewrite,start-up benchmark splash-remat1-ms16-take,1024,216681,1.21,paper/data/_src/final/run.log
-2026-11-23 17:41:37,final,after the glue rewrite,start-up benchmark splash-remat1-ms16-take,2048,192912,1.359,paper/data/_src/final/run.log
-2026-11-23 17:44:02,final,after the glue rewrite,start-up benchmark splash-remat0-ms8-take,1024,188907,1.388,paper/data/_src/final/run.log
-2026-11-23 17:47:37,final,after the glue rewrite,"training, step 50",1024,220082,,/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/data/_src/final/run/../run.log
+2026-11-23 17:40:25,final,after the glue rewrite,start-up benchmark splash-remat1-ms16-take,1024,216681,1.21,data/_src/final/run.log
+2026-11-23 17:41:37,final,after the glue rewrite,start-up benchmark splash-remat1-ms16-take,2048,192912,1.359,data/_src/final/run.log
+2026-11-23 17:44:02,final,after the glue rewrite,start-up benchmark splash-remat0-ms8-take,1024,188907,1.388,data/_src/final/run.log
+2026-11-23 17:47:37,final,after the glue rewrite,"training, step 50",1024,220082,,data/_src/final/run.log

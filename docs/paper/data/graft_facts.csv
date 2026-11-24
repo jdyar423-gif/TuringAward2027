@@ -1,0 +1,9 @@
+kind,step,where,check_tokens,source_loss,grafted_loss,difference,config_hash,carried_leaves,carried_numbers,new_numbers,batch,rows,shared_bit_identical,new_exactly_zero,new_nonzero_max_abs,guard_ema,guard_count,p,tokens,checkpoint,seed,reads_cap,reads_cap_before,horizon_tokens,fast_at_graft,source
+check,26890,development container (snapshot),2 x 256,11.2808027,11.2808027,0.0,f29bfeb3ebf353a8,59,34531720,63504384,,,,,,,,,,,,,,,,/tmp/claude-0/-home-user/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/graft_test.log
+check,28501,"runtime host CPU, next to the trainer",2 x 256,11.3348608,11.3348608,0.0,f29bfeb3ebf353a8,59,34531720,63504384,,,,,,,,,,,,,,,,/tmp/claude-0/-home-user/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/graft_dry_out.txt
+check,29722,development container (re-run at HEAD 8a86bcb),2 x 256,11.3726320,11.3726320,0.0,f29bfeb3ebf353a8,59,34531720,63504384,,,,,,,,,,,,,,,,paper/review1_work/graftcheck/graft_check_29722.log
+gradient,29722,"development container, CPU float32",,2.9320383,2.9320383,0.0,,,,,web,2,59 of 59,page/key page/pin page/pout,gain/o=1.00e-03 page/val=7.37e-03,,,,,,,,,,,lead2_work/graft_grad.json
+gradient,29722,"development container, CPU float32",,1.5048378,1.5048378,0.0,,,,,chat,2,59 of 59,page/key page/pin page/pout,gain/o=1.21e-03 page/val=9.03e-03,,,,,,,,,,,lead2_work/graft_grad.json
+guard,29722,checkpoint manifest meta.guard,,,,,,,,,,,,,,2.4784,29722,,,,,,,,,data/_src/final/run/train/ckpt/ckpt-000026-step-000029722/manifest.json
+manifest,29722,live run manifest: 'graft' record; run.seed from 'overrides',,,,,,,34531720,63504384,,,,,,,,0.504884,7791443968,ckpt-000026-step-000029722,1,,,,,data/_src/live/run/manifest.json
+loader,29722,"run.log: the cap before the graft (first loader line), the first loader block after it, and the speed switches of the start that continued the graft",,,,,,,,,,,,,,,,,,,,3.96093,8,7.45e+09,kernel=onetile:save relu2=1 ce=0,data/_src/live/run.log

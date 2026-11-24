@@ -2,7 +2,9 @@
 
 Data: paper/data/chip_kernels_0745.csv (make_data.py from wf/chip_kernels_0745.txt): one
 value_and_grad of a piece of 4,096 tokens (4 x 1024 or 2 x 2048), configs/final.py, median of 30
-timings, with their minimum and maximum. Writes F3_kernels.svg/png.
+timings. The minimum and maximum of the 30 timings (0.09-0.47 ms apart) are narrower than a dot at
+this size, so they are not drawn; the script prints them and the configurations whose ranges overlap.
+Writes F3_kernels.svg/png.
 """
 import os
 import sys
@@ -31,7 +33,7 @@ def main():
     rows = C.read("chip_kernels_0745.csv")
     by = {(r["kernel"], int(r["t"])): r for r in rows}
     fig, axes = plt.subplots(1, 2, figsize=(st.COL_W, 2.35), sharey=True,
-                             gridspec_kw=dict(left=0.395, right=0.985, top=0.86, bottom=0.17, wspace=0.16))
+                             gridspec_kw=dict(left=0.41, right=0.975, top=0.86, bottom=0.17, wspace=0.12))
     n = len(ORDER)
     for ax, t in zip(axes, (1024, 2048)):
         ref = float(by[("", t)]["ms"])
@@ -39,16 +41,18 @@ def main():
         for i, (k, lab) in enumerate(ORDER):
             r = by[(k, t)]
             y = n - 1 - i
-            ms, lo, hi = float(r["ms"]), float(r["min"]), float(r["max"])
+            ms = float(r["ms"])
             col = st.FINAL if k == ADOPTED else (st.INK if k == "" else st.MUTED)
-            ax.plot([lo, hi], [y, y], color=col, lw=0.9, zorder=2, solid_capstyle="butt")
-            ax.plot([ms], [y], ls="", marker="o", ms=4.2, mfc=col, mec=st.WHITE, mew=0.8, zorder=3)
+            if k == ADOPTED:                    # larger, with a dark ring: stands out in grey as well
+                ax.plot([ms], [y], ls="", marker="o", ms=5.6, mfc=col, mec=st.INK, mew=0.9, zorder=3)
+            else:
+                ax.plot([ms], [y], ls="", marker="o", ms=4.2, mfc=col, mec=st.WHITE, mew=0.8, zorder=3)
             sp = ref / ms
             txt = "ref." if k == "" else f"×{sp:.2f}"
-            ax.text(20.75, y, txt, va="center", ha="left", fontsize=st.FS - 0.5,
+            ax.text(20.55, y, txt, va="center", ha="left", fontsize=st.FS - 0.5,
                     color=st.INK if k == ADOPTED else st.INK2,
                     fontweight="semibold" if k == ADOPTED else "normal")
-        ax.set_xlim(14.0, 22.4)
+        ax.set_xlim(14.0, 23.0)
         ax.set_ylim(-0.6, n - 0.4)
         ax.set_xticks([14, 16, 18, 20])
         st.grid_x(ax)
@@ -63,6 +67,15 @@ def main():
     axes[1].tick_params(axis="y", length=0)
     fig.supxlabel("Milliseconds per piece of 4,096 tokens (value and gradient)", fontsize=st.FS_LABEL, y=0.02)
     st.save(fig, "F3_kernels")
+    widths = [float(r["max"]) - float(r["min"]) for r in rows]
+    print(f"range (max - min) of the 30 timings: {min(widths):.3f} to {max(widths):.3f} ms; n = "
+          f"{sorted({int(r['n']) for r in rows})}")
+    for t in (1024, 2048):
+        for i, (k1, l1) in enumerate(ORDER):
+            for k2, l2 in ORDER[i + 1:]:
+                a, b = by[(k1, t)], by[(k2, t)]
+                if float(a["min"]) <= float(b["max"]) and float(b["min"]) <= float(a["max"]):
+                    print(f"  T={t}: ranges overlap: {l1} [{a['min']}, {a['max']}] and {l2} [{b['min']}, {b['max']}]")
     for k, lab in ORDER:
         a, b = by[(k, 1024)], by[(k, 2048)]
         print(f"{lab:32s} 1024: {float(a['ms']):7.3f} ms [{a['min']}-{a['max']}] x{float(by[('',1024)]['ms'])/float(a['ms']):.3f}"

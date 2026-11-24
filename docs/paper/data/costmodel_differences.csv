@@ -1,0 +1,8 @@
+change,predicted_ms,measured_ms,ratio,sign_agrees
+"v9 - final (take, 64x4x1024)",623.7,548.6,1.14,1
+sorted - take (v9),129.7,355.9,0.36,1
+"8-row - 4-row pieces (v9, take)",49.9,58.4,0.85,1
+"8-row - 4-row pieces (final; chip: splash kernels, 03:09)",53.7,18.2,2.95,1
+flat (v9),-45.9,-26.7,1.72,1
+"rows (v9, on flat)",-118.9,-111.2,1.07,1
+"tokn (v9; predicted on flat, measured on flat+rows)",-63.6,-8.1,7.85,1

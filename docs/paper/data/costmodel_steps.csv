@@ -1,0 +1,7 @@
+config,measured_ms,chip_source,est_mcycles_per_step,hbm_gb_per_step,gflop_per_token,reads_per_token,loo_bytes_ms,loo_bytes_err,json_loo_bytes_err,loo_cycles_ms,loo_cycles_err,json_loo_cycles_err,loo_flop_ms,loo_flop_err,loo_flop_note,json_loo_flop_err,loo_reads_ms,loo_reads_err,loo_reads_note,json_loo_reads_err
+final take 64x4x1024,884.5,chip_kernels_0745.txt (ce on),1944.7,514.944,0.781,19033736,802.43,-0.0928,-0.093,531.08,-0.3996,-0.4,,,undefined: the other five have the same value,0.664,,,undefined: the other five have the same value,
+v9 take 64x4x1024,1433.1,v9_measA.txt,3141.8,1276.8,0.809,19631240,1424.93,-0.0057,-0.006,1513.3,0.056,0.056,1495.52,0.0436,,0.044,1495.53,0.0436,,0.044
+v9 take 32x8x1024,1491.5,v9_measA.txt,3237.6,1526.688,0.809,19631240,1657.41,0.1112,0.111,1567.36,0.0509,0.051,1480.92,-0.0071,,-0.007,1480.93,-0.0071,,-0.007
+v9 sorted 64x4x1024,1789.0,v9_measB_sorted.txt,3390.7,1622.528,0.809,19631240,1611.66,-0.0991,-0.099,1558.51,-0.1288,-0.129,1406.55,-0.2138,,-0.214,1406.55,-0.2138,,-0.214
+v9 take+flat 64x4x1024,1406.4,v9_measD.txt,3053.6,1236.736,0.809,19631240,1395.14,-0.008,-0.008,1458.57,0.0371,0.037,1502.2,0.0681,,0.068,1502.2,0.0681,,0.068
+v9 take+flat+rows 64x4x1024,1295.2,v9_measD.txt,2825.6,1129.984,0.809,19631240,1324.05,0.0223,0.022,1331.54,0.0281,0.028,1530.0,0.1813,,0.181,1530.0,0.1813,,0.181

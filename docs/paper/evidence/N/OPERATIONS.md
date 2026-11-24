@@ -323,6 +323,26 @@ Colab CLI: `export PATH=/root/.local/bin:$PATH GOOGLE_APPLICATION_CREDENTIALS=/r
   uploads and runs `endgame_driver.py` (40 workers). Probe on the live run directory worked
   (12:52-12:56, 4 dev prompts, export of step 36,422 in 34 s).
 
+## State at 14:20
+- Micro-graft experiment RUNNING on the runtime host since 14:12:53: separate clone
+  `/content/bes_cli/microrepo` (ef5649c + `$N/wf/micro_graft.patch`; samples downloaded there;
+  11 new tests pass there), driver `/content/bes_cli/micro_driver.py 6000000` (source
+  `$S/scripts/micro_driver.py`), 15 arms x 6M tokens (1,464 steps, 4.7 s/step each on CPUs c,c+22
+  for c=2..16), out `/content/bes_cli/micro/graft_6000000` (progress.log, <arm>.log,
+  results.tar.gz at the end). ETA 16:10. Background task bm44r4gg2 fetches into
+  `$N/micro_graft/6M`. Kill if still running at 18:20: host cell `pkill -f micro_ablate.py; pkill -f micro_driver.py`.
+  The review of the patch is still running (workflow wjuhxpzq7): a defect that changes numbers
+  means a rerun. When done: apply the patch to the repo (tests pass), commit, write the result
+  into the paper (FACTS_2.md) and CHANGES.
+- Registered judges on dev pairs done (qwen3-4b-2507 and gemma4-e4b; FACTS_2.md 13:52, 14:12).
+  Reference opponents-vs-each-other on test: Falcon 144/6/50 over MobileLLM (0.845).
+- At the end compare exports on the runtime: `bash $S/scripts/host_run.sh peek 60
+  $S/scripts/cmp_exports.py /content/runs/main16/final /content/bes_cli/testgen_trained/export
+  /content/bes_cli/testgen_prefopt/export` (same `weights16.npz` hash and decode_choice = the
+  generated replies are the official model's).
+- `paper_sync.sh` also copies figures/data: do not run it while the figures workflow
+  (wksb41gda) is writing (it copied half-written CSVs at 13:55; reverted before the commit).
+
 ## 巡檢清單 (what a check-in does)
 1. `cut -d' ' -f1 /proc/uptime` (small = the container slept: everything below must be restarted);
    `pgrep -af "alloc_loop_resume|presence.sh|watch_loop|budget_guard|anchor"`;

@@ -1,21 +1,21 @@
-source,measured_utc,config,table_grad,kernel,a,rows,t,ms,tok_per_s,loss,compile_s
-wf/chip_kernels_0745.txt,2026-11-24 07:44-07:52,final,take,onetile:save+relu2+ce,64,4,1024,884.514,296370.7,9.014898300170898,15.6
-wf/chip_kernels_0745.txt,2026-11-24 07:44-07:52,final,take,onetile:save+relu2+ce,128,2,1024,958.9072,273377.9,9.013264656066895,11.9
-wf/chip_kernels_0745.txt,2026-11-24 07:44-07:52,final,take,onetile:save+relu2+ce,64,2,2048,983.9059,266432.0,9.014256477355957,16.3
-wf/chip_kernels_0745.txt,2026-11-24 07:44-07:52,final,take,onetile:save+relu2+ce,128,1,2048,1013.0509,258766.9,9.014813423156738,11.7
-v9_measA.txt,2026-11-24 09:45-09:58,v9,take,onetile:save+relu2,32,8,1024,1491.4576,175763.6,9.01423168182373,60.3
-v9_measA.txt,2026-11-24 09:45-09:58,v9,take,onetile:save+relu2,64,4,1024,1433.1117,182919.4,9.014899253845215,27.4
-v9_measA.txt,2026-11-24 09:45-09:58,v9,take,onetile:save+relu2,32,4,2048,1551.6176,168948.8,9.014678955078125,57.8
-v9_measA.txt,2026-11-24 09:45-09:58,v9,take,onetile:save+relu2,64,2,2048,1510.1852,173584.0,9.014256477355957,28.4
-v9_measB_sorted.txt,2026-11-24 09:45-09:58,v9,sorted,onetile:save+relu2,64,4,1024,1789.022,146529.2,9.014899253845215,27.1
-v9_measB_sorted.txt,2026-11-24 09:45-09:58,v9,sorted,onetile:save+relu2,64,2,2048,1856.4826,141204.7,9.014256477355957,28.6
-v9_measC_onehot.txt,2026-11-24 09:45-09:58,v9,onehot,onetile:save+relu2,64,4,1024,1484.7659,176555.8,9.014899253845215,22.3
-v9_measD.txt,2026-11-24 10:53-10:56,v9,take,onetile:save+relu2+flat,64,4,1024,1406.4069,186392.7,9.014899253845215,19.3
-v9_measD.txt,2026-11-24 10:53-10:56,v9,take,onetile:save+relu2+flat+rows,64,4,1024,1295.1572,202403.2,9.014899253845215,19.5
-v9_measD.txt,2026-11-24 10:53-10:56,v9,take,onetile:save+relu2+flat+rows+tokn,64,4,1024,1287.1341,203664.9,9.014898300170898,19.2
-micro_out.txt,2026-11-24 03:09-03:15,final,take,splash (configured),16,16,1024,1173.6998,223348.4,9.014657020568848,
-micro_out.txt,2026-11-24 03:09-03:15,final,take,splash (configured),32,8,1024,1081.485,242392.6,9.014283180236816,
-micro_out.txt,2026-11-24 03:09-03:15,final,take,splash (configured),64,4,1024,1063.2991,246538.4,9.014974594116211,
-micro_out.txt,2026-11-24 03:09-03:15,final,take,splash (configured),16,8,2048,1348.8193,194350.7,9.014671325683594,
-micro_out.txt,2026-11-24 03:09-03:15,final,take,splash (configured),32,4,2048,1284.2565,204121.2,9.014691352844238,
-micro_out.txt,2026-11-24 03:09-03:15,final,take,splash (configured),64,2,2048,1218.1889,215191.6,9.014287948608398,
+source,measured_utc,config,table_grad,kernel,a,rows,t,ms,tok_per_s,loss,compile_s,timing
+wf/chip_kernels_0745.txt,2026-11-24 07:44-07:52,final,take,onetile:save+relu2+ce,64,4,1024,884.514,296370.7,9.014898300170898,15.6,"mean of --step-calls whole steps run back to back after one warm call (scripts/tpu_kernels.py, default 2; the count used is not in the output file)"
+wf/chip_kernels_0745.txt,2026-11-24 07:44-07:52,final,take,onetile:save+relu2+ce,128,2,1024,958.9072,273377.9,9.013264656066895,11.9,"mean of --step-calls whole steps run back to back after one warm call (scripts/tpu_kernels.py, default 2; the count used is not in the output file)"
+wf/chip_kernels_0745.txt,2026-11-24 07:44-07:52,final,take,onetile:save+relu2+ce,64,2,2048,983.9059,266432.0,9.014256477355957,16.3,"mean of --step-calls whole steps run back to back after one warm call (scripts/tpu_kernels.py, default 2; the count used is not in the output file)"
+wf/chip_kernels_0745.txt,2026-11-24 07:44-07:52,final,take,onetile:save+relu2+ce,128,1,2048,1013.0509,258766.9,9.014813423156738,11.7,"mean of --step-calls whole steps run back to back after one warm call (scripts/tpu_kernels.py, default 2; the count used is not in the output file)"
+v9_measA.txt,2026-11-24 09:45-09:58,v9,take,onetile:save+relu2,32,8,1024,1491.4576,175763.6,9.01423168182373,60.3,"mean of --step-calls whole steps run back to back after one warm call (scripts/tpu_kernels.py, default 2; the count used is not in the output file)"
+v9_measA.txt,2026-11-24 09:45-09:58,v9,take,onetile:save+relu2,64,4,1024,1433.1117,182919.4,9.014899253845215,27.4,"mean of --step-calls whole steps run back to back after one warm call (scripts/tpu_kernels.py, default 2; the count used is not in the output file)"
+v9_measA.txt,2026-11-24 09:45-09:58,v9,take,onetile:save+relu2,32,4,2048,1551.6176,168948.8,9.014678955078125,57.8,"mean of --step-calls whole steps run back to back after one warm call (scripts/tpu_kernels.py, default 2; the count used is not in the output file)"
+v9_measA.txt,2026-11-24 09:45-09:58,v9,take,onetile:save+relu2,64,2,2048,1510.1852,173584.0,9.014256477355957,28.4,"mean of --step-calls whole steps run back to back after one warm call (scripts/tpu_kernels.py, default 2; the count used is not in the output file)"
+v9_measB_sorted.txt,2026-11-24 09:45-09:58,v9,sorted,onetile:save+relu2,64,4,1024,1789.022,146529.2,9.014899253845215,27.1,"mean of --step-calls whole steps run back to back after one warm call (scripts/tpu_kernels.py, default 2; the count used is not in the output file)"
+v9_measB_sorted.txt,2026-11-24 09:45-09:58,v9,sorted,onetile:save+relu2,64,2,2048,1856.4826,141204.7,9.014256477355957,28.6,"mean of --step-calls whole steps run back to back after one warm call (scripts/tpu_kernels.py, default 2; the count used is not in the output file)"
+v9_measC_onehot.txt,2026-11-24 09:45-09:58,v9,onehot,onetile:save+relu2,64,4,1024,1484.7659,176555.8,9.014899253845215,22.3,"mean of --step-calls whole steps run back to back after one warm call (scripts/tpu_kernels.py, default 2; the count used is not in the output file)"
+v9_measD.txt,2026-11-24 10:53-10:56,v9,take,onetile:save+relu2+flat,64,4,1024,1406.4069,186392.7,9.014899253845215,19.3,"mean of --step-calls whole steps run back to back after one warm call (scripts/tpu_kernels.py, default 2; the count used is not in the output file)"
+v9_measD.txt,2026-11-24 10:53-10:56,v9,take,onetile:save+relu2+flat+rows,64,4,1024,1295.1572,202403.2,9.014899253845215,19.5,"mean of --step-calls whole steps run back to back after one warm call (scripts/tpu_kernels.py, default 2; the count used is not in the output file)"
+v9_measD.txt,2026-11-24 10:53-10:56,v9,take,onetile:save+relu2+flat+rows+tokn,64,4,1024,1287.1341,203664.9,9.014898300170898,19.2,"mean of --step-calls whole steps run back to back after one warm call (scripts/tpu_kernels.py, default 2; the count used is not in the output file)"
+micro_out.txt,2026-11-24 03:09-03:15,final,take,splash (configured),16,16,1024,1173.6998,223348.4,9.014657020568848,,"mean of --calls whole steps run back to back after one warm call (scripts/tpu_micro.py, default 3; the count used is not in the output file)"
+micro_out.txt,2026-11-24 03:09-03:15,final,take,splash (configured),32,8,1024,1081.485,242392.6,9.014283180236816,,"mean of --calls whole steps run back to back after one warm call (scripts/tpu_micro.py, default 3; the count used is not in the output file)"
+micro_out.txt,2026-11-24 03:09-03:15,final,take,splash (configured),64,4,1024,1063.2991,246538.4,9.014974594116211,,"mean of --calls whole steps run back to back after one warm call (scripts/tpu_micro.py, default 3; the count used is not in the output file)"
+micro_out.txt,2026-11-24 03:09-03:15,final,take,splash (configured),16,8,2048,1348.8193,194350.7,9.014671325683594,,"mean of --calls whole steps run back to back after one warm call (scripts/tpu_micro.py, default 3; the count used is not in the output file)"
+micro_out.txt,2026-11-24 03:09-03:15,final,take,splash (configured),32,4,2048,1284.2565,204121.2,9.014691352844238,,"mean of --calls whole steps run back to back after one warm call (scripts/tpu_micro.py, default 3; the count used is not in the output file)"
+micro_out.txt,2026-11-24 03:09-03:15,final,take,splash (configured),64,2,2048,1218.1889,215191.6,9.014287948608398,,"mean of --calls whole steps run back to back after one warm call (scripts/tpu_micro.py, default 3; the count used is not in the output file)"

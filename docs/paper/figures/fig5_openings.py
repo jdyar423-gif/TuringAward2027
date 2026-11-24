@@ -3,11 +3,14 @@
 Data: paper/data/openings_scan.csv (openings.json: per source, share of assistant turns whose
 opening matches each pattern of the scan script), deflection_check2.csv (deflection_check2.json:
 conversations the loader's refusal and deflection functions skip, 30,000 sampled conversations per
-chat source), loader_drops_live.csv (what the live loader skipped after the rules went live).
-Writes F5_openings.svg/png.
+chat source), loader_drops_live.csv (what the live loader skipped after the rules went live, to the
+cut-off of cutoff.csv), cutoff.csv. Writes F5_openings.svg/png. Values above 0 and below 0.05% print
+as "<0.1" in both panels; "0" means none.
 """
 import os
 import sys
+from decimal import ROUND_HALF_UP, Decimal
+from fractions import Fraction
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import style as st  # noqa: E402
@@ -30,7 +33,19 @@ PATTERNS = [  # scan key, column label (the scan's regular expressions: openings
     ("need_more", "Please provide …"),
     ("sure_open", "Sure … (control)"),
 ]
-KIND_LABEL = {"chat": "chat", "rag": "retrieval", "math": "maths", "prefs": "preference\npairs"}
+KIND_LABEL = {"chat": "chat", "rag": "retrieval", "math": "maths", "prefs": "preferences"}
+
+
+def pct(x, places="0.1"):
+    """A share in % as printed: half up in decimal (0.15 prints as 0.2, not as the binary 0.1499...);
+    above 0 and below 0.05 '<0.1'; exactly 0 '0'. x: a Fraction or a decimal string/number."""
+    d = Decimal(str(x)) if not isinstance(x, Fraction) else Decimal(x.numerator) / Decimal(x.denominator)
+    if d == 0:
+        return "0"
+    if d < Decimal("0.05"):
+        return "<0.1"
+    return str(d.quantize(Decimal(places), rounding=ROUND_HALF_UP))
+REFUSAL_GREY = st.AXIS        # lighter than the violet by about 26 L*, so the two segments differ in grey
 
 
 def main():
@@ -40,11 +55,11 @@ def main():
     dc = C.read("deflection_check2.csv")
     live = C.read("loader_drops_live.csv")
 
+    cut = C.cutoff()
     fig = plt.figure(figsize=(st.FULL_W, 3.65))
-    gs = fig.add_gridspec(1, 2, width_ratios=[1.45, 1.0], left=0.16, right=0.985, top=0.80, bottom=0.12,
-                          wspace=0.66)
-    axA = fig.add_subplot(gs[0, 0])
-    axB = fig.add_subplot(gs[0, 1])
+    axA = fig.add_axes([0.16, 0.12, 0.367, 0.68])
+    axB = fig.add_axes([0.732, 0.12, 0.158, 0.68])     # narrower than (a)'s neighbour gap allows; a column of
+    #                                                     the live loader's numbers sits to its right
 
     # ------------------------------------------------------------------ (a) heatmap
     bounds = [0, 0.05, 0.5, 1, 2, 5, 10, 20, 50]
@@ -58,14 +73,10 @@ def main():
     for i in range(M.shape[0]):
         for j in range(M.shape[1]):
             v = M[i, j]
-            if v < 0.05:
-                txt = "0" if v == 0 else "<0.1"
-            elif v < 10:
-                txt = f"{v:.1f}"
-            else:
-                txt = f"{v:.0f}"
+            exact = Fraction(100 * int(op[i][f"{PATTERNS[j][0]}_turns"]), int(op[i]["turns"]))   # from the counts
+            txt = pct(exact, "0.1" if exact < 10 else "1")
             dark = v >= 5
-            axA.text(j, i, txt, ha="center", va="center", fontsize=st.FS - 1.0,
+            axA.text(j, i, txt, ha="center", va="center", fontsize=st.FS - 0.5,
                      color=st.WHITE if dark else (st.MUTED if v < 0.05 else st.INK))
     axA.set_xticks(range(len(PATTERNS)))
     axA.set_xticklabels([lab for _, lab in PATTERNS], rotation=38, ha="left", rotation_mode="anchor",
@@ -98,7 +109,7 @@ def main():
     handles = [Patch(fc=c, ec=st.GRID if c == "#ffffff" else c, lw=0.5) for c in cols]
     labs = ["< 0.05", "0.05–0.5", "0.5–1", "1–2", "2–5", "5–10", "10–20", "≥ 20"]
     axA.legend(handles, labs, loc="upper left", bbox_to_anchor=(-0.2, -0.015), ncol=8, frameon=False,
-               fontsize=st.FS - 1.0, handlelength=1.0, handletextpad=0.3, columnspacing=0.7)
+               fontsize=st.FS - 0.5, handlelength=1.0, handletextpad=0.3, columnspacing=0.7)
 
     # ------------------------------------------------------------------ (b) what the rules remove
     dc.sort(key=lambda r: float(r["refusal_pct"]) + float(r["deflection_pct"]))
@@ -112,29 +123,42 @@ def main():
             a[2] += int(r["deflection"])
     for i, r in enumerate(dc):
         ref, dfl = float(r["refusal_pct"]), float(r["deflection_pct"])
-        axB.barh(i, ref, height=0.6, color=st.MUTED, lw=0, zorder=2)
+        exact = Fraction(100 * (int(r["refusal"]) + int(r["deflection"])), int(r["conversations"]))
+        axB.barh(i, ref, height=0.6, color=REFUSAL_GREY, lw=0, zorder=2)
         axB.barh(i, dfl, left=ref, height=0.6, color=st.ACCENT, lw=0, zorder=2)
         tot = ref + dfl
-        axB.text(tot + 0.6, i, f"{tot:.1f}" if tot >= 0.05 else "0", va="center", ha="left",
-                 fontsize=st.FS - 0.5, color=st.INK)
+        txt = pct(exact)
+        if tot > 20:                                    # a long bar: its number inside, in white
+            axB.text(tot - 0.8, i, txt, va="center", ha="right", fontsize=st.FS - 0.5, color=st.WHITE, zorder=5)
+        else:
+            axB.text(tot + 0.6, i, txt, va="center", ha="left", fontsize=st.FS - 0.5, color=st.INK)
         if r["source"] in lv and lv[r["source"]][0] > 0:
             rd, rf, df = lv[r["source"]]
             x = 100 * (rf + df) / rd
             axB.plot([x, x], [i - 0.38, i + 0.38], color=st.INK, lw=1.1, zorder=4, solid_capstyle="butt")
+            lab = pct(Fraction(100 * (rf + df), rd))
+            axB.text(1.06, i, f"{lab} ({rd:,})", transform=axB.get_yaxis_transform(), va="center", ha="left",
+                     fontsize=st.FS - 0.5, color=st.INK, clip_on=False)
+        else:
+            axB.text(1.06, i, "no reads", transform=axB.get_yaxis_transform(), va="center", ha="left",
+                     fontsize=st.FS - 0.5, color=st.INK2, clip_on=False)
+    axB.text(1.06, -0.75, "live loader:\n% skipped\n(reads)", transform=axB.get_yaxis_transform(), va="top",
+             ha="left", fontsize=st.FS - 0.5, color=st.INK, fontweight="semibold", linespacing=1.05, clip_on=False)
     axB.set_yticks(range(n))
     axB.set_yticklabels([r["source"] for r in dc], fontsize=st.FS - 0.5)
     axB.tick_params(axis="y", length=0)
     axB.set_ylim(-0.6, n - 0.4)
-    axB.set_xlim(0, 36)
+    axB.set_xlim(0, 31.5)
+    axB.xaxis.set_major_locator(plt.FixedLocator([0, 10, 20, 30]))
     st.grid_x(axB)
-    axB.set_xlabel("Conversations left out (%)")
+    axB.set_xlabel("Left out (%)")
     fig.text(0.60, 0.975, "b   Chat conversations the loader leaves out (%)", fontsize=st.FS_TITLE,
              fontweight="semibold", ha="left", va="top", color=st.INK)
-    handles = [Patch(fc=st.MUTED, ec="none"), Patch(fc=st.ACCENT, ec="none"),
+    handles = [Patch(fc=REFUSAL_GREY, ec="none"), Patch(fc=st.ACCENT, ec="none"),
                Line2D([], [], color=st.INK, lw=1.1)]
-    labels = ["stock-refusal rule (from 02:31)", "deflection rule (from 08:36)",
-              "skipped by the live loader since 08:36"]
-    axB.legend(handles, labels, loc="lower left", bbox_to_anchor=(-0.55, 1.0), ncol=1, frameon=False,
+    labels = ["stock-refusal rule (from step 6,647)", "deflection rule, in addition (from step 25,280)",
+              f"skipped by the live loader, steps 25,280–{int(cut['step']):,}"]
+    axB.legend(handles, labels, loc="lower left", bbox_to_anchor=(-0.80, 1.0), ncol=1, frameon=False,
                fontsize=st.FS - 0.5, handlelength=1.3, handletextpad=0.4, labelspacing=0.3)
     st.save(fig, "F5_openings")
     for r in dc:

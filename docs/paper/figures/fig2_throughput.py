@@ -1,8 +1,12 @@
 """F2: training throughput against wall-clock time (UTC), three runtimes on one time scale.
 
 Data: paper/data/train_steps.csv (achieved rates of run main16 between consecutive step records),
-throughput_log_points.csv (runtime 1 and start-up benchmarks), interventions.csv, run_events.csv,
-tpu_intervals.csv (make_data.py). Writes F2_throughput.* and paper/data/f2_segments.csv.
+throughput_stages.csv (the live rate of each stretch, Table 2's definition, with n), throughput_log_points.csv
+(runtime 1 and start-up benchmarks), interventions.csv, run_events.csv, tpu_intervals.csv, cutoff.csv
+(all written by make_data.py). Writes F2_throughput.svg/png.
+
+Grey print: "TPU held, not training" is a flat light grey, "no TPU" a hatch, so the two differ in
+pattern and not only by a few units of lightness.
 """
 import csv
 import datetime as dt
@@ -37,14 +41,16 @@ def main():
     ev = C.read("run_events.csv")
 
     t_last = max(T(s["utc"]) for s in S)
-    end3 = t_last + dt.timedelta(minutes=50)
+    end3 = t_last + dt.timedelta(minutes=10)         # the axis ends at the next half hour after the cut-off
     end3 = end3.replace(minute=0 if end3.minute < 30 else 30, second=0) + dt.timedelta(minutes=30)
+    cut = C.cutoff()
+    st.matplotlib.rcParams["hatch.linewidth"] = 0.5
     windows = [(T("2026-11-23 02:45:00"), T("2026-11-23 05:15:00")),
                (T("2026-11-23 16:55:00"), T("2026-11-23 19:45:00")),
                (T("2026-11-24 00:50:00"), max(T("2026-11-24 11:00:00"), end3))]
     widths = [(b - a).total_seconds() for a, b in windows]
     fig = plt.figure(figsize=(st.FULL_W, 3.0))
-    gs = fig.add_gridspec(1, 3, width_ratios=widths, left=0.075, right=0.985, top=0.80, bottom=0.17, wspace=0.07)
+    gs = fig.add_gridspec(1, 3, width_ratios=widths, left=0.075, right=0.985, top=0.775, bottom=0.17, wspace=0.07)
     axes = [fig.add_subplot(gs[0, i]) for i in range(3)]
     YMAX = 330
 
@@ -58,7 +64,7 @@ def main():
         cur = a
         for s0, s1 in held + [(b, b)]:
             if s0 > cur:
-                ax.axvspan(cur, min(s0, b), color=st.SHADE2, lw=0, zorder=0)
+                ax.axvspan(cur, min(s0, b), fc=st.WHITE, ec=st.AXIS, hatch="////", lw=0, zorder=0)
             cur = max(cur, s1)
     for ax in axes[1:]:
         ax.spines["left"].set_visible(False)
@@ -97,28 +103,22 @@ def main():
         col = st.FINAL if sg["cfg"] == "final" else st.V9
         for ax in axes:
             ax.plot([p[0] for p in sg["pts"]], [p[1] for p in sg["pts"]], color=col, lw=1.25, zorder=3)
-    stretches = [("runtime 2", 0, 5075, 1), ("runtime 3, before pieces", 5075, 9332, 2),
-                 ("4 pieces per micro-batch", 9332, 22613, 2), ("one-tile kernel", 22613, 29722, 2),
-                 ("v9", 29722, 31912, 2), ("v9 with flat, rows, tokn", 31912, 10 ** 9, 2)]
-    seg_rows = []
-    for name, lo, hi, k in stretches:
-        sel = [s for s in S if lo < s["step"] <= hi and s["interval_tok_per_s"]]
-        if not sel:
+    # the live rate of each stretch (Table 2: median of the rates the trainer logs with its step records)
+    prev = None
+    for r in C.read("throughput_stages.csv"):
+        if not r["live_median"] or not r["order"]:
             continue
-        vals = [s["interval_tok_per_s"] for s in sel]
-        ts = [T(s["utc"]) for s in sel]
-        med = statistics.median(vals)
-        seg_rows.append(dict(stretch=name, first_step=sel[0]["step"], last_step=sel[-1]["step"], records=len(vals),
-                             median_tok_per_s=round(med, 1), min_tok_per_s=round(min(vals), 1),
-                             max_tok_per_s=round(max(vals), 1), from_utc=min(ts).strftime("%Y-%m-%d %H:%M"),
-                             to_utc=max(ts).strftime("%Y-%m-%d %H:%M")))
-        tmid = min(ts) + (max(ts) - min(ts)) / 2
-        axes[k].text(tmid, med / 1e3 + 8, f"{med / 1e3:.1f}", ha="center", va="bottom", fontsize=st.FS,
-                     color=st.INK, zorder=5)
-    with open(os.path.join(P.DATA, "f2_segments.csv"), "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(seg_rows[0].keys()), lineterminator="\n")
-        w.writeheader()
-        w.writerows(seg_rows)
+        t0, t1 = T(r["first_utc"]), T(r["last_utc"])
+        k = next(i for i, (a, b) in enumerate(windows) if a <= t0 <= b)
+        tmid = t0 + (t1 - t0) / 2
+        v = int(r["live_median"]) / 1e3
+        # below its line when the stretch follows a faster one closely (the label would sit on that line)
+        below = prev is not None and v < prev[0] and (t0 - prev[1]).total_seconds() < 3600 and prev[2] == k
+        axes[k].text(tmid, v - 9 if below else v + 8, f"{v:.1f}\nn = {int(r['live_n'])}" if below else
+                     f"n = {int(r['live_n'])}\n{v:.1f}", ha="center", va="top" if below else "bottom",
+                     fontsize=st.FS - 0.5, color=st.INK, zorder=5, linespacing=1.05,
+                     bbox=dict(boxstyle="square,pad=0.08", fc=st.WHITE, ec="none"))
+        prev = (v, t1, k)
 
     # runtime 1 and the start-up benchmarks (rows of 1,024 tokens; rematerialised splash plans only)
     for r in LP:
@@ -139,23 +139,23 @@ def main():
             va="bottom")
     a0.text(T("2026-11-23 03:13:27"), 74, "v9", fontsize=st.FS - 0.5, color=st.INK2, ha="center", va="top")
 
-    # interventions and measurement pauses: tags at the restore times, two lanes against overlap
+    # restarts (restore times) and phase changes of the schedule (stage events; dashed): tags in lanes
     fig.canvas.draw()
-    order = sorted((r for r in IV if r["restore_utc"]), key=lambda r: r["restore_utc"])
-    lane_end = [-1e9, -1e9]
-    for r in order:
-        t = T(r["restore_utc"])
+    marks = [(T(r["restore_utc"]), r, "-") for r in IV if r["restore_utc"]]
+    marks += [(T(r["event_utc"]), r, (0, (3, 2))) for r in IV if r["group"] == "phase" and r["event_utc"]]
+    lane_end = [-1e9, -1e9, -1e9]                 # at most three lanes
+    for t, r, ls in sorted(marks, key=lambda m: m[0]):
         k = next(i for i, (a, b) in enumerate(windows) if a <= t <= b)
         ax = axes[k]
         xpix = ax.transData.transform((mdates.date2num(t), 0))[0]
         lab = str(r["id"])
-        lane = 0 if xpix - lane_end[0] > 0.17 * fig.dpi else 1
+        lane = next((i for i, e in enumerate(lane_end) if xpix - e > 0.19 * fig.dpi), len(lane_end) - 1)
         lane_end[lane] = xpix
-        ax.plot([t, t], [0, YMAX + (12 if lane == 0 else 38)], color=st.MUTED, lw=0.5, zorder=1, clip_on=False)
-        ax.text(t, YMAX + (14 if lane == 0 else 40), lab, ha="center", va="center",
-                fontsize=st.FS - (0.5 if len(lab) > 1 else 0), color=st.INK, clip_on=False, zorder=6,
-                bbox=dict(boxstyle="circle,pad=0.15" if len(lab) == 1 else "round,pad=0.15", fc=st.WHITE,
-                          ec=st.MUTED, lw=0.5))
+        ytag = YMAX + 14 + 22 * lane
+        ax.plot([t, t], [0, ytag], color=st.MUTED, lw=0.5, ls=ls, zorder=1, clip_on=False)
+        ax.text(t, ytag, lab, ha="center", va="center", fontsize=st.FS - (0.5 if len(lab) > 1 else 0), color=st.INK,
+                clip_on=False, zorder=6, bbox=dict(boxstyle="circle,pad=0.15" if len(lab) == 1 else "round,pad=0.15",
+                                                   fc=st.WHITE, ec=st.MUTED, lw=0.5))
     # gaps between the runtimes (breaks of the time axis)
     for i in range(2):
         g0, g1 = held[i][1], held[i + 1][0]
@@ -169,33 +169,53 @@ def main():
                  ha="center", va="top", fontsize=st.FS - 0.5, color=st.INK2, linespacing=1.1,
                  bbox=dict(boxstyle="square,pad=0.2", fc=st.WHITE, ec="none"))
     a2 = axes[2]
-    a2.text(T("2026-11-24 04:45:00"), 205,
-            f"Data until the newest\nsnapshot ({t_last:%H:%M}). To come:\ntraining to 18:33:49 (rows of\n"
-            "2,048 tokens from p = 0.67),\n118 min of post stages, run\ndeadline 20:31:49; the 24 h of\n"
-            "TPU time end at 20:46:50.", fontsize=st.FS - 0.5, color=st.INK2, ha="left", va="top",
+    setups = [e for e in ev if e["event"] == "setup"]
+    train_end = max(setups, key=lambda e: float(e["time_s"]))["train_end_utc"]
+    deadline = max(setups, key=lambda e: float(e["time_s"]))["deadline_utc"]
+    tp = sorted(TP, key=lambda r: r["start_utc"])
+    budget_end = T(tp[-1]["start_utc"]) + dt.timedelta(seconds=86400 - sum(int(r["seconds"]) for r in tp[:-1]))
+    ended = [e for e in ev if e["event"] == "end" and e["reason"] == "deadline"]
+    last = max(S, key=lambda s: s["time_s"])
+    if ended:
+        note = (f"Training ended at {ended[-1]['utc'][11:]}\n(step {int(ended[-1]['step']):,}). The run's\n"
+                f"deadline is {deadline[11:]}; the 24 h\nof TPU time end at {budget_end:%H:%M:%S}.")
+    else:
+        reserve = round((T(deadline) - T(train_end)).total_seconds() / 60)
+        note = (f"Records to step {last['step']:,} ({t_last:%H:%M:%S}),\nthe cut-off of the paper's numbers.\n"
+                f"To come: training to {train_end[11:]},\n{reserve} min of post stages, run\ndeadline "
+                f"{deadline[11:]}; the 24 h of\nTPU time end at {budget_end:%H:%M:%S}.")
+        assert last["step"] == cut["step"], (last["step"], cut["step"])
+    a2.text(T("2026-11-24 04:45:00"), 205, note, fontsize=st.FS - 0.5, color=st.INK2, ha="left", va="top",
             linespacing=1.15)
     a2.text(T("2026-11-24 01:07:00"), 12, "restore and\ntwo data errors", fontsize=st.FS - 0.5, color=st.INK2,
             ha="left", va="bottom", linespacing=1.1)
 
-    # time axes
-    for ax, hours in zip(axes, ([3, 4], [18, 19], range(2, 24, 2))):
+    # time axes: one time scale for the three runtimes; fewer ticks when an hour is narrow
+    fig.canvas.draw()
+    per_hour = axes[2].get_position().width * fig.get_figwidth() / ((windows[2][1] - windows[2][0]).total_seconds() / 3600)
+    roomy = per_hour >= 0.45                       # inches per hour
+    step3 = 2 if per_hour >= 0.2 else 4
+    for ax, hours in zip(axes, ([3, 4] if roomy else [4], [18, 19] if roomy else [18], range(0, 24, step3))):
         ax.xaxis.set_major_locator(mdates.HourLocator(byhour=list(hours), tz=UTC))
         ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M", tz=UTC))
-    axes[0].set_xlabel("Runtime 1, 23 Nov", fontsize=st.FS)
-    axes[1].set_xlabel("Runtime 2, 23 Nov", fontsize=st.FS)
-    axes[2].set_xlabel("Runtime 3, 24 Nov (UTC)", fontsize=st.FS)
+    axes[0].set_xlabel("Runtime 1, 23 Nov" if roomy else "Runtime 1", fontsize=st.FS)
+    axes[1].set_xlabel("Runtime 2, 23 Nov" if roomy else "Runtime 2", fontsize=st.FS)
+    axes[2].set_xlabel("Runtime 3, 24 Nov (UTC)" if roomy else "Runtime 3, 24 Nov (UTC; runtimes 1 and 2: 23 Nov)",
+                       fontsize=st.FS)
 
     handles = [Line2D([], [], color=st.FINAL, lw=1.25), Line2D([], [], color=st.V9, lw=1.25),
                Line2D([], [], ls="", marker="D", ms=3.4, mfc=st.WHITE, mec=st.INK2, mew=0.9),
                Line2D([], [], ls="", marker="o", ms=3.0, mfc=st.INK2, mec=st.INK2),
-               Patch(fc=st.SHADE, ec="none"), Patch(fc=st.SHADE2, ec="none")]
+               Patch(fc=st.SHADE, ec="none"), Patch(fc=st.WHITE, ec=st.AXIS, hatch="////", lw=0)]
     labels = ["final, training", "v9, training", "start-up benchmark", "training, one log line",
               "TPU held, not training", "no TPU"]
     fig.legend(handles, labels, loc="upper left", bbox_to_anchor=(0.07, 1.0), ncol=6, frameon=False,
                fontsize=st.FS, handlelength=1.4, handletextpad=0.4, columnspacing=1.2)
     st.save(fig, "F2_throughput")
-    for r in seg_rows:
-        print(r)
+    for r in C.read("throughput_stages.csv"):
+        if r["live_median"]:
+            print(f"{r['key']:18s} live {r['live_median']} (n {r['live_n']}), achieved {r['achieved_median']} "
+                  f"(n {r['achieved_n']}), {r['first_utc']}..{r['last_utc'][11:]}")
 
 
 if __name__ == "__main__":
