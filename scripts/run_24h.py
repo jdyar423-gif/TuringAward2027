@@ -157,13 +157,64 @@ class Run:
                                    "end of the training window")
             time.sleep(poll_s)
 
+    def _wait_for_shards(self, ctx: SV.StageContext, root: Path, want: dict[str, list[list]],
+                         poll_s: float = 5.0) -> None:
+        """A resumed training reads the shards its loader journal lists; on a recycled machine
+        they are not there until the downloads and the tokenisation have run again (their output
+        does not depend on the machine or on the number of workers). Wait for them; raise when
+        the tokenisation ended without them or the stage runs out of time."""
+        total = sum(len(v) for v in want.values())
+        told = 0.0
+        while True:
+            ctx.check()
+            missing = _missing_shards(root, want)
+            if not missing:
+                if told:
+                    self.log(f"train: all {total} shards of the journal are committed on this machine")
+                return
+            st = ((self.bg.status() if self.bg else {}) or {}).get("tokenize") or {}
+            if st.get("state") in ("failed", "finished"):
+                missing = _missing_shards(root, want)    # committed just before the task ended?
+                if not missing:
+                    return
+                raise RuntimeError(f"the training journal used {total} shards, {len(missing)} of them are "
+                                   f"not on this machine (e.g. {missing[0]}) and the tokenisation has "
+                                   f"{st.get('state')}: {st.get('error')}")
+            if ctx.now() > ctx.hard_deadline - 60.0:
+                raise RuntimeError(f"{len(missing)} of the {total} shards the training journal used were "
+                                   "not tokenised on this machine before the end of the training window")
+            if time.time() - told >= 60.0:
+                told = time.time()
+                self.log(f"train: waiting for the tokenisation on this machine: {len(missing)} of the "
+                         f"{total} shards of the journal are not committed yet (e.g. {missing[0]})")
+            time.sleep(poll_s)
+
+    def _catch_up_cores(self) -> tuple[int, ...]:
+        """Cores for the tokenisation when the training journal lists shards this machine does
+        not hold (a run continued on a recycled machine): the training waits for them, so the
+        task gets the idle cores, up to 24 workers, instead of its share of the plan."""
+        cp = self.cp
+        try:
+            want = _journal_shards(self.paths.train / LoaderCfg.journal_name)
+            if not want or not _missing_shards(SV.tok_root(self.cfg, self.paths.out), want):
+                return cp.tokenize
+        except Exception:  # noqa: BLE001 - the train stage reports what is wrong with the data
+            return cp.tokenize
+        spare = [c for c in cp.cores if c not in cp.trainer and c not in cp.downloads]
+        n = min(24, len(spare) - 4)
+        return tuple(sorted(spare[-n:])) if n > len(cp.tokenize) else cp.tokenize
+
     def tasks(self) -> list[SV.TaskSpec]:
         out, cp = self.paths.out, self.cp
         mk = SV.task_argv
+        tok = self._catch_up_cores()
+        if tok != cp.tokenize:
+            self.log(f"background: the journal's shards are not on this machine: tokenising with "
+                     f"{len(tok)} workers (the plan's share is {len(cp.tokenize)})")
         return [
             SV.TaskSpec("downloads", mk("downloads", out, 5, cp.downloads), nice=5,
                         cores=cp.downloads, threads=4, restarts=8, backoff_s=10.0),
-            SV.TaskSpec("tokenize", mk("tokenize", out, 5, cp.tokenize), nice=5, cores=cp.tokenize,
+            SV.TaskSpec("tokenize", mk("tokenize", out, 5, tok), nice=5, cores=tok,
                         threads=1, restarts=8, backoff_s=10.0),
             SV.TaskSpec("library", mk("library", out, 10, cp.library), nice=10, cores=cp.library,
                         threads=2, restarts=2, backoff_s=30.0),
@@ -522,6 +573,9 @@ class Run:
         if lib is None and self.cfg.data.use_library and \
                 _journal_used_library(self.paths.train / LoaderCfg.journal_name):
             lib = self._wait_for_library(ctx)
+        want = _journal_shards(self.paths.train / LoaderCfg.journal_name)
+        if want:
+            self._wait_for_shards(ctx, SV.tok_root(ecfg, self.paths.out), want)
         workers = int(bench.get("loader_workers") or self.cp.loader_workers)
         lcfg = dataclasses.replace(LoaderCfg(), workers=workers,
                                    horizon_tokens=float(bench["horizon_tokens"]) or LoaderCfg.horizon_tokens)
@@ -1279,6 +1333,50 @@ class Run:
 def _assistant() -> int:
     from bes.config import ASSISTANT
     return ASSISTANT
+
+
+def _journal_shards(path: Path) -> dict[str, list[list]]:
+    """Every shard the loader journal at ``path`` has shown to a block, as the journal lists
+    them: ``{source: [[id, n_segments, n_tokens, ...], ...]}`` (a loader reopening the journal
+    reads these very shards from disk: ``bes.data.loader``)."""
+    out: dict[str, list[list]] = {}
+    if not path.exists():
+        return out
+    with open(path, errors="replace") as f:
+        for line in f:
+            if '"new_shards"' not in line:
+                continue
+            try:
+                rec = json.loads(line)
+            except ValueError:
+                continue                         # a torn last line
+            if rec.get("type") != "block":
+                continue
+            for name, entries in (rec.get("new_shards") or {}).items():
+                out.setdefault(name, []).extend(entries)
+    return out
+
+
+def _missing_shards(root: Path, want: dict[str, list[list]]) -> list[str]:
+    """Which shards of ``want`` (:func:`_journal_shards`) are not committed under ``root/tok``
+    (``"source/id"``). Raises when a committed shard has another size than the journal's: the
+    data on this machine is not the data the run was trained on."""
+    from bes.data import shards as SH
+
+    missing = []
+    for name, entries in want.items():
+        directory = Path(root) / "tok" / name
+        man = SH.read_manifest(directory) if directory.exists() else {}
+        for e in entries:
+            m = man.get(int(e[0]))
+            if m is None:
+                missing.append(f"{name}/{int(e[0])}")
+            elif int(m.get("n_segments", -1)) != int(e[1]) or int(m.get("n_tokens", -1)) != int(e[2]):
+                raise RuntimeError(f"shard {name}/{int(e[0])}: this machine tokenised {m.get('n_segments')} "
+                                   f"segments and {m.get('n_tokens')} tokens, the training journal used "
+                                   f"{e[1]} and {e[2]}: the data differs, the training cannot be continued "
+                                   "on it")
+    return missing
 
 
 def _journal_used_library(path: Path) -> bool:

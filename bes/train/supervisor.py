@@ -1893,6 +1893,10 @@ def _main_task(args: argparse.Namespace) -> int:
         return 2
     cfg = base_config(man)
     cp = CorePlan.from_dict(man["core_plan"]) if man.get("core_plan") else core_plan()
+    given = [int(c) for c in args.cores.split(",") if c.strip()] if args.cores else []
+    if args.name == "tokenize" and len(given) > len(cp.tokenize):
+        # a run catching up on a recycled machine gives the task more cores than the plan's share
+        cp = dataclasses.replace(cp, tokenize=tuple(given))
 
     def log(msg: str) -> None:
         print(f"[{time.strftime('%H:%M:%S')}] {msg}", flush=True)
