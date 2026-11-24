@@ -13,7 +13,7 @@
 | MobileLLM-R1.5-140M | 116／15／69 | 0.752 [0.688, 0.807] |
 | Falcon-H1-Tiny-90M-Instruct | 35／108／57 | 0.318 [0.257, 0.385] |
 
-結論照實說：盲測上優於 MobileLLM-R1.5，明顯不如 Falcon-H1-Tiny，「同時超過兩者」的目標只達成一半。MobileLLM-R1.5 在這個評測框架、它的建議設定下有 62.7% 的回覆是退化的，那一項領先的門檻不高；讓 Falcon 也取 6 個樣本再挑一則時結果不變（35／112／53 與 29／116／55）；本模型只用一個粒子時對 Falcon 是 22／122／56。完整數字（對照組、K = 1、精確計分、事先註冊的自動評審、偏離協定之處、過程中的事故）在 `docs/CHANGES.md` 第 19.10 節與 `docs/paper/paper.md`；模型的還原、對話與自己做盲測的指令在 `release/main16-v9/README.md`。
+結論照實說：盲測上優於 MobileLLM-R1.5，明顯不如 Falcon-H1-Tiny，「同時超過兩者」的目標只達成一半。MobileLLM-R1.5 在這個評測框架、它的建議設定下有 62.7% 的回覆是退化的，那一項領先的門檻不高；讓 Falcon 也取 6 個樣本再挑一則時結果不變（35／112／53 與 29／116／55）；本模型只用一個粒子時對 Falcon 是 22／122／56。評審知道每一組比較的是哪兩個系統（檔案標題帶有配對集名稱），但不知道哪一側是誰；事先註冊、不經過這些檔名的自動評審對 Falcon 判了 12／61／127，方向相同。完整數字（對照組、K = 1、精確計分、自動評審、偏離協定之處、過程中的事故與稽核改正）在 `docs/CHANGES.md` 第 19.10 節；論文 `docs/paper/paper.md` 的定稿尚在更新，目前倉庫裡的版本還沒有測試集的數字。模型的還原、對話與自己做盲測的指令在 `release/main16-v9/README.md`。
 
 ### 在 Colab 直接開啟
 
@@ -64,13 +64,17 @@ order, every pair twice with the sides exchanged; wins / losses / ties are ours,
 | Falcon-H1-Tiny-90M-Instruct | 35 / 108 / 57 | 0.318 [0.257, 0.385] |
 
 Stated plainly: the model is preferred over MobileLLM-R1.5 and is clearly behind Falcon-H1-Tiny, so
-the goal of beating both was half met. MobileLLM-R1.5's replies are degenerate on 62.7% of these
-prompts under its recommended preset in this harness, so that lead clears a low bar. Giving Falcon
+the goal of beating both was half met. 62.7% of MobileLLM-R1.5's replies to these prompts are degenerate under its recommended preset in
+this harness, so that lead clears a low bar. Giving Falcon
 the same six samples per reply does not change the result (35 / 112 / 53 with its own log-probability
 as the selector, 29 / 116 / 55 with our selector); with a single particle our model scores
-22 / 122 / 56 against Falcon. Every number, the control arms, exact scores, the pre-registered
-automatic judge, the deviations from the protocol and the incidents of the run:
-`docs/CHANGES.md` section 19.10 (Chinese) and `docs/paper/paper.md`. Restoring the model, chatting
+22 / 122 / 56 against Falcon. The readers knew which two systems a set compared (the file titles carried the pair
+set's name) but not which side was which; the pre-registered automatic judge, which never sees
+those names, gives 12 / 61 / 127 against Falcon, the same direction. Every number, the control
+arms, exact scores, the automatic judge, the deviations from the protocol, the incidents of the
+run and the corrections of an independent audit: `docs/CHANGES.md` section 19.10 (Chinese). The
+final revision of the paper (`docs/paper/paper.md`) is still being updated; the copy in the
+repository does not have the test-split numbers yet. Restoring the model, chatting
 with it and running the blind arena yourself: `release/main16-v9/README.md`.
 
 ## What this is
