@@ -551,9 +551,25 @@ def cmd_fetch(args: argparse.Namespace) -> int:
             out.write(data)
     if whole.hexdigest() != meta["sha256"]:
         raise Failed("the joined export does not match its SHA-256; run fetch again")
-    _extract(tar_path, to)
+    fresh = to / ".incoming"
+    shutil.rmtree(fresh, ignore_errors=True)
+    fresh.mkdir()
+    _extract(tar_path, fresh)
+    if (to / "final").exists():               # an earlier fetch is set aside, never overlaid
+        os.replace(to / "final", to / f"final.previous-{time.strftime('%Y%m%d-%H%M%S')}")
+    os.replace(fresh / "final", to / "final")
+    fresh.rmdir()
     shutil.rmtree(parts_dir)
-    print(f"export in {to / 'final'} ({meta['bytes'] / 1e6:.1f} MB, SHA-256 of the archive verified).\n"
+    try:
+        rec = json.loads((to / "final" / "export.json").read_text(encoding="utf-8"))
+        src = rec.get("source") or {}
+        what = (f"step {src.get('step')}, {src.get('weights')} weights, exported {rec.get('created')}, "
+                f"held-out check {(rec.get('check') or {}).get('ok')}")
+    except (OSError, ValueError):
+        note = to / "final" / "EXPORT_NOTE.txt"
+        what = ("NOT a full export: " + note.read_text(encoding="utf-8").strip()[:300]) if note.is_file() else \
+            "NO export.json: not an export of this project"
+    print(f"export in {to / 'final'}: {what}\n({meta['bytes'] / 1e6:.1f} MB, SHA-256 of the archive verified).\n"
           f"check its files:  python scripts/export.py --verify {to / 'final'}\n"
           "The runtime is charged until it is given back: `down --yes` once you have what you need.")
     return 0

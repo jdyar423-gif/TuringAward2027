@@ -441,8 +441,9 @@ class Trainer:
                  log_fn: Callable[[dict], None] | None = None, verbose: bool = False,
                  async_ckpt: bool = False, resume: bool = True, force: bool = False,
                  programs: Mapping[tuple[int, int, int], tuple[str, Any]] | None = None,
-                 micro_split: int = 1) -> None:
+                 micro_split: int = 1, train_end: float | None = None) -> None:
         self.cfg = cfg
+        self._train_end_arg = train_end
         self.loss_fn, self.init_fn = loss_fn, init_fn
         self.role_fn, self.consts_fn = role_fn, consts_fn
         self._data = data if callable(data) else data.get
@@ -507,7 +508,10 @@ class Trainer:
         start = self.clock()
         self.out_dir.mkdir(parents=True, exist_ok=True)
         self.t0, self.deadline = self._run_info(start)
-        self.train_end = schedule.train_end_time(self.deadline, self.cfg.run)
+        # the caller's end of training (a run whose post-training plan was changed while it ran:
+        # scripts/run_24h.py, post_plan) or the configuration's
+        self.train_end = (float(self._train_end_arg) if self._train_end_arg is not None
+                          else schedule.train_end_time(self.deadline, self.cfg.run))
         self.ledger = Ledger.start(self.t0, start)
         self.step = 0
         self.cursor = 0

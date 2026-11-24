@@ -1600,12 +1600,21 @@ def model_card(rec: Mapping[str, Any]) -> str:
 
 # ===================================================================== export
 def _latest_checkpoint(out: Path, man: Mapping[str, Any]) -> tuple[Path, str]:
+    """The weights ``scripts/run_24h.py`` exports (``Run.latest_params``): the accepted post-DPO
+    checkpoint, else the newer of ``train/ckpt`` and the parameters-only final save
+    ``train/ckpt_params`` (on a tie the full checkpoint)."""
     from bes.decode import respond
+    from bes.train import checkpoint as CK
 
     post = out / "post" / "ckpt"
-    if (man.get("prefopt") or {}).get("accepted") and post.exists():
+    if (man.get("prefopt") or {}).get("accepted") and CK.latest(post) is not None:
         return respond.find_checkpoint(post), "prefopt"
-    return respond.find_checkpoint(out / "train"), "train"
+    best = None
+    for rank, root in ((1, out / "train" / "ckpt"), (0, out / "train" / "ckpt_params")):
+        info = CK.latest(root)
+        if info is not None and (best is None or (info.step, rank) > best[0]):
+            best = ((info.step, rank), info.path)
+    return (best[1] if best is not None else respond.find_checkpoint(out / "train")), "train"
 
 
 def resolve_cfg(out: Path, man: Mapping[str, Any] | None, config: str | None = None,
@@ -1742,6 +1751,10 @@ def export_run(out_dir: str | Path, *, checkpoint: str | Path | None = None,
     # did not pass its rule is neither shipped nor counted
     lib_decision = dict((decode or {}).get("library") or {}) if isinstance(decode, Mapping) else {}
     not_shipped = None
+    if library is None and lib_decision.get("ship"):
+        errors.append({"part": "library", "error": "the decode selection shipped the library, but no built library "
+                                                   "was found for this export (a run continued on a machine whose "
+                                                   "library task had not finished?): exported without it"})
     if library is not None and lib_decision.get("ship") is False:
         not_shipped = f"the decode selection's library rule did not pass: {lib_decision.get('reason')}"
         _say(log, f"export: the library is not shipped ({not_shipped})")

@@ -768,6 +768,34 @@ def test_run_24h_knows_which_shards_of_the_journal_this_machine_lacks(tmp_path):
         R._missing_shards(root, want)
 
 
+def test_run_24h_takes_a_post_training_plan_changed_while_the_run_is_under_way(tmp_path):
+    """24 Nov: sampling got through 3 % of its prompts in its 50 minutes and the judged comparison
+    is redone outside the run, so their time went to training. The configuration (and its hash)
+    stays; the plan comes from <run>/post_plan and travels in the manifest."""
+    from bes.train import stages as ST
+
+    R = _run24()
+    out = tmp_path / "run"
+    SV.write_manifest(out, {"budget": {"t0": 0.0}})
+    run_cfg = dataclasses.replace(Cfg().run, post_reserve_hours=3.6667, post_minutes="critic=0,buffer=20")
+    said = []
+    assert R.post_plan_run(run_cfg, out, said.append) is run_cfg and not said
+    (out / "post_plan").write_text("sample=3 critic=0 prefopt=60\nselect=25 judge=0 export=5 buffer=15\n")
+    got = R.post_plan_run(run_cfg, out, said.append)
+    assert got.post_reserve_hours == pytest.approx(108 / 60) and "108 minutes" in said[-1]
+    assert SV.read_manifest(out)["post_plan"] == "sample=3 critic=0 prefopt=60 select=25 judge=0 export=5 buffer=15"
+    specs = ST.stage_specs(got, 20 * 3600.0)
+    assert specs["judge"].planned_s == 0 and specs["sample"].planned_s == pytest.approx(180.0)
+    assert specs["prefopt"].planned_s == pytest.approx(3600.0)
+    old = ST.stage_specs(run_cfg, 20 * 3600.0)
+    assert specs["train"].planned_s - old["train"].planned_s == pytest.approx(3.6667 * 3600 - 108 * 60)
+    (out / "post_plan").unlink()                         # the next machine: the manifest carries it
+    assert R.post_plan_run(run_cfg, out).post_reserve_hours == pytest.approx(1.8)
+    (out / "post_plan").write_text("sample=many")        # not a plan: the earlier one stays
+    assert R.post_plan_run(run_cfg, out, said.append).post_reserve_hours == pytest.approx(1.8)
+    assert any("ignored" in m for m in said)
+
+
 def test_run_24h_refuses_a_second_run_and_a_resume_without_a_run(tmp_path):
     R = _run24()
     smoke = str(ROOT / "configs" / "smoke.py")
@@ -951,15 +979,21 @@ def test_run_24h_sampling_labels_every_response_on_the_text_of_its_tokens(tmp_pa
     from bes.tokenizer import load as load_tokenizer
 
     R = _run24()
-    cfg = load_config(str(ROOT / "configs" / "smoke.py"))
     tok = load_tokenizer()
+    # a reply the budget cut: seven paragraphs, the last one unfinished, END in the last slot
+    cut_text = "\n\n".join(f"Paragraph {i} of the old castle on the hill." for i in range(1, 7)) + \
+        "\n\nParagraph 7 of the old castle on"
+    cut = tok.encode(cut_text) + [END]
+    cfg = load_config(str(ROOT / "configs" / "smoke.py"), [f"decode.max_new_tokens={len(cut)}"])
     user, reply = _long_constraint_reply()
     short7 = "\n\n".join(f"Paragraph {i} of the castle." for i in range(1, 8))
     item = {"id": "smoltalk_constraints/0/0", "source": "smoltalk_constraints", "heldout": False,
             "messages": [{"role": "user", "content": user}], "reference": None, "kind": "constraint",
             "reply": reply}
     particles = [types.SimpleNamespace(tokens=tok.encode(short7) + [END], finish="stop"),
-                 types.SimpleNamespace(tokens=tok.encode("One paragraph only.") + [END], finish="stop")]
+                 types.SimpleNamespace(tokens=tok.encode("One paragraph only.") + [END], finish="stop"),
+                 types.SimpleNamespace(tokens=cut, finish="stop")]
+    assert SV.label_sample(user, cut_text, "stop")["score"] == 1.0      # only the budget shows the cut
     from bes.decode import respond
 
     monkeypatch.setattr(G, "jitted", lambda model_cfg: "decoder")
@@ -981,7 +1015,8 @@ def test_run_24h_sampling_labels_every_response_on_the_text_of_its_tokens(tmp_pa
     ref = next(p for p in rec["particles"] if p["origin"] == "reference")
     full = display_text(ref["tokens"], tok).strip()
     assert ref["score"] == SV.label_sample(user, full, "stop")["score"] == 1.0
-    assert [p["score"] for p in rec["particles"]] == [1.0, 0.0, 1.0]
+    assert [p["score"] for p in rec["particles"]] == [1.0, 0.0, 0.0, 1.0]
+    assert rec["particles"][2]["finish"] == "length"     # as Responder.reply reports a reply at its budget
     assert asked == [(user, [])]                         # the earlier user turns (none here)
     assert len(full) > 2000 and len(ref["text"]) == 2000 and ref["text_chars"] == len(full)
     for p in rec["particles"]:                         # every score is the label of its own tokens

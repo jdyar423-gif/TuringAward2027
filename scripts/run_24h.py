@@ -37,7 +37,6 @@ import inspect
 import json
 import math
 import os
-import shutil
 import sys
 import time
 from pathlib import Path
@@ -329,11 +328,16 @@ class Run:
 
         post = self.paths.post / "ckpt"
         if prefer_post and (self.man.get("prefopt") or {}).get("accepted") and post.exists():
-            path, source = respond.find_checkpoint(post), "prefopt"
-        else:
-            path, source = self.train_checkpoint(), "train"
+            try:
+                path = respond.find_checkpoint(post)
+                params, consts, info = respond.load_checkpoint(path, ecfg.model)
+                return params, consts, info, Path(path), "prefopt"
+            except Exception as e:  # noqa: BLE001 - lost or broken: the trained weights, said loudly
+                self.log(f"WARNING: the preference optimisation was accepted but {post} holds no loadable "
+                         f"checkpoint ({type(e).__name__}: {e}); the trained weights are used")
+        path = self.train_checkpoint()
         params, consts, info = respond.load_checkpoint(path, ecfg.model)
-        return params, consts, info, Path(path), source
+        return params, consts, info, Path(path), "train"
 
     # ================================================================= stage 0
     def stage_preflight(self, ctx: SV.StageContext) -> dict:
@@ -681,7 +685,7 @@ class Run:
                           out_dir=self.paths.train, deadline=self.sup.deadline,
                           eval_fn=self._sidecar_hook, log_fn=log_fn, async_ckpt=True, resume=True,
                           programs=None if any(k > 1 for k in split.values()) else programs,
-                          micro_split=split)
+                          micro_split=split, train_end=self.sup.train_end)
         remove = self.sup.on_stop(trainer.request_stop)
         try:
             if self.sup.stop_requested:
@@ -878,6 +882,8 @@ class Run:
                                                       None if passage is None else passage.text, budget)
                 except ValueError:
                     continue
+                if len(prompt) + 64 > min(PrefCfg.seq_len, ecfg.model.max_seq) + 1:
+                    continue        # a DPO row (prompt + response + END <= T + 1) has no room for a reply
                 try:
                     program = resp.program(spec, r)
                 except Exception:  # noqa: BLE001 - structural potentials only
@@ -891,8 +897,12 @@ class Run:
                                  program=program, tok=tok, ess_frac=d.ess_frac,
                                  resample_at=d.resample_at, unit_max_tokens=d.unit_max_tokens,
                                  no_repeat_ngram=d.no_repeat_ngram, max_copy_run=d.max_copy_run)
-                parts = [_labelled_part(user, [int(x) for x in p.tokens if int(x) != END], p.finish,
-                                        item["reference"], "particle", resp.chat.display)
+                # a particle that ended with its whole budget used was cut by the budget (the
+                # budget-aware potentials force END into its last slot): labelled with the finish
+                # Responder.reply reports for it ("length"), as the exact scores of select and judge
+                parts = [_labelled_part(user, [int(x) for x in p.tokens if int(x) != END],
+                                        "length" if p.finish == "stop" and len(p.tokens) >= d.max_new_tokens
+                                        else p.finish, item["reference"], "particle", resp.chat.display)
                          for p in res.particles]
                 ref = _reference_response(item, tok)
                 if ref is not None:            # the data set's own reply, labelled the same way
@@ -1026,8 +1036,12 @@ class Run:
         # halves them (optim.micro_seqs = 16 at 1,024 tokens: 8 pairs), twice the micro-batches
         # keep the pairs per optimiser step, and so the step the learning rates were chosen for
         n_micro = PrefCfg.n_micro * min(2, max(1, PrefCfg.pairs_per_micro // ppm))
+        # PairBatches keeps the feature batches between passes only when all of them fit; with
+        # UltraFeedback that is ~20 GB, so a 1 GB cache meant computing the exact features of every
+        # row on one host core again in each pass (reference, each candidate, each held-out scoring)
+        cache_gb = max(1.0, min(32.0, 0.2 * SV._meminfo().get("MemAvailable", 0.0)))
         pref = dataclasses.replace(PrefCfg(), seq_len=t, pairs_per_micro=ppm, n_micro=n_micro,
-                                   cache_gb=min(PrefCfg.cache_gb, 1.0))
+                                   cache_gb=cache_gb)
         sampled = []
         for s in self._samples():               # labels checked against their tokens' text
             toks = [p["tokens"] for p in s["particles"]]
@@ -1043,7 +1057,10 @@ class Run:
             pairs, counts = prefs.pairs_from_shards(uf)
             groups["ultrafeedback"] = pairs
             ratio["ultrafeedback"] = PrefCfg.max_len_ratio
-        split = prefs.prepare(groups, t, heldout_frac=pref.heldout_frac if len(sampled) >= 200 else 0.25,
+        # the larger held-out share is for tiny pair sets only: with UltraFeedback in the groups,
+        # a quarter of every pair would be held out of the epoch because few were sampled
+        n_all = sum(len(g) for g in groups.values())
+        split = prefs.prepare(groups, t, heldout_frac=pref.heldout_frac if n_all >= 200 else 0.25,
                               seed=pref.seed, max_len_ratio=ratio)
         if not split.heldout and len({bytes(q.prompt) for q in split.train}) >= 2:
             # a tiny set whose hash split held nothing out: hold out the pairs of one prompt
@@ -1089,7 +1106,8 @@ class Run:
         new_params, rep = prefopt.run_prefopt(params, split, ecfg, lrs=lrs, heldout_loss_fn=heldout_loss,
                                               sample_stats_fn=stats_fn, pref=pref, consts=consts,
                                               tok=tok, log=self.log)
-        ctx.check()
+        # a stop requested during the DPO (run_prefopt has no checks) is honoured at the next
+        # stage boundary: the finished result is saved and recorded first, never thrown away
         out = {"accepted": bool(rep["accepted"]), "lr": rep.get("lr"), "reason": rep.get("reason"),
                "n_train_pairs": rep.get("n_train_pairs"), "n_heldout_pairs": rep.get("n_heldout_pairs"),
                "pairs_sampled": len(sampled), "pairs_by_source": split.stats,
@@ -1150,6 +1168,12 @@ class Run:
         if has_lib:
             variants.append(("nolib", base + ["extra.use_library=false"]))
         variants.append(("noband", base + ["extra.band=false"]))
+        # where the gate fires on no turn, the library-off arm gives the default's very reply (same
+        # prompt, same seed): it is generated only on the prompts where the gate fires (6 of the 200
+        # dev prompts) and takes the default's score elsewhere
+        responder = getattr(gen, "responder", None)
+        fired = {p.id for p in todo if has_lib and responder is not None and any(
+            responder.retrieve(u, list(p.turns[:t])) is not None for t, u in enumerate(p.turns))}
         # the factual library measurement (_library_decision) gets its share after the variants
         fact_s = float(ecfg.run.factual_frac) * max(0.0, ctx.deadline - ctx.now()) if has_lib else 0.0
         results = {}
@@ -1161,7 +1185,8 @@ class Run:
                 continue
             spec = cli.build_spec("ours", "default", ov, f"select-{name}", 0, None, None, 1, None,
                                   "bes.decode.respond:our_generator", {}, gen.key)
-            res = runner.run(todo, spec, root, workers=0, minutes=minutes, all_prompts=ps,
+            part = [p for p in todo if p.id in fired] if name == "nolib" else todo
+            res = runner.run(part, spec, root, workers=0, minutes=minutes, all_prompts=ps,
                              backend=backend, log=self.log)
             rep = cli.exact_report(root, res.run_id, "dev")
             per = _per_prompt_scores(root, res.run_id, "dev")
@@ -1170,14 +1195,27 @@ class Run:
                              "summary_degenerate": rep.get("degenerate"), "per_prompt": per,
                              "overrides": ov}
         ctx.check()
+        if "per_prompt" in results.get("nolib", {}) and "per_prompt" in results.get("default", {}):
+            same = {p: s for p, s in results["default"]["per_prompt"].items() if p not in fired}
+            results["nolib"]["per_prompt"] = {**same, **results["nolib"]["per_prompt"]}
+            results["nolib"]["from_default"] = len(same)
         ran = {k: v for k, v in results.items() if "per_prompt" in v}
         common = set.intersection(*(set(v["per_prompt"]) for v in ran.values())) if ran else set()
         scores = {k: (sum(v["per_prompt"][p] for p in common) / len(common) if common else None)
                   for k, v in ran.items()}
-        # the decoding settings other than the library: highest mean exact score, ties keep the
-        # default; the library is decided on its own evidence (it cannot win by a tie)
+        # the decoding settings other than the library: the default stays unless a variant is
+        # better than it on significantly more of the common prompts than worse (exact two-sided
+        # sign test below FACTUAL_ALPHA, as the library); among those the highest mean exact score.
+        # The library is decided on its own evidence (it cannot win by a tie)
+        from bes.eval.proxy.score import paired_sign_test
+
         cands = {k: v for k, v in scores.items() if k != "nolib" and v is not None}
-        best = max(cands, key=lambda k: (cands[k], k == "default")) if common and cands else "default"
+        vs_default = {k: paired_sign_test({p: ran[k]["per_prompt"][p] for p in common},
+                                          {p: ran["default"]["per_prompt"][p] for p in common})
+                      for k in cands if k != "default" and "default" in ran}
+        better = {k: cands[k] for k, t in vs_default.items()
+                  if t["a_better"] > t["b_better"] and t["p"] < FACTUAL_ALPHA}
+        best = max(better, key=lambda k: better[k]) if common and better else "default"
         chosen = list(dict(variants)[best])
         lib = self._library_decision(ctx, ecfg, gen, root, base, scores, len(common))
         if has_lib and not lib["ship"]:
@@ -1187,9 +1225,12 @@ class Run:
                "n_dev": len(todo), "checkpoint": str(ckpt), "weights": source,
                "runs": {k: {kk: vv for kk, vv in v.items() if kk != "per_prompt"} for k, v in results.items()},
                "library": lib,
-               "rule": "decoding settings: highest mean exact score (math correct, constraints satisfied, "
-                       "not degenerate) over the dev prompts every variant answered, ties keep the "
-                       "default; the library: the rule of library.rule (not shipped: switched off)"}
+               "vs_default": vs_default,
+               "rule": "decoding settings: the default unless a variant's exact score (math correct, "
+                       "constraints satisfied, not degenerate) is higher on significantly more of the dev "
+                       f"prompts every variant answered than lower (sign test p < {FACTUAL_ALPHA}); then "
+                       "the highest mean among those; the library: the rule of library.rule (not shipped: "
+                       "switched off)"}
         self.man = SV.update_manifest(self.paths.out, decode=out)
         self.log(f"select: decode variant {best} (scores {scores} on {len(common)} common prompts); "
                  f"library {'shipped' if lib['ship'] else 'not shipped'}: {lib['reason']}")
@@ -1279,6 +1320,9 @@ class Run:
         lib = self.library_ready()
         fired = {q.id for q in qs if lib is not None and lib.retrieve(q.q) is not None}
         qs = sorted(qs, key=lambda q: q.id not in fired)            # stable: fired questions first
+        # elsewhere both arms give the same reply and cannot tip the sign test: ten of them keep
+        # the report's check that they are identical, the rest of the slice goes to later stages
+        qs = qs[:len(fired) + 10]
         ov = [o for o in base if not o.startswith(("extra.use_library=", "max_tokens="))]
         ov.append(f"max_tokens={min(ecfg.decode.max_new_tokens, FACTUAL_MAX_TOKENS)}")
         specs = [cli.build_spec("ours", preset, ov, f"select-factual-{arm}", 0, None, None, 1, None,
@@ -1323,34 +1367,43 @@ class Run:
         gen = self._generator(ecfg, ckpt)
         spec = cli.build_spec("ours", "default", ov, f"final-{dec.get('chosen', 'default')}", 0, None,
                               None, 1, None, "bes.decode.respond:our_generator", {}, gen.key)
-        res = runner.run(todo, spec, root, workers=0, minutes=max(0.05, 0.45 * ctx.left() / 60.0),
-                         all_prompts=ps, backend=CallableBackend(gen), log=self.log)
-        x_records, _ = runner.load_outputs(root, res.run_id)
-        ctx.check()
-        judge = cli.make_judge(ecfg.run.eval_judge, self.cp.judge_threads, None, None, True)
-        out: dict[str, Any] = {"ours": res.run_id, "ours_done": res.done, "n_test": len(todo),
-                               "weights": source, "opponents": {}}
-        for i, (arm, run) in enumerate(sorted(opp_runs.items())):
-            name = arm.split("/")[0].replace("=", "-")
-            y_records, _ = runner.load_outputs(root, run["run_id"])
-            pairset = f"{self.paths.out.name}-ours-vs-{name}-test"
-            try:
-                make_ab.make_pairs(todo, x_records, y_records, res.run_id, run["run_id"], pairset, 0, root)
-            except ValueError as e:
-                out["opponents"][arm] = {"skipped": str(e)}
-                continue
-            pairs, _ = make_ab.load_pairs(root, pairset)
-            minutes = (ctx.deadline - ctx.now()) / 60.0 / (len(opp_runs) - i)
-            if minutes > 0.02 and not ctx.stop_requested():
-                run_judge(pairs, judge, pairset, root, minutes, log=self.log)
-            rows = {}
-            for src in cli.sources_of(root, pairset):
-                s = cli.score_report(root, pairset, src)["overall"]
-                rows[src] = {"n": s["n"], "score": s.get("score"), "ci95": s.get("score_ci95"),
-                             "win_rate_decisive": s.get("win_rate_decisive"),
-                             "partial": s["n"] < len(todo)}
-            out["opponents"][arm] = {"pairset": pairset, "pairs": len(pairs), "scores": rows,
-                                     "partial": len(pairs) < len(todo) or any(r["partial"] for r in rows.values())}
+        judge = None
+        out: dict[str, Any] = {"n_test": len(todo), "weights": source, "opponents": {}, "rounds": 0}
+        # rounds of generation (45% of what is left) and judging, until the slice is used: a judge
+        # faster than the generation no longer leaves the end of the slice idle (the pair sets grow,
+        # published pairs and verdicts are kept, the harness cache resumes the generation)
+        while True:
+            res = runner.run(todo, spec, root, workers=0, minutes=max(0.05, 0.45 * ctx.left() / 60.0),
+                             all_prompts=ps, backend=CallableBackend(gen), log=self.log)
+            x_records, _ = runner.load_outputs(root, res.run_id)
+            ctx.check()
+            if judge is None:
+                judge = cli.make_judge(ecfg.run.eval_judge, self.cp.judge_threads, None, None, True)
+            out.update(ours=res.run_id, ours_done=res.done, rounds=out["rounds"] + 1)
+            for i, (arm, run) in enumerate(sorted(opp_runs.items())):
+                name = arm.split("/")[0].replace("=", "-")
+                y_records, _ = runner.load_outputs(root, run["run_id"])
+                pairset = f"{self.paths.out.name}-ours-vs-{name}-test"
+                try:
+                    make_ab.make_pairs(todo, x_records, y_records, res.run_id, run["run_id"], pairset, 0, root)
+                except ValueError as e:
+                    out["opponents"][arm] = {"skipped": str(e)}
+                    continue
+                pairs, _ = make_ab.load_pairs(root, pairset)
+                minutes = (ctx.deadline - ctx.now()) / 60.0 / (len(opp_runs) - i)
+                if minutes > 0.02 and not ctx.stop_requested():
+                    run_judge(pairs, judge, pairset, root, minutes, log=self.log)
+                rows = {}
+                for src in cli.sources_of(root, pairset):
+                    s = cli.score_report(root, pairset, src)["overall"]
+                    rows[src] = {"n": s["n"], "score": s.get("score"), "ci95": s.get("score_ci95"),
+                                 "win_rate_decisive": s.get("win_rate_decisive"),
+                                 "partial": s["n"] < len(todo)}
+                out["opponents"][arm] = {"pairset": pairset, "pairs": len(pairs), "scores": rows,
+                                         "partial": len(pairs) < len(todo) or any(r["partial"] for r in rows.values())}
+            if (res.new_generations == 0 or res.done >= len(todo) or ctx.left() < 120.0
+                    or ctx.stop_requested()):
+                break
         self.man = SV.update_manifest(self.paths.out, judged=out)
         self.log(f"judge: {json.dumps(out['opponents'])[:400]}")
         return out
@@ -1368,7 +1421,10 @@ class Run:
             _, _, info, ckpt, source = self.latest_params(ecfg)
         except (FileNotFoundError, ValueError) as e:
             note = f"no checkpoint to export: {e}"
-            (final / "EXPORT_NOTE.txt").write_text(note + "\n")
+            if any(final.iterdir()):            # a note inside an earlier export breaks its SHA256SUMS
+                self.log(f"export: {note}; {final} keeps the earlier export it holds")
+            else:
+                (final / "EXPORT_NOTE.txt").write_text(note + "\n")
             return {"exported": False, "note": note}
         if ((man.get("decode") or {}).get("library") or {}).get("ship") is True and not self.library_path() \
                 and self._busy(("library",)):
@@ -1387,30 +1443,45 @@ class Run:
             fn = getattr(EX, "export_run")
         except (ImportError, AttributeError) as e:
             fn, why = None, f"{type(e).__name__}: {e}"
+        decode = man.get("decode")
+        if self.library_path() and "ship" not in ((decode or {}).get("library") or {}):
+            # no decode selection (it failed, was shed or has not run): no measurement, no gain
+            decode = {**(decode or {}), "library": {"ship": False, "reason": "the decode selection made no "
+                                                    "library decision (no measurement, no gain)"}}
         if fn is not None:
             avail = {"checkpoint": str(ckpt), "config": str(man["config"]), "overrides": SV.run_overrides(man),
                      "horizon_tokens": SV.horizon_of(man),
                      "library": self.library_path() or None, "final_dir": str(final), "reports": reports,
-                     "decode": man.get("decode"), "cfg": ecfg}
+                     "decode": decode, "cfg": ecfg}
             params = inspect.signature(fn).parameters
             kw = {k: v for k, v in avail.items() if k in params}
-            res = fn(self.paths.out, **kw)
-            return {"exported": True, "by": "bes.export.export_run", "checkpoint": str(ckpt),
-                    "weights": source, "result": SV._jsonable(res) if isinstance(res, Mapping) else str(res)}
+            try:
+                res = fn(self.paths.out, **kw)
+            except Exception as e:  # noqa: BLE001 - the final weights leave the run all the same
+                why = f"export_run failed: {type(e).__name__}: {e}"
+                self.log(f"export: {why}; writing the fallback export of the {source} weights instead")
+            else:
+                return {"exported": True, "by": "bes.export.export_run", "checkpoint": str(ckpt),
+                        "weights": source, "result": SV._jsonable(res) if isinstance(res, Mapping) else str(res)}
         # fallback: the parameters (no optimiser state; atomic, readable by
         # bes.decode.respond.load_checkpoint), the configuration, the accounting and a note
         from bes.train import checkpoint as CK
 
+        if any(final.iterdir()):
+            # an earlier export (an emergency one, of older weights) must neither stay mixed with
+            # these files nor be packaged and fetched in their place
+            aside = final.with_name(f"{final.name}.replaced-{time.strftime('%Y%m%d-%H%M%S')}")
+            os.replace(final, aside)
+            final.mkdir()
+            self.log(f"export: the earlier export moved to {aside}")
         params, consts, info, _, _ = self.latest_params(ecfg)
         root = final / "ckpt"
-        if root.exists():
-            shutil.rmtree(root)                 # an earlier (emergency) export is replaced
         saved = CK.save(root, {"state": {"params": params, "consts": consts}},
                         step=int(info.get("step") or 0), config_hash=config_hash(ecfg),
                         meta={"weights": source, "from": str(ckpt)}, keep=1)
         dst = saved.path
         # a library the decode selection did not keep is neither shipped nor counted
-        shipped = "" if ((man.get("decode") or {}).get("library") or {}).get("ship") is False \
+        shipped = "" if ((decode or {}).get("library") or {}).get("ship") is False \
             else self.library_path()
         acc = _accounting(ecfg, dst, shipped)
         atomic_write_json(final / "config.json", SV._jsonable({
@@ -1419,7 +1490,7 @@ class Run:
             "cfg": to_dict(ecfg), "decode_choice": man.get("decode"), "weights": source,
             "library": shipped or None}))
         atomic_write_json(final / "accounting.json", SV._jsonable(acc))
-        note = (f"bes/export.py (export_run) is not available ({why}); this directory holds the "
+        note = (f"bes/export.py (export_run) did not export ({why}); this directory holds the "
                 f"checkpoint ({source} weights), the configuration and the accounting report only. "
                 f"The tokenizer is assets/tokenizer/ of the repository; the library is "
                 f"{shipped or 'none'}; reports: {reports}.")
@@ -1432,6 +1503,39 @@ class Run:
 def _assistant() -> int:
     from bes.config import ASSISTANT
     return ASSISTANT
+
+
+def post_plan_run(run_cfg, out: Path, log=None):
+    """The run settings the stage plan is made from. They are the configuration's, unless the
+    operator changed the post-training plan of a run that is under way: the minutes of every
+    post-training stage and of the buffer, written into ``<run>/post_plan`` while the run is
+    stopped (``"sample=3 critic=0 prefopt=60 select=25 judge=0 export=5 buffer=15"``, the syntax
+    of ``run.post_minutes``; the reserve after training is their sum). The text is copied into
+    the manifest (``post_plan``), which a snapshot carries to the next machine. The
+    configuration and its hash do not change: only the stage plan and the end of training do
+    (the schedule is ``T / (T + remaining)``, so it follows the new end by itself)."""
+    man = SV.read_manifest(out) or {}
+    text = str(man.get("post_plan") or "")
+    path = Path(out) / "post_plan"
+    if path.exists():
+        asked = " ".join(path.read_text().split())
+        if asked != text:
+            try:
+                ST.post_minutes(dataclasses.replace(run_cfg, post_minutes=asked))
+            except ValueError as e:
+                if log:
+                    log(f"post_plan: {path} is not a plan ({e}): ignored")
+            else:
+                SV.update_manifest(out, post_plan=asked)
+                text = asked
+    if not text:
+        return run_cfg
+    minutes = ST.post_minutes(dataclasses.replace(run_cfg, post_minutes=text))
+    total = sum(minutes.values())
+    if log:
+        log(f"post_plan: the post-training plan of this run is {text} ({total:.0f} minutes after "
+            f"training; the configuration's reserve was {run_cfg.post_reserve_hours * 60:.0f})")
+    return dataclasses.replace(run_cfg, post_minutes=text, post_reserve_hours=total / 60.0)
 
 
 def _journal_shards(path: Path) -> dict[str, list[list]]:
@@ -1763,14 +1867,15 @@ def main(argv: Sequence[str] | None = None) -> int:
         run = Run(args, paths, man)
         cfg = run.cfg
         budget = man["budget"]
-        specs = ST.stage_specs(cfg.run, float(budget["budget_s"]))
+        plan_run = post_plan_run(cfg.run, out, run.log)
+        specs = ST.stage_specs(plan_run, float(budget["budget_s"]))
         fns = {"preflight": run.stage_preflight, "background": run.stage_background,
                "benchmark": run.stage_benchmark, "train": run.stage_train,
                "sample": run.stage_sample, "critic": run.stage_critic,
                "prefopt": run.stage_prefopt, "select": run.stage_select,
                "judge": run.stage_judge, "export": run.stage_export}
         sup = SV.Supervisor(out, specs, fns, t0=float(budget["t0"]), deadline=float(budget["deadline"]),
-                            post_reserve_s=cfg.run.post_reserve_hours * 3600.0)
+                            post_reserve_s=plan_run.post_reserve_hours * 3600.0)
         run.sup = sup
         sup.install_signal_handlers()
         if man.get("devices"):                  # a resumed run: check this machine again

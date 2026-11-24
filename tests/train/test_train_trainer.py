@@ -378,3 +378,18 @@ def test_a_run_goes_on_with_its_micro_batches_cut_in_pieces(tmp_path):
     np.testing.assert_allclose([h[3] for h in b.history], [h[3] for h in c.history[10:]], rtol=1e-4)
     with pytest.raises(ValueError, match="micro_split"):
         trainer(cfg, tmp_path / "bad", S.FakeClock(T0), M.Data(S.FakeClock(T0), 1.0), micro_split=4)
+
+
+def test_the_caller_can_move_the_end_of_training(tmp_path):
+    """run_24h passes its supervisor's end of training (a post-training plan changed while the
+    run is under way); without it the configuration's reserve decides."""
+    cfg = M.tiny_cfg()                                   # deadline 360 s, post reserve 72 s
+    clock = S.FakeClock(T0)
+    a = trainer(cfg, tmp_path / "cfg", clock, M.Data(clock, 2.0))
+    a.setup()
+    assert a.train_end == pytest.approx(a.deadline - 72.0)
+    clock_b = S.FakeClock(T0)
+    b = trainer(cfg, tmp_path / "late", clock_b, M.Data(clock_b, 2.0), train_end=T0 + 330.0)
+    out = b.run()
+    assert b.train_end == T0 + 330.0 and out["reason"] == "deadline"
+    assert T0 + 320.0 <= clock_b() <= T0 + 330.0 and b.step > a.step

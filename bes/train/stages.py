@@ -95,6 +95,10 @@ MIN_FRACTION: dict[str, float] = {"benchmark": 0.4, "sample": 0.25, "critic": 0.
                                   "prefopt": 0.5, "select": 0.3, "judge": 0.15, "buffer": 0.0}
 #: Stages that are never skipped for lack of time.
 NEVER_SHED: frozenset[str] = frozenset({"preflight", "background", "export"})
+#: Post stages whose work grows with their slice (more prompts, questions, judged pairs). When
+#: the run is ahead of the plan (an earlier stage finished early), the time it left is shared
+#: by the pending ones in proportion to their planned slices; export and the buffer keep theirs.
+ELASTIC: tuple[str, ...] = ("sample", "select", "judge")
 
 STATUSES = ("pending", "started", "finished", "skipped", "failed")
 DONE = ("finished", "skipped")
@@ -232,6 +236,11 @@ def allocate(specs: Mapping[str, StageSpec], pending: Sequence[str], now: float,
             need -= sl[name]
             alloc.shrunk[name] = alloc.shrunk.get(name, 0.0) + sl[name]
             sl[name] = 0.0
+    ahead = available - alloc.needed_s          # > 0 only when nothing had to be shed
+    grow = [n for n in post if n in ELASTIC and sl[n] > 0 and n not in alloc.skipped]
+    if ahead > 0 and grow:
+        base = sum(sl[n] for n in grow)
+        sl.update({n: sl[n] + ahead * sl[n] / base for n in grow})
     for name in post:
         slices[name] = sl[name]
         hard[name] = sl[name]
