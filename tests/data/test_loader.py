@@ -1038,3 +1038,63 @@ def test_ten_batches_through_the_model_loss(data, tok, tmp_path):
             for a in range(batch["tokens"].shape[0]):
                 value = float(loss(params, consts, {k: v[a] for k, v in batch.items()}))
                 assert np.isfinite(value) and 0 < value < 20
+
+
+# --------------------------------------------------------------------- stock refusals
+REFUSAL_TEXT = "I'm sorry, but I can't assist with that. It's important to respect user privacy."
+
+
+def refusing_messages(rng, k: int) -> list[dict]:
+    """Every third conversation refuses (in its first or its second assistant turn)."""
+    msgs = chat_messages(rng, 2)
+    if k % 3 == 0:
+        turns = [i for i, m in enumerate(msgs) if m["role"] == "assistant"]
+        msgs[turns[(k // 3) % 2]]["content"] = REFUSAL_TEXT
+    return msgs
+
+
+def test_conversations_with_a_stock_refusal_never_reach_training(tmp_path, tok, monkeypatch):
+    """A conversation in which an assistant turn opens with a stock refusal is skipped like a
+    held-out one and counted; every other conversation is trained on. A journal written without
+    the rule is continued with it (the run of 23-24 Nov got the rule at a tenth of its way)."""
+    from bes.data.samples import stock_refusal
+
+    root = tmp_path / "data"
+    rng = np.random.default_rng(5)
+    store: dict[str, list[np.ndarray]] = {}
+    count = iter(range(10 ** 6))
+    write_convs(root, "smol_smoltalk", 0, lambda: refusing_messages(rng, next(count)), 150, tok, store)
+    write_docs(root, "climbmix", 0, rng, 100, 8, 60)
+    convs = store["smol_smoltalk"]
+    refused = {tuple(c.tolist()) for k, c in enumerate(convs) if k % 3 == 0}
+    assert all(stock_refusal(c, tok) == (k % 3 == 0) for k, c in enumerate(convs))
+    kept = {tuple(c.tolist()) for c in convs} - refused
+    cfg = small_cfg(seq_len=128, micro_seqs=4, accum=2, hindsight_frac=0.0)
+    st = stage(cfg, chat_frac=1.0, library_frac_base=0.0, library_frac_chat=0.0)
+    lc = dataclasses.replace(LC, heldout_frac=0.0)
+
+    def pieces_of(loader, steps) -> set[tuple]:
+        out: set[tuple] = set()
+        for i in steps:
+            b = loader(i, st)
+            for a in range(b["tokens"].shape[0]):
+                for r in range(b["tokens"].shape[1]):
+                    tokens = b["tokens"][a, r]
+                    out |= {tuple(tokens[s:e].tolist()) for s, e in segments_of(tokens, b["seg"][a, r])
+                            if tokens[s] == BOS}
+        return out
+
+    with make(cfg, tok, root, tmp_path / "j.jsonl", lc=lc) as loader:
+        pieces = pieces_of(loader, range(60))
+        fails = sum(blk["fail"].get("smol_smoltalk/refusal", 0) for blk in loader.stats()["blocks"])
+    assert not (pieces & refused) and kept <= pieces and fails > 0
+    # a journal written without the rule: the refusals were trained on ...
+    monkeypatch.setattr(LD, "DROP_STOCK_REFUSALS", False)
+    with make(cfg, tok, root, tmp_path / "old.jsonl", lc=lc) as loader:
+        before = pieces_of(loader, range(11))
+    assert before & refused
+    # ... and the same journal continues with the rule, from the middle of a block
+    monkeypatch.setattr(LD, "DROP_STOCK_REFUSALS", True)
+    with make(cfg, tok, root, tmp_path / "old.jsonl", lc=lc) as loader:
+        after = pieces_of(loader, range(11, 60))
+    assert not (after & refused) and len(after) > 20

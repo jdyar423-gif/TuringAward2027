@@ -339,6 +339,25 @@ def _assistant_content(content: list[int], tok) -> str | list[dict[str, str]]:
     return out
 
 
+def stock_refusal(ids: Sequence[int] | np.ndarray, tok, head: int = 28) -> bool:
+    """Some assistant turn of the conversation ``ids`` opens with a stock refusal
+    (``bes.eval.exact_score.canned_refusal`` on the first ``head`` tokens of the turn). The
+    training stream leaves such conversations out (``bes.data.loader.DROP_STOCK_REFUSALS``): a
+    model of this size cannot tell which requests they belong to and gives the same sentence to
+    harmless ones."""
+    from bes.eval.exact_score import canned_refusal
+
+    arr = np.asarray(ids)
+    for pos in np.flatnonzero(arr == ASSISTANT):
+        turn = arr[pos + 1: pos + 1 + head]
+        special = np.flatnonzero(turn >= FIRST_SPECIAL)
+        if special.size:
+            turn = turn[:special[0]]
+        if turn.size and canned_refusal(tok.decode(turn)):
+            return True
+    return False
+
+
 def tokens_to_messages(ids: Sequence[int] | np.ndarray, tok,
                        add_generation_prompt: bool = False) -> list[dict[str, Any]]:
     """Messages ``m`` with ``chat_format.render_conversation(m, tok, add_generation_prompt)``

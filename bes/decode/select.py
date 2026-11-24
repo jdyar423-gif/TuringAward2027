@@ -11,7 +11,8 @@ Failure checks (:func:`check`), per candidate:
   visible text (every constraint of the spec, also those the potentials do not enforce);
 - ``degenerate``: the detectors of ``bes.eval.exact_score.degenerate_stats`` (empty, looping
   tail, a line of five or more words repeated three times outside fences, unclosed code fence,
-  leaked role or template markers), plus a repeated-4-gram rate above ``rep4_max`` and a
+  leaked role or template markers, a reply that opens with a stock refusal: a particle that
+  answers is preferred, and when every particle refuses the refusal stands), plus a repeated-4-gram rate above ``rep4_max`` and a
   prose reply that stops in the middle of a sentence (:func:`cut_off`; neither for code or
   short-form prompts), leaked special-token strings (:func:`special_leak`), and
   ``at_budget``: a finished particle that used its whole token budget (given ``budget``).
@@ -325,8 +326,8 @@ def degenerate_flags(text: str, *, code: bool = False, prose: bool = True,
     from bes.eval.exact_score import degenerate_stats
 
     d = degenerate_stats(text, "stop")
-    out = [name for name in ("empty", "loop", "repeated_lines", "unclosed_fence", "role_leak")
-           if d[name]]
+    out = [name for name in ("empty", "loop", "repeated_lines", "unclosed_fence", "role_leak",
+                             "refusal") if d.get(name)]
     if prose and not code and d["rep4"] > rep4_max:
         out.append("rep4")
     if prose and not code and cut_off(text):

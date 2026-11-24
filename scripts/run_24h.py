@@ -660,6 +660,10 @@ class Run:
         if not isinstance(head[-1]["content"], str):
             return None
         reply = hindsight.response_text(msgs[idx]["content"], self.tok()) or ""
+        if exact_score.canned_refusal(reply):
+            # the data refuses this request: no preference is sampled on it (a refusal counts as
+            # a failed reply in the labels, and that must only teach about harmless requests)
+            return None
         item = {"id": item_id, "source": name, "heldout": bool(heldout),
                 "messages": [{"role": m["role"], "content": str(m["content"])} for m in head],
                 "reference": None, "kind": "chat", "reply": msgs[idx]["content"]}

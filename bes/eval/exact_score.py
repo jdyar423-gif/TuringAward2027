@@ -696,6 +696,33 @@ def loop_tail(tokens: Sequence[str], max_period: int = 120, min_span: int = 12) 
     return best
 
 
+_REFUSAL = re.compile(
+    r"""^[\s*_>-]*
+        (?:(?:i'm|i\s+am)\s+(?:really\s+|very\s+|so\s+|truly\s+)?sorry|sorry|i\s+apologi[sz]e|my\s+apologies|
+           unfortunately|regrettably)?
+        [\s,.!;:-]*(?:but\s+)?
+        (?:as\s+an?\s+(?:ai|artificial\s+intelligence|language\s+model|assistant)\b[^.!?;\n]{0,80}?[,;]\s*)?
+        (?:i\s+must\s+(?:respectfully\s+)?decline\b
+          |(?:i\s+(?:can't|cannot|can\s+not|won't|will\s+not|am\s+unable\s+to|am\s+not\s+able\s+to|
+                    won't\s+be\s+able\s+to|will\s+not\s+be\s+able\s+to)
+             |i'm\s+(?:unable|not\s+able)\s+to)
+            \s+(?:(?:really|actually|possibly|legally|ethically|just|simply|directly|currently|personally|
+                    truly|honestly)\s+){0,2}
+            (?:assist|help(?!\s+but\b)|provide|fulfil+|comply|do\s+(?:that|this)|create|generate|engage|
+               discuss|support|share|continue|participate|accommodate|satisfy)\b)""",
+    re.I | re.X)
+
+
+def canned_refusal(text: str) -> bool:
+    """The reply *opens* with a stock refusal ("I'm sorry, but I can't assist with that.", "As an
+    AI, I cannot provide ...", "I must decline"). A small model trained on a mixture that holds
+    safety refusals gives this reply to harmless requests too; there it is a failed reply. Only
+    the opening counts (an answer may say later what it cannot do); "I can't help but ..." and
+    a quoted line of dialogue do not match."""
+    head = text[:240].replace("\u2019", "'").replace("\u2018", "'")
+    return _REFUSAL.match(head) is not None
+
+
 def degenerate_stats(text: str, finish_reason: str | None = None) -> dict[str, Any]:
     """Diagnostics of one reply.
 
@@ -707,7 +734,9 @@ def degenerate_stats(text: str, finish_reason: str | None = None) -> dict[str, A
     - ``rep4``: share of word 4-grams that repeat an earlier 4-gram of the reply;
     - ``unclosed_fence``: an odd number of ``` fence lines; ``role_leak``: role or template
       markers in the text (the model continued the conversation by itself);
-    - ``degenerate``: any of empty, truncated, loop, repeated_lines, unclosed_fence, role_leak.
+    - ``refusal``: the reply opens with a stock refusal (:func:`canned_refusal`);
+    - ``degenerate``: any of empty, truncated, loop, repeated_lines, unclosed_fence, role_leak,
+      refusal.
     """
     words = re.findall(r"\w+", text.lower())
     grams = [tuple(words[i:i + 4]) for i in range(len(words) - 3)]
@@ -720,11 +749,12 @@ def degenerate_stats(text: str, finish_reason: str | None = None) -> dict[str, A
     truncated = None if finish_reason is None else finish_reason == "length"
     unclosed = len(_fence_lines(text)) % 2 == 1
     leak = _ROLE_LEAK.search(text) is not None
-    flags = [empty, bool(truncated), period > 0, repeated_lines, unclosed, leak]
+    refusal = canned_refusal(text)
+    flags = [empty, bool(truncated), period > 0, repeated_lines, unclosed, leak, refusal]
     return {"words": counts(text)["words"] if text else 0, "empty": empty, "truncated": truncated,
             "loop": period > 0, "loop_period": period, "loop_span": span,
             "repeated_lines": repeated_lines, "rep4": round(rep4, 4), "unclosed_fence": unclosed,
-            "role_leak": leak, "degenerate": any(flags)}
+            "role_leak": leak, "refusal": refusal, "degenerate": any(flags)}
 
 
 # ------------------------------------------------------------------------------- per prompt

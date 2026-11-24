@@ -409,3 +409,18 @@ def test_selection_report_is_serialisable():
     d = sel.as_dict()
     json.dumps(d)
     assert d["rule"] == "strict" and d["n_survivors"] == 1 and d["index"] == 0
+
+
+def test_an_answer_is_preferred_to_a_stock_refusal_and_a_refusal_stands_when_all_refuse():
+    refusal = "I'm sorry, but I can't assist with that. It's important to respect user privacy."
+    answer = ("These running shoes are light and comfortable. The grip is good on wet roads and the "
+              "cushioning protects the knees on long runs.")
+    user = "Write a product review of a pair of running shoes in under 50 words."
+    spec = C.compile(user)
+    got = S.select([Candidate(refusal, 0.7), Candidate(refusal, 0.2), Candidate(answer, 0.1)], spec, user)
+    assert got.text == answer and got.rule in ("strict", "relax_band")
+    assert any("refusal" in r for r in got.reasons[0])
+    # every particle refuses: the selection does not invent an answer
+    got = S.select([Candidate(refusal, 0.6), Candidate(refusal, 0.4)], spec, user)
+    assert got.text == refusal and got.rule == "relax_degenerate"
+    assert "refusal" in S.degenerate_flags(refusal) and "refusal" not in S.degenerate_flags(answer)

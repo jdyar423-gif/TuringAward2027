@@ -150,7 +150,8 @@ from bes.data import packing as P
 from bes.data import shards as SH
 from bes.data import sources as registry
 from bes.data.rag_format import LIBRARY_TASKS, SUITABLE_RULE, RagStats, as_view, library_task, pick_entry
-from bes.data.samples import Sample, WeightRule, fit, fit_draw, from_tokens, permute_index, rng_for
+from bes.data.samples import (Sample, WeightRule, fit, fit_draw, from_tokens, permute_index, rng_for,
+                              stock_refusal)
 
 JOURNAL_FORMAT = "bes-loader-journal/1"
 SHARD_KINDS = ("base", "chat", "rag", "math")
@@ -161,6 +162,14 @@ BUDGET_FLOOR = 1e-3
 CUT_WARN = 2.0 / 3.0
 #: Kinds whose conversations the held-out split applies to, and its rule (journal header).
 HELDOUT_KINDS = ("chat", "rag", "math")
+#: Conversations in which an assistant turn opens with a stock refusal ("I'm sorry, but I can't
+#: assist with that.") are skipped like held-out ones (counted as ``fail/<source>/refusal``).
+#: The chat mixture holds safety refusals (Tulu 3: CoCoNot, WildJailbreak, WildGuardMix); at a
+#: tenth of the training of 23-24 Nov the model gave that sentence to "write a product review of
+#: running shoes". A function of the data only, so a stream stays reproducible; a journal written
+#: before the rule replays its current block with it (the recorded block starts stay valid).
+DROP_STOCK_REFUSALS = True
+
 HELDOUT_RULE = ("heldout/1: h = sm(sm(sm(blake2b64(source)) ^ shard) ^ segment), held out when "
                 "h >> 11 < frac * 2^53 (sm = SplitMix64 finaliser)")
 _LOG = logging.getLogger(__name__)
@@ -719,6 +728,10 @@ class Stream:
             out = np.array(ids, dtype=np.int32)
             ctx.stats.time["read"] += time.process_time() - t0
             return out
+        if DROP_STOCK_REFUSALS and roles is not None and stock_refusal(ids, ctx.tok):
+            ctx.stats.c[f"fail/{name}/refusal"] += 1                            # never trained
+            ctx.stats.time["read"] += time.process_time() - t0
+            return None
         s = from_tokens(np.asarray(ids), None if roles is None else np.asarray(roles), source=name, kind=kind)
         if len(s) > cap and s.is_conversation:      # the prefix or a later window, per draw
             head = fit_draw(s, cap, rng_for(ctx.seed, "fit", name, e, self.v, j), ctx.mix.later_window)

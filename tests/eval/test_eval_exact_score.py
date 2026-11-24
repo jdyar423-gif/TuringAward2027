@@ -406,3 +406,44 @@ def test_project_check_optional():
         assert result is None
     else:
         assert result is None or isinstance(result["violations"], list)
+
+
+REFUSALS = [
+    "I'm sorry, but I can't assist with that. It's important to respect user privacy.",
+    "I’m sorry, but I cannot fulfill this request.",
+    "I apologize, but I cannot provide information on that topic.",
+    "I cannot assist with that request.", "Sorry, but I can't help with that.",
+    "As an AI language model, I cannot provide medical advice.",
+    "I'm sorry, but as an AI, I can't help with this.", "I am unable to provide that information.",
+    "I'm not able to help with that.", "I must decline this request.",
+    "**I'm sorry, but I can't assist with that request.**",
+    "I'm really sorry, but I won't be able to help with that.",
+]
+NOT_REFUSALS = [
+    "", "I'm sorry to hear that your phone fell into water. First, take it out and turn it off.",
+    "I can't help but smile when I think about our trip!",
+    '"I can\'t help you carry that," said Tom, "my arm is broken."',
+    "I can help with that. A virus is much smaller than a bacterium.",
+    "The answer is 10,080 minutes. I can't simplify it further.",
+    "As an AI, I don't have personal preferences, but many people enjoy hiking.",
+    "I cannot stress enough how important sleep is.",
+    "I can't wait to help you plan this trip! Let's start with the dates.",
+    "I can't give you an exact number, but it is roughly 8 billion.",
+    "Unfortunately, the phone may be damaged. Dry it carefully.",
+]
+
+
+def test_a_reply_that_opens_with_a_stock_refusal_is_a_failed_reply():
+    """Seen on 24 Nov at a tenth of the training: 'I'm sorry, but I can't assist with that.' as
+    the answer to 'Write a product review of running shoes' (the mixture holds safety
+    refusals). Only the opening counts, and ordinary sentences with can't / sorry do not."""
+    from bes.eval.exact_score import canned_refusal, degenerate_stats
+
+    assert [t for t in REFUSALS if not canned_refusal(t)] == []
+    assert [t for t in NOT_REFUSALS if canned_refusal(t)] == []
+    d = degenerate_stats(REFUSALS[0], "stop")
+    assert d["refusal"] and d["degenerate"]
+    d = degenerate_stats("Here is a review: light, comfortable shoes that grip well on wet roads.", "stop")
+    assert not d["refusal"] and not d["degenerate"]
+    # an answer that says later what it cannot do is no refusal
+    assert not canned_refusal("The capital of France is Paris. I'm sorry, but I can't assist with the second question.")
