@@ -1,0 +1,69 @@
+{
+ "name": "official_export",
+ "source": "/content/runs/main16/final",
+ "bytes": 196956160,
+ "sha256": "f82784404ab0dc46a46365e0c1706b57a0a04fdc7489de7a8a1e424cb4c308e8",
+ "parts": [
+  {
+   "name": "official_export.tar.000",
+   "bytes": 16777216,
+   "sha256": "b2fc12ed3659594b5a5c4e6ac03ad16b1ad4bac21eb6f671eaadd80143df42d1"
+  },
+  {
+   "name": "official_export.tar.001",
+   "bytes": 16777216,
+   "sha256": "6c3fa19a3bcbe5533d32c672ab9e03c4157357b037afdc826e8f83cc1d60c8e5"
+  },
+  {
+   "name": "official_export.tar.002",
+   "bytes": 16777216,
+   "sha256": "7d0abe177f1ca6dc4c162402ee637eef2854cd4a1367c36ca6ebc8e8a168482c"
+  },
+  {
+   "name": "official_export.tar.003",
+   "bytes": 16777216,
+   "sha256": "f1a0f64956b12fb9976067a483a0c4a14b847aa2e0b699c93fd2ce8a545ffaaa"
+  },
+  {
+   "name": "official_export.tar.004",
+   "bytes": 16777216,
+   "sha256": "9024d57247f54161c1abec6347ea850eed4518943797fac0c172de7cf8622cb7"
+  },
+  {
+   "name": "official_export.tar.005",
+   "bytes": 16777216,
+   "sha256": "3bdae80afd6810141140277a1696955c551929c44c42ae0cb87bb9bae0af7c5b"
+  },
+  {
+   "name": "official_export.tar.006",
+   "bytes": 16777216,
+   "sha256": "172db10d812337027ce94eda5c25effc089a617b04844f3c8cf60301be44b0cd"
+  },
+  {
+   "name": "official_export.tar.007",
+   "bytes": 16777216,
+   "sha256": "de7287d9557cf1ad11f2665f885a75b721b17935e04474c23957cd7d8a58b1af"
+  },
+  {
+   "name": "official_export.tar.008",
+   "bytes": 16777216,
+   "sha256": "b7dff2fc92413c448903c91d4dfb37c1fdb2fc6676d4b7bbd39eb3f6553f1962"
+  },
+  {
+   "name": "official_export.tar.009",
+   "bytes": 16777216,
+   "sha256": "9f050ff3ce7770c0dde1334ba9cb044188eb4073a0019bf1474c4fc0e92b649a"
+  },
+  {
+   "name": "official_export.tar.010",
+   "bytes": 16777216,
+   "sha256": "310a3065fb7e18e6577ec92a778caa8f6eac0cbeac91eb49d1704b489bc0f392"
+  },
+  {
+   "name": "official_export.tar.011",
+   "bytes": 12406784,
+   "sha256": "da0c9e262f6d6a41fe44963d17dc15814011c4c1cdc7c98304be772a5f07d9ff"
+  }
+ ],
+ "members": 22
+}
