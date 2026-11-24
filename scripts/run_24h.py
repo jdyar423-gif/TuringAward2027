@@ -1538,6 +1538,38 @@ def post_plan_run(run_cfg, out: Path, log=None):
     return dataclasses.replace(run_cfg, post_minutes=text, post_reserve_hours=total / 60.0)
 
 
+def fast_switches_run(out: Path, log=None) -> str:
+    """Apply the speed switches of a run (``bes.model.fast``): the kernel and the hand-written
+    backward passes its programs are traced with. They are not configuration (same values to
+    float rounding; the batches, the journal, the checkpoints and the hash do not change): the
+    operator writes e.g. ``kernel=onetile:save relu2=1 ce=1`` into ``<run>/fast`` while the run
+    is stopped; the text is copied into the manifest (``fast``), which a snapshot carries to the
+    next machine. Called once, before any stage traces a program; returns the text in force
+    (``""``: nothing was asked, the switches keep their defaults)."""
+    from bes.model import fast
+
+    man = SV.read_manifest(out) or {}
+    text = str(man.get("fast") or "")
+    path = Path(out) / "fast"
+    if path.exists():
+        asked = " ".join(path.read_text().split())
+        if asked != text:
+            try:
+                fast.parse(asked)
+            except ValueError as e:
+                if log:
+                    log(f"fast: {path} is not a setting ({e}): ignored")
+            else:
+                SV.update_manifest(out, fast=asked)
+                text = asked
+    if not text:
+        return ""
+    fast.apply(fast.parse(text))
+    if log:
+        log(f"fast: the speed switches of this run are {text} (now on: {fast.describe()})")
+    return text
+
+
 def _journal_shards(path: Path) -> dict[str, list[list]]:
     """Every shard the loader journal at ``path`` has shown to a block, as the journal lists
     them: ``{source: [[id, n_segments, n_tokens, ...], ...]}`` (a loader reopening the journal
@@ -1868,6 +1900,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         cfg = run.cfg
         budget = man["budget"]
         plan_run = post_plan_run(cfg.run, out, run.log)
+        fast_switches_run(out, run.log)                  # before any stage traces a program
         specs = ST.stage_specs(plan_run, float(budget["budget_s"]))
         fns = {"preflight": run.stage_preflight, "background": run.stage_background,
                "benchmark": run.stage_benchmark, "train": run.stage_train,

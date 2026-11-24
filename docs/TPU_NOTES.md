@@ -266,3 +266,53 @@ After the configuration was frozen (`configs/final.py`: clocks and confidence ch
 same compile-only check was repeated: train step at T=1024 (A=8, B=32) and at T=2048 (A=8, B=16),
 both 4.21 GiB peak with rematerialisation, compile 320 s and 306 s; decode (8 streams, 2048
 slots) 1.66 GiB. No scatter in any program.
+
+## Attention kernels for one tile (compile-only, 2026-11-24)
+
+At the training pieces (4 x 1024, later 2 x 2048 tokens; 6 heads of 128) the splash kernels see
+one or two tiles per (row, head) slice. `bes.model.attention_splash.FAST_KERNEL` (a module switch
+read at trace time; `""` = the configured kernels) selects other kernels for the same attention,
+each equal to the splash kernels to float rounding (`tests/model/test_attention_onetile.py`;
+bfloat16 differences no larger than those of a change of the splash tiles alone).
+`scripts/tpu_kernels.py` times them on one piece.
+
+**Static schedules.** libtpu 0.0.50 (the chip's version) compiles Pallas kernels for `v6e:1x1`
+on this CPU host, and `LIBTPU_INIT_ARGS=--xla_jf_dump_to=DIR` writes the final VLIW bundles of
+every Mosaic kernel with a per-bundle utilisation table (capacity per bundle: MXU 2, XLU 2,
+VALU 4, VPOP 2, EUP 1, VLOAD 3, VSTORE 2). The kernels are straight-line code per grid step, so
+executed bundles per step / 1.75 GHz is a time estimate without DMA or MXU stalls: for the
+configured kernels it gives 212 us per block application at 4 x 1024; with the HBM passes around
+the kernel (the 128-lane log-sum-exp and its slice, the running statistics written as kernel
+outputs, `di`, the segment broadcasts, about 70 us) that is the measured ~290 us. What the
+dumps show: the splash forward is bound by vector stores and VALU (6.4 loads and 5.3 stores per
+score vreg: the masks and the online-softmax state go through VMEM), the backward by MXU issue
+slots; an f32 or bf16 product pops one f32 result vreg per 8 x 128 outputs *per 128 of the
+contraction* (`[256, 512] @ [512, 128]` pops 128 vregs), so MXU work scales with the MACs
+whatever the tile shapes.
+
+Executed bundles per (row, head) slice for one forward and one backward kernel (a block
+application under remat runs the forward twice and the backward once, `save` runs each once):
+
+| `FAST_KERNEL` | T = 1024 fwd | bwd | 2 fwd + bwd | vs configured | T = 2048 2 fwd + bwd | vs |
+|---|---|---|---|---|---|---|
+| `""` (1024/1024/512, fused) | 4434 | 6689 | 15557 | 1 | 45697 | 1 |
+| `blocks:kvc=1024` | 4768 | 6614 | 16150 | 1.04 | | |
+| `blocks:kvc=256` | 5033 | 6718 | 16784 | 1.08 | | |
+| `blocks:sep` (dq and dkv kernels) | 4434 | 9669 | 18537 | 1.19 | | |
+| `blocks:klayout=seq` (+ an XLA transpose of k) | 4275 | 6712 | 15262 | 0.98 | | |
+| `tokamax` (0.0.17, 1024/1024/1024) | 4677 | 6488 | 15842 | 1.02 | | |
+| `tokamax:diag=1,grid=4` | 3319 | 5884 | 12522 | 0.80 | | |
+| `onetile` (strips of 256, 2 heads per step) | 1926 | 3386 | 7238 | **0.47** | 26418 | **0.58** |
+| `onetile:hp=1` | 2130 | 3524 | 7784 | 0.50 | | |
+| `onetile:bs=128,hp=1` | 2171 | 4077 | 8419 | 0.54 | | |
+| `blocks:save` (one forward per block) | 4434 | 6689 | 11123 | 0.71 | 32829 | 0.72 |
+| `onetile:save` | 1926 | 3386 | 5312 | **0.34** | 19339 | **0.42** |
+
+The one-tile kernels (`bes/model/attention_onetile.py`) hold the slice in VMEM and walk only the
+causal triangle in strips (62.5% of the score elements at T = 1024), mask the off-diagonal pieces
+by segment only, take the softmax of a strip in one pass and write the log-sum-exp as a
+lane-dense row; the backward runs key-major strips with the score products of the next piece
+issued first. The `save` flag keeps the forward kernel's output and log-sum-exp through the
+loop's rematerialisation instead of running the kernel again (JAX never removes a `pallas_call`
+as dead code, so the policy marks the forward kernel itself saveable; residuals 7 MB per block
+application at 4 x 1024). Not timed on the chip yet.

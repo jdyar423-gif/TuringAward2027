@@ -796,6 +796,41 @@ def test_run_24h_takes_a_post_training_plan_changed_while_the_run_is_under_way(t
     assert any("ignored" in m for m in said)
 
 
+def test_run_24h_applies_the_speed_switches_of_a_run(tmp_path):
+    """The kernel and the hand-written backward passes a run's programs are traced with come
+    from <run>/fast, travel in the manifest, and are applied before any stage traces a program;
+    a text that is not a setting changes nothing."""
+    from bes.model import fast
+
+    R = _run24()
+    out = tmp_path / "run"
+    SV.write_manifest(out, {"budget": {"t0": 0.0}})
+    before, said = fast.current(), []
+    assert before == {"kernel": "", "relu2": False, "ce": False, "io": False}
+    try:
+        assert R.fast_switches_run(out, said.append) == "" and not said and fast.current() == before
+        (out / "fast").write_text("kernel=onetile:save  relu2=1\nce=1\n")
+        assert R.fast_switches_run(out, said.append) == "kernel=onetile:save relu2=1 ce=1"
+        assert fast.current() == {"kernel": "onetile:save", "relu2": True, "ce": True, "io": False}
+        assert SV.read_manifest(out)["fast"] == "kernel=onetile:save relu2=1 ce=1" and "onetile:save" in said[-1]
+        fast.apply(before)
+        (out / "fast").unlink()                              # the next machine: the manifest carries it
+        assert R.fast_switches_run(out) == "kernel=onetile:save relu2=1 ce=1"
+        assert fast.current()["kernel"] == "onetile:save" and fast.current()["ce"]
+        fast.apply(before)
+        for bad in ("kernel=warp9", "relu2=maybe", "turbo=1", "relu2"):
+            (out / "fast").write_text(bad)                   # not a setting: the earlier one stays
+            assert R.fast_switches_run(out, said.append) == "kernel=onetile:save relu2=1 ce=1"
+            assert "ignored" in said[-2] and bad.split("=")[0] in said[-2]
+            fast.apply(before)
+        (out / "fast").write_text("kernel= relu2=0 ce=0")    # back to the reference path
+        assert R.fast_switches_run(out, said.append) == "kernel= relu2=0 ce=0" and fast.current() == before
+    finally:
+        fast.apply(before)
+    assert fast.describe({"relu2": True, "kernel": "blocks:kvc=256,sep"}) == "kernel=blocks:kvc=256,sep relu2=1"
+    assert fast.parse("kernel=onetile:bs=128,hp=1 io=on") == {"kernel": "onetile:bs=128,hp=1", "io": True}
+
+
 def test_run_24h_refuses_a_second_run_and_a_resume_without_a_run(tmp_path):
     R = _run24()
     smoke = str(ROOT / "configs" / "smoke.py")

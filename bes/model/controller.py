@@ -95,6 +95,11 @@ def run_loops(step: Callable[[jax.Array, Any], tuple[jax.Array, Any]], e: jax.Ar
         raise ValueError(f"remat_keep must be one of {sorted(REMAT_POLICIES)}, got {keep!r}")
     lanes0 = tuple(e for _ in range(n_lanes))
     policy = REMAT_POLICIES[keep]
+    if remat and policy is None:
+        # the attention kernel switch may ask to keep the forward kernel's output and
+        # log-sum-exp (``attention_splash.FAST_KERNEL`` with the flag "save"); None otherwise
+        from bes.model import attention_splash
+        policy = attention_splash.remat_policy()
     if not remat:
         body = step
     elif policy is None:

@@ -32,6 +32,14 @@ F32 = jnp.float32
 RMS_EPS = 1e-6   # same epsilon as the reference RMSNorm
 L2_EPS = 1e-12   # epsilon of the QK L2 normalisation (squared-norm units)
 
+#: Speed switches (read at trace time; ``False`` is the reference code path of the live run).
+#: ``FAST_RELU2``: the feed-forward activation ``relu(h)^2`` has a hand-written backward
+#: ``ct * 2 relu(h)`` that keeps only the activation-dtype pre-activation ``h`` (:func:`relu2`):
+#: autodiff of ``square(relu(h))`` also keeps the comparison ``h > 0`` for ``relu``'s
+#: ``select``, which on TPU v6e is a bit mask packed in the rematerialised ``W_up`` product and
+#: unpacked in the backward one. Same values (only the sign of an exact zero can differ).
+FAST_RELU2 = False
+
 
 def act_dtype(cfg) -> jnp.dtype:
     """Activation dtype of a ``ModelCfg`` (``"bfloat16"``, ``"float32"``; ``"float64"`` in tests)."""
@@ -110,6 +118,35 @@ def gain_product(x: jax.Array, gain, dtype) -> jax.Array:
     return x.astype(dtype) * (1.0 + gain.astype(dtype))
 
 
+@jax.custom_vjp
+def relu2(h: jax.Array) -> jax.Array:
+    """``relu(h)^2`` in ``hi(h.dtype)`` of a pre-activation ``h`` stored in the activation dtype:
+    the values of ``jnp.square(jax.nn.relu(h.astype(hi(h.dtype))))``.
+
+    The backward pass is written by hand, ``ct_h = (ct * (2 * relu(h))).astype(h.dtype)``, and
+    keeps only ``h`` (the input). Autodiff of the reference expression computes the same
+    product, ``ct * (2 * relu(h))`` (``square``'s rule), and then ``select(h > 0, ., 0)``
+    (``relu``'s rule); where ``h <= 0`` the product is already a zero (``relu(h) = 0``), so the
+    select only fixes the sign of that zero, and its operand ``h > 0`` is an extra residual of
+    the size of ``h`` (on TPU a packed bit mask written by the rematerialised ``W_up`` product
+    and read back by the backward one). Equal values for finite cotangents.
+    """
+    hf = h.astype(hi(h.dtype))
+    return jnp.square(jax.nn.relu(hf))
+
+
+def _relu2_fwd(h):
+    return relu2(h), h
+
+
+def _relu2_bwd(h, ct):
+    hf = h.astype(hi(h.dtype))
+    return ((ct * (2 * jax.nn.relu(hf))).astype(h.dtype),)
+
+
+relu2.defvjp(_relu2_fwd, _relu2_bwd)
+
+
 def mlp(x: jax.Array, w_up: jax.Array, w_down: jax.Array, dtype, gain=None) -> jax.Array:
     """``W_down relu(W_up x)^2`` without biases.
 
@@ -123,10 +160,15 @@ def mlp(x: jax.Array, w_up: jax.Array, w_down: jax.Array, dtype, gain=None) -> j
     two products cost 28% of the sub-layer on TPU v6e (2.97 ms against 2.13 ms per application
     at 32,768 tokens; docs/TPU_NOTES.md). With ``dtype = float32`` nothing changes; with
     bfloat16 the pre-activation is rounded once more than before (2^-9 relative, unbiased),
-    before a square whose result is rounded to bfloat16 for ``W_down`` either way.
+    before a square whose result is rounded to bfloat16 for ``W_down`` either way. With
+    :data:`FAST_RELU2` the square is :func:`relu2`: the same values, a backward pass that keeps
+    only the stored pre-activation.
     """
     h = mm(x, w_up, dtype, out_dtype=dtype)
-    h = jnp.square(jax.nn.relu(h.astype(hi(dtype))))
+    if FAST_RELU2:
+        h = relu2(h)
+    else:
+        h = jnp.square(jax.nn.relu(h.astype(hi(dtype))))
     if gain is not None:
         n = gain.shape[-1]
         h = (gain_product(h, gain, h.dtype) if n == h.shape[-1] else
