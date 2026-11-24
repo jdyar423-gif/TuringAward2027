@@ -58,6 +58,7 @@ import numpy as np
 from bes.config import CAND_FEATS, REG_FIELDS, special_id
 from bes.model import (attention, controller, head, oracle_io, predictive, rope_clocks, sinks,
                        tables)
+from bes.model import layers as _layers
 from bes.model.critic import critic  # noqa: F401  (re-exported for other tracks)
 from bes.model.layers import (F32, PhaseGain, act_dtype, hi, leaf_key, mlp, normal_init, rmsnorm,
                               token_neurons, uniform_init)
@@ -71,6 +72,20 @@ N_ROLES = dict(REG_FIELDS)["role"]
 SWITCHES = ("reg", "cand_in", "cand_out", "conf", "sink", "clock", "gain", "sel", "gate", "page")
 #: gain tables in the order of :func:`gain_widths`
 GAIN_TABLES = ("ffn", "o", "v")
+#: Execution-level speed switch (not configuration; default off; ``rows`` in
+#: ``bes.model.fast``), for the token-neuron rows of :func:`token_rows`:
+#: (a) the key preparation (gather, RMS norm, cast) is not rematerialised in the backward pass
+#: under ``cfg.remat``: the forward keeps the norm's residuals (the float32 gathered keys and
+#: their reciprocal RMS) instead of gathering and normalising again;
+#: (b) :func:`forward` closes the loop scan over lane-dense views of the rows (``[..., m, n] ->
+#: [..., m * n]`` when ``n`` is not a multiple of 128 lanes and ``m * n`` is, :func:`_lane_dense`)
+#: and each loop step reshapes them back, so the cotangents the scan sums over the loops are
+#: carried in the unpadded layout the gather's transpose reads (an ``[8, 192]`` block of a token
+#: sits in padded ``(16, 256)`` bfloat16 tiles). Same operations on the same values: residuals
+#: kept instead of recomputed and reshapes only, so every value is the same bit for bit
+#: (tests/model/test_fast_rows.py). TPU v6e compile of configs/v9.py (take, 4 x 1024 pieces,
+#: with ``flat``): -3.57 M estimated cycles per piece, about -119 ms per step (wf v9_rows report).
+FAST_ROWS = False
 
 
 def bos_id(cfg) -> int:
@@ -385,7 +400,11 @@ def token_rows(params: dict, consts: dict, tokens: jax.Array, cfg) -> list[dict]
     reads its rows without a slice, and their cotangents accumulate over the loops in the
     activation dtype, as for every closed-over value of the scan). With ``cfg.remat`` the key
     preparation is rematerialised in the backward pass, so the float32 gathered keys (the input
-    the normalisation's gradient needs) are not kept from the forward to the backward.
+    the normalisation's gradient needs) are not kept from the forward to the backward; with
+    :data:`FAST_ROWS` they are kept (50 MB per 4 x 1024 piece of configs/v9.py) and the backward
+    pass gathers and normalises no second time. With the
+    speed switch ``layers.FAST_TOKN`` key and val are ``[B, rho, dk, T]`` (tokens in lanes; the
+    layout ``layers.token_neurons`` then reads).
     """
     if not cfg.tok_neurons:
         return None
@@ -402,10 +421,27 @@ def token_rows(params: dict, consts: dict, tokens: jax.Array, cfg) -> list[dict]
         rows = gather(table, tokens)
         return [rmsnorm(rows[:, :, i], out_dtype=dt) for i in range(cfg.n_blocks)]
 
-    keys = (jax.checkpoint(keys_of) if cfg.remat else keys_of)(params["page"]["key"], tokens)
+    remat_keys = cfg.remat and not FAST_ROWS              # FAST_ROWS (a): keep the residuals
+    keys = (jax.checkpoint(keys_of) if remat_keys else keys_of)(params["page"]["key"], tokens)
     vals = gather(params["page"]["val"], tokens)
     on = jnp.asarray(consts["enable"]["page"], F32)
-    return [{"key": keys[i], "val": vals[:, :, i].astype(dt), "on": on} for i in range(cfg.n_blocks)]
+    rows = [{"key": keys[i], "val": vals[:, :, i].astype(dt), "on": on} for i in range(cfg.n_blocks)]
+    if _layers.FAST_TOKN:
+        # tokens in lanes for layers.token_neurons: [B, T, rho, dk] -> [B, rho, dk, T], once
+        # per forward (the prepared rows, outside the loop scan)
+        rows = [{**r, "key": jnp.moveaxis(r["key"], 1, -1), "val": jnp.moveaxis(r["val"], 1, -1)}
+                for r in rows]
+    return rows
+
+
+def _lane_dense(a: jax.Array) -> jax.Array:
+    """``[..., m, n] -> [..., m * n]`` when ``n`` is not a multiple of 128 (the lane width of a
+    TPU tile) and ``m * n`` is; any other array (scalars, lane-dense rows) as it is. A reshape:
+    the carrier :data:`FAST_ROWS` hands the loop scan, whatever layout :func:`token_rows` gives."""
+    s = np.shape(a)
+    if len(s) >= 3 and s[-1] % 128 and (s[-2] * s[-1]) % 128 == 0:
+        return a.reshape(s[:-2] + (s[-2] * s[-1],))
+    return a
 
 
 def major_gains(gains: dict[str, jax.Array] | None, cfg) -> dict[str, jax.Array] | None:
@@ -501,6 +537,11 @@ def forward(params: dict, consts: dict, feats: dict, cfg) -> tuple[jax.Array, di
     ve_all = value_embeddings(params, jnp.asarray(feats["tokens"]), cfg)
     gains = gain_rows(params, consts, jnp.asarray(feats["tokens"]), cfg)
     tok = token_rows(params, consts, jnp.asarray(feats["tokens"]), cfg)
+    tok_shapes = None
+    if FAST_ROWS and tok is not None:
+        # the scan closes over lane-dense views; each step reshapes them back (FAST_ROWS (b))
+        tok_shapes = jax.tree.map(np.shape, tok)
+        tok = jax.tree.map(_lane_dense, tok)
     blocks = block_params(params, cfg)
     lp = params["lanes"]
     xs: dict[str, Any] = {"alpha": lp["alpha"], "mix": lp["mix"], "beta": lp["beta"],
@@ -513,6 +554,11 @@ def forward(params: dict, consts: dict, feats: dict, cfg) -> tuple[jax.Array, di
         xs["loop"] = jnp.arange(cfg.n_loops, dtype=jnp.int32)
     major = major_gains(gains, cfg) if "phase" not in xs else None
 
+    def tok_of(i):
+        if tok is None or tok_shapes is None:
+            return None if tok is None else tok[i]
+        return jax.tree.map(lambda a, s: a.reshape(s), tok[i], tok_shapes[i])
+
     def step(lanes, x):
         u = controller.combine(x["alpha"], lanes, dt)
         masses = []
@@ -521,7 +567,7 @@ def forward(params: dict, consts: dict, feats: dict, cfg) -> tuple[jax.Array, di
             if major:
                 g = {**g, **{name: attention.MajorGain(rows[i]) for name, rows in major.items()}}
             u, m = block(pb, u, ctx, x.get("ve") if i == 0 else None, cfg, gain=g,
-                         loop=x.get("loop"), tok=None if tok is None else tok[i])
+                         loop=x.get("loop"), tok=tok_of(i))
             masses.append(m)
         s = rmsnorm(u, x["g"], out_dtype=dt)
         return controller.update(x["mix"], x["beta"], lanes, s, dt), jnp.stack(masses)

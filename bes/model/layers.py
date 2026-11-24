@@ -39,6 +39,17 @@ L2_EPS = 1e-12   # epsilon of the QK L2 normalisation (squared-norm units)
 #: ``select``, which on TPU v6e is a bit mask packed in the rematerialised ``W_up`` product and
 #: unpacked in the backward one. Same values (only the sign of an exact zero can differ).
 FAST_RELU2 = False
+#: ``FAST_TOKN``: the token neurons' rows are handed to a block with the tokens in lanes
+#: (``bes.model.model.token_rows`` gives ``key``, ``val`` as ``[B, rho, dk, T]``) and
+#: :func:`token_neurons` computes its two per-token contractions as float32 products and sums
+#: over ``dk`` (sublanes) and ``rho`` (a major axis) in that layout (:func:`_token_neurons_lanes`).
+#: In the reference layout ``[B, T, rho, dk]`` every ``[rho, dk] = [8, 192]`` block of a token sits
+#: in padded TPU tiles (8 bfloat16 sublanes of 16, 192 lanes of 256: 2.7 times the bytes) in the
+#: forward, rematerialised and backward fusions; with ``T`` in lanes nothing is padded. Same
+#: products; the float32 sums over ``dk`` (pre-activations, the cotangent of the values' weights)
+#: and over ``rho`` (the neurons' output, the cotangent of the projected input) may add in
+#: another order, so values agree to float32 rounding.
+FAST_TOKN = False
 
 
 def act_dtype(cfg) -> jnp.dtype:
@@ -207,12 +218,34 @@ def token_neurons(x: jax.Array, pin: jax.Array, pout: jax.Array, key: jax.Array,
     (``bes.model.model.token_rows``, activation dtype); on: the ``page`` switch (``0 * y`` is
     exactly zero, so the switch at 0 or ``val = 0`` adds nothing). ``relu(a)^2`` in
     ``hi(dtype)``; the value contraction and ``@ pout`` have ``dtype`` operands and ``hi(dtype)``
-    accumulation. Returns ``hi(dtype)`` (float32) ``[B, T, d]``.
+    accumulation. Returns ``hi(dtype)`` (float32) ``[B, T, d]``. With :data:`FAST_TOKN` key and
+    val are ``[B, rho, dk, T]`` (:func:`_token_neurons_lanes`).
     """
+    if FAST_TOKN:
+        return _token_neurons_lanes(x, pin, pout, key, val, on, dtype)
     ft = hi(dtype)
     s = jnp.square(jax.nn.relu(token_preact(x, pin, key, dtype)))
     o = jnp.einsum("...j,...jc->...c", s.astype(dtype), val.astype(dtype), preferred_element_type=ft)
     return jnp.asarray(on, ft) * mm(o, pout, dtype)
+
+
+def _token_neurons_lanes(x: jax.Array, pin: jax.Array, pout: jax.Array, key: jax.Array,
+                         val: jax.Array, on: jax.Array | float, dtype) -> jax.Array:
+    """:func:`token_neurons` (:data:`FAST_TOKN`) with key, val ``[B, rho, dk, T]`` (activation
+    dtype): the projected input ``z`` is computed as in :func:`token_preact` and moved to
+    ``[B, dk, T]``; ``a[b, j, t] = sum_c z[b, c, t] key[b, j, c, t] / sqrt(dk)`` (a float32 sum
+    over the sublane axis ``dk``) and ``o[b, c, t] = sum_j s[b, j, t] val[b, j, c, t]`` (a float32
+    sum over the major axis ``rho``) of the same exact products of activation-dtype values as the
+    reference contractions; ``o`` goes back to ``[B, T, dk]`` for ``@ pout``. Returns ``hi(dtype)``
+    ``[B, T, d]``."""
+    ft = hi(dtype)
+    dk = pin.shape[-1]
+    z = rmsnorm(mm(x, pin, dtype), out_dtype=dtype)                       # [B, T, dk]
+    zt = jnp.swapaxes(z, -1, -2).astype(ft)                               # [B, dk, T]
+    a = jnp.sum(zt[..., None, :, :] * key.astype(ft), axis=-2) * (1.0 / math.sqrt(dk))   # [B, rho, T]
+    s = jnp.square(jax.nn.relu(a)).astype(dtype).astype(ft)
+    o = jnp.sum(s[..., :, None, :] * val.astype(ft), axis=-3)              # [B, dk, T]
+    return jnp.asarray(on, ft) * mm(jnp.swapaxes(o, -1, -2), pout, dtype)
 
 
 def softcap(z: jax.Array, cap: float) -> jax.Array:

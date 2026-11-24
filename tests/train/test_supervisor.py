@@ -806,12 +806,12 @@ def test_run_24h_applies_the_speed_switches_of_a_run(tmp_path):
     out = tmp_path / "run"
     SV.write_manifest(out, {"budget": {"t0": 0.0}})
     before, said = fast.current(), []
-    assert before == {"kernel": "", "relu2": False, "ce": False, "io": False}
+    assert before == {"kernel": "", **{name: False for name in fast.FLAGS}}
     try:
         assert R.fast_switches_run(out, said.append) == "" and not said and fast.current() == before
         (out / "fast").write_text("kernel=onetile:save  relu2=1\nce=1\n")
         assert R.fast_switches_run(out, said.append) == "kernel=onetile:save relu2=1 ce=1"
-        assert fast.current() == {"kernel": "onetile:save", "relu2": True, "ce": True, "io": False}
+        assert fast.current() == {**before, "kernel": "onetile:save", "relu2": True, "ce": True}
         assert SV.read_manifest(out)["fast"] == "kernel=onetile:save relu2=1 ce=1" and "onetile:save" in said[-1]
         fast.apply(before)
         (out / "fast").unlink()                              # the next machine: the manifest carries it

@@ -622,6 +622,79 @@ def test_export_of_a_v9_style_model_states_the_page_ledger(tmp_path):
     assert E.load_export_config(d / "config.py").model == cfg.model
 
 
+def test_a_v9_export_without_library_decodes_to_the_training_models_distribution(tmp_path):
+    """configs/v9.py's paths through the whole export: token neurons and output gains with
+    trained-like non-zero pages and gains, no library (data and decode). Exported and loaded
+    back with the bundle loader, the export's decoder (``OurLM`` over the exported weights:
+    prefill, every step, a resampling) gives the log-probabilities of the training model's full
+    forward over the same weights, and those of the float32 weights up to the 16-bit storage;
+    with the two switches off they differ (the pages and gains are in these numbers). The
+    record keeps both switches on, ships no library and its generator replies without one."""
+    import jax
+
+    from bes.config import ASSISTANT, BOS, END, USER
+    from bes.decode import sampling as S
+    from bes.decode.lm import OurLM
+    from bes.exact.features import exact_features
+    from bes.model import model as M
+
+    over = OVERRIDES + ["model.gain_o=true", "model.tok_neurons=2", "model.tok_dim=16",
+                        "data.use_library=false", "data.library_frac_base=0", "data.library_frac_chat=0",
+                        "decode.use_library=false"]
+    cfg = load_config(str(CONFIG), over)
+    params = _params(cfg)
+    rng = np.random.default_rng(5)
+    for name in ("val", "key"):
+        params["page"][name] = rng.normal(0.0, 0.3, params["page"][name].shape).astype(np.float32)
+    params["gain"]["o"] = rng.normal(0.0, 0.3, params["gain"]["o"].shape).astype(np.float32)
+    run = _write_run(tmp_path / "run", params, cfg, over)
+    res = E.export_run(run, heldout_rows=4, download_heldout=False,
+                       heldout_records={"web": WEB, "chat": CHAT}, log=lambda m: None)
+    d = Path(res["export_dir"])
+    rec = json.loads((d / "export.json").read_text())
+    assert rec["check"]["ok"] is True and rec["library"]["mode"] == "none" and E.verify_export(d) == []
+    assert not [e for e in rec["errors"] if e["part"] in ("accounting", "read-set audit", "consts")], rec["errors"]
+    assert rec["consts"]["enable"]["gain"] == 1.0 and rec["consts"]["enable"]["page"] == 1.0
+    assert "extra.use_library=false" in rec["decode_choice"]["overrides"]
+    ex = E.load_export(d)
+    assert ex.library is None and ex.cfg.model == cfg.model
+    tok, mcfg = ex.tok, ex.cfg.model
+    prompt = [BOS, USER] + tok.encode("Name two rivers.") + [END, ASSISTANT] + tok.encode("The Nile and")
+    k = 2
+    lm = OurLM(ex.params, ex.consts, mcfg, tok, max_steps=8)
+    assert float(lm.consts["enable"]["gain"]) == 1.0 and float(lm.consts["enable"]["page"]) == 1.0
+    logp = lm.prefill(prompt, k)
+    hist, rows = [[] for _ in range(k)], [[logp[j]] for j in range(k)]
+    for s in range(4):
+        toks = np.argsort(-logp[0])[:k] if s == 0 else np.argmax(logp, -1)
+        for j in range(k):
+            hist[j].append(int(toks[j]))
+        logp = lm.step(toks)
+        for j in range(k):
+            rows[j].append(logp[j])
+        if s == 1:                                   # resample: both particles continue particle 1
+            anc = np.array([1, 1])
+            lm.reorder(anc)
+            hist, rows, logp = [list(hist[a]) for a in anc], [list(rows[a]) for a in anc], logp[anc]
+    fwd = jax.jit(M.logits_fn, static_argnames="cfg")
+    off = {**lm.consts, "enable": {**lm.consts["enable"], "gain": lm.consts["enable"]["gain"] * 0,
+                                   "page": lm.consts["enable"]["page"] * 0}}
+    n = len(prompt)
+    for j in range(k):
+        seq = np.asarray(list(prompt) + hist[j], np.int32)[None]
+        feats = {kk: np.asarray(v) for kk, v in exact_features(seq, None, tok).items()}
+        feats["tokens"] = seq
+        got = np.stack(rows[j])
+        same = S.log_softmax(np.asarray(fwd(ex.params, lm.consts, feats, cfg=mcfg))[0])[n - 1:]
+        np.testing.assert_allclose(got, same, atol=1e-4)
+        train = S.log_softmax(np.asarray(fwd(params, lm.consts, feats, cfg=cfg.model))[0])[n - 1:]
+        assert np.max(np.abs(got - train)) < 0.1                 # the 16-bit storage only
+        without = S.log_softmax(np.asarray(fwd(ex.params, off, feats, cfg=mcfg))[0])[n - 1:]
+        assert np.max(np.abs(got - without)) > 0.1               # the pages and gains count
+    out = ex.generator()([{"role": "user", "content": "Name two rivers."}], ex.settings(["max_tokens=4"]), 3)
+    assert isinstance(out["text"], str) and out["extra"]["library"] is None
+
+
 def test_export_of_a_checkpoint_from_before_the_v9_switches_keeps_its_rung(tmp_path):
     """A checkpoint whose consts have the layout before the v9 switches (no gain, sel, gate,
     page) and store a fallback rung (sink:0): the export ships the stored switch, records which

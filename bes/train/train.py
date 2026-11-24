@@ -234,7 +234,22 @@ def accumulate(loss_fn: Callable, params: Any, consts: Any, batch: Mapping[str, 
     k = split_for(micro_split, int(np.shape(batch["w"])[2]) if "w" in batch else 0)
     if k > 1:
         batch = split_micro(batch, k)
-    vg = jax.value_and_grad(loss_fn, has_aux=True)
+    shapes = jax.tree.map(np.shape, params)
+    if FLAT_TABLES:
+        # token tables [V, ...] as the [V, W] matrices the lookups read (pure reshapes; the
+        # model gets its own shapes back, so its reshape to [V, W] cancels)
+        rows = int(getattr(model_cfg, "vocab_size", -1))
+        params = jax.tree.map(lambda p: _flat_table(p, rows), params)
+
+        def unflat(tree):
+            return jax.tree.map(lambda a, s: a.reshape(s), tree, shapes)
+
+        vg = jax.value_and_grad(lambda p, *a: loss_fn(unflat(p), *a), has_aux=True)
+    else:
+        def unflat(tree):
+            return tree
+
+        vg = jax.value_and_grad(loss_fn, has_aux=True)
 
     def body(carry, mb):
         gsum, lsum, wsum = carry
@@ -249,7 +264,25 @@ def accumulate(loss_fn: Callable, params: Any, consts: Any, batch: Mapping[str, 
     if k > 1:
         micro = regroup_micro(micro, k)
     inv = 1.0 / jnp.maximum(wsum, jnp.asarray(1e-9, F32))
-    return jax.tree.map(lambda g: g * inv, gsum), lsum * inv, wsum, micro
+    return unflat(jax.tree.map(lambda g: g * inv, gsum)), lsum * inv, wsum, micro
+
+
+#: Execution-level speed switch (not configuration; default off): :func:`accumulate` hands the
+#: loss function its token tables (leaves ``[V, ...]`` with three or more dimensions and ``V =
+#: vocab_size``: ``emb/ve``, ``gain/*``, ``page/key``, ``page/val``) as reshapes of ``[V, W]``
+#: matrices and accumulates their gradients in that shape (reshaped back once per call). Only
+#: reshapes, so every value is the same bit for bit. On the TPU v6e the reshape of a
+#: ``[V, 2, 8, 192]`` table to the ``[V, 3072]`` the lookup reads is a relayout (192 lanes are
+#: not whole tiles); without the switch it, and the relayout of the gradient back, run in every
+#: piece of the step instead of once (docs: wf v9_speed report).
+FLAT_TABLES = False
+
+
+def _flat_table(p: Any, rows: int) -> Any:
+    shape = np.shape(p)
+    if len(shape) >= 3 and shape[0] == rows:
+        return jnp.reshape(p, (shape[0], int(np.prod(shape[1:]))))
+    return p
 
 
 def make_train_step(loss_fn: Callable, optimizer: Any, cfg: Cfg, *, donate: bool = True,

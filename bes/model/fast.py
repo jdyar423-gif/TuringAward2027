@@ -9,7 +9,13 @@ close), so the batches, the journal, the checkpoints and the configuration hash 
 * ``kernel``: :data:`bes.model.attention_splash.FAST_KERNEL` (``""``: the configured kernels);
 * ``relu2``: :data:`bes.model.layers.FAST_RELU2`;
 * ``ce``: :data:`bes.model.head.FAST_CE`;
-* ``io``: :data:`bes.model.attention_splash.FAST_SPLASH_IO` (the configured splash kernels only).
+* ``io``: :data:`bes.model.attention_splash.FAST_SPLASH_IO` (the configured splash kernels only);
+* ``flat``: :data:`bes.train.train.FLAT_TABLES` (the trainer's accumulation: token tables as
+  ``[V, W]`` matrices, bit for bit the same; pays off for the wide tables of ``configs/v9.py``);
+* ``rows``: :data:`bes.model.model.FAST_ROWS` (the token-neuron rows of ``configs/v9.py``: key
+  preparation kept instead of rematerialised, rows closed over by the loop scan lane-dense);
+* ``tokn``: :data:`bes.model.layers.FAST_TOKN` (the token neurons of ``configs/v9.py`` with the
+  tokens in lanes; float32 rounding of their sums).
 
 A run takes its setting from ``<run>/fast`` (``scripts/run_24h.py``); ``scripts/tpu_kernels.py``
 times combinations on the chip. A program JAX has already traced keeps what it was traced with:
@@ -22,7 +28,10 @@ import importlib
 #: name in a setting -> (module, attribute) of a boolean switch
 FLAGS = {"relu2": ("bes.model.layers", "FAST_RELU2"),
          "ce": ("bes.model.head", "FAST_CE"),
-         "io": ("bes.model.attention_splash", "FAST_SPLASH_IO")}
+         "io": ("bes.model.attention_splash", "FAST_SPLASH_IO"),
+         "flat": ("bes.train.train", "FLAT_TABLES"),
+         "rows": ("bes.model.model", "FAST_ROWS"),
+         "tokn": ("bes.model.layers", "FAST_TOKN")}
 _TRUE, _FALSE = ("1", "true", "on", "yes"), ("0", "false", "off", "no")
 
 
