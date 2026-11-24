@@ -1,7 +1,8 @@
 # paper/data: the series behind the figures and tables
 
-Every CSV here is written by `paper/figures/make_data.py` from the sources named below; nothing is typed
-by hand, and derived series (the smoothed loss, the live rates by stage, the held-out trend line, the
+Every CSV here is written by `paper/figures/make_data.py` from the sources named below, except the two
+`micro_graft_*.csv`, which `paper/figures/fig12_micrograft.py` writes from the micro graft records (they
+do not depend on the live run, and the cut-off does not apply to them); nothing is typed by hand, and derived series (the smoothed loss, the live rates by stage, the held-out trend line, the
 leave-one-out predictions) are computed there too, so the CSVs are the table view of every figure.
 Rebuild everything, the figures included, with
 
@@ -20,7 +21,8 @@ optimiser step × 262,144 (token positions of the training batches, padding incl
 run log, manifests, ledgers, the checkpoints' manifests; no weights): `_src/final` from `snap_final_main16`
 (the stopped final run, step 29,722), `_src/live` from `snap_main` (the newest snapshot of the live v9 run;
 `EXTRACTED.json` names the snapshot and its creation time), `_src/step5075` from `snap_keep_step5075` (not
-used by the scripts).
+used by the scripts), and `_src/micro_graft_3M` the record files of `N/micro_graft/3M/results.tar.gz` (the
+restart arms of the micro graft experiment), unpacked by `fig12_micrograft.py` once the archive exists.
 
 | file | rows | source | columns worth knowing |
 |---|---|---|---|
@@ -49,6 +51,8 @@ used by the scripts).
 | `loader_drops_live.csv` | per period and source, to the cut-off | loader-block counters in the train logs | `reads` = successful draws + every skipped read; per (config, block) only the record with the largest `last` is used |
 | `ledger_leaves.csv` | one per parameter leaf | the two newest checkpoints' `manifest.json` + the row and read rules of `R/bes/budget.py` | `read_per_step` (standard reading), `optimiser_slots` |
 | `ledger_final_export.csv` | ledger rows of final's export | `_src/final/run/final/export.json` (`accounting`) | library and index |
+| `micro_graft_curve.csv` | one per record of the micro graft experiment and held-out checkpoint, and one per graft for the loss right after it (`stage`); the restart arms' checkpoints once their archive exists | `N/micro_graft/6M/results_all.jsonl` (`fig12_micrograft.py`); `_src/micro_graft_3M` | `mix` (0.75 web + 0.25 chat, the records' training row shares), `web`, `chat`, `assistant` (nats per token); `ref_mix` and `mix_minus_ref`: `ref` of the same seed at the same tokens (for a restart arm's last checkpoint: at the end of the 6M budget, `ref_tokens`) |
+| `micro_graft_summary.csv` | what F12 draws: (a) per arm and checkpoint the paired differences from `ref`, (b) the share of the page gain recovered per graft point | the same | `value` (a: mean; b: ratio of the mean differences, or 1 and 0 by definition), `sd`, `min`, `max`, `seed_0`…`seed_2`, `report_value` and `report_minus_value` (`N/micro_graft/6M/graft_report.json`'s number and its difference) |
 
 N = `/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad`, S = the old
 scratchpad `/tmp/claude-0/-home-user/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad`, R =

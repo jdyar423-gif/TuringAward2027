@@ -1,0 +1,20 @@
+{
+ "verdicts": {
+  "B": 7,
+  "both_bad": 44,
+  "A": 5,
+  "tie": 4
+ },
+ "both_bad": 44,
+ "notes_matching": {
+  "wrong facts or arithmetic": 20,
+  "incoherent text": 14,
+  "loops or repetition": 4,
+  "off the prompt": 7
+ },
+ "examples": [
+  "Identical replies wrongly name John Kerr; Leonardo da Vinci painted it.",
+  "Neither explains planting; A off-target soil talk, B nonsense (cactus support, trembler).",
+  "Both wrong; correct is 12,600. A says 30,000, B says 12."
+ ]
+}

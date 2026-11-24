@@ -1,6 +1,12 @@
-# CLAIMS: every quantitative or factual claim of `paper.md` (second pass), with its source
+# CLAIMS: every quantitative or factual claim of `paper.md`, with its source
 
-State of the sources: 24 November 2026, about 13:15 UTC; repository at commit `8a86bcb`.
+Second pass: state of the sources 24 November 2026, about 13:15 UTC; repository at commit `8a86bcb`.
+Third pass (C400–C448, at the end of this file): sources to 16:28 UTC (newest step record 46,350);
+repository at commit `b1e9140`. Entries below that the third pass withdrew or changed are marked in
+their row and listed at the end. After the programme-committee check (`REVIEW_2.md`), 18:10–18:55 UTC:
+entries C449–C465 and the changes listed under "Changed after the check" at the end; same live cut-off;
+repository at commit `190e0b2`; `L4/` = `N/paper/lead4_work/` (scripts in `L4/scripts/`, each run as
+below).
 
 Abbreviations used in the source column:
 
@@ -28,7 +34,7 @@ Claims marked **[TBD]** have no value yet. A claim without a source is not in th
 
 | id | § | claim | value | source |
 |---|---|---|---|---|
-| C240 | status | newest record read: step, time, p, tokens | step 37,650 at 13:05:57; p 0.6873; ledger 9,869,983,744 tokens | VLOG (last step record); `L2/v9_snap_latest/run/train/ledger.json` |
+| C240 | status | **changed in the third pass → C400.** newest record read: step, time, p, tokens | step 37,650 at 13:05:57; p 0.6873; ledger 9,869,983,744 tokens | VLOG (last step record); `L2/v9_snap_latest/run/train/ledger.json` |
 | C003 | abs, 2.1 | the budget | ≤100M stored numbers of ≤16 bits, ≤20M read per token, 24 h of one TPU v6e, from scratch, blind pairwise comparison | `docs/PLAN.md` l.5; `docs/ACCOUNTING.md` l.5–10 |
 | C016 | abs, 1, 4.2 | extra reads of `v9` | 597,504 (3.1%), of which 589,824 dense projections | computed from `docs/V9.md` l.160–161 |
 | C005 | abs, 1, 5.3 | analytic training FLOP per token at 1,024 tokens | `final` 0.781 G, `v9` 0.809 G (+3.6%) | `L/scripts/flops.py`; NUM `flop.final_1024` |
@@ -42,7 +48,7 @@ Claims marked **[TBD]** have no value yet. A claim without a source is not in th
 | C246 | abs, 7.4 | the compared checkpoint was at 0.44 of training | `final` step 25,280, p 0.4396 (end event), 6.63 × 10⁹ tokens | FLOG end event of step 25,280; 25,280 × 262,144 |
 | C247 | 1 | ledger totals | `final` 98,300,111 / 19,033,736 (19,278,959 worst case); `v9` 98,036,104 / 19,631,240 | `docs/ACCOUNTING.md` l.24–26; `docs/V9.md` l.163 |
 | C248 | 1, 5.3 | at least 27% of the extra time was layout | 146.0 of 548.6 ms = 26.6% | computed from C241 |
-| C249 | 1, 5.2 | live rate of `final` from 112–117 k to 281 k tokens/s | 112–117 k (`docs/TPU_NOTES.md` l.187–189); 281,389 (n = 142) | NUM `rate.kernel_to_graft` |
+| C249 | 1, 5.2 | **changed in the third pass → C403.** live rate of `final` from 112–117 k to 281 k tokens/s | 112–117 k (`docs/TPU_NOTES.md` l.187–189); 281,389 (n = 142) | NUM `rate.kernel_to_graft` |
 | C250 | 1, 5.5 | 16 block applications per token are counted once and charged 16 times | 2 blocks × 8 loops | `R/bes/config.py` ModelCfg |
 | C251 | 1, 6.1 | the user asked for `v9` at p = 0.505; training it from scratch would have seen fewer tokens | 09:16 UTC; about 5.4e9 (rates at the switch) or 6.0e9 (6.02e9, with the later switches and the measured 2,048 rate) < 7.79e9 | C136; C137; NUM `proj.v9_scratch_at_graft` |
 | C020 | 1 | internal review's novelty rating of the design mathematics | 2–3 out of 10 | `docs/MATH.md` l.5 |
@@ -56,14 +62,14 @@ Claims marked **[TBD]** have no value yet. A claim without a source is not in th
 | C023 | 2.2 | device memory and versions (changed: item 30, GiB) | 31.24 GiB (`bytes_limit` / 2³⁰); 44 host cores; jax/jaxlib 0.11.2; libtpu 0.0.50 | FMAN `devices`, `host`; `R/bes/train/supervisor.py` l.398 |
 | C025 | 2.2, 5.2, 5.6 | the two feed-forward products alone, forward | 814 TFLOP/s | `docs/TPU_NOTES.md` l.215 |
 | C252 | 2.2 | definitions: micro-batch, step, piece; exact; equal to rounding; live rate; synthetic | 16 × 1,024 rows (8 × 2,048 from p 0.67); 262,144 tokens per step; 4 pieces per micro-batch | `R/configs/final.py`; `R/bes/config.py` OptimCfg; `<run>/micro_split` (VMAN) |
-| C253 | 2.2 | achieved rate within 0.1% of the per-step rate | e.g. 281,389 against 281,207; 178,087 against 178,009 | NUM `rate.*` (`median_tok_per_s`, `achieved_median`) |
+| C253 | 2.2 | **changed in the third pass → C402.** achieved rate within 0.1% of the per-step rate | e.g. 281,389 against 281,207; 178,087 against 178,009 | NUM `rate.*` (`median_tok_per_s`, `achieved_median`) |
 | C026–C028 | 2.3 | opponents' files, decoding, two arms, budget forcing | as stated | `docs/EVAL_PROTOCOL.md` l.71–110 |
 | C234 | 2.3, 8 | opponents' training tokens | Falcon-H1-Tiny-90M-Instruct 8 × 10¹¹; MobileLLM-R1 pre-training 4.2 × 10¹² | `N/paper/refs.md` [11], [7], [9] |
-| C254 | 2.3, 6.3 | our projected total | about 1.36 × 10¹⁰ (1.360e10 at the measured rates) | NUM `proj.v9_total` |
+| C254 | 2.3, 6.3 | **changed in the third pass → C408.** our projected total | about 1.36 × 10¹⁰ (1.360e10 at the measured rates) | NUM `proj.v9_total` |
 | C030–C032 | 2.4, C | runtimes 1–3 | 7,325 s; 8,220 s; from 01:05:55 | `S/tpu_intervals.txt`; `docs/CHANGES.md` |
 | C255 | 2.4, I | runtime 2 taken back about 19:29, about 2 h 12 min after its allocation (about 17:17); the ledger counts 17:13:00–19:30:00 | as stated | `docs/CHANGES.md` l.266, l.287 |
 | C034 | 2.4 | TPU time at the graft and share in training steps | 12.98 h; 8.98 h (69%) | computed; FLED |
-| C256 | 2.4, C1 | TPU time at 12:00:00 | 7,325 + 8,220 + 39,245 = 54,790 s = 15.22 h | computed from C030–C032 |
+| C256 | 2.4, C1 | **not in the third draft (see C410).** TPU time at 12:00:00 | 7,325 + 8,220 + 39,245 = 54,790 s = 15.22 h | computed from C030–C032 |
 | C036 | 2.4 | deadline, end of training, post-training minutes | 20:31:49; 18:33:49; 118 = 60 + 35 + 3 + 5 + 15 | FLOG setup events; VMAN `post_plan` |
 
 ## Model and ledgers (Section 4, Appendix A, B)
@@ -105,7 +111,7 @@ Claims marked **[TBD]** have no value yet. A claim without a source is not in th
 | C119 | 5.2 | CPU interpret-mode checks | float32 within 1e−5; float64 dense reference; segment boundaries | `docs/CHANGES.md` l.361; `W/kernel.md` l.71–96 |
 | C264 | 5.2, Table 2 | live medians by stretch (changed: item 26) | 222,031 (101); 216,548 (85); 240,131 (266); 281,389 (142); 178,087 (44); 196,874 (99, steps 31,950–36,850) | NUM `rate.rt2_16rows`, `rate.rt3_same`, `rate.pieces`, `rate.kernel_to_graft`, `rate.v9_take`, `rate.v9_switches_1024` |
 | C265 | Table 2 | benchmark and synthetic values | 111,893; 201,877; 216,681; 246,538; 296,371; 182,919; 203,665 | `tables.md` T2, T3b; `docs/CHANGES.md` §19.1, 19.3, 19.5–19.7 |
-| C266 | 5.2 | 2.40–2.51× includes the 32 → 16 rows change (+8%) (new: item 39) | 281,399 / 117,000 and / 112,000 | NUM `ratio.reference_to_kernel_live`; C107 |
+| C266 | 5.2 | **changed in the third pass → C404.** 2.40–2.51× includes the 32 → 16 rows change (+8%) (new: item 39) | 281,399 / 117,000 and / 112,000 | NUM `ratio.reference_to_kernel_live`; C107 |
 | C267 | 5.2 | kernel live gain on medians (changed: item 26) | 240,143 (n 32, steps 21,050–22,600) → 281,387 (n 53, 22,650–25,250): +17.2% | NUM `ratio.kernel_gain_live` |
 | C268 | 5.2 | live about 5% below synthetic; main thread 2.9% of a core | as stated | `docs/CHANGES.md` §19.6 |
 | C269 | 5.3 | the three switches and their exactness | `flat` exact; `rows` exact; `tokn` float32 order | `W/v9_speed.md`; `W/v9_rows.md`; `W/v9_tokn.md`; `docs/CHANGES.md` §19.7 |
@@ -114,7 +120,7 @@ Claims marked **[TBD]** have no value yet. A claim without a source is not in th
 | C128, C129 | 5.3 | cost-model attribution and padding | token neurons' `[8, 192]` contractions padded 8 → 16, 192 → 256; gain table 0.17 M cycles | `W/v9_speed.md` l.74–96 (compile-only) |
 | C130 | 5.3 | extra seconds per step then and now | about 0.6 s (23 Nov); 0.55 s (1,433.1 − 884.5) | `docs/TPU_NOTES.md` l.188–189; computed |
 | C272 | 5.4, Table 4 | static counts of six configurations | cycles 1,944.7 … 2,825.6 M; HBM GB 515 … 1,130 | `L2/estimate_out.txt` (from `W/v9_*_work/estimate.py` on the existing HLOs); PRED |
-| C273 | 5.4 | leave-one-out errors and rank correlations | FLOP mean 19.6% (max 66.4%); cycles 11.7% (40%); bytes 5.7% (11.1%); Spearman 0.655 / 1.0 / 1.0 | PRED `loo` |
+| C273 | 5.4 | **WITHDRAWN in the third pass (fit undefined without `final`) → C407.** leave-one-out errors and rank correlations | FLOP mean 19.6% (max 66.4%); cycles 11.7% (40%); bytes 5.7% (11.1%); Spearman 0.655 / 1.0 / 1.0 | PRED `loo` |
 | C274 | 5.4 | line through all six (bytes) | 492.5 ms + 0.7313 ms per GB (1.37 TB/s); residuals −110 … +118 ms | `L2/predictor_test.py` output |
 | C275 | 5.4, Table 5 | cost model against the chip, by change (new: item 38) | ratios 1.14, 0.36, 0.85, 2.95, 1.72, 1.07, 7.85; signs 7 of 7 | PRED `diffs`; `W/v9_speed.md`; `W/v9_rows.md`; `W/v9_tokn.md`; `docs/CHANGES.md` §19.5 |
 | C276 | 5.4 | "5% high" was 14% high on the difference (changed: item 24) | +623.7 vs +548.6 ms | `W/v9_speed.md`; C241 |
@@ -143,9 +149,9 @@ Claims marked **[TBD]** have no value yet. A claim without a source is not in th
 | C282 | 6.3 | the loader's plan with the correction, against the projection (changed: item 19) | 7.45 × 10⁹ planned; about 5.8 × 10⁹ remain (0.574e9 to step 31,912 + 5.23e9 projected) | VLOG run.log l.875–878; NUM `proj.v9_total`; computed |
 | C143 | 6.3 | reads left per source | 8 × (1 − 0.5049) = 3.96 | VLOG run.log ("at most 3.96093 reads") |
 | C283 | 6.3 | GSM8K capped before and after the graft (new: item 45) | 0.0126 → 0.0007 after; 0.0114 → 0.0008 before | VLOG run.log l.42, l.876 |
-| C284 | 6.3 | token projection from the 10:57:50 restart (changed: item 28) | total about 1.36e10 (1.360e10); deficit about 2.3e9 (2.28e9, 14.4%) against `final`'s projected 1.588e10; at the measured live rates 196,874 (1,024) and 188,980 (2,048) | NUM `proj.v9_total`; C157 (final's projection, whose 2,048 rate is scaled) |
+| C284 | 6.3 | **changed in the third pass → C408.** token projection from the 10:57:50 restart (changed: item 28) | total about 1.36e10 (1.360e10); deficit about 2.3e9 (2.28e9, 14.4%) against `final`'s projected 1.588e10; at the measured live rates 196,874 (1,024) and 188,980 (2,048) | NUM `proj.v9_total`; C157 (final's projection, whose 2,048 rate is scaled) |
 | C285 | 6.3 | the 2,048-token phase started at step 36,867 (p = 0.67), first record 12:48:36 | as stated | VLOG stage event and step records |
-| C330 | 6.3, Table 2 | live rate of `v9` at 2,048 tokens (new: item 43) | 188,980 tokens/s (n 16, steps 36,900–37,650, range 188,566–189,858), 4.0% below 196,874 | NUM `rate.v9_switches_2048`; VLOG |
+| C330 | 6.3, Table 2 | **changed in the third pass → C405.** live rate of `v9` at 2,048 tokens (new: item 43) | 188,980 tokens/s (n 16, steps 36,900–37,650, range 188,566–189,858), 4.0% below 196,874 | NUM `rate.v9_switches_2048`; VLOG |
 | C146 | 6.4 | Table 6 rows 26,890, 28,501, 14 | 11.2808027; 11.3348608; 9.2843390 | `S/graft_test.log`; `S/graft_dry_out.txt`; `N/graft_rehearsal/graft.log` |
 | C286 | 6.4 | Table 6 row 29,722: a re-run of the same source checkpoint under the live hash (changed: item 21) | 11.3726320 / 11.3726320 / 0.0; hash `f29bfeb3ebf353a8`; HEAD `8a86bcb` | `RW1/graftcheck/graft_check_29722.log` |
 | C147 | 6.4 | the saved output of the live graft has no check record | `S/graft_out.txt` without `--check`, into `main16_v9_sorted`, hash `f1243cb29610103a` | `S/graft_out.txt`; `REVIEW_1.md` item 3 |
@@ -155,9 +161,9 @@ Claims marked **[TBD]** have no value yet. A claim without a source is not in th
 | C289 | 6.5 | held-out rows (changed: item 23) | web 64, chat 64, proxy 12 rows; 136,974 weighted tokens | `N/midrun_eval_1.json` (`heldout`) |
 | C290 | 6.5 | the proxy rows hold user turns of all 400 prompts (new: item 9c) | `proxy_samples` calls `prompt_set.load()` | `R/bes/export.py` |
 | C291 | 6.5 | runtime held-out values | `final` 26,890 / 28,501 / 29,722; `v9` 30,742 / 31,762 / 31,912 / 33,038 / 34,166 / 35,294 | `N/midrun_eval_1.json`; `N/heldout_v9.jsonl` (copy of 12:30) |
-| C292 | 6.5 | local per-position evaluations reproduce the runtime's values | 29,722, 34,166 and 35,294: differences below 1e−8 | HA `reproduction` |
+| C292 | 6.5 | **changed in the third pass → C419.** local per-position evaluations reproduce the runtime's values | 29,722, 34,166 and 35,294: differences below 1e−8 (**not so, found after the check**: web and chat differ by up to 2.7 × 10⁻⁸ there; C419) | HA `reproduction` |
 | C293 | 6.5, Table 7, G1 | paired differences, extrapolation, pages-off decomposition, frequency strata | as in Table 7 and the text of §6.5 (e.g. −0.0499 [−0.0541, −0.0457]; pages off +0.0473 [0.0436, 0.0511]; quartiles 0.0655 / 0.0540 / 0.0387 / 0.0316) | HA `paired`, `extrapolation`, `frequency`; extrapolation by `L2/heldout_analysis.py` with t(1) = 12.706 |
-| C294 | 6.5 | three-point line: 95% prediction interval at 592.5 min (changed: item 35) | ±0.025 (t with 1 dof); gap 0.0158 | NUM `heldout.three_point`; `RW1/stats.py` |
+| C294 | 6.5 | **WITHDRAWN in the third pass (a line through all 140 rows; not cited).** three-point line: 95% prediction interval at 592.5 min (changed: item 35) | ±0.025 (t with 1 dof); gap 0.0158 | NUM `heldout.three_point`; `RW1/stats.py` |
 | C295 | 6.6 | the new leaves train from a learning-rate factor of 0.54 down to 0.1 | 0.5394 at step 29,750; 0.1 at p = 1 | VLOG; `R/bes/config.py` OptimCfg |
 | C328 | 8, 9 | token gap to the opponents | 8e11 / 1.355e10 ≈ 59; 4.2e12 / 1.355e10 ≈ 310 | computed from C234, C254 |
 | C329 | 6.5, I | local copies of `final` checkpoints 5,075, 22,613, 26,890 (and the extracted 29,722) deleted at 12:10–12:14 to free the disk; 29,722 read from the kept tar | as stated | `N/OPERATIONS.md` ("Since 12:10"); `L2/run_heldout2.log` (missing directories at 12:39); `N/snap_final_main16` |
@@ -218,7 +224,7 @@ Claims marked **[TBD]** have no value yet. A claim without a source is not in th
 | id | § | claim | value | source |
 |---|---|---|---|---|
 | C218–C222 | J | commits, configuration hashes, command line, per-run files | as stated; `fast` of `v9` with `flat=1 rows=1 tokn=1` | FMAN; VMAN; `git log`; `N/OPERATIONS.md` |
-| C323 | J | test functions at `8a86bcb` (changed: item 27) | 1,356 | `grep -rc "def test_" tests` in `R/` |
+| C323 | J | **changed in the third pass → C437.** test functions at `8a86bcb` (changed: item 27) | 1,356 | `grep -rc "def test_" tests` in `R/` |
 | C223, C224 | J | determinism | as stated | VMAN `benchmark.canary.determinism`; `docs/SPEC_MODEL_TRAIN.md` l.140–142 |
 | C227–C229 | K | ClimbMix licence; third-party outputs; credential handling | as stated | `docs/DATA_SOURCES.md`; `docs/CHANGES.md` l.189 |
 
@@ -267,7 +273,141 @@ prediction.
 
 ## Open items ([TBD] in the paper)
 
-R1–R12 (C202); authors; the pre-registered judges on dev and the MobileLLM neutral arm on dev (Section
-7.2); the live `v9` rate at 2,048 tokens and the tokens trained at 18:33:49
-(Section 6.3, Table C2); what each post-training stage did (C.4); decoding throughput of the export
-(E.5); the share of flagged test replies (D.5); the licence review (K).
+Updated after the check (18:40 UTC). R1–R12 (Appendix M; C202, C444, C455–C457); authors; the tokens and
+final step at 18:33:49 (Section 6.3, Tables C2, M9); what each post-training stage did (C.4, M7, M8);
+decoding throughput of the export (E.5, M12); the share of flagged test replies (D.5); the licence review
+(K); the test comparison in the abstract, Section 7.4 / Figure 7 and Section 9. Closed since the second
+pass: the registered judges on `dev` (C421–C425) and the live `v9` rate at 2,048 tokens (C405). No
+longer open but recorded as deviations: the `neutral` arm of MobileLLM-R1.5 on `dev` (C451) and the
+protocol's K = 1 result and matched controls (C452).
+
+## Third pass: new and changed claims (C400–C448)
+
+Written 24 November 2026, 17:30–18:15 UTC, for the third draft. `L3/` = `N/paper/lead3_work/`.
+`NUM3` = `L3/numbers.json` (written by `L3/make_numbers.py`, a copy of the second pass's script reading
+`L3/v9_snap_1628/`, the train log, ledger, run log and manifest extracted from the snapshot `N/snap_main`
+created 16:28:12 UTC; newest step record 46,350). `VLOG3` = `L3/v9_snap_1628/run/train/train_log.jsonl`.
+`RD` = `L3/readers.json` (`L3/readers.py`: the repository's own key check and tally over
+`N/study/proxy/ratings/`). `MG` = `L3/micrograft.json` (`L3/micrograft.py` on
+`N/micro_graft/6M/results_all.jsonl`). `H3` = `L3/heldout3.json`; `H46` = `L3/heldout46.json`. `MAL` =
+`L4/make_all_1731.log`, a copy of `N/paper/figures/_work/make_all.log` of the rebuild `make_all.sh
+--cutoff 46350` at 17:31–17:32 UTC (this entry first named the 16:57:45 log, which the 17:31 rebuild
+overwrote; every MAL line cited below is in the 17:31 copy, checked after the check). `MAL4` =
+`L4/make_all_1825.log`, the rebuild of 18:25 (`make_all.sh --no-extract`, default cut-off now taken from
+NUM3; by `diff` it differs from MAL only in the cut-off lines, the 2,048-token MISMATCH, which is gone,
+the count of mismatches (2 → 1) and Figure 5's 46,178 points).
+"Recompute" gives the command; every script runs with
+`taskset -c 2,3 nice -n 5 S/venv/bin/python -I -B <script>` from `L3/`.
+
+Section, table and figure numbers below are the third draft's. Renumbering against the second draft:
+Figure 2 (kernels) → Figure F1; Figure 3 (waterfall) → Figure F2; Figure 4 (throughput against time) →
+Figure C2; Figures 5, 6, 7, 8, 9 → Figures 2, 3, 4, 5, 7; new Figure 6 (micro graft, `F12_micrograft`);
+Table 5 (cost model by change) → Table F5; Table 6 (function check) → Table G1; Table 7 → Table 5 (rows at
+34,166 → Table G3); new Table 6 (micro graft); new Table 7 (readers); Table 8's exact scores → Table 8;
+Table G1 → Table G2; old §3 → Appendix N, old §5.6 → F.6, old §5.7 → F.4. The first- and second-pass ids
+above keep their section column as written then.
+
+| id | § | claim | value | source; how to recompute |
+|---|---|---|---|---|
+| C400 | status, 2.4, C | newest record read; snapshot; newest held-out record | step 46,350 at 16:27:21 UTC, p 0.8794, loss 1.9463; ledger 46,351 steps, 12,150,636,544 tokens at 16:27:24; snapshot created 16:28:12; held-out record of step 46,178 written 16:25:50 | VLOG3 (last step record); `L3/v9_snap_1628/run/train/ledger.json`; `L3/v9_snap_1628/snapshot_meta.json`; `N/heldout_v9.jsonl` (last line, `time`); NUM3 `v9.newest_step`, `v9.newest_ledger` |
+| C401 | status, 2.4, 6.3, C2 | training ends at 18:33:49 UTC | setup event `train_end` 1795545229 = 18:33:49; the operator's notes and the task text say 18:33:45 (a summary; the raw record is used) | VLOG3 setup events; NUM3 `proj.v9_total_from_newest.train_end_utc`; `N/OPERATIONS.md` ("Endgame (v9)") |
+| C402 | 2.2 | the logged rate's definition; achieved rate within 0.13% of the live median in every stretch | 262,144 ÷ running average of the step time (weight 0.2), training time of the ledger; largest gap 0.124% (2,048-token stretch: 189,074 live, 188,840 achieved) | `R/bes/train/train.py` l.903, 965 (as `FIGURES.md` cites them); MAL "largest gap"; NUM3 `rate.*` (`achieved_median`) |
+| C403 | 5.2, Table 2, F.3, H1 | the reference implementation's first rates (changed: was "112–117 k (monitor readings)") | two monitor readings 115,394 and 116,718 tokens/s (04:28:00, 04:17:59 on 23 Nov); start-up benchmark 111,893; `docs/TPU_NOTES.md` summarises 112–117 k and `v9` 88–92 k; `v9`'s benchmark on disk 88,146 | `S/colab_bes24h_final.log` l.73–74; `docs/TPU_NOTES.md` l.187–189; `docs/CHANGES.md` §19.1; `FIGURES.md` (F9 and F2 readings) |
+| C404 | 5.2 | live rate of `final` rose 2.41–2.44× from the reference to the one-tile kernel (changed: was 2.40–2.51×) | 281,399 / 116,718 = 2.411; 281,399 / 115,394 = 2.439 | NUM3 `ratio.reference_to_kernel_live` |
+| C405 | Table 2, 5.2, 6.3, Figs 2, F2, C2 | `v9` at 2,048 tokens (changed: was 188,980, n = 16) | live median 189,074 tokens/s, n = 190 (steps 36,900–46,350, 12:48:36–16:27:21), range 188,467–193,886; achieved 188,841 (n 189); 3.96% below 196,874 at 1,024 | NUM3 `rate.v9_switches_2048`; MAL (`v9_2048`) |
+| C406 | Figure 2 | the 2,048-token live tick | 262,144 ÷ 189,074 = 1,386.5 ms (n = 190) | MAL (`fig4_v9cost.py`: "v9 switches 2048 1386.5") |
+| C407 | Table 4, Figure 3a | leave-one-out error of FLOP and of reads (changed: FLOP was "20% (66%)") | not defined without `final` (the other five have equal counts); on the five `v9` configurations 10.3% (21.4%), identical for FLOP and reads | MAL ("leave-one-out flop: mean 10.3%, largest 21.4% over 5 configurations"; the MISMATCH line on `predictor_test.json`); `FIGURES.md` known discrepancy 1 |
+| C408 | 6.3, 6.7, Table C2, M9, H1, G.3 | token projections (changed: were 1.360e10 and 2.28e9 / 14.4% from the 10:57 restart against 1.588e10) | `v9` run total at 18:33:49: 1.358 × 10¹⁰ (51,821 steps) = ledger 12,150,636,544 + 7,584.4 s × 189,074; `final` continued: 1.591 × 10¹⁰ (slice 30,969 s, 281,399 at 1,024, 252,972 scaled at 2,048); deficit 2.33 × 10⁹ (14.6%); remaining after the graft about 5.8 × 10⁹ (13.58 − 7.79) | NUM3 `proj.v9_total_from_newest`, `proj.final_total`; projections, not measurements |
+| C409 | 6.1 | `v9` from scratch in the slice left at the graft | about 6.0 × 10⁹ (6.02e9) with the later switches; 5.4 × 10⁹ at the rates of the switch (C251) | NUM3 `proj.v9_scratch_at_graft` |
+| C410 | 2.4, C.2, Table C1 | TPU time at the cut-off | runtime 3: 55,290 s to 16:27:24; total 70,835 s = 19.68 h; training seconds of the kept trajectory 55,310.2 = 15.36 h (78.1%) | NUM3 `tpu.at_newest` (`S/tpu_intervals.txt`; ledger) |
+| C411 | 2.4, 6.5, C.1, C.3, Fig C1 | the chat ramp from p = 0.67 | chat share 0.25 until p = 0.67, linear to 0.70 at p = 0.92; base-text rows 75% in the loader block of step 36,850 and 38.4% (38.45% planned) in that of step 46,350; logged chat share 0.6269 at step 46,350 | `R/bes/train/schedule.py` `chat_frac_at`; `R/bes/config.py` DataCfg (`chat_frac`, `chat_frac_tail`, `tail_from`); VLOG3 `loader_block.row_share`, `chat_frac` |
+| C412 | C.3 | training loss over the 2,048-token stretch | 190 records; mean of the first 5 2.404, of the last 5 1.954; learning-rate factor 0.3964 (step 36,900) → 0.2086 (step 46,350) | MAL (fig1: "stretch ('v9', 3) … first 5 2.4038, last 5 1.9539"); VLOG3 `lr` |
+| C413 | Figure C1 caption | record counts at the cut-off | 594 records of `final` (50–29,700) and 333 of `v9` (29,750–46,350); a line is now drawn at 2,048 tokens | MAL (fig1 "records: final 594, v9 333") |
+| C414 | Figure D1 caption, D.3 | the live loader's skips to the cut-off | e.g. system chats 29.82% of 44,541 reads, UltraChat 9.33% of 77,492, Tulu 3 6.30% of 257,801, SYNTH 1.22% of 254,236; scan within 0.25 points | MAL (`fig5_openings.py` lines) |
+| C415 | 6.5, Table 5, Table G2, Fig 5 | runtime held-out evaluations to step 46,178 (new rows 36,422 … 46,178) | e.g. 46,178: web 2.6867, chat 1.3790, chat assistant 1.2651, proxy 2.4614, web + chat 2.0588, all 2.0914; 917.9 training minutes; 16 `v9` checkpoints and 3 `final` | H3 `rows` (from `N/midrun_eval_1.json`, `N/heldout_v9.jsonl`); recompute `heldout3.py` |
+| C416 | 6.5, Table 5 | comparisons at 46,178 (bootstrap over rows, seed 20261124, 10,000 resamples) | since the graft −0.1679 [−0.1828, −0.1533]; web −0.1019 [−0.1106, −0.0937]; chat −0.2393 [−0.2560, −0.2235]; pages off − on +0.2166 [0.2019, 0.2320]; pages off − `final` 29,722 +0.0487 [0.0394, 0.0582] (web +0.0623, chat +0.0340); 46,178 − 35,294 −0.1073 | H46 `paired`; recompute: `heldout46.py` from the saved per-position losses `L3/heldout/v9_46178_on.npz` and `v9_46178_pagesoff.npz`, now the only local copy of this evaluation: the 16:28 snapshot that held checkpoint 46,178 is gone (the snapshots rotate; at 18:29 UTC `N/snap_main.prev/parts.json` holds the snapshot of 17:39:40 with checkpoint `ckpt-000019-step-000049424`, and `N/snap_main` that of 18:05:14 with `ckpt-000020-step-000050506`); the npz files were written by `heldout_eval.py --manifest L3/v9_snap_1628/run/manifest.json --ckpt <that snapshot> --variant on: --variant pagesoff:page=0,gain=0` |
+| C417 | 6.5, Table 5, Fig 5 | `final`'s three-point line at the newest checkpoints (**changed after the check**: log-token line recomputed with the rates of 6.3, and which checkpoints lie inside each interval) | minutes: 2.1470, gap −0.088 ± 0.171 at 917.9 min, inside at every checkpoint; log tokens at equal time, `final` at 281,399 tokens/s for 10,061 s after the graft restart and then 252,972 (NUM3 `proj.final_total`): `final` 1.383 × 10¹⁰ tokens, gap −0.115 ± 0.107 at 46,178, outside from step 41,850 on (the third pass ran `final` at 281,220 throughout: 1.419 × 10¹⁰, −0.112 ± 0.111, also outside); at equal tokens −0.127 ± 0.084, outside from step 34,166 on (at 35,294: −0.044 ± 0.040); at 35,294 the first two unchanged (−0.033 ± 0.066, −0.038 ± 0.052), inside | `L4/heldout4.json` (`L4/scripts/heldout4.py N L4/heldout4.json`); H3 for the old log-token line; MAL4 (fig8 lines) |
+| C418 | 6.5 (iii), G.5 | input-frequency quarters at 46,178 (section reference corrected after the check: was "6.5 (iv)") | pages: 0.299, 0.241, 0.170, 0.159 nats (rarest first); since the graft: −0.152, −0.153, −0.167, −0.199 | H46 `frequency` |
+| C419 | 6.5, Table G2 | local evaluations reproduce the runtime's (**changed after the check**: was "within 10⁻⁷", which the proxy rows at 46,178 exceed) | web and chat rows within 3 × 10⁻⁸ at all four (largest 2.96 × 10⁻⁸, web at 46,178; 2.72 × 10⁻⁸, web at 29,722); proxy rows 2.20 × 10⁻⁷ at 46,178, 8.4 × 10⁻⁸ at 35,294; all rows 2.2 × 10⁻⁹ at 46,178 | `L4/heldout4.json` `local_vs_runtime` (the four `*_on.npz` of `L2/heldout/` and `L3/heldout/` against `N/midrun_eval_1.json`, `N/heldout_v9.jsonl`) |
+| C420 | Table 8, 7.4 | bits per byte of ours on the web rows at 46,178 | 0.9801 over 258,817 bytes | H46 `bpb_web` |
+| C421 | Table 7, abstract, 1, 7.4, 9 | every reader on the four development pair sets | as in Table 7 (e.g. `v9` vs Falcon-H1-Tiny: Opus 3 / 39 / 18; `qwen3-4b-2507` 1 / 16 / 43, 0.375 [0.264, 0.502] (**changed after the check**: the upper bound is 0.501515, printed 0.501 by rounding 0.5015 a second time), p 0.0003, orders 60.0%, first −0.114; `gemma4-e4b` 0 / 3 / 57, 0.475 [0.354, 0.599], p 0.25, 83.3%, −0.065) | RD `sources`; equal to every `N/study/proxy/reports/ab/*.json` of these sets; recompute `readers.py` |
+| C422 | abstract, 1, 9 | at step 31,912 (p 0.56 when the checkpoint was written): Falcon-H1-Tiny preferred in 39 of 42 (Opus) and 16 of 17 (registered judge) decisive pairs; ours won 20 of 27 (sign test p = 0.019) and 7 of 9 (p = 0.18; 51 of 60 pairs tied) against MobileLLM-R1.5 (**changed after the check**: p values, ties and checkpoint added) | p: exact two-sided sign test 0.019157 (20/7) and 0.179688 (7/2); the end event of step 31,912 at p 0.5623, the restore's stage event at 0.5651 | RD; `L4/readers4.json` (`L4/scripts/readers4.py N L4/readers4.json`); VLOG3 events `end` and `stage` of step 31,912 |
+| C423 | 7.4 | pair-by-pair agreement, `v9` sets | Opus (two readings) and `qwen3-4b-2507`: Falcon-H1-Tiny both a side 16 (same 14, opposite 2), Opus side / judge tie 26, judge side / Opus tie 1, both tie 17; MobileLLM-R1.5 6 (6 same), 21, 3, 30; κ (win, loss, tie) 0.209 and 0.183; `gemma4-e4b`'s 3 and 3 sides all agree with Opus | RD `agreement` |
+| C424 | 7.4 | the second judge gave no side in 93–97% of pairs; both automatic judges clipped 30 of the 60 MobileLLM-R1.5 pairs | ties 56, 58, 57, 57 of 60; `clipped` 30 (s1 and s2, both judges) | RD |
+| C425 | 7.3 | tie rates of the registered judge and what n = 200 / 189 resolves at them | 43 and 51 of 60 (71.7%, 85.0%); 0.5 + 0.182 and 0.246 (n = 200), 0.187 and 0.252 (n = 189) | RD; NUM3 `power.*_qwen_judge` |
+| C426 | Table 7, 7.4, abstract, 1, 9 | the reference: Falcon-H1-Tiny against MobileLLM-R1.5 on the 200 test prompts, Opus two readings | 144 / 6 / 50; 0.845 [0.788, 0.889]; decisive 0.960 [0.915, 0.982]; orders 93.5%; first +0.0125; chat 37 / 1 / 12, code 17 / 2 / 11, instruct 31 / 0 / 9, maths 15 / 3 / 12, writing 44 / 0 / 6; two-turn 39 / 1 / 12 | RD `ref-falcon-vs-mobilellm-test`; `N/study/proxy/reports/ab/ref-falcon-vs-mobilellm-test--judge-opus.json` |
+| C427 | 7.4 | the readers' notes on the reference pairs describe MobileLLM-R1.5's reply as looping or repeating, and mention a boxed answer, often nonsense or looping (**changed after the check**: was "a bare boxed answer", which the count does not support) | loop 87 and 83, box 46 and 49 of 200 (first and second reading; pairs); of the box pairs, 32 and 40 have the same clause also matching loop, repeat, nonsense, degenerate, fragment or incoherent | `L3/ref_notes.json`; `L4/ref_notes4.json` (`L4/scripts/ref_notes4.py N L4/ref_notes4.json`, same clause attribution; a keyword count) |
+| C428 | 7.4 | in absolute terms | s2 (`v9` 31,912) first reading: both bad in 44 of 60 pairs of 3-gram against default (notes: wrong facts or arithmetic 20, incoherent 14); 31 of 60 against MobileLLM-R1.5; 14 of 60 against Falcon-H1-Tiny; s1 variants 46–55 of 60 | `L3/ours_notes.json`; RD (`opus-1` `raw_verdicts`) |
+| C429 | 6.6, G.4, Table 6 | micro design | d 128; 2 blocks × 8 loops; rows of 512; 4,096 tokens per step; 1,464 steps; 5,996,544 tokens trained; `ref` 4,402,372 numbers, `v9_pages` 14,904,516, new leaves 10,502,144 (5 leaves), 59 shared leaves (4,402,372), 175 arrays copied; grafts at steps 366, 732, 1,098; evaluations at 1,499,136, 2,998,272, 4,497,408, 5,996,544 tokens; token neurons 8 in 32 dimensions; mixture 0.75 / 0.25 rows; token shares 0.780 / 0.220; pools 8,192 / 4,096 rows; held-out 32 + 32 rows | MG `meta`, `checks`; record fields `config`, `bench`, `data`, `graft.leaves` |
+| C430 | G.4 | passes over the pools | 1.07 (web) and 0.71 (chat): 0.75 × 11,712 = 8,784 of 8,192 rows and 2,928 of 4,096 (11,712 = 1,464 steps × 8 rows) | arithmetic on MG `meta`; `R/bes/eval/microbench.py` (`BatchMaker`, `passes` = 2 and 1 started) |
+| C431 | Table 6, 6.6, 6.7, abstract, 1, 9, Fig 6 | the micro results | as in Table 6 and G.4 (e.g. `v9_pages` − `ref` −0.0519 ± 0.0107, −1.24%; shares 1.06 / 0.69 / 0.24, per seed 0.86, 1.33, 1.08 / 0.62, 0.87, 0.64 / 0.20, 0.29, 0.24; graft − `ref` per seed −0.0539, −0.0551, −0.0558 / −0.0386, −0.0359, −0.0327 / −0.0127, −0.0120, −0.0122) | MG `table`, `diffs`, `share`; equal to `N/micro_graft/6M/graft_report.txt` in every printed digit (compared line by line; the figures agent's check finds its 1,013 numbers equal) |
+| C432 | 6.6, G.4 | the checks inside the micro runs | every graft arm's 1, 2 or 3 evaluations before its graft equal `ref`'s of the same seed row for row (18 of 18); the graft check's difference 0.0 at 9 of 9 grafts; held-out before/after difference 0 per domain and per row; check losses 5.0309, 5.0072, 5.0118 / 4.7603, 4.7661, 4.7617 / 4.6126, 4.6162, 4.6532 | MG `checks` |
+| C433 | 6.6 | learning-rate factor at the graft | 0.775, 0.55, 0.325 | MG `checks.*.carried.lr_factor` |
+| C434 | 6.6, G.4 | the live run's rate during the micro runs | 189,054 tokens/s (n = 73) before 14:12:51; 189,086 (n = 117) from 14:12:51 to the cut-off 16:27:21; the runs' last 14 minutes (to 16:41:01) and the restart arms (16:42:47–17:29:56) are after the cut-off and not covered (**changed after the check**: the coverage is now stated) | `L3/rate_during_micro.json` (`rate_during_micro.py`; `last_record_utc` 16:27:21) |
+| C435 | 8 | `ref`'s spread over three seeds (**changed after the check**: "spread by 0.18%" was the sd) | sd 0.0076 nats = 0.18% of 4.1912; range 4.1830–4.1979, 0.0149 = 0.36% | MG `table`; `L4/micro4.json` `ref_spread` |
+| C436 | 6.6, 6.7 | the micro arms that never shared a state differ by about 0.01 between seeds | sd of `v9_pages` − `ref` 0.0107; of `graft_*` − `v9_pages` 0.0096–0.0113 | MG `diffs` |
+| C437 | J | test functions at `b1e9140` and `190e0b2` (changed: 1,356 at `8a86bcb`) | 1,367 | `grep -r "def test_" tests | wc -l` in `R/` (at `190e0b2`, after the check) |
+| C438 | J | the controlled experiment's commits (**changed after the check**: the restart records added) | `b04478e` (graft arms), `b1e9140` (results of the 15 runs), `190e0b2` (restart arms' records; HEAD) | `git log` in `R/` |
+| C439 | Figure 5 caption | arrow label at the newest checkpoint | −0.088 ± 0.171; the label is cut at the right edge of `F8_heldout.png` in this build | MAL (fig8); the figure file |
+| C440 | Figure 6 caption | values in the micro figure | as C431; drawn by `fig12_micrograft.py` | `data/micro_graft_summary.csv` |
+| C441 | C, Table C2 | step 36,867 is at 9.66 × 10⁹ tokens | 36,867 × 262,144 = 9,664,462,848 | arithmetic |
+| C442 | 6.6 Table 6 restart row, 6.7, G.4 | restart arms (`v9_pages` from scratch on 3 × 10⁶ tokens, seeds 0–2) | restart minus `graft_50` +0.2342 ± 0.0075 (per seed +0.2348, +0.2415, +0.2265); minus `ref` (6M) +0.1985 ± 0.0062 (+0.1962, +0.2055, +0.1938); minus `v9_pages` (6M) +0.2504 ± 0.0074; loss 4.3897 ± 0.0017 (4.3891, 4.3885, 4.3917); minus `ref` at 3M (mid-schedule) −0.0844, −0.0835, −0.0836; 732 steps, 2,998,272 tokens; the figures agent's `fig12_micrograft.py` prints the same (MAL, lines 'F12: restart …') | `N/micro_graft/3M/results.tar.gz` unpacked into `L3/micro3M/`; `micrograft.py L3/micro3M` |
+| C446 | 6.5 (i) | since the phase change the chat rows fall faster than the web rows; candidate causes | assistant turns 1.4355 (36,422) → 1.2651 (46,178), −0.170; web 2.7254 → 2.6867, −0.039; loader epochs at step 46,350 (mean over streams) above 1 for smoltalk_systemchats 1.55, smoltalk_rewrite 1.48, smoltalk_constraints 2.56, synth 1.32 (and non-chat sources), below 1 for smol_smoltalk 0.91, magpie 0.47, Tulu 3 0.38, UltraChat 0.46 | H3 `rows`; VLOG3 `loader_block.epochs`; `N/FACTS_2.md` (16:52) names the candidate causes except the chat ramp |
+| C447 | G.4 | the restart's own schedule against `v9_pages` at the same token count | −0.0509 ± 0.0086 (per seed −0.0411, −0.0555, −0.0563); `v9_pages` at 2,998,272 tokens 4.4301, 4.4440, 4.4479 | MG `table`, `restart` (inline check in `RESPONSE_2.md`); `N/FACTS_2.md` (17:35) gives the same |
+| C448 | G.4 | the restart reads the first half of the 6M runs' data again | the row plan `row_kinds` is a prefix-stable smooth round robin and the row index depends on the seed and the count only | `R/bes/eval/microbench.py` l.607–656; `N/FACTS_2.md` (17:35) |
+| C443 | 5.1 | whole steps are single timings (changed: "we report medians" applied to all) | mean of `--step-calls` back-to-back steps after a warm call, default 2, count used not recorded | `R/scripts/tpu_kernels.py`; `FIGURES.md` ("How a whole step was timed") |
+| C444 | Appendix M | the files the shells name | as in Appendix M | `N/OPERATIONS.md` ("Endgame (v9)", "Final blind evaluation: the mechanics", "Since 12:10", "State at 16:50"); `S/scripts/final_pairs.sh`, `final_score.sh`, `endgame_testgen.sh`, `cmp_exports.py`, `fetch_records.sh`; `R/bes/export.py` (`export.json`) |
+| C445 | 6.6 | the micro code was reviewed adversarially before the runs | trunk equality, function preservation, carried optimiser state, schedule and data order, unchanged E2 hashes, report arithmetic | `N/FACTS_2.md` (16:50); `W/micro_graft.md`; `W/micro_graft_work/review/` |
+
+| C449 | abstract, 1, 6.6, 6.7, 9, Table 6, Fig 6 | the micro shares and the graft at a quarter, with their spread (after the check) | `graft_25` − `v9_pages` per seed +0.0088, −0.0138, −0.0043, mean −0.0031 ± 0.0113 (sd); 95% t interval of the mean (2 df, t = 4.3027) ±0.028 = 54% of the page gain 0.0519; per-seed shares 0.86–1.33 (`graft_25`), 0.62–0.87 (`graft_50`), 0.20–0.29 (`graft_75`) | `L4/micro4.json` (`L4/scripts/micro4.py N/micro_graft L4/micro3M_raw L4/micro4.json`; `results_all.jsonl` checked equal to every arm's own records) |
+| C450 | 6.6, 6.7, 9, Table 6, G.4 | the restart arms against the 6M arms (after the check) | restart − `graft_50` per seed +0.2348, +0.2415, +0.2265 (range +0.227 to +0.241), mean +0.2342 = 4.5 × the page gain; − `ref` +0.1985 (3.8 ×); − `v9_pages` +0.2504 (4.8 ×); `graft_50` − `ref` −0.0358; the restart: 732 steps, 2,998,272 tokens, budget and horizon 3,000,000, learning rate decaying to 0.1 of its peak by its end (`final_lr_frac` 0.1), last record finished 17:29:56 | `L4/micro4.json`; the archive `N/micro_graft/3M/results.tar.gz`, unpacked into `L4/micro3M_raw/`, equals the copies in `N/micro_graft/3M/<arm>/`; record fields `config.optim`, `finished` |
+| C451 | 7.2 (deviation 4), 7.1, M | the `neutral` arm of MobileLLM-R1.5 is not compared blind on `dev` before the test readings; the exact scores on `dev` favour the `recommended` arm | no such comparison in `N/OPERATIONS.md` ("Endgame (v9)", "Final blind evaluation: the mechanics", "State at 16:50") and no `neutral` pair set in `N/study/proxy/pairs/`; maths 4 against 1 of 9, constrained prompts met 2 against 1 of 14, replies cut 42 against 54 of 75 | `R/docs/EVAL_PROTOCOL.md` §2 ("credited with the better arm on `dev`, decided before `test` is looked at"); EXD (Table 8); `L4/exact_split_dev_check.json` |
+| C452 | 7.1, 7.2 (deviation 6), 8.6, 9, M | the protocol's K = 1 result, library on/off and K-matched and selector-matched controls are not run | the protocol requires them (§3); the opponents' outputs hold one run per preset (`falcon…/recommended`, `mobilellm…/recommended`, `…/neutral`, 400 conversations each, no `--samples`); `N/OPERATIONS.md` schedules none; `v9` ships no library (E.2); the decoding selection may ship one particle (`N/OPERATIONS.md`, "Since 12:10": default, k1, noband); selection changes the distribution by at most log 6 = 1.79 nats (E.2); one particle against six on `final` 25,280: 1 / 3 / 56, p 0.63 (Table E1) | `R/docs/EVAL_PROTOCOL.md` §3 and §9; `N/study/proxy/outputs/` (file listing and line counts) |
+| C453 | 6.5, M6, M10 | the held-out rows and the export's check | runtime evaluations: `heldout_batches` with 64 rows per domain (`rows` 64 in `N/midrun_eval_1.json` and `N/heldout_v9.jsonl`; web 64, chat 64, proxy 12 rows, T = 1,024); the export's check: `heldout_rows` = 16 by default in `export_run`, not passed by `run_24h.py`'s export stage; `check_16bit` stores per domain (web, chat, proxy) `loss32`, `loss16`, `delta`, `weight`, no assistant-token loss and no bits per byte; T = min(`data.seq_len` 1,024, `model.max_seq` 2,048) | `R/bes/export.py` l.550–660, 1701–1798; `R/scripts/run_24h.py` l.1460–1480; `R/scripts/midrun_eval.py` (`--rows`, default 64); `R/bes/config.py` |
+| C454 | M4, M11 | the test split's counts (prompt metadata only; no reply opened) | 200 prompts, 252 turns, 52 two-turn, 30 maths, 48 constrained (`dev`: 47); without the 11 seen: 189 prompts, 240 turns, 28 maths, 44 constrained | `L4/exact_test_counts.json`, `L4/exact_test189_counts.json` (`L4/scripts/exact_split.py --count-only --split test [--exclude …]`) |
+| C455 | M4, M11 | `exact_split.py` reproduces the `dev` exact scores | its summaries equal `EXD`'s for `v9` 31,912 default, Falcon-H1-Tiny, MobileLLM-R1.5 recommended and neutral, on the same 60 prompts | `L4/exact_split_dev_check.json` against `L2/exact_dev.json` (compared field by field) |
+| C456 | M11 | `restrict_report.py` reproduces a report's `overall` from `per_prompt_score` | s2 vs MobileLLM-R1.5 (`judge-opus`) 20 / 7 / 33; s2 vs Falcon-H1-Tiny (`qwen3-4b-2507`) 1 / 16 / 43; s1 vs Falcon-H1-Tiny (`opus-1`) 2 / 43 / 15 with both bad among the ties | `L4/scripts/restrict_report.py R/<report>.json` (printed) |
+| C457 | M6 | `bpb_web.py` reproduces our bits per byte | 1.0172 (29,722), 0.9975 (35,294), 0.9801 (46,178) over 258,817 bytes | `L4/bpb_web.log` |
+| C458 | Fig 5 | what Figure 5 draws | rings at 29,722, 34,166, 35,294 and 46,178; pages off 2.2241, 2.2305 and 2.2754; arrow −0.0882 ± 0.1714, label inside the axes | MAL4 (fig8 lines); `L4/heldout_local46178.json` (`L4/scripts/local46178.py`) |
+| C459 | Table E1, 7.4 | both bad in the `v9` decoding pair set (3-gram against default), first reading | 44 of 60 (A 5, B 7, tie 4) | `N/study/proxy/ratings/s2-ngram3-vs-default/opus-1.jsonl`; `L4/readers4.json` `raw_first_reading` |
+| C460 | 7.2 (deviation 1), Table 7 | readings of the development sets by Opus | `s1-*` (`final`): `opus-1` only, one reading; `s2-*` (`v9`) opponent sets: `opus-1` and `judge-opus` (two readings) | `L4/readers4.json` `reading_files` (the files in `N/study/proxy/ratings/<set>/`) |
+| C461 | Fig 7 caption | decisive pairs of the automatic judges on the `v9` sets | `qwen3-4b-2507` 17 (Falcon-H1-Tiny) and 9 (MobileLLM-R1.5); `gemma4-e4b` 3 and 3 | RD (Table 7) |
+| C462 | 6.6 | the gain over `ref` in the 1.5 × 10⁶ tokens after each graft, and the learning-rate factor at the graft | 0.0192, 0.0161, 0.0123 at 0.775, 0.55, 0.325; `v9_pages` in its first 1.5 × 10⁶ tokens 0.0164 | `L4/micro4.json` `gain_after_graft` |
+| C463 | 6.6 (Checks) | the per-row check covers the held-out domains only | `graft.heldout.<domain>.max_row_difference` = 0 for web, chat, assistant at all 9 grafts; `graft.check` (8 held-out web rows, `bes.model.model.loss_fn`) stores one aggregate `difference` = 0 | `L4/micro4.json` `graft_checks` |
+| C464 | Table 7, abstract, 9 | the p of a development checkpoint is the progress at its stop event | 25,280: 0.4396 (0.44; restore 0.4402); 31,912: 0.5623 (0.56; restore 0.5651) | FLOG and VLOG3 events `end` and `stage` |
+| C465 | 7.3 | the protocol's power table | columns "with 30% ties" and "with 50% ties" | `R/docs/EVAL_PROTOCOL.md` §7 |
+
+### Withdrawn or changed in the third pass
+
+| id | was | now |
+|---|---|---|
+| C240 | newest record step 37,650 at 13:05:57 | C400 (step 46,350 at 16:27:21) |
+| C249 | "112–117 k" live rate of the reference | C403: 115,394 and 116,718 (two monitor readings); 111,893 is the start-up benchmark |
+| C253 | achieved within 0.1% | C402: within 0.13% (0.124% at 2,048 tokens) |
+| C254, C284 | about 1.36 × 10¹⁰ (1.360e10), deficit 2.28e9 (14.4%) against 1.588e10 | C408: 1.358 × 10¹⁰, 2.33 × 10⁹ (14.6%) against 1.591 × 10¹⁰ |
+| C256 | TPU time at 12:00:00, 15.22 h | not in the third draft; C410 (19.68 h at 16:27:24) |
+| C266 | 2.40–2.51× | C404: 2.41–2.44× |
+| C273 | FLOP leave-one-out mean 19.6% (max 66.4%) | **withdrawn**: the fit is undefined without `final`; C407 |
+| C292 | local reproduces runtime to 10⁻⁸ | C419: within 10⁻⁷ (still to 10⁻⁸ for 29,722, 34,166 and 35,294) |
+| C294 | ±0.025 at 592.5 min for the three-point line | **withdrawn**: it belonged to a line through all 140 rows (`NUM3 heldout.three_point`, kept only as the old computation); the comparison set's line gives ±0.035 there (H3); no longer cited |
+| C323 | 1,356 tests | C437: 1,367 at `b1e9140` |
+| C330 | 188,980 (n 16) | C405: 189,074 (n 190) |
+| C034 | 12.98 h at the graft, 8.98 h in training (69%) | still valid; no longer in the main text |
+| C293 (34,166 rows) | Table 7 | moved to Table G3, values unchanged |
+
+
+### Changed after the check (`REVIEW_2.md`), 18:10–18:55 UTC
+
+| id | was | now |
+|---|---|---|
+| C417 | log-token line −0.112 ± 0.111, said to be inside "95% prediction intervals of ±0.05 to ±0.17" | −0.115 ± 0.107 with the rates of 6.3, outside from step 41,850 on; equal tokens outside from 34,166 on; the minutes line inside everywhere; "not resolved" rests on the line, not on the intervals |
+| C292, C419 | to 10⁻⁸ (second pass), within 10⁻⁷ (third pass) | within 3 × 10⁻⁸ on web and chat; proxy 2.2 × 10⁻⁷ at 46,178 |
+| C421 | [0.264, 0.501] | [0.264, 0.502] (also in `FACTS_2.md`, 13:52, which this pass does not edit) |
+| C422 | no p values, no checkpoint | step 31,912 (0.56); p = 0.019 and 0.18; 51 of 60 tied |
+| C427 | "a bare boxed answer" | "mention a boxed answer (often nonsense or looping)", with 32 and 40 of 46 and 49 |
+| C434 | "during" | "during, to the cut-off at 16:27:21" |
+| C435 | "spread by 0.18%" | sd 0.18%, range 0.36% |
+| C438 | `b1e9140` | adds `190e0b2` |
+| C442 | restart "worth more than four times" (0.234 against 0.052) | four to five times (0.199–0.250, C450); per-seed range +0.227 to +0.241 |
+| C431 | "settles … about 0.7 at half" | 0.69 (0.62–0.87 by seed), on the CPU in float32 (C449) |
+| abstract, 1, 9 | micro sizes without reach; Opus readers unnamed | width 128, 6 × 10⁶ tokens, equal tokens, page 1.24%, sizes do not transfer; Opus 5.5 agents, an addition (C449, C422) |

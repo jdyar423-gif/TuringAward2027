@@ -673,8 +673,10 @@ def heldout_rows(max_step):
                         continue
                     seen[(cfg, c["step"])] = r
                     rows.append(r)
-    if os.path.exists(P.HELDOUT_LOCAL):
-        loc = json.load(open(P.HELDOUT_LOCAL))
+    for local_file in (P.HELDOUT_LOCAL, getattr(P, "HELDOUT_LOCAL46", None)):
+        if not local_file or not os.path.exists(local_file):
+            continue
+        loc = json.load(open(local_file))
         for name, s in sorted(loc.get("summary", {}).items()):
             cfg = "final" if name.startswith("final") else "v9"
             variant = name.rsplit("_", 1)[1]
@@ -686,7 +688,7 @@ def heldout_rows(max_step):
                      web_chat=round(s["web_chat"], 6), all_rows=round(s["all"], 6),
                      w_web=rt["w_web"] if rt else "", w_chat=rt["w_chat"] if rt else "", w_proxy=rt["w_proxy"] if rt else "",
                      rows_web=rt["rows_web"] if rt else "", rows_chat=rt["rows_chat"] if rt else "",
-                     rows_proxy=rt["rows_proxy"] if rt else "", source="lead2_work/heldout_analysis.json (" + name + ")")
+                     rows_proxy=rt["rows_proxy"] if rt else "", source=P.rel(local_file) + " (" + name + ")")
             if variant == "on" and rt and abs(rt["all_rows"] - r["all_rows"]) > 1e-6:
                 mismatch(f"held-out {cfg} {s['step']}: local {r['all_rows']} vs runtime {rt['all_rows']}")
             rows.append(r)

@@ -1,0 +1,18 @@
+{
+ "r1": {
+  "pairs_with_notes": 200,
+  "box": 46,
+  "loop": 87,
+  "truncated": 22,
+  "reasoning": 3,
+  "any_of_these": 127
+ },
+ "r2": {
+  "pairs_with_notes": 200,
+  "box": 49,
+  "loop": 83,
+  "truncated": 26,
+  "reasoning": 8,
+  "any_of_these": 128
+ }
+}

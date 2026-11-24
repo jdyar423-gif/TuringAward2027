@@ -63,12 +63,14 @@ def main():
                 ls=(0, (2, 1.5)), zorder=2)
     # the gap at the newest v9 checkpoint, rounded: an extrapolation does not deserve four digits
     gap, half = float(last["gap_to_final_line"]), float(last["final_line_pi95_half"])
-    xg = last["train_minutes"] + 3
+    # the arrow stands right of the newest checkpoint (and of its dashed pages-off connector), and the
+    # x axis leaves room for its two-line label inside the axes
+    xg = last["train_minutes"] + 9
     ax.annotate("", xy=(xg, last["web_chat"]), xytext=(xg, float(last["final_line"])),
                 arrowprops=dict(arrowstyle="<->", color=st.INK, lw=0.6, shrinkA=0, shrinkB=0, mutation_scale=5))
     ax.text(xg + 2, (last["web_chat"] + float(last["final_line"])) / 2, f"{gap:+.2f}\n± {half:.2f}".replace("-", "−"),
             fontsize=st.FS - 0.5, color=st.INK, va="center", ha="left", linespacing=1.1)
-    ax.set_xlim(min(r["train_minutes"] for r in F) - 10, last["train_minutes"] + 24)
+    ax.set_xlim(min(r["train_minutes"] for r in F) - 10, last["train_minutes"] + 62)
     ax.set_ylim(y0, y1)
     st.grid_y(ax)
     ax.set_xlabel("Training time of the run (minutes)")

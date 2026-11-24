@@ -40,6 +40,12 @@ V9 = "#eb6834"           # configs/v9.py (slot 2, orange)
 V9_LIGHT = "#f6b79c"     # light tint of slot 2 for raw points of v9 (same hue, lighter)
 CONTEXT = MUTED          # de-emphasised marks
 ACCENT = "#6250d6"       # emphasis colour where no configuration is meant (slot 7, violet)
+# ordinal ramp of slot 2's hue for arms that carry v9's page, darkest = the page trained longest (F12: the page
+# from the first step, then grafted at 0.25, 0.5, 0.75 of the budget): OKLCH L 0.42 / 0.54 / 0.65 / 0.76 at
+# V9's hue (h 40.6), chroma cut to the sRGB gamut. validate_palette.js --ordinal on white: monotone, adjacent
+# gaps dL 0.11-0.12, light end 2.26:1, one hue; adjacent pairs dE 11.1-12.5 (normal), >= 10.4 (protan, deutan);
+# in grey #494949 / #696969 / #8a8a8a / #adadad.
+PAGE_RAMP = ["#842c00", "#ba4101", "#e4612c", "#ff8e64"]
 
 # sequential ramp (blue, light -> dark) for magnitudes
 BLUE_RAMP = ["#cde2fb", "#b7d3f6", "#9ec5f4", "#86b6ef", "#6da7ec", "#5598e7", "#3987e5",

@@ -181,12 +181,14 @@ def main():
                 f"deadline is {deadline[11:]}; the 24 h\nof TPU time end at {budget_end:%H:%M:%S}.")
     else:
         reserve = round((T(deadline) - T(train_end)).total_seconds() / 60)
-        note = (f"Records to step {last['step']:,} ({t_last:%H:%M:%S}),\nthe cut-off of the paper's numbers.\n"
-                f"To come: training to {train_end[11:]},\n{reserve} min of post stages, run\ndeadline "
-                f"{deadline[11:]}; the 24 h of\nTPU time end at {budget_end:%H:%M:%S}.")
+        # narrow lines: the note must fit between the restore of step 12,062 (tag 4) and the kernel
+        # switch (tag 5), under the 240.1 line, clear of the later labels and tags
+        note = (f"Records to step\n{last['step']:,} ({t_last:%H:%M:%S}),\nthe cut-off of the\npaper's numbers.\n"
+                f"To come: training\nto {train_end[11:]}, {reserve} min\nof post stages, run\ndeadline "
+                f"{deadline[11:]};\nthe 24 h of TPU time\nend at {budget_end:%H:%M:%S}.")
         assert last["step"] == cut["step"], (last["step"], cut["step"])
-    a2.text(T("2026-11-24 04:45:00"), 205, note, fontsize=st.FS - 0.5, color=st.INK2, ha="left", va="top",
-            linespacing=1.15)
+    a2.text(T("2026-11-24 04:42:00"), 226, note, fontsize=st.FS - 0.5, color=st.INK2, ha="left", va="top",
+            linespacing=1.1)
     a2.text(T("2026-11-24 01:07:00"), 12, "restore and\ntwo data errors", fontsize=st.FS - 0.5, color=st.INK2,
             ha="left", va="bottom", linespacing=1.1)
 

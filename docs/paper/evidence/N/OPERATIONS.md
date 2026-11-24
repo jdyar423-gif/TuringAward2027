@@ -343,6 +343,30 @@ Colab CLI: `export PATH=/root/.local/bin:$PATH GOOGLE_APPLICATION_CREDENTIALS=/r
 - `paper_sync.sh` also copies figures/data: do not run it while the figures workflow
   (wksb41gda) is writing (it copied half-written CSVs at 13:55; reverted before the commit).
 
+## State at 16:50
+- Pushed: b04478e (micro graft code), a316f8c (figures pass 2), b1e9140 (micro graft results).
+- Micro graft, 15 arms x 6M tokens: DONE (results in `$N/micro_graft/6M`, FACTS_2.md 16:50,
+  docs/MICRO_GRAFT.md "Results"). Restart arms (v9_pages from scratch, 3M tokens, 3 seeds) run on
+  the runtime since 16:43 (`/content/bes_cli/micro/graft_3000000`), fetched by background task
+  ba60jc9z8 into `$N/micro_graft/3M` (the driver's report step fails there by design: the report
+  needs all five families; read `<arm>/results.jsonl`). Then: add to FACTS_2.md and
+  docs/MICRO_GRAFT.md, commit. MUST be over by 18:20 (else host cell: pkill -f micro_ablate.py).
+- Paper pass 3: workflow wf_ea200474-e65 (task wfbm645sl): lead author + micro graft figure,
+  then review (REVIEW_2.md) and fix (RESPONSE_2.md). When it ends: `paper_sync.sh`, commit, push.
+  The LAST pass (after the test results) fills Appendix M's shells and the abstract; then zh-TW.
+- Tools ready for the end: `fetch_pack.sh RUNTIME_DIR NAME OUT` (16 MB parts, SHA-256; tested:
+  the export of step 36,422 came back in 67 s; local copy `$N/packs/probe36422`, verified with
+  `scripts/export.py --verify`, and `scripts/chat.py --export ... --device cpu --prompt ...`
+  answered in 8 min on 2 cores); `cmp_exports.py`; `cpu_runtime.sh up|status|down` (CPU Colab
+  runtime `bes-cpu`, presence C/D, set-up log `/content/bes_cli/cpu_setup.log`);
+  `SESSION=bes-cpu judge_remote.sh start TAG JUDGE THREADS STREAMS SET...` for the registered
+  judges on the test pairs (speed on the TPU host at 12 threads: qwen3-4b-2507 13-17 s per pair,
+  gemma4-e4b 8-9 s per pair; a CPU runtime has 8 vCPUs: expect 2-3x slower).
+- Early copy of the model at the end: right after `endgame_testgen.sh trained 58` has made its
+  export (about 18:38), `bash $S/scripts/fetch_pack.sh /content/bes_cli/testgen_trained/export
+  trained_export $N/packs/trained_export` (1 min): the trained weights are then safe locally.
+- Alarm at 15:00 was benign: "eval ... sidecar skipped: late" (the run's own rule).
+
 ## 巡檢清單 (what a check-in does)
 1. `cut -d' ' -f1 /proc/uptime` (small = the container slept: everything below must be restarted);
    `pgrep -af "alloc_loop_resume|presence.sh|watch_loop|budget_guard|anchor"`;

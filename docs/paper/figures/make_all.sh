@@ -10,7 +10,8 @@
 #   bash make_all.sh --no-extract            # keep the records extracted last time (no snapshot read)
 #   bash make_all.sh --tables                # also rewrite paper/tables.md (make_tables.py)
 #
-# Inputs: see FIGURES.md ("How to rebuild") and paths.py. Writes only the data/ and figures/ next to
+# Inputs: see FIGURES.md ("How to rebuild") and paths.py; F12 (fig12_micrograft.py) reads the micro graft
+# records itself and writes its own two CSVs. Writes only the data/ and figures/ next to
 # this script (and tables.md with --tables), never those of another copy. Exit codes: 0 done, 2 bad
 # argument or missing report, 3 snapshot still being copied, 4 cut-off newer than the snapshot (nothing
 # written in each case), 1 a figure script failed. Python runs on CPU cores 2 and 3 at low priority.
@@ -32,7 +33,7 @@ while [[ $# -gt 0 ]]; do
     --blind=*) BLIND="${1#--blind=}" ;;
     --cutoff) CUTOFF="${2:?--cutoff needs paper, newest or a step number}"; shift ;;
     --cutoff=*) CUTOFF="${1#--cutoff=}" ;;
-    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,17p' "$0"; exit 0 ;;   # the comment block above
     *) echo "make_all.sh: unknown argument $1 (see --help)" >&2; exit 2 ;;
   esac
   shift
@@ -54,10 +55,12 @@ if [[ $rc != 0 ]]; then
   exit $rc
 fi
 for f in fig1_loss fig2_throughput fig3_kernels fig4_v9cost fig5_openings fig6_graft fig7_model fig8_heldout \
-         fig9_waterfall fig10_costmodel fig11_blind; do
+         fig9_waterfall fig10_costmodel fig11_blind fig12_micrograft; do
   echo "== $f.py" >> "$LOG"
   $RUN "$PY" -I -B "$f.py" >> "$LOG" 2>&1 || { echo "make_all.sh: $f.py failed; see $LOG" >&2; exit 1; }
 done
+# F12's checks: its records against graft_report.json, and whether the restart arms (3M) were drawn
+sed -n '/^== fig12_micrograft.py/,$p' "$LOG" | grep -E "^MISMATCH|^F12: (graft_report|restart)" || true
 if [[ $TABLES == 1 ]]; then
   $RUN "$PY" -I -B make_tables.py >> "$LOG" 2>&1
 fi

@@ -6,7 +6,7 @@ file (or $PAPER_DIR), so a copy of figures/ elsewhere writes its own data/, figu
 never the paper's. $PAPER_FIGURES_DATA moves data/ (and the extracted records in data/_src with
 it), $PAPER_FIGURES_OUT the figure files. Inputs are read-only: the snapshots, logs and chip outputs
 at fixed paths in the two scratchpads and the repository, and the paper's own analyses
-(lead2_work/, review1_work/), taken from PAPER if it has them, else from the paper directory
+(lead2_work/, lead3_work/, lead4_work/, review1_work/), taken from PAPER if it has them, else from the paper directory
 PAPER_HOME (read only).
 """
 import os
@@ -66,10 +66,13 @@ STEP_TIMING = {
 MIDRUN_EVAL = os.path.join(N, "midrun_eval_1.json")        # runtime: final 26,890 / 28,501 / 29,722, v9 to 31,912
 HELDOUT_V9 = os.path.join(N, "heldout_v9.jsonl")           # runtime: automatic evaluations of new v9 checkpoints
 HELDOUT_LOCAL = paper_input(os.path.join("lead2_work", "heldout_analysis.json"))   # local CPU evaluations (Table 7, G1)
+HELDOUT_LOCAL46 = paper_input(os.path.join("lead4_work", "heldout_local46178.json"))  # local CPU evaluation of
+#                     step 46,178, pages on and off (lead4_work/scripts/local46178.py; same "summary" format)
 
 # the paper's own analyses (second-pass lead author)
 PREDICTOR = paper_input(os.path.join("lead2_work", "predictor_test.json"))   # Tables 4 and 5
-NUMBERS = paper_input(os.path.join("lead2_work", "numbers.json"))            # the paper's live numbers; its
+NUMBERS = paper_input(os.path.join("lead3_work", "numbers.json"))            # the paper's live numbers (third
+#                                                                              pass, cut-off step 46,350); its
 #                                                                              newest step is the default cut-off
 GRAFT_GRAD = paper_input(os.path.join("lead2_work", "graft_grad.json"))      # gradient check at the graft (6.4)
 GRAFT_CHECK_LOGS = [  # (file, where it ran): the graft tool's --check output (Table 6)
@@ -89,6 +92,15 @@ BLIND_DEFAULT_SOURCE = "judge-opus"          # rating source appended to a name 
 # data-rule scans
 OPENINGS = os.path.join(N, "openings.json")
 DEFLECTION = os.path.join(N, "deflection_check2.json")
+
+# micro graft experiment (R/docs/MICRO_GRAFT.md; F12, fig12_micrograft.py, which reads these itself; they do not
+# depend on the live run or its cut-off): the 15 finished records of the 6M-token run, the report written next
+# to them (compared with, never plotted), and the restart arms (v9_pages from scratch on a budget of 3M tokens),
+# used when the archive exists; it is unpacked into data/_src/micro_graft_3M. The variable is for tests only.
+MICRO_GRAFT_RECORDS = os.path.join(N, "micro_graft", "6M", "results_all.jsonl")
+MICRO_GRAFT_REPORT = os.path.join(N, "micro_graft", "6M", "graft_report.json")
+MICRO_GRAFT_3M = os.environ.get("PAPER_MICRO_GRAFT_3M") or os.path.join(N, "micro_graft", "3M", "results.tar.gz")
+SRC_MICRO_3M = os.path.join(SRC, "micro_graft_3M")
 
 T0 = 1795455991.9461858        # t0 of run main16 (train/run.json): 2026-11-23 17:46:31.946 UTC
 TOKENS_PER_STEP = 262144       # optim.tokens_per_step (bes/config.py); ledger tokens / steps = 262,144

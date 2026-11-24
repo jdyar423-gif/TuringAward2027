@@ -1923,8 +1923,8 @@ L 241.128 261.252
     </g>
    </g>
    <g id="text_37">
-    <!-- live 1,387 (n = 16) -->
-    <g style="fill: #0b0b0b" transform="translate(159.765669 255.998437) scale(0.065 -0.065)">
+    <!-- live 1,386 (n = 190) -->
+    <g style="fill: #0b0b0b" transform="translate(159.727829 255.998437) scale(0.065 -0.065)">
      <use xlink:href="#Inter-Regular-2e2"/>
      <use xlink:href="#Inter-Regular-2b2" transform="translate(24.21875 0)"/>
      <use xlink:href="#Inter-Regular-3d6" transform="translate(48.4375 0)"/>
@@ -1934,16 +1934,17 @@ L 241.128 261.252
      <use xlink:href="#Inter-Regular-5df" transform="translate(229.78125 0)"/>
      <use xlink:href="#Inter-Regular-543" transform="translate(255.90625 0)"/>
      <use xlink:href="#Inter-Regular-549" transform="translate(317.671875 0)"/>
-     <use xlink:href="#Inter-Regular-548" transform="translate(379.53125 0)"/>
-     <use xlink:href="#Inter-Regular-6eb" transform="translate(436.125 0)"/>
-     <use xlink:href="#Inter-Regular-59f" transform="translate(464.25 0)"/>
-     <use xlink:href="#Inter-Regular-307" transform="translate(500.71875 0)"/>
-     <use xlink:href="#Inter-Regular-6eb" transform="translate(559.796875 0)"/>
-     <use xlink:href="#Inter-Regular-5ff" transform="translate(587.921875 0)"/>
-     <use xlink:href="#Inter-Regular-6eb" transform="translate(654.078125 0)"/>
-     <use xlink:href="#Inter-Regular-540" transform="translate(682.203125 0)"/>
-     <use xlink:href="#Inter-Regular-547" transform="translate(722.875 0)"/>
-     <use xlink:href="#Inter-Regular-5a9" transform="translate(784.890625 0)"/>
+     <use xlink:href="#Inter-Regular-547" transform="translate(379.53125 0)"/>
+     <use xlink:href="#Inter-Regular-6eb" transform="translate(441.546875 0)"/>
+     <use xlink:href="#Inter-Regular-59f" transform="translate(469.671875 0)"/>
+     <use xlink:href="#Inter-Regular-307" transform="translate(506.140625 0)"/>
+     <use xlink:href="#Inter-Regular-6eb" transform="translate(565.21875 0)"/>
+     <use xlink:href="#Inter-Regular-5ff" transform="translate(593.34375 0)"/>
+     <use xlink:href="#Inter-Regular-6eb" transform="translate(659.5 0)"/>
+     <use xlink:href="#Inter-Regular-540" transform="translate(687.625 0)"/>
+     <use xlink:href="#Inter-Regular-54a" transform="translate(728.296875 0)"/>
+     <use xlink:href="#Inter-Regular-53f" transform="translate(790.3125 0)"/>
+     <use xlink:href="#Inter-Regular-5a9" transform="translate(853.40625 0)"/>
     </g>
    </g>
    <g id="text_38">
@@ -1988,8 +1989,8 @@ z
     </g>
    </g>
    <g id="line2d_39">
-    <path d="M 158.1196 258.204774 
-L 158.1196 249.063097 
+    <path d="M 158.08176 258.204774 
+L 158.08176 249.063097 
 " clip-path="url(#p2ed7790597)" style="fill: none; stroke: #0b0b0b"/>
    </g>
   </g>
