@@ -21,7 +21,8 @@ buy is on the texts that DO contain a written token. This program measures exact
   entries that contain it (the activations are recorded by a patched ``token_neurons``);
 * held-out library entries that contain a written token (never used for ``C``) are the
   **own-context** test: their loss before and after the writes;
-* arms, each with the eight facts written in sequence, eight steps per fact:
+* arms, each with the eight facts written in sequence, eight steps per fact (``T4_STEPS``; the
+  arms and step sizes of a call can be given in ``T4_ARMS``, e.g. ``G-val:0.12,N-val:0.12``):
   ``G-all``  the write of ``writes_clean.py`` (all five token tables, per-row normalised gradient);
   ``N-all``  the same with the page-value gradient whitened;
   ``G-val`` / ``N-val``  only the page values are written, plain and whitened, at several step
@@ -51,10 +52,15 @@ from bes.model import model as M  # noqa: E402
 from bes.tokenizer import tok as T  # noqa: E402
 from bes.train.checkpoint import flatten_with_paths  # noqa: E402
 
+import os  # noqa: E402
+
 t0 = time.time()
 exp = Path(sys.argv[1])
 out_json = sys.argv[2] if len(sys.argv) > 2 else None
-NC, NT, MAXSCAN, LAM = 24, 6, 120_000, 0.1
+NC, NT, MAXSCAN, LAM = 24, 6, 120_000, float(os.environ.get("T4_LAM", "0.1"))
+# T4_ARMS="G-val:0.12,N-val:0.12,..." replaces the default arms; T4_STEPS the steps per fact;
+# T4_CACHE=FILE.npz keeps the contexts and the second moments between calls
+ARMS_ENV, N_STEPS, CACHE = os.environ.get("T4_ARMS", ""), int(os.environ.get("T4_STEPS", "8")), os.environ.get("T4_CACHE", "")
 cfg = E.load_export_config(exp / "config.py")
 mcfg = E.check_model_cfg(cfg.model)
 params = E.load_weights(exp, cfg.model)
@@ -137,12 +143,17 @@ print(f"{len(need)} content tokens in the eight teaching texts; ranks: "
       flush=True)
 
 # ---- library entries that contain those tokens: NC for the statistics, NT held out
+cached = None
+if CACHE and Path(CACHE).is_file():
+    z = np.load(CACHE, allow_pickle=True)
+    cached = {k: z[k] for k in z.files}
+    print(f"statistics and contexts from {CACHE}", flush=True)
 rng2 = np.random.default_rng(11)
 c_of = {v: [] for v in need}          # token -> indices into ctx (statistics)
 t_of = {v: [] for v in need}          # token -> indices into ctx (held-out test)
 ctx, ctx_kind = [], []                # conversations, "c" or "t"
 scanned = 0
-for e in rng2.permutation(lib.n_entries)[:MAXSCAN].tolist():
+for e in ([] if cached is not None else rng2.permutation(lib.n_entries)[:MAXSCAN].tolist()):
     if e in pool_entries:
         continue
     scanned += 1
@@ -173,6 +184,11 @@ for e in rng2.permutation(lib.n_entries)[:MAXSCAN].tolist():
     ctx_kind.append(kind)
     for v in hit:
         box[v].append(len(ctx) - 1)
+if cached is not None:
+    ctx = json.loads(str(cached["ctx"]))
+    ctx_kind = json.loads(str(cached["ctx_kind"]))
+    c_of = {int(k): v for k, v in json.loads(str(cached["c_of"])).items()}
+    t_of = {int(k): v for k, v in json.loads(str(cached["t_of"])).items()}
 n_c = sum(k == "c" for k in ctx_kind)
 print(f"contexts: {n_c} for the statistics, {len(ctx) - n_c} held out; tokens with fewer than 4 statistics contexts: "
       f"{sum(len(c_of[v]) < 4 for v in need)}; without a held-out context: {sum(len(t_of[v]) == 0 for v in need)}   [{time.time() - t0:.0f}s]",
@@ -200,7 +216,9 @@ Cn = np.zeros(V, np.int64)
 BS = 8
 c_idx = [i for i, k in enumerate(ctx_kind) if k == "c"]
 check = None
-for lo in range(0, len(c_idx), BS):
+if cached is not None:
+    C, Cn = cached["C"], cached["Cn"]
+for lo in ([] if cached is not None else range(0, len(c_idx), BS)):
     chunk = c_idx[lo:lo + BS]
     padded = chunk + [chunk[-1]] * (BS - len(chunk))
     b = rows_of([ctx[i] for i in padded])
@@ -225,10 +243,14 @@ for lo in range(0, len(c_idx), BS):
     if (lo // BS) % 40 == 0:
         print(f"statistics: {lo + len(chunk)} of {len(c_idx)} contexts   [{time.time() - t0:.0f}s]", flush=True)
 M.token_neurons = orig_tn
-# the patched forward is the model's forward: same loss on the first batch
-b0 = rows_of([ctx[i] for i in (c_idx[:BS] + [c_idx[0]] * BS)[:BS]])
-m0 = jax.jit(lambda p, b: M.loss_fn(p, consts, b, mcfg)[1])(params, b0)
-print(f"patched forward against the model's on the first batch: ce_sum {check[0]:.6f} vs {float(m0['ce_sum']):.6f}", flush=True)
+if cached is None:
+    # the patched forward is the model's forward: same loss on the first batch
+    b0 = rows_of([ctx[i] for i in (c_idx[:BS] + [c_idx[0]] * BS)[:BS]])
+    m0 = jax.jit(lambda p, b: M.loss_fn(p, consts, b, mcfg)[1])(params, b0)
+    print(f"patched forward against the model's on the first batch: ce_sum {check[0]:.6f} vs {float(m0['ce_sum']):.6f}", flush=True)
+    if CACHE:
+        np.savez(CACHE, C=C, Cn=Cn, ctx=json.dumps(ctx), ctx_kind=json.dumps(ctx_kind),
+                 c_of=json.dumps({str(k): v for k, v in c_of.items()}), t_of=json.dumps({str(k): v for k, v in t_of.items()}))
 
 WINV = np.tile(np.eye(RHO, dtype=np.float32), (V, NB, 1, 1))
 eig = []
@@ -327,6 +349,11 @@ STEPS = {("all", False): make_step(TABLES, False, False), ("all", True): make_st
 ARMS = [("G-all", "all", False, 0.03), ("N-all", "all", True, 0.03), ("G-all", "all", False, 0.06), ("N-all", "all", True, 0.06),
         ("G-val", "val", False, 0.25), ("N-val", "val", True, 0.25), ("G-val", "val", False, 1.0), ("N-val", "val", True, 1.0),
         ("G-val", "val", False, 4.0), ("N-val", "val", True, 4.0)]
+if ARMS_ENV:
+    ARMS = []
+    for a in ARMS_ENV.split(","):
+        name, lr = a.split(":")
+        ARMS.append((name, name.split("-")[1], name.startswith("N"), float(lr)))
 results = []
 for label, thr in (("content tokens rarer than rank 2048", 2048), ("content tokens rarer than rank 512", 512),
                    ("every content token", 0)):
@@ -352,7 +379,7 @@ for label, thr in (("content tokens rarer than rank 2048", 2048), ("content toke
         p = params
         own = []
         for i in range(len(FACTS)):
-            for _ in range(8):
+            for _ in range(N_STEPS):
                 _, g = vg(p, teach[i])
                 p = stepf(p, g, lr, mask)
             own.append(nll(p, test[i]))
@@ -362,7 +389,7 @@ for label, thr in (("content tokens rarer than rank 2048", 2048), ("content toke
         dctx = [(float(ev(p, b)["ce_sum"]) - c0) / w0 for b, (c0, w0) in zip(t_rows, t0s)]
         gens = [greedy(p, para) for (_, _, para, _) in FACTS]
         hits = sum(int(key.lower() in s.lower()) for (_, _, _, key), s in zip(FACTS, gens))
-        rec = {"rows": label, "threshold": thr, "arm": name, "lr": lr, "paraphrase_before": float(np.mean(base_test)),
+        rec = {"rows": label, "threshold": thr, "arm": name, "lr": lr, "steps": N_STEPS, "lam": LAM, "paraphrase_before": float(np.mean(base_test)),
                "paraphrase_own": float(np.mean(own)), "paraphrase_all": float(np.mean(allp)),
                "teach_text_after": float(np.mean(teach_after)),
                "pool_mean_drift": dmean, "pool_max_abs": dmax, "pool_disjoint": n_dis, "pool_disjoint_identical": same,
