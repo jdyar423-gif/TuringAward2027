@@ -33,6 +33,7 @@ import sys
 from pathlib import Path
 
 VAL = {"A": 1.0, "B": 0.0, "tie": 0.5}
+WINDOW = 8.0          # decode.verbatim_fit_window of the composed fit rules (fixed before the final verdicts)
 
 
 def records(d, patterns=("judge*.jsonl", "lane_*.jsonl", "rev_*.jsonl", "out*.jsonl", "all.jsonl")):
@@ -76,13 +77,16 @@ def pool_main(ddir, ldir, plan_p, pdir, out_json):
         if rule[0] == "rank":
             return next((r for r in cands if r["own"] >= rule[1] - 1e-12), None)
         if rule[0] == "fit":
-            asked = [r for r in cands if r["own"] >= rule[2] - 1e-12 and r["fit"] is not None]
+            asked = [r for r in cands if r["own"] >= rule[2] - 1e-12 and r["fit"] is not None
+                     and (len(rule) < 4 or rule[3] is None or (r.get("window") is not None and r["window"] <= rule[3]))]
             best = max(asked, key=lambda r: r["fit"], default=None)
             return best if best is not None and best["fit"] >= -rule[1] else None
         return None
 
-    rules = [("own",)] + [("rank", t) for t in (0.8, 0.75, 0.7, 0.65, 0.6)] + \
-        [("fit", tau, r) for r in (0.5, 0.4, 0.35) for tau in (0.05, 0.075, 0.1, 0.15)]
+    has_window = any(r.get("window") is not None for rs in pool.values() for r in rs)
+    rules = [("own",)] + [("rank", t) for t in (0.8, 0.75, 0.7, 0.65, 0.6)]
+    rules += [("fit", tau, r, w) for w in ((None, WINDOW) if has_window else (None,)) for r in (0.5, 0.4, 0.35)
+              for tau in (0.05, 0.075, 0.1, 0.15)]
     modes = ((0.0, False), (0.45, False), (0.4, False), (0.35, False), (0.45, True), (0.4, True), (0.35, True))
     res = []
     for rule in rules:
@@ -110,13 +114,14 @@ def pool_main(ddir, ldir, plan_p, pdir, out_json):
                 better += new > base
                 worse += new < base
             w, l = sum(x == 1 for x in v), sum(x == 0 for x in v)
-            name = {"own": "library's rule only", "rank": "overlap >= %s" % (rule[1:] or ("",))[0],
-                    "fit": "fit >= -%s, overlap >= %s" % (rule[1:] + ("", ""))[:2]}[rule[0]]
+            name = {"own": "library's rule only", "rank": "overlap >= %s" % (tuple(rule[1:]) or ("",))[0],
+                    "fit": "fit >= -%s, overlap >= %s%s" % ((tuple(rule[1:]) + ("", ""))[:2] + (
+                        "" if len(rule) < 4 or rule[3] is None else ", window <= %g" % rule[3],))}[rule[0]]
             res.append({"rule": list(rule), "exemplar_floor": floor, "numbers": numbers, "win": w, "loss": l,
                         "tie": len(v) - w - l, "score": sum(v) / len(v), "more_verbatim": n_verb, "loose_used": n_loose,
                         "unjudged": miss, "better": better, "worse": worse, "p": sign_p(better, worse)})
             if floor == 0.0 or rule[0] == "own":
-                print(f"{name:32s} floor {floor:<4} numbers {str(numbers):5s}: {w:3d} / {l:3d} / {len(v) - w - l:3d}  "
+                print(f"{name:46s} floor {floor:<4} numbers {str(numbers):5s}: {w:3d} / {l:3d} / {len(v) - w - l:3d}  "
                       f"score {sum(v) / len(v):.4f}  (+{n_verb} verbatim, {n_loose} loose"
                       + (f", {miss} unjudged" if miss else "") + f")  better {better} worse {worse} p {sign_p(better, worse):.3f}")
     top = max(res, key=lambda r: (r["score"], -r["more_verbatim"] - r["loose_used"]))

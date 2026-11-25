@@ -2,7 +2,9 @@
 facts are taught one after another; before and after, the model is asked a paraphrase of each
 question and a few unrelated development prompts.
 
-    BES_PROFILE=m6 JAX_PLATFORMS=cpu python lab/m6v/teach_overlay.py EXPORT_DIR [particles]
+    BES_PROFILE=m6 JAX_PLATFORMS=cpu python lab/m6v/teach_overlay.py EXPORT_DIR [particles [override ...]]
+
+(``override``: more harness settings of the replies, e.g. ``extra.verbatim_fit=0.1``.)
 
 Printed: for every fact the reply to the paraphrase before and after the teaching and whether
 it holds the taught fact; whether the replies to the unrelated prompts are the same text before
@@ -35,7 +37,7 @@ def main() -> int:
     mem = Path(tempfile.mkdtemp()) / "memory.jsonl"
     ex = E.load_export(export, memory=mem)
     resp = ex.responder()
-    settings = ex.settings([f"extra.particles={particles}", "extra.use_library=true", "max_tokens=64"])
+    settings = ex.settings([f"extra.particles={particles}", "extra.use_library=true", "max_tokens=64"] + sys.argv[3:])
     dev = [p.turns[0] for p in prompt_set.select(prompt_set.load(), "dev") if len(p.turns[0]) < 200][:6]
 
     def ask(r, text, seed=1234):

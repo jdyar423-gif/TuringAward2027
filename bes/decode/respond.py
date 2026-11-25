@@ -406,22 +406,25 @@ class Responder:
 
     def verbatim(self, user_text: str, spec, history: Sequence[str] | None = None, log=None,
                  min_rank: float | None = None, min_fit: float | None = None, fit_rank: float | None = None,
-                 cut: bool = False):
+                 cut: bool = False, window: float | None = None):
         """The stored entry whose answer is the reply (``bes.library.answers.AnswerLibrary.verbatim``:
         the library holds the user's question and its answer meets the user's explicit
         constraints), or ``None`` (also for a library without stored answers). ``min_rank``
         (``DecodeCfg.verbatim_rank``) and ``min_fit`` with ``fit_rank`` (``DecodeCfg.verbatim_fit``,
         ``verbatim_fit_rank``; needs ``answer_fit``) reach a library whose rule takes them; ``cut``
         (``DecodeCfg.cut_end_markers``): the reader's test sees a stored answer as it would be
-        given, without what follows an end marker."""
+        given, without what follows an end marker; ``window`` (``DecodeCfg.verbatim_fit_window``):
+        the most the user's question may cost any three consecutive tokens of the answer."""
         fn = getattr(self.library, "verbatim", None)
         if not callable(fn):
             return None
         kw = {}
         ask = bool(min_fit) and self.answer_fit is not None
         fit = self.answer_fit
-        if ask and cut:                             # judge the text that would be given
-            fit = lambda q, stored, answer: self.answer_fit(q, stored, cut_end_markers(str(answer).strip()))  # noqa: E731
+        if ask and (cut or window):
+            given = (lambda a: cut_end_markers(str(a).strip())) if cut else (lambda a: a)   # the text that would be given
+            more = {"max_window": float(window)} if window else {}
+            fit = lambda q, stored, answer: self.answer_fit(q, stored, given(answer), **more)  # noqa: E731
         if min_rank or ask:
             import inspect
 
@@ -520,7 +523,7 @@ class Responder:
         spec, spec_error = self.compile_spec(user_text)
         lib_log = self.read_log() if d.use_library else None
         hit = (self.verbatim(user_text, spec, history, lib_log, d.verbatim_rank or None, d.verbatim_fit or None,
-                             d.verbatim_fit_rank, bool(d.cut_end_markers))
+                             d.verbatim_fit_rank, bool(d.cut_end_markers), d.verbatim_fit_window or None)
                if (d.use_library and d.verbatim) else None)
         if hit is not None:
             out = self._verbatim_reply(hit, spec, d, r, seed)

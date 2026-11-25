@@ -82,3 +82,22 @@ def test_a_long_answer_is_cut_the_same_for_both_passes(scorer):
     # nothing sensible is left of the answer: no verdict
     assert fit.cut(("word " * 200,), "a short answer") is None
     assert fit("word " * 200, short_q, "a short answer") is None
+
+
+def test_the_local_window_is_the_worst_run_of_tokens_and_can_veto(scorer):
+    """``detail``: the mean and the worst three consecutive tokens, from the same two passes;
+    ``max_window`` turns an answer with a decisive local mismatch into "not suitable"."""
+    fit, _, _, _ = scorer
+    q, a = "Why does ice float on water?", "Ice is less dense than liquid water, so it floats."
+    other = "What is the capital of France?"
+    same = fit.detail(q, q, a)
+    assert same == {"fit": 0.0, "window": 0.0, "tokens": same["tokens"]} and same["tokens"] >= 8
+    d = fit.losses(other, a) - fit.losses(q, a)
+    r = fit.detail(other, q, a)
+    assert r["fit"] == pytest.approx(-d.mean(), abs=1e-9) and r["tokens"] == d.size
+    assert r["window"] == pytest.approx(max(d[i:i + 3].sum() for i in range(d.size - 2)), abs=1e-9)
+    assert r["window"] >= d.max() - 2 * abs(d.min())            # a window holds the worst token
+    assert fit(other, q, a) == pytest.approx(r["fit"], abs=1e-12)
+    assert fit(other, q, a, max_window=r["window"] + 0.01) == pytest.approx(r["fit"], abs=1e-12)
+    assert fit(other, q, a, max_window=r["window"] - 0.01) is None
+    assert fit(q, q, a, max_window=0.0) == 0.0

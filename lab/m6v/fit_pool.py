@@ -79,12 +79,15 @@ def main(argv):
                 except Exception:
                     continue
             given = cut_end_markers(answer.strip()) if cut else answer.strip()
-            value = fit(q, c.question, given)
+            det = fit.detail(q, c.question, given)
+            value = None if det is None else det["fit"]
             row = {"pair_id": f"{p.id}#{c.entry}", "prompt_id": p.id, "category": p.category, "entry": int(c.entry),
                    "question": c.question, "cov_q": round(float(c.cov_q), 4), "cov_e": round(float(c.cov_e), 4),
                    "type_match": bool(c.type_match), "own": round(float(own), 4), "own_rule": bool(own_rule),
                    "fit": None if value is None else round(float(value), 4), "answer_chars": len(given),
-                   "end_cut": given != answer.strip()}
+                   "end_cut": given != answer.strip(),
+                   "window": None if det is None else round(float(det["window"]), 3),
+                   "tokens": None if det is None else int(det["tokens"])}
             rows.append(row)
             if p.id in opp and (own_rule or (value is not None and value >= opts["--pairs-from"])):
                 pairs.append({"pair_id": row["pair_id"],

@@ -1,0 +1,4111 @@
+[
+ {
+  "rule": [
+   "own"
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 26,
+  "loss": 40,
+  "tie": 134,
+  "score": 0.465,
+  "more_verbatim": 0,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 0,
+  "worse": 0,
+  "p": 1.0
+ },
+ {
+  "rule": [
+   "own"
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 25,
+  "loss": 42,
+  "tie": 133,
+  "score": 0.4575,
+  "more_verbatim": 0,
+  "loose_used": 6,
+  "unjudged": 0,
+  "better": 0,
+  "worse": 3,
+  "p": 0.25
+ },
+ {
+  "rule": [
+   "own"
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 25,
+  "loss": 42,
+  "tie": 133,
+  "score": 0.4575,
+  "more_verbatim": 0,
+  "loose_used": 17,
+  "unjudged": 0,
+  "better": 2,
+  "worse": 4,
+  "p": 0.6875
+ },
+ {
+  "rule": [
+   "own"
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 26,
+  "loss": 41,
+  "tie": 133,
+  "score": 0.4625,
+  "more_verbatim": 0,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 5,
+  "worse": 5,
+  "p": 1.0
+ },
+ {
+  "rule": [
+   "own"
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 24,
+  "loss": 41,
+  "tie": 135,
+  "score": 0.4575,
+  "more_verbatim": 0,
+  "loose_used": 30,
+  "unjudged": 0,
+  "better": 3,
+  "worse": 6,
+  "p": 0.5078125
+ },
+ {
+  "rule": [
+   "own"
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 24,
+  "loss": 41,
+  "tie": 135,
+  "score": 0.4575,
+  "more_verbatim": 0,
+  "loose_used": 41,
+  "unjudged": 0,
+  "better": 5,
+  "worse": 7,
+  "p": 0.7744140625
+ },
+ {
+  "rule": [
+   "own"
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 25,
+  "loss": 40,
+  "tie": 135,
+  "score": 0.4625,
+  "more_verbatim": 0,
+  "loose_used": 51,
+  "unjudged": 0,
+  "better": 8,
+  "worse": 8,
+  "p": 1.0
+ },
+ {
+  "rule": [
+   "rank",
+   0.8
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 26,
+  "loss": 41,
+  "tie": 133,
+  "score": 0.4625,
+  "more_verbatim": 3,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 1,
+  "worse": 1,
+  "p": 1.0
+ },
+ {
+  "rule": [
+   "rank",
+   0.8
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 25,
+  "loss": 43,
+  "tie": 132,
+  "score": 0.455,
+  "more_verbatim": 3,
+  "loose_used": 6,
+  "unjudged": 0,
+  "better": 1,
+  "worse": 4,
+  "p": 0.375
+ },
+ {
+  "rule": [
+   "rank",
+   0.8
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 25,
+  "loss": 43,
+  "tie": 132,
+  "score": 0.455,
+  "more_verbatim": 3,
+  "loose_used": 17,
+  "unjudged": 0,
+  "better": 3,
+  "worse": 5,
+  "p": 0.7265625
+ },
+ {
+  "rule": [
+   "rank",
+   0.8
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 26,
+  "loss": 42,
+  "tie": 132,
+  "score": 0.46,
+  "more_verbatim": 3,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 6,
+  "worse": 6,
+  "p": 1.0
+ },
+ {
+  "rule": [
+   "rank",
+   0.8
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 24,
+  "loss": 42,
+  "tie": 134,
+  "score": 0.455,
+  "more_verbatim": 3,
+  "loose_used": 30,
+  "unjudged": 0,
+  "better": 4,
+  "worse": 7,
+  "p": 0.548828125
+ },
+ {
+  "rule": [
+   "rank",
+   0.8
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 24,
+  "loss": 42,
+  "tie": 134,
+  "score": 0.455,
+  "more_verbatim": 3,
+  "loose_used": 41,
+  "unjudged": 0,
+  "better": 6,
+  "worse": 8,
+  "p": 0.79052734375
+ },
+ {
+  "rule": [
+   "rank",
+   0.8
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 25,
+  "loss": 41,
+  "tie": 134,
+  "score": 0.46,
+  "more_verbatim": 3,
+  "loose_used": 51,
+  "unjudged": 0,
+  "better": 9,
+  "worse": 9,
+  "p": 1.0
+ },
+ {
+  "rule": [
+   "rank",
+   0.75
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 28,
+  "loss": 41,
+  "tie": 131,
+  "score": 0.4675,
+  "more_verbatim": 9,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 3,
+  "worse": 1,
+  "p": 0.625
+ },
+ {
+  "rule": [
+   "rank",
+   0.75
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 27,
+  "loss": 43,
+  "tie": 130,
+  "score": 0.46,
+  "more_verbatim": 9,
+  "loose_used": 6,
+  "unjudged": 0,
+  "better": 3,
+  "worse": 4,
+  "p": 1.0
+ },
+ {
+  "rule": [
+   "rank",
+   0.75
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 27,
+  "loss": 43,
+  "tie": 130,
+  "score": 0.46,
+  "more_verbatim": 9,
+  "loose_used": 17,
+  "unjudged": 0,
+  "better": 5,
+  "worse": 5,
+  "p": 1.0
+ },
+ {
+  "rule": [
+   "rank",
+   0.75
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 28,
+  "loss": 42,
+  "tie": 130,
+  "score": 0.465,
+  "more_verbatim": 9,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 8,
+  "worse": 6,
+  "p": 0.79052734375
+ },
+ {
+  "rule": [
+   "rank",
+   0.75
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 26,
+  "loss": 42,
+  "tie": 132,
+  "score": 0.46,
+  "more_verbatim": 9,
+  "loose_used": 30,
+  "unjudged": 0,
+  "better": 6,
+  "worse": 7,
+  "p": 1.0
+ },
+ {
+  "rule": [
+   "rank",
+   0.75
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 26,
+  "loss": 42,
+  "tie": 132,
+  "score": 0.46,
+  "more_verbatim": 9,
+  "loose_used": 41,
+  "unjudged": 0,
+  "better": 8,
+  "worse": 8,
+  "p": 1.0
+ },
+ {
+  "rule": [
+   "rank",
+   0.75
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 27,
+  "loss": 41,
+  "tie": 132,
+  "score": 0.465,
+  "more_verbatim": 9,
+  "loose_used": 51,
+  "unjudged": 0,
+  "better": 11,
+  "worse": 9,
+  "p": 0.8238029479980469
+ },
+ {
+  "rule": [
+   "rank",
+   0.7
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 28,
+  "loss": 41,
+  "tie": 131,
+  "score": 0.4675,
+  "more_verbatim": 11,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 3,
+  "worse": 1,
+  "p": 0.625
+ },
+ {
+  "rule": [
+   "rank",
+   0.7
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 27,
+  "loss": 43,
+  "tie": 130,
+  "score": 0.46,
+  "more_verbatim": 11,
+  "loose_used": 6,
+  "unjudged": 0,
+  "better": 3,
+  "worse": 4,
+  "p": 1.0
+ },
+ {
+  "rule": [
+   "rank",
+   0.7
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 27,
+  "loss": 43,
+  "tie": 130,
+  "score": 0.46,
+  "more_verbatim": 11,
+  "loose_used": 17,
+  "unjudged": 0,
+  "better": 5,
+  "worse": 5,
+  "p": 1.0
+ },
+ {
+  "rule": [
+   "rank",
+   0.7
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 28,
+  "loss": 42,
+  "tie": 130,
+  "score": 0.465,
+  "more_verbatim": 11,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 8,
+  "worse": 6,
+  "p": 0.79052734375
+ },
+ {
+  "rule": [
+   "rank",
+   0.7
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 26,
+  "loss": 42,
+  "tie": 132,
+  "score": 0.46,
+  "more_verbatim": 11,
+  "loose_used": 30,
+  "unjudged": 0,
+  "better": 6,
+  "worse": 7,
+  "p": 1.0
+ },
+ {
+  "rule": [
+   "rank",
+   0.7
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 26,
+  "loss": 42,
+  "tie": 132,
+  "score": 0.46,
+  "more_verbatim": 11,
+  "loose_used": 41,
+  "unjudged": 0,
+  "better": 8,
+  "worse": 8,
+  "p": 1.0
+ },
+ {
+  "rule": [
+   "rank",
+   0.7
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 27,
+  "loss": 41,
+  "tie": 132,
+  "score": 0.465,
+  "more_verbatim": 11,
+  "loose_used": 51,
+  "unjudged": 0,
+  "better": 11,
+  "worse": 9,
+  "p": 0.8238029479980469
+ },
+ {
+  "rule": [
+   "rank",
+   0.65
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 31,
+  "loss": 41,
+  "tie": 128,
+  "score": 0.475,
+  "more_verbatim": 19,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 6,
+  "worse": 1,
+  "p": 0.125
+ },
+ {
+  "rule": [
+   "rank",
+   0.65
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 30,
+  "loss": 43,
+  "tie": 127,
+  "score": 0.4675,
+  "more_verbatim": 19,
+  "loose_used": 6,
+  "unjudged": 0,
+  "better": 6,
+  "worse": 4,
+  "p": 0.75390625
+ },
+ {
+  "rule": [
+   "rank",
+   0.65
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 30,
+  "loss": 43,
+  "tie": 127,
+  "score": 0.4675,
+  "more_verbatim": 19,
+  "loose_used": 17,
+  "unjudged": 0,
+  "better": 8,
+  "worse": 5,
+  "p": 0.5810546875
+ },
+ {
+  "rule": [
+   "rank",
+   0.65
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 31,
+  "loss": 42,
+  "tie": 127,
+  "score": 0.4725,
+  "more_verbatim": 19,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 11,
+  "worse": 6,
+  "p": 0.332305908203125
+ },
+ {
+  "rule": [
+   "rank",
+   0.65
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 29,
+  "loss": 42,
+  "tie": 129,
+  "score": 0.4675,
+  "more_verbatim": 19,
+  "loose_used": 30,
+  "unjudged": 0,
+  "better": 9,
+  "worse": 7,
+  "p": 0.803619384765625
+ },
+ {
+  "rule": [
+   "rank",
+   0.65
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 29,
+  "loss": 42,
+  "tie": 129,
+  "score": 0.4675,
+  "more_verbatim": 19,
+  "loose_used": 41,
+  "unjudged": 0,
+  "better": 11,
+  "worse": 8,
+  "p": 0.6476058959960938
+ },
+ {
+  "rule": [
+   "rank",
+   0.65
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 30,
+  "loss": 41,
+  "tie": 129,
+  "score": 0.4725,
+  "more_verbatim": 19,
+  "loose_used": 51,
+  "unjudged": 0,
+  "better": 14,
+  "worse": 9,
+  "p": 0.4048728942871094
+ },
+ {
+  "rule": [
+   "rank",
+   0.6
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 33,
+  "loss": 40,
+  "tie": 127,
+  "score": 0.4825,
+  "more_verbatim": 24,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 9,
+  "worse": 2,
+  "p": 0.0654296875
+ },
+ {
+  "rule": [
+   "rank",
+   0.6
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 32,
+  "loss": 42,
+  "tie": 126,
+  "score": 0.475,
+  "more_verbatim": 24,
+  "loose_used": 6,
+  "unjudged": 0,
+  "better": 9,
+  "worse": 5,
+  "p": 0.4239501953125
+ },
+ {
+  "rule": [
+   "rank",
+   0.6
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 32,
+  "loss": 42,
+  "tie": 126,
+  "score": 0.475,
+  "more_verbatim": 24,
+  "loose_used": 17,
+  "unjudged": 0,
+  "better": 11,
+  "worse": 6,
+  "p": 0.332305908203125
+ },
+ {
+  "rule": [
+   "rank",
+   0.6
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 33,
+  "loss": 41,
+  "tie": 126,
+  "score": 0.48,
+  "more_verbatim": 24,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 14,
+  "worse": 7,
+  "p": 0.18924713134765625
+ },
+ {
+  "rule": [
+   "rank",
+   0.6
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 31,
+  "loss": 41,
+  "tie": 128,
+  "score": 0.475,
+  "more_verbatim": 24,
+  "loose_used": 30,
+  "unjudged": 0,
+  "better": 12,
+  "worse": 8,
+  "p": 0.5034446716308594
+ },
+ {
+  "rule": [
+   "rank",
+   0.6
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 31,
+  "loss": 41,
+  "tie": 128,
+  "score": 0.475,
+  "more_verbatim": 24,
+  "loose_used": 41,
+  "unjudged": 0,
+  "better": 14,
+  "worse": 9,
+  "p": 0.4048728942871094
+ },
+ {
+  "rule": [
+   "rank",
+   0.6
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 32,
+  "loss": 40,
+  "tie": 128,
+  "score": 0.48,
+  "more_verbatim": 24,
+  "loose_used": 51,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 10,
+  "p": 0.24778856337070465
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 35,
+  "loss": 38,
+  "tie": 127,
+  "score": 0.4925,
+  "more_verbatim": 17,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 11,
+  "worse": 1,
+  "p": 0.00634765625
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 34,
+  "loss": 40,
+  "tie": 126,
+  "score": 0.485,
+  "more_verbatim": 17,
+  "loose_used": 6,
+  "unjudged": 0,
+  "better": 11,
+  "worse": 4,
+  "p": 0.11846923828125
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 34,
+  "loss": 40,
+  "tie": 126,
+  "score": 0.485,
+  "more_verbatim": 17,
+  "loose_used": 17,
+  "unjudged": 0,
+  "better": 13,
+  "worse": 5,
+  "p": 0.09625244140625
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 35,
+  "loss": 39,
+  "tie": 126,
+  "score": 0.49,
+  "more_verbatim": 17,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 6,
+  "p": 0.052478790283203125
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 33,
+  "loss": 39,
+  "tie": 128,
+  "score": 0.485,
+  "more_verbatim": 17,
+  "loose_used": 30,
+  "unjudged": 0,
+  "better": 14,
+  "worse": 7,
+  "p": 0.18924713134765625
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 33,
+  "loss": 39,
+  "tie": 128,
+  "score": 0.485,
+  "more_verbatim": 17,
+  "loose_used": 41,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 8,
+  "p": 0.15158963203430176
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 34,
+  "loss": 38,
+  "tie": 128,
+  "score": 0.49,
+  "more_verbatim": 17,
+  "loose_used": 51,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 9,
+  "p": 0.08715855330228806
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 37,
+  "loss": 37,
+  "tie": 126,
+  "score": 0.5,
+  "more_verbatim": 27,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 14,
+  "worse": 2,
+  "p": 0.004180908203125
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 36,
+  "loss": 39,
+  "tie": 125,
+  "score": 0.4925,
+  "more_verbatim": 27,
+  "loose_used": 6,
+  "unjudged": 0,
+  "better": 14,
+  "worse": 5,
+  "p": 0.063568115234375
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 36,
+  "loss": 39,
+  "tie": 125,
+  "score": 0.4925,
+  "more_verbatim": 27,
+  "loose_used": 17,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 6,
+  "p": 0.052478790283203125
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 37,
+  "loss": 38,
+  "tie": 125,
+  "score": 0.4975,
+  "more_verbatim": 27,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 7,
+  "p": 0.028959274291992188
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 35,
+  "loss": 38,
+  "tie": 127,
+  "score": 0.4925,
+  "more_verbatim": 27,
+  "loose_used": 30,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 8,
+  "p": 0.10775214433670044
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 35,
+  "loss": 38,
+  "tie": 127,
+  "score": 0.4925,
+  "more_verbatim": 27,
+  "loose_used": 41,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 9,
+  "p": 0.08715855330228806
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 36,
+  "loss": 37,
+  "tie": 127,
+  "score": 0.4975,
+  "more_verbatim": 27,
+  "loose_used": 51,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 10,
+  "p": 0.050102459732443094
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 37,
+  "loss": 37,
+  "tie": 126,
+  "score": 0.5,
+  "more_verbatim": 32,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 3,
+  "p": 0.004425048828125
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 36,
+  "loss": 39,
+  "tie": 125,
+  "score": 0.4925,
+  "more_verbatim": 32,
+  "loose_used": 6,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 6,
+  "p": 0.052478790283203125
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 36,
+  "loss": 39,
+  "tie": 125,
+  "score": 0.4925,
+  "more_verbatim": 32,
+  "loose_used": 17,
+  "unjudged": 0,
+  "better": 18,
+  "worse": 7,
+  "p": 0.043285250663757324
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 37,
+  "loss": 38,
+  "tie": 125,
+  "score": 0.4975,
+  "more_verbatim": 32,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 21,
+  "worse": 8,
+  "p": 0.0241195447742939
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 35,
+  "loss": 38,
+  "tie": 127,
+  "score": 0.4925,
+  "more_verbatim": 32,
+  "loose_used": 29,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 9,
+  "p": 0.08715855330228806
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 35,
+  "loss": 38,
+  "tie": 127,
+  "score": 0.4925,
+  "more_verbatim": 32,
+  "loose_used": 40,
+  "unjudged": 0,
+  "better": 21,
+  "worse": 10,
+  "p": 0.07075554598122835
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 36,
+  "loss": 37,
+  "tie": 127,
+  "score": 0.4975,
+  "more_verbatim": 32,
+  "loose_used": 50,
+  "unjudged": 0,
+  "better": 24,
+  "worse": 11,
+  "p": 0.04095959151163697
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 37,
+  "loss": 38,
+  "tie": 125,
+  "score": 0.4975,
+  "more_verbatim": 36,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 4,
+  "p": 0.007197380065917969
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 36,
+  "loss": 40,
+  "tie": 124,
+  "score": 0.49,
+  "more_verbatim": 36,
+  "loose_used": 6,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 7,
+  "p": 0.06391465663909912
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 36,
+  "loss": 40,
+  "tie": 124,
+  "score": 0.49,
+  "more_verbatim": 36,
+  "loose_used": 17,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 8,
+  "p": 0.052238985896110535
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 36,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 9,
+  "p": 0.029449373483657837
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 35,
+  "loss": 39,
+  "tie": 126,
+  "score": 0.49,
+  "more_verbatim": 36,
+  "loose_used": 29,
+  "unjudged": 0,
+  "better": 20,
+  "worse": 10,
+  "p": 0.09873714670538902
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 35,
+  "loss": 39,
+  "tie": 126,
+  "score": 0.49,
+  "more_verbatim": 36,
+  "loose_used": 40,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 11,
+  "p": 0.08014331245794892
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.5,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 36,
+  "loss": 38,
+  "tie": 126,
+  "score": 0.495,
+  "more_verbatim": 36,
+  "loose_used": 50,
+  "unjudged": 0,
+  "better": 25,
+  "worse": 12,
+  "p": 0.04703102743951604
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 36,
+  "loss": 38,
+  "tie": 126,
+  "score": 0.495,
+  "more_verbatim": 20,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 12,
+  "worse": 1,
+  "p": 0.00341796875
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 35,
+  "loss": 40,
+  "tie": 125,
+  "score": 0.4875,
+  "more_verbatim": 20,
+  "loose_used": 6,
+  "unjudged": 0,
+  "better": 12,
+  "worse": 4,
+  "p": 0.076812744140625
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 35,
+  "loss": 40,
+  "tie": 125,
+  "score": 0.4875,
+  "more_verbatim": 20,
+  "loose_used": 16,
+  "unjudged": 0,
+  "better": 14,
+  "worse": 5,
+  "p": 0.063568115234375
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 36,
+  "loss": 39,
+  "tie": 125,
+  "score": 0.4925,
+  "more_verbatim": 20,
+  "loose_used": 26,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 6,
+  "p": 0.03468966484069824
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 34,
+  "loss": 39,
+  "tie": 127,
+  "score": 0.4875,
+  "more_verbatim": 20,
+  "loose_used": 30,
+  "unjudged": 0,
+  "better": 15,
+  "worse": 7,
+  "p": 0.13380050659179688
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 34,
+  "loss": 39,
+  "tie": 127,
+  "score": 0.4875,
+  "more_verbatim": 20,
+  "loose_used": 40,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 8,
+  "p": 0.10775214433670044
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 35,
+  "loss": 38,
+  "tie": 127,
+  "score": 0.4925,
+  "more_verbatim": 20,
+  "loose_used": 50,
+  "unjudged": 0,
+  "better": 20,
+  "worse": 9,
+  "p": 0.06142834573984146
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 37,
+  "loss": 38,
+  "tie": 125,
+  "score": 0.4975,
+  "more_verbatim": 33,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 15,
+  "worse": 3,
+  "p": 0.007537841796875
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 37,
+  "loss": 40,
+  "tie": 123,
+  "score": 0.4925,
+  "more_verbatim": 33,
+  "loose_used": 5,
+  "unjudged": 0,
+  "better": 15,
+  "worse": 5,
+  "p": 0.04138946533203125
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 37,
+  "loss": 40,
+  "tie": 123,
+  "score": 0.4925,
+  "more_verbatim": 33,
+  "loose_used": 12,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 6,
+  "p": 0.03468966484069824
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 38,
+  "loss": 39,
+  "tie": 123,
+  "score": 0.4975,
+  "more_verbatim": 33,
+  "loose_used": 22,
+  "unjudged": 0,
+  "better": 20,
+  "worse": 7,
+  "p": 0.0191572904586792
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 36,
+  "loss": 39,
+  "tie": 125,
+  "score": 0.4925,
+  "more_verbatim": 33,
+  "loose_used": 29,
+  "unjudged": 0,
+  "better": 18,
+  "worse": 8,
+  "p": 0.07551869750022888
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 36,
+  "loss": 39,
+  "tie": 125,
+  "score": 0.4925,
+  "more_verbatim": 33,
+  "loose_used": 36,
+  "unjudged": 0,
+  "better": 20,
+  "worse": 9,
+  "p": 0.06142834573984146
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 37,
+  "loss": 38,
+  "tie": 125,
+  "score": 0.4975,
+  "more_verbatim": 33,
+  "loose_used": 46,
+  "unjudged": 0,
+  "better": 23,
+  "worse": 10,
+  "p": 0.03508203336969018
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 37,
+  "loss": 38,
+  "tie": 125,
+  "score": 0.4975,
+  "more_verbatim": 39,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 4,
+  "p": 0.007197380065917969
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 37,
+  "loss": 40,
+  "tie": 123,
+  "score": 0.4925,
+  "more_verbatim": 39,
+  "loose_used": 5,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 6,
+  "p": 0.03468966484069824
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 37,
+  "loss": 40,
+  "tie": 123,
+  "score": 0.4925,
+  "more_verbatim": 39,
+  "loose_used": 11,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 7,
+  "p": 0.028959274291992188
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 38,
+  "loss": 39,
+  "tie": 123,
+  "score": 0.4975,
+  "more_verbatim": 39,
+  "loose_used": 21,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 8,
+  "p": 0.016124801710247993
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 36,
+  "loss": 39,
+  "tie": 125,
+  "score": 0.4925,
+  "more_verbatim": 39,
+  "loose_used": 28,
+  "unjudged": 0,
+  "better": 20,
+  "worse": 9,
+  "p": 0.06142834573984146
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 36,
+  "loss": 39,
+  "tie": 125,
+  "score": 0.4925,
+  "more_verbatim": 39,
+  "loose_used": 34,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 10,
+  "p": 0.050102459732443094
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 37,
+  "loss": 38,
+  "tie": 125,
+  "score": 0.4975,
+  "more_verbatim": 39,
+  "loose_used": 44,
+  "unjudged": 0,
+  "better": 25,
+  "worse": 11,
+  "p": 0.028816719655878842
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 45,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 18,
+  "worse": 5,
+  "p": 0.010622024536132812
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 37,
+  "loss": 40,
+  "tie": 123,
+  "score": 0.4925,
+  "more_verbatim": 45,
+  "loose_used": 4,
+  "unjudged": 0,
+  "better": 18,
+  "worse": 6,
+  "p": 0.022655844688415527
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 37,
+  "loss": 40,
+  "tie": 123,
+  "score": 0.4925,
+  "more_verbatim": 45,
+  "loose_used": 9,
+  "unjudged": 0,
+  "better": 20,
+  "worse": 7,
+  "p": 0.0191572904586792
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 38,
+  "loss": 39,
+  "tie": 123,
+  "score": 0.4975,
+  "more_verbatim": 45,
+  "loose_used": 19,
+  "unjudged": 0,
+  "better": 23,
+  "worse": 8,
+  "p": 0.010673840530216694
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 36,
+  "loss": 39,
+  "tie": 125,
+  "score": 0.4925,
+  "more_verbatim": 45,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 21,
+  "worse": 9,
+  "p": 0.04277394525706768
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 36,
+  "loss": 39,
+  "tie": 125,
+  "score": 0.4925,
+  "more_verbatim": 45,
+  "loose_used": 32,
+  "unjudged": 0,
+  "better": 23,
+  "worse": 10,
+  "p": 0.03508203336969018
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.4,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 37,
+  "loss": 38,
+  "tie": 125,
+  "score": 0.4975,
+  "more_verbatim": 45,
+  "loose_used": 42,
+  "unjudged": 0,
+  "better": 26,
+  "worse": 11,
+  "p": 0.020073851919732988
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 36,
+  "loss": 39,
+  "tie": 125,
+  "score": 0.4925,
+  "more_verbatim": 23,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 13,
+  "worse": 2,
+  "p": 0.00738525390625
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 36,
+  "loss": 41,
+  "tie": 123,
+  "score": 0.4875,
+  "more_verbatim": 23,
+  "loose_used": 5,
+  "unjudged": 0,
+  "better": 13,
+  "worse": 4,
+  "p": 0.049041748046875
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 35,
+  "loss": 41,
+  "tie": 124,
+  "score": 0.485,
+  "more_verbatim": 23,
+  "loose_used": 14,
+  "unjudged": 0,
+  "better": 14,
+  "worse": 5,
+  "p": 0.063568115234375
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 36,
+  "loss": 40,
+  "tie": 124,
+  "score": 0.49,
+  "more_verbatim": 23,
+  "loose_used": 23,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 6,
+  "p": 0.03468966484069824
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 35,
+  "loss": 40,
+  "tie": 125,
+  "score": 0.4875,
+  "more_verbatim": 23,
+  "loose_used": 29,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 7,
+  "p": 0.0931396484375
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 34,
+  "loss": 40,
+  "tie": 126,
+  "score": 0.485,
+  "more_verbatim": 23,
+  "loose_used": 38,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 8,
+  "p": 0.10775214433670044
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 35,
+  "loss": 39,
+  "tie": 126,
+  "score": 0.49,
+  "more_verbatim": 23,
+  "loose_used": 47,
+  "unjudged": 0,
+  "better": 20,
+  "worse": 9,
+  "p": 0.06142834573984146
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 38,
+  "loss": 38,
+  "tie": 124,
+  "score": 0.5,
+  "more_verbatim": 35,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 3,
+  "p": 0.004425048828125
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 38,
+  "loss": 40,
+  "tie": 122,
+  "score": 0.495,
+  "more_verbatim": 35,
+  "loose_used": 5,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 5,
+  "p": 0.02660369873046875
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 37,
+  "loss": 40,
+  "tie": 123,
+  "score": 0.4925,
+  "more_verbatim": 35,
+  "loose_used": 11,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 6,
+  "p": 0.03468966484069824
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 38,
+  "loss": 39,
+  "tie": 123,
+  "score": 0.4975,
+  "more_verbatim": 35,
+  "loose_used": 20,
+  "unjudged": 0,
+  "better": 20,
+  "worse": 7,
+  "p": 0.0191572904586792
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 35,
+  "loose_used": 29,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 8,
+  "p": 0.052238985896110535
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 36,
+  "loss": 39,
+  "tie": 125,
+  "score": 0.4925,
+  "more_verbatim": 35,
+  "loose_used": 35,
+  "unjudged": 0,
+  "better": 20,
+  "worse": 9,
+  "p": 0.06142834573984146
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 37,
+  "loss": 38,
+  "tie": 125,
+  "score": 0.4975,
+  "more_verbatim": 35,
+  "loose_used": 44,
+  "unjudged": 0,
+  "better": 23,
+  "worse": 10,
+  "p": 0.03508203336969018
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 38,
+  "loss": 38,
+  "tie": 124,
+  "score": 0.5,
+  "more_verbatim": 41,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 18,
+  "worse": 4,
+  "p": 0.004343509674072266
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 38,
+  "loss": 40,
+  "tie": 122,
+  "score": 0.495,
+  "more_verbatim": 41,
+  "loose_used": 5,
+  "unjudged": 0,
+  "better": 18,
+  "worse": 6,
+  "p": 0.022655844688415527
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 37,
+  "loss": 40,
+  "tie": 123,
+  "score": 0.4925,
+  "more_verbatim": 41,
+  "loose_used": 10,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 7,
+  "p": 0.028959274291992188
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 38,
+  "loss": 39,
+  "tie": 123,
+  "score": 0.4975,
+  "more_verbatim": 41,
+  "loose_used": 19,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 8,
+  "p": 0.016124801710247993
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 41,
+  "loose_used": 28,
+  "unjudged": 0,
+  "better": 21,
+  "worse": 9,
+  "p": 0.04277394525706768
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 36,
+  "loss": 39,
+  "tie": 125,
+  "score": 0.4925,
+  "more_verbatim": 41,
+  "loose_used": 33,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 10,
+  "p": 0.050102459732443094
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 37,
+  "loss": 38,
+  "tie": 125,
+  "score": 0.4975,
+  "more_verbatim": 41,
+  "loose_used": 42,
+  "unjudged": 0,
+  "better": 25,
+  "worse": 11,
+  "p": 0.028816719655878842
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 38,
+  "loss": 39,
+  "tie": 123,
+  "score": 0.4975,
+  "more_verbatim": 48,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 5,
+  "p": 0.006610751152038574
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 38,
+  "loss": 40,
+  "tie": 122,
+  "score": 0.495,
+  "more_verbatim": 48,
+  "loose_used": 4,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 6,
+  "p": 0.01463329792022705
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 37,
+  "loss": 40,
+  "tie": 123,
+  "score": 0.4925,
+  "more_verbatim": 48,
+  "loose_used": 8,
+  "unjudged": 0,
+  "better": 20,
+  "worse": 7,
+  "p": 0.0191572904586792
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 38,
+  "loss": 39,
+  "tie": 123,
+  "score": 0.4975,
+  "more_verbatim": 48,
+  "loose_used": 16,
+  "unjudged": 0,
+  "better": 23,
+  "worse": 8,
+  "p": 0.010673840530216694
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 48,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 9,
+  "p": 0.029449373483657837
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 36,
+  "loss": 39,
+  "tie": 125,
+  "score": 0.4925,
+  "more_verbatim": 48,
+  "loose_used": 31,
+  "unjudged": 0,
+  "better": 23,
+  "worse": 10,
+  "p": 0.03508203336969018
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.35,
+   null
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 37,
+  "loss": 38,
+  "tie": 125,
+  "score": 0.4975,
+  "more_verbatim": 48,
+  "loose_used": 39,
+  "unjudged": 0,
+  "better": 26,
+  "worse": 11,
+  "p": 0.020073851919732988
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 34,
+  "loss": 38,
+  "tie": 128,
+  "score": 0.49,
+  "more_verbatim": 16,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 10,
+  "worse": 1,
+  "p": 0.01171875
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 33,
+  "loss": 40,
+  "tie": 127,
+  "score": 0.4825,
+  "more_verbatim": 16,
+  "loose_used": 6,
+  "unjudged": 0,
+  "better": 10,
+  "worse": 4,
+  "p": 0.1795654296875
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 33,
+  "loss": 40,
+  "tie": 127,
+  "score": 0.4825,
+  "more_verbatim": 16,
+  "loose_used": 17,
+  "unjudged": 0,
+  "better": 12,
+  "worse": 5,
+  "p": 0.143463134765625
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 34,
+  "loss": 39,
+  "tie": 127,
+  "score": 0.4875,
+  "more_verbatim": 16,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 15,
+  "worse": 6,
+  "p": 0.0783538818359375
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 32,
+  "loss": 39,
+  "tie": 129,
+  "score": 0.4825,
+  "more_verbatim": 16,
+  "loose_used": 30,
+  "unjudged": 0,
+  "better": 13,
+  "worse": 7,
+  "p": 0.26317596435546875
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 32,
+  "loss": 39,
+  "tie": 129,
+  "score": 0.4825,
+  "more_verbatim": 16,
+  "loose_used": 41,
+  "unjudged": 0,
+  "better": 15,
+  "worse": 8,
+  "p": 0.21003961563110352
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 33,
+  "loss": 38,
+  "tie": 129,
+  "score": 0.4875,
+  "more_verbatim": 16,
+  "loose_used": 51,
+  "unjudged": 0,
+  "better": 18,
+  "worse": 9,
+  "p": 0.12207812070846558
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 38,
+  "loss": 37,
+  "tie": 125,
+  "score": 0.5025,
+  "more_verbatim": 25,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 14,
+  "worse": 1,
+  "p": 0.0009765625
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 25,
+  "loose_used": 6,
+  "unjudged": 0,
+  "better": 14,
+  "worse": 4,
+  "p": 0.0308837890625
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 25,
+  "loose_used": 17,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 5,
+  "p": 0.02660369873046875
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 38,
+  "loss": 38,
+  "tie": 124,
+  "score": 0.5,
+  "more_verbatim": 25,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 6,
+  "p": 0.01463329792022705
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 36,
+  "loss": 38,
+  "tie": 126,
+  "score": 0.495,
+  "more_verbatim": 25,
+  "loose_used": 30,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 7,
+  "p": 0.06391465663909912
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 36,
+  "loss": 38,
+  "tie": 126,
+  "score": 0.495,
+  "more_verbatim": 25,
+  "loose_used": 41,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 8,
+  "p": 0.052238985896110535
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 37,
+  "loss": 37,
+  "tie": 126,
+  "score": 0.5,
+  "more_verbatim": 25,
+  "loose_used": 51,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 9,
+  "p": 0.029449373483657837
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 38,
+  "loss": 37,
+  "tie": 125,
+  "score": 0.5025,
+  "more_verbatim": 29,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 2,
+  "p": 0.001312255859375
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 29,
+  "loose_used": 6,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 5,
+  "p": 0.02660369873046875
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 29,
+  "loose_used": 17,
+  "unjudged": 0,
+  "better": 18,
+  "worse": 6,
+  "p": 0.022655844688415527
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 38,
+  "loss": 38,
+  "tie": 124,
+  "score": 0.5,
+  "more_verbatim": 29,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 21,
+  "worse": 7,
+  "p": 0.012540951371192932
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 36,
+  "loss": 38,
+  "tie": 126,
+  "score": 0.495,
+  "more_verbatim": 29,
+  "loose_used": 29,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 8,
+  "p": 0.052238985896110535
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 36,
+  "loss": 38,
+  "tie": 126,
+  "score": 0.495,
+  "more_verbatim": 29,
+  "loose_used": 40,
+  "unjudged": 0,
+  "better": 21,
+  "worse": 9,
+  "p": 0.04277394525706768
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 37,
+  "loss": 37,
+  "tie": 126,
+  "score": 0.5,
+  "more_verbatim": 29,
+  "loose_used": 50,
+  "unjudged": 0,
+  "better": 24,
+  "worse": 10,
+  "p": 0.024306510109454393
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 38,
+  "loss": 37,
+  "tie": 125,
+  "score": 0.5025,
+  "more_verbatim": 29,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 2,
+  "p": 0.001312255859375
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 29,
+  "loose_used": 6,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 5,
+  "p": 0.02660369873046875
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 29,
+  "loose_used": 17,
+  "unjudged": 0,
+  "better": 18,
+  "worse": 6,
+  "p": 0.022655844688415527
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 38,
+  "loss": 38,
+  "tie": 124,
+  "score": 0.5,
+  "more_verbatim": 29,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 21,
+  "worse": 7,
+  "p": 0.012540951371192932
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 36,
+  "loss": 38,
+  "tie": 126,
+  "score": 0.495,
+  "more_verbatim": 29,
+  "loose_used": 29,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 8,
+  "p": 0.052238985896110535
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 36,
+  "loss": 38,
+  "tie": 126,
+  "score": 0.495,
+  "more_verbatim": 29,
+  "loose_used": 40,
+  "unjudged": 0,
+  "better": 21,
+  "worse": 9,
+  "p": 0.04277394525706768
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.5,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 37,
+  "loss": 37,
+  "tie": 126,
+  "score": 0.5,
+  "more_verbatim": 29,
+  "loose_used": 50,
+  "unjudged": 0,
+  "better": 24,
+  "worse": 10,
+  "p": 0.024306510109454393
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 35,
+  "loss": 38,
+  "tie": 127,
+  "score": 0.4925,
+  "more_verbatim": 19,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 11,
+  "worse": 1,
+  "p": 0.00634765625
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 34,
+  "loss": 40,
+  "tie": 126,
+  "score": 0.485,
+  "more_verbatim": 19,
+  "loose_used": 6,
+  "unjudged": 0,
+  "better": 11,
+  "worse": 4,
+  "p": 0.11846923828125
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 34,
+  "loss": 40,
+  "tie": 126,
+  "score": 0.485,
+  "more_verbatim": 19,
+  "loose_used": 16,
+  "unjudged": 0,
+  "better": 13,
+  "worse": 5,
+  "p": 0.09625244140625
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 35,
+  "loss": 39,
+  "tie": 126,
+  "score": 0.49,
+  "more_verbatim": 19,
+  "loose_used": 26,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 6,
+  "p": 0.052478790283203125
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 33,
+  "loss": 39,
+  "tie": 128,
+  "score": 0.485,
+  "more_verbatim": 19,
+  "loose_used": 30,
+  "unjudged": 0,
+  "better": 14,
+  "worse": 7,
+  "p": 0.18924713134765625
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 33,
+  "loss": 39,
+  "tie": 128,
+  "score": 0.485,
+  "more_verbatim": 19,
+  "loose_used": 40,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 8,
+  "p": 0.15158963203430176
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 34,
+  "loss": 38,
+  "tie": 128,
+  "score": 0.49,
+  "more_verbatim": 19,
+  "loose_used": 50,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 9,
+  "p": 0.08715855330228806
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 38,
+  "loss": 38,
+  "tie": 124,
+  "score": 0.5,
+  "more_verbatim": 31,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 15,
+  "worse": 2,
+  "p": 0.002349853515625
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 38,
+  "loss": 40,
+  "tie": 122,
+  "score": 0.495,
+  "more_verbatim": 31,
+  "loose_used": 5,
+  "unjudged": 0,
+  "better": 15,
+  "worse": 4,
+  "p": 0.0192108154296875
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 38,
+  "loss": 40,
+  "tie": 122,
+  "score": 0.495,
+  "more_verbatim": 31,
+  "loose_used": 12,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 5,
+  "p": 0.01690053939819336
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 39,
+  "loss": 39,
+  "tie": 122,
+  "score": 0.5,
+  "more_verbatim": 31,
+  "loose_used": 22,
+  "unjudged": 0,
+  "better": 20,
+  "worse": 6,
+  "p": 0.009355306625366211
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 31,
+  "loose_used": 29,
+  "unjudged": 0,
+  "better": 18,
+  "worse": 7,
+  "p": 0.043285250663757324
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 31,
+  "loose_used": 36,
+  "unjudged": 0,
+  "better": 20,
+  "worse": 8,
+  "p": 0.03569813817739487
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 38,
+  "loss": 38,
+  "tie": 124,
+  "score": 0.5,
+  "more_verbatim": 31,
+  "loose_used": 46,
+  "unjudged": 0,
+  "better": 23,
+  "worse": 9,
+  "p": 0.020061607006937265
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 38,
+  "loss": 38,
+  "tie": 124,
+  "score": 0.5,
+  "more_verbatim": 35,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 3,
+  "p": 0.0025768280029296875
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 38,
+  "loss": 40,
+  "tie": 122,
+  "score": 0.495,
+  "more_verbatim": 35,
+  "loose_used": 5,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 5,
+  "p": 0.01690053939819336
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 38,
+  "loss": 40,
+  "tie": 122,
+  "score": 0.495,
+  "more_verbatim": 35,
+  "loose_used": 12,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 6,
+  "p": 0.01463329792022705
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 39,
+  "loss": 39,
+  "tie": 122,
+  "score": 0.5,
+  "more_verbatim": 35,
+  "loose_used": 22,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 7,
+  "p": 0.008130058646202087
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 35,
+  "loose_used": 28,
+  "unjudged": 0,
+  "better": 20,
+  "worse": 8,
+  "p": 0.03569813817739487
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 35,
+  "loose_used": 35,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 9,
+  "p": 0.029449373483657837
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 38,
+  "loss": 38,
+  "tie": 124,
+  "score": 0.5,
+  "more_verbatim": 35,
+  "loose_used": 45,
+  "unjudged": 0,
+  "better": 25,
+  "worse": 10,
+  "p": 0.01667384780012071
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 38,
+  "loss": 38,
+  "tie": 124,
+  "score": 0.5,
+  "more_verbatim": 37,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 3,
+  "p": 0.0025768280029296875
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 38,
+  "loss": 39,
+  "tie": 123,
+  "score": 0.4975,
+  "more_verbatim": 37,
+  "loose_used": 4,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 4,
+  "p": 0.007197380065917969
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 38,
+  "loss": 39,
+  "tie": 123,
+  "score": 0.4975,
+  "more_verbatim": 37,
+  "loose_used": 10,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 5,
+  "p": 0.006610751152038574
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 39,
+  "loss": 38,
+  "tie": 123,
+  "score": 0.5025,
+  "more_verbatim": 37,
+  "loose_used": 20,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 6,
+  "p": 0.0037191659212112427
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 37,
+  "loss": 38,
+  "tie": 125,
+  "score": 0.4975,
+  "more_verbatim": 37,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 20,
+  "worse": 7,
+  "p": 0.0191572904586792
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 37,
+  "loss": 38,
+  "tie": 125,
+  "score": 0.4975,
+  "more_verbatim": 37,
+  "loose_used": 33,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 8,
+  "p": 0.016124801710247993
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.4,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 38,
+  "loss": 37,
+  "tie": 125,
+  "score": 0.5025,
+  "more_verbatim": 37,
+  "loose_used": 43,
+  "unjudged": 0,
+  "better": 25,
+  "worse": 9,
+  "p": 0.00904118549078703
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 35,
+  "loss": 39,
+  "tie": 126,
+  "score": 0.49,
+  "more_verbatim": 22,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 12,
+  "worse": 2,
+  "p": 0.012939453125
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 35,
+  "loss": 41,
+  "tie": 124,
+  "score": 0.485,
+  "more_verbatim": 22,
+  "loose_used": 5,
+  "unjudged": 0,
+  "better": 12,
+  "worse": 4,
+  "p": 0.076812744140625
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 34,
+  "loss": 41,
+  "tie": 125,
+  "score": 0.4825,
+  "more_verbatim": 22,
+  "loose_used": 14,
+  "unjudged": 0,
+  "better": 13,
+  "worse": 5,
+  "p": 0.09625244140625
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 35,
+  "loss": 40,
+  "tie": 125,
+  "score": 0.4875,
+  "more_verbatim": 22,
+  "loose_used": 23,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 6,
+  "p": 0.052478790283203125
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 34,
+  "loss": 40,
+  "tie": 126,
+  "score": 0.485,
+  "more_verbatim": 22,
+  "loose_used": 29,
+  "unjudged": 0,
+  "better": 15,
+  "worse": 7,
+  "p": 0.13380050659179688
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 33,
+  "loss": 40,
+  "tie": 127,
+  "score": 0.4825,
+  "more_verbatim": 22,
+  "loose_used": 38,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 8,
+  "p": 0.15158963203430176
+ },
+ {
+  "rule": [
+   "fit",
+   0.05,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 34,
+  "loss": 39,
+  "tie": 127,
+  "score": 0.4875,
+  "more_verbatim": 22,
+  "loose_used": 47,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 9,
+  "p": 0.08715855330228806
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 39,
+  "loss": 38,
+  "tie": 123,
+  "score": 0.5025,
+  "more_verbatim": 33,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 2,
+  "p": 0.001312255859375
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 39,
+  "loss": 40,
+  "tie": 121,
+  "score": 0.4975,
+  "more_verbatim": 33,
+  "loose_used": 5,
+  "unjudged": 0,
+  "better": 16,
+  "worse": 4,
+  "p": 0.01181793212890625
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 38,
+  "loss": 40,
+  "tie": 122,
+  "score": 0.495,
+  "more_verbatim": 33,
+  "loose_used": 11,
+  "unjudged": 0,
+  "better": 17,
+  "worse": 5,
+  "p": 0.01690053939819336
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 39,
+  "loss": 39,
+  "tie": 122,
+  "score": 0.5,
+  "more_verbatim": 33,
+  "loose_used": 20,
+  "unjudged": 0,
+  "better": 20,
+  "worse": 6,
+  "p": 0.009355306625366211
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 38,
+  "loss": 39,
+  "tie": 123,
+  "score": 0.4975,
+  "more_verbatim": 33,
+  "loose_used": 29,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 7,
+  "p": 0.028959274291992188
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 33,
+  "loose_used": 35,
+  "unjudged": 0,
+  "better": 20,
+  "worse": 8,
+  "p": 0.03569813817739487
+ },
+ {
+  "rule": [
+   "fit",
+   0.075,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 38,
+  "loss": 38,
+  "tie": 124,
+  "score": 0.5,
+  "more_verbatim": 33,
+  "loose_used": 44,
+  "unjudged": 0,
+  "better": 23,
+  "worse": 9,
+  "p": 0.020061607006937265
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 39,
+  "loss": 38,
+  "tie": 123,
+  "score": 0.5025,
+  "more_verbatim": 37,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 18,
+  "worse": 3,
+  "p": 0.0014896392822265625
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 39,
+  "loss": 40,
+  "tie": 121,
+  "score": 0.4975,
+  "more_verbatim": 37,
+  "loose_used": 5,
+  "unjudged": 0,
+  "better": 18,
+  "worse": 5,
+  "p": 0.010622024536132812
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 38,
+  "loss": 40,
+  "tie": 122,
+  "score": 0.495,
+  "more_verbatim": 37,
+  "loose_used": 11,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 6,
+  "p": 0.01463329792022705
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 39,
+  "loss": 39,
+  "tie": 122,
+  "score": 0.5,
+  "more_verbatim": 37,
+  "loose_used": 20,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 7,
+  "p": 0.008130058646202087
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 38,
+  "loss": 39,
+  "tie": 123,
+  "score": 0.4975,
+  "more_verbatim": 37,
+  "loose_used": 28,
+  "unjudged": 0,
+  "better": 21,
+  "worse": 8,
+  "p": 0.0241195447742939
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 37,
+  "loss": 39,
+  "tie": 124,
+  "score": 0.495,
+  "more_verbatim": 37,
+  "loose_used": 34,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 9,
+  "p": 0.029449373483657837
+ },
+ {
+  "rule": [
+   "fit",
+   0.1,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 38,
+  "loss": 38,
+  "tie": 124,
+  "score": 0.5,
+  "more_verbatim": 37,
+  "loose_used": 43,
+  "unjudged": 0,
+  "better": 25,
+  "worse": 10,
+  "p": 0.01667384780012071
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.0,
+  "numbers": false,
+  "win": 39,
+  "loss": 38,
+  "tie": 123,
+  "score": 0.5025,
+  "more_verbatim": 39,
+  "loose_used": 0,
+  "unjudged": 0,
+  "better": 18,
+  "worse": 3,
+  "p": 0.0014896392822265625
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": false,
+  "win": 39,
+  "loss": 39,
+  "tie": 122,
+  "score": 0.5,
+  "more_verbatim": 39,
+  "loose_used": 4,
+  "unjudged": 0,
+  "better": 18,
+  "worse": 4,
+  "p": 0.004343509674072266
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": false,
+  "win": 38,
+  "loss": 39,
+  "tie": 123,
+  "score": 0.4975,
+  "more_verbatim": 39,
+  "loose_used": 9,
+  "unjudged": 0,
+  "better": 19,
+  "worse": 5,
+  "p": 0.006610751152038574
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": false,
+  "win": 39,
+  "loss": 38,
+  "tie": 123,
+  "score": 0.5025,
+  "more_verbatim": 39,
+  "loose_used": 18,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 6,
+  "p": 0.0037191659212112427
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.45,
+  "numbers": true,
+  "win": 38,
+  "loss": 38,
+  "tie": 124,
+  "score": 0.5,
+  "more_verbatim": 39,
+  "loose_used": 27,
+  "unjudged": 0,
+  "better": 21,
+  "worse": 7,
+  "p": 0.012540951371192932
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.4,
+  "numbers": true,
+  "win": 37,
+  "loss": 38,
+  "tie": 125,
+  "score": 0.4975,
+  "more_verbatim": 39,
+  "loose_used": 32,
+  "unjudged": 0,
+  "better": 22,
+  "worse": 8,
+  "p": 0.016124801710247993
+ },
+ {
+  "rule": [
+   "fit",
+   0.15,
+   0.35,
+   8.0
+  ],
+  "exemplar_floor": 0.35,
+  "numbers": true,
+  "win": 38,
+  "loss": 37,
+  "tie": 125,
+  "score": 0.5025,
+  "more_verbatim": 39,
+  "loose_used": 41,
+  "unjudged": 0,
+  "better": 25,
+  "worse": 9,
+  "p": 0.00904118549078703
+ }
+]

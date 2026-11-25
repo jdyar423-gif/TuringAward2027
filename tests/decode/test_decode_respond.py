@@ -212,6 +212,24 @@ def test_the_readers_fit_reaches_a_library_that_takes_one():
     resp.reply(q, {"max_tokens": 8, "verbatim_fit": 0.075, "verbatim": False}, seed=0)
     assert lib.calls == [(None, None, None, None), (None, fit, 0.075, 0.5), (0.7, fit, 0.075, 0.4)]
     assert DecodeCfg().verbatim_fit == 0.0 and DecodeCfg().verbatim_fit_rank == 0.5
+    # the window setting reaches the reader's test as max_window
+    seen = []
+
+    def fit_w(q, s, a, max_window=None):
+        seen.append(max_window)
+        return -0.01
+
+    class Asking(Lib):
+        def verbatim(self, query, spec, context=None, log=None, min_rank=None, fit=None, min_fit=None, fit_rank=None):
+            if fit is not None:
+                fit(query, "stored", "answer")
+            return None
+
+    resp_w = R.Responder(lambda n: lm, tok, DecodeCfg(particles=2, max_new_tokens=8), library=Asking(), chat=TinyChat(tok),
+                         context=256, answer_fit=fit_w)
+    resp_w.reply(q, {"max_tokens": 8, "verbatim_fit": 0.075}, seed=0)
+    resp_w.reply(q, {"max_tokens": 8, "verbatim_fit": 0.075, "verbatim_fit_window": 8}, seed=0)
+    assert seen == [None, 8.0] and DecodeCfg().verbatim_fit_window == 0.0
     # without the callable the setting does nothing
     lib2 = Lib()
     resp2 = R.Responder(lambda n: lm, tok, DecodeCfg(particles=2, max_new_tokens=8), library=lib2, chat=TinyChat(tok),
