@@ -1,7 +1,7 @@
 """Every stored answer the reader's test could take for a split's single-turn prompts.
 
     BES_PROFILE=m6 JAX_PLATFORMS=cpu python lab/m6v/fit_pool.py SHIPPED_EXPORT SPLIT OPPONENT.jsonl OUT_DIR \\
-        [--rank 0.35] [--pairs-from -0.3]
+        [--rank 0.35] [--pairs-from -0.3] [--cut]
 
 For each single-turn prompt of SPLIT (``bes.eval.proxy.prompts``), the shipped export's library is
 asked for its three best stored questions exactly as ``AnswerLibrary.verbatim`` asks; every
@@ -29,9 +29,12 @@ def main(argv):
             i = argv.index(k)
             opts[k] = float(argv[i + 1])
             argv = argv[:i] + argv[i + 2:]
+    cut = "--cut" in argv              # decode.cut_end_markers: score and pair the answer as it would be given
+    argv = [a for a in argv if a != "--cut"]
     exp, split, opp_path, out_dir = argv[:4]
     from bes import export as E
     from bes.decode.fitness import AnswerFit
+    from bes.decode.respond import cut_end_markers
     from bes.eval.proxy import prompts as P
     from bes.exact import constraints
 
@@ -75,15 +78,17 @@ def main(argv):
                         continue
                 except Exception:
                     continue
-            value = fit(q, c.question, answer)
+            given = cut_end_markers(answer.strip()) if cut else answer.strip()
+            value = fit(q, c.question, given)
             row = {"pair_id": f"{p.id}#{c.entry}", "prompt_id": p.id, "category": p.category, "entry": int(c.entry),
                    "question": c.question, "cov_q": round(float(c.cov_q), 4), "cov_e": round(float(c.cov_e), 4),
                    "type_match": bool(c.type_match), "own": round(float(own), 4), "own_rule": bool(own_rule),
-                   "fit": None if value is None else round(float(value), 4), "answer_chars": len(answer)}
+                   "fit": None if value is None else round(float(value), 4), "answer_chars": len(given),
+                   "end_cut": given != answer.strip()}
             rows.append(row)
             if p.id in opp and (own_rule or (value is not None and value >= opts["--pairs-from"])):
                 pairs.append({"pair_id": row["pair_id"],
-                              "turns": [{"user": q, "A": answer.strip(), "B": opp[p.id]["turns"][0].get("reply") or ""}]})
+                              "turns": [{"user": q, "A": given, "B": opp[p.id]["turns"][0].get("reply") or ""}]})
         if n % 25 == 24:
             print(f"{n + 1} of {len(prompts)} prompts, {len(rows)} candidates, {len(pairs)} pairs ({time.time() - t0:.0f} s)",
                   flush=True)

@@ -1484,7 +1484,9 @@ def reply_lines(prompts, records: Mapping[str, Mapping[str, Any]]) -> list[dict[
                            "n_survivors": e.get("n_survivors"), "n_finished": e.get("n_finished"),
                            "steps": e.get("steps"), "particles": e.get("particles"),
                            "library": e.get("library"), "violations": e.get("violations"),
-                           "infeasible": e.get("infeasible"), "rerun": e.get("rerun"), "gen_key": t.get("gen_key")})
+                           "infeasible": e.get("infeasible"), "rerun": e.get("rerun"), "gen_key": t.get("gen_key"),
+                           **({"verbatim": e["verbatim"]} if e.get("verbatim") else {}),
+                           **({"end_cut": e["end_cut"]} if e.get("end_cut") else {})})
         secs = [t.get("latency_s") for t in r["turns"]]
         out.append({"id": p.id, "category": p.category, "split": p.split, "multi_turn": p.multi_turn,
                     "turns": [t["user"] for t in r["turns"]], "replies": [t["reply"] for t in r["turns"]],

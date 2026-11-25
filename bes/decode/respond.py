@@ -443,7 +443,7 @@ class Responder:
     def _verbatim_reply(self, hit, spec, d: DecodeCfg, r: Resolved, seed: int) -> dict[str, Any]:
         """The reply dictionary of a stored answer: no decoding happened, so the decoding
         fields are zero and ``extra["verbatim"]`` holds the match."""
-        text = str(hit.answer).strip()
+        text = whole = str(hit.answer).strip()
         if d.cut_end_markers:
             text = cut_end_markers(text)
         n_tokens = len(self.tok.encode(text))
@@ -461,6 +461,8 @@ class Responder:
         }
         if getattr(hit, "fit_value", None) is not None:      # taken by the reader's own test
             extra["verbatim"]["fit"] = round(float(hit.fit_value), 4)
+        if d.cut_end_markers:
+            extra["end_cut"] = {"candidates": int(text != whole), "chosen": text != whole}
         return {"text": text, "finish_reason": "stop", "prompt_tokens": 0, "completion_tokens": n_tokens,
                 "logprob_sum": 0.0, "logprob_count": 0, "extra": extra}
 
@@ -552,10 +554,13 @@ class Responder:
                               unit_max_tokens=d.unit_max_tokens, no_repeat_ngram=d.no_repeat_ngram,
                               max_copy_run=copy_cap, greedy=r.greedy)
 
+        was_cut: list[bool] = []                    # per particle of the last choice (cut_end_markers)
+
         def choose(res, sel_spec, band):
             shown = [self.chat.display(q.tokens).strip() for q in res.particles]
             if d.cut_end_markers:
-                shown = [cut_end_markers(t) for t in shown]
+                whole, shown = shown, [cut_end_markers(t) for t in shown]
+                was_cut[:] = [a != b for a, b in zip(whole, shown)]
             cands = [sel_mod.Candidate(text=shown[j],
                                        weight=float(res.weights[j]), finish=q.finish,
                                        n_tokens=len(q.tokens), logp=q.logp_model)
@@ -604,6 +609,9 @@ class Responder:
         }
         if infeasible:
             extra["infeasible"] = list(infeasible)
+        if d.cut_end_markers:
+            extra["end_cut"] = {"candidates": int(sum(was_cut)),
+                                "chosen": bool(was_cut[choice.index]) if choice.index < len(was_cut) else False}
         if rerun is not None:
             extra["rerun"] = rerun
         ignored = {k: v for k, v in r.ignored}

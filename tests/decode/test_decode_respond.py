@@ -266,6 +266,12 @@ def test_end_markers_of_other_formats_end_a_reply_when_asked(monkeypatch):
     assert off["text"].endswith("Why is the sky blue?") and on["text"] == "Because the Sun is on the other side."
     assert seen[0].endswith("Why is the sky blue?") and seen[1] == "Because the Sun is on the other side."
     assert on["completion_tokens"] < off["completion_tokens"] and DecodeCfg().cut_end_markers is False
+    assert on["extra"]["end_cut"] == {"candidates": 1, "chosen": True} and "end_cut" not in off["extra"]
+    # a generated reply: the record says how many particles were cut (none here: the tiny model writes no marker)
+    resp2 = R.Responder(lambda n: lm, tok, DecodeCfg(particles=2, max_new_tokens=8), chat=TinyChat(tok), context=256)
+    gen = resp2.reply(q, {"max_tokens": 8, "cut_end_markers": True}, seed=0)
+    assert gen["extra"]["end_cut"] == {"candidates": 0, "chosen": False}
+    assert "end_cut" not in resp2.reply(q, {"max_tokens": 8}, seed=0)["extra"]
 
 
 def test_clean_messages():
