@@ -174,6 +174,36 @@ def test_the_library_is_attached_and_counted(source, tmp_path):
     assert "## Evicted token rows" in (dst / E.CARD).read_text()
 
 
+def test_the_library_switch_is_written_into_the_decoding_choice(source, tmp_path):
+    """A source exported without a library may record ``use_library=false``; the shipped model
+    says what it does without an override."""
+    from bes.library.answers import AnswerCfg, AnswerLibrary
+
+    src, cfg = source
+    keep, _ = _keep(cfg, n=200, seed=1)
+    lib_dir = tmp_path / "answers"
+    AnswerLibrary.build(PAIRS, AnswerCfg(n_bits=12, read_cap=5000)).save(str(lib_dir))
+    before = (json.loads((src / E.EXPORT_JSON).read_text()).get("decode_choice") or {}).get("overrides") or []
+    kept = evict.evict_export(src, tmp_path / "kept", keep, library=lib_dir)
+    assert ((kept.get("decode_choice") or {}).get("overrides") or []) == before          # None: untouched
+    for want in (True, False):
+        dst = tmp_path / f"ship{int(want)}"
+        rec = evict.evict_export(src, dst, keep, library=lib_dir, use_library=want)
+        flag = f"extra.use_library={str(want).lower()}"
+        over = rec["decode_choice"]["overrides"]
+        assert over.count(flag) == 1 and sum(o.startswith("extra.use_library=") for o in over) == 1
+        assert rec["decode_choice"]["settings"]["use_library"] is want
+        assert json.loads((dst / "config.json").read_text())["decode_choice"] == rec["decode_choice"]
+        assert [o for o in over if o != flag] == [o for o in before if not o.startswith("extra.use_library=")] \
+            or not before
+        assert E.verify_export(dst) == []
+        m = E.load_export(dst)
+        assert m.settings()["use_library"] is want
+        assert ("on by default" if want else "off by default") in (dst / E.CARD).read_text()
+    with pytest.raises(E.ExportError):
+        evict.evict_export(src, tmp_path / "nolib", keep, use_library=True)
+
+
 def test_a_damaged_row_map_is_refused(source, tmp_path):
     src, cfg = source
     keep, _ = _keep(cfg)

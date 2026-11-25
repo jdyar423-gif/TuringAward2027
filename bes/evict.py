@@ -188,7 +188,8 @@ def card_section(ev: Mapping[str, Any]) -> str:
 
 def evict_export(src: str | os.PathLike, dst: str | os.PathLike, keep: Any, *,
                  library: str | os.PathLike | None = None, rule: str = "", heldout: Sequence[Any] | None = None,
-                 overlay_numbers: int = 0, log: Callable[[str], None] | None = None) -> dict[str, Any]:
+                 overlay_numbers: int = 0, use_library: bool | None = None,
+                 log: Callable[[str], None] | None = None) -> dict[str, Any]:
     """Write ``dst``: the export ``src`` with the rows of the tokens outside ``keep`` evicted and
     ``library`` (a built library directory, or None) attached. Returns the new export record.
 
@@ -196,8 +197,11 @@ def evict_export(src: str | os.PathLike, dst: str | os.PathLike, keep: Any, *,
     ``bes.export.HeldoutBatch`` rows; when given, the loss before and after is measured and
     recorded. overlay_numbers: capacity reserved for entries taught after shipping
     (``bes.library.overlay``; an answers library only): counted in the ledger and taken off the
-    stored library's read cap. The result is checked: it verifies, and it loads to exactly the
-    masked source."""
+    stored library's read cap. use_library: None keeps the decoding choice of ``src`` (a source
+    exported without a library may say ``extra.use_library=false``); True or False writes the
+    switch into the decoding choice of ``dst`` (``config.json`` and the record), so the shipped
+    model uses its library, or does not, without an override. The result is checked: it
+    verifies, and it loads to exactly the masked source."""
     import jax
 
     from bes import export as E
@@ -282,6 +286,22 @@ def evict_export(src: str | os.PathLike, dst: str | os.PathLike, keep: Any, *,
         elif overlay_numbers:
             raise E.ExportError("an overlay needs an answers library")
         acc = accounting(cfg.model, kept, lib)
+        # ---------------------------------------------------------------- the library switch
+        choice = rec.get("decode_choice")
+        if use_library is not None:
+            if use_library and lib is None:
+                raise E.ExportError("use_library needs a library")
+            flag = f"extra.use_library={str(bool(use_library)).lower()}"
+            over = [o for o in ((choice or {}).get("overrides") or E.default_decode_overrides(cfg))
+                    if not str(o).startswith("extra.use_library=")]
+            at = next((i for i, o in enumerate((choice or {}).get("overrides") or [])
+                       if str(o).startswith("extra.use_library=")), len(over))
+            over.insert(min(at, len(over)), flag)
+            choice = {**(choice or {"chosen": "default"}), "overrides": over, "settings": E.decode_settings(over),
+                      "library_switch": "written by bes.evict.evict_export with the attached library"}
+            cj = json.loads((tmp / "config.json").read_text())
+            cj["decode_choice"] = choice
+            E._write_json(tmp / "config.json", cj)
         # ---------------------------------------------------------------- the check
         got = E.load_weights(tmp, cfg.model)
         want = mask_params(E.load_weights(src, cfg.model), keep)
@@ -314,6 +334,8 @@ def evict_export(src: str | os.PathLike, dst: str | os.PathLike, keep: Any, *,
         weights["numbers"] += v
         weights["row_map_numbers"] = v
         new_rec = {**rec, "weights": weights, "library": lib_rec, "accounting": acc, "eviction": ev}
+        if choice is not None:
+            new_rec["decode_choice"] = choice
         main = [E.WEIGHTS16, E.WEIGHTS_JSON, "config.json", "tokenizer/tokenizer.json"]
         new_rec["main_files"] = [{"path": f, "bytes": (tmp / f).stat().st_size, "sha256": E.sha256_file(tmp / f)}
                                  for f in main if (tmp / f).exists()]

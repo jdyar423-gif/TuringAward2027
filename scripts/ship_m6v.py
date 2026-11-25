@@ -18,7 +18,8 @@ that keep them and written entries:
    row map and the overlay's capacity go to the best-credited entries of the full library
    (``scripts/subset_answers.py``), with ``--read-cap`` as the most one reply reads;
 4. **the shipped export** (``bes.evict.evict_export``): rows evicted, the library attached, the
-   overlay reserved, the ledger recounted and checked against the caps, the held-out loss
+   overlay reserved, the library switched on in the export's decoding choice (it is part of the
+   model that ships), the ledger recounted and checked against the caps, the held-out loss
    before and after recorded.
 """
 from __future__ import annotations
@@ -162,7 +163,7 @@ def main(argv: list[str] | None = None) -> int:
             f"{len(special_ids(v))} special tokens of the chat format; the evicted ids are {share[~keep].sum():.2%} "
             "of those occurrences")
     rec = evict.evict_export(export, a.out, keep, library=sub_dir, rule=rule, heldout=batches,
-                             overlay_numbers=a.overlay, log=print)
+                             overlay_numbers=a.overlay, use_library=True, log=print)
     acc = rec["accounting"]
     print(json.dumps({"total": acc["total"], "active_step": acc["active_step"], "within_caps": acc["within_caps"],
                       "rows_kept": acc["rows_kept"], "library_entries": sub["kept"], "library_numbers": sub["numbers"],
