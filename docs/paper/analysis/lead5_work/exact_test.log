@@ -1,0 +1,8 @@
+ours                     maths 0.2 of 30; constraints all ok 0.7917 of 48; degenerate 0.0198 (loop 0.0, truncated 0.0198, empty 0.0); stock refusal 0, deflection 0 of 252 turns; words median 101
+ours_k1                  maths 0.1667 of 30; constraints all ok 0.7708 of 48; degenerate 0.0675 (loop 0.0, truncated 0.0675, empty 0.0); stock refusal 0, deflection 0 of 252 turns; words median 105
+trained                  maths 0.2 of 30; constraints all ok 0.8542 of 48; degenerate 0.0119 (loop 0.0, truncated 0.0119, empty 0.0); stock refusal 0, deflection 0 of 252 turns; words median 99
+falcon                   maths 0.5 of 30; constraints all ok 0.6875 of 48; degenerate 0.0079 (loop 0.0, truncated 0.004, empty 0.0); stock refusal 0, deflection 0 of 252 turns; words median 155
+falcon_k6lp              maths 0.5667 of 30; constraints all ok 0.7292 of 48; degenerate 0.004 (loop 0.0, truncated 0.0, empty 0.0); stock refusal 0, deflection 0 of 252 turns; words median 147
+falcon_k6ds              maths 0.6 of 30; constraints all ok 0.875 of 48; degenerate 0.0 (loop 0.0, truncated 0.0, empty 0.0); stock refusal 0, deflection 0 of 252 turns; words median 145
+mobilellm_recommended    maths 0.4 of 30; constraints all ok 0.1667 of 48; degenerate 0.627 (loop 0.0556, truncated 0.5952, empty 0.0079); stock refusal 0, deflection 0 of 252 turns; words median 395
+mobilellm_neutral        maths 0.3667 of 30; constraints all ok 0.1875 of 48; degenerate 0.5873 (loop 0.0675, truncated 0.5794, empty 0.004); stock refusal 0, deflection 0 of 252 turns; words median 517

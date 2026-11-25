@@ -1,0 +1,14 @@
+{
+ "before": {
+  "median": 189054,
+  "n": 73
+ },
+ "during_6M_runs": {
+  "median": 189077,
+  "n": 128
+ },
+ "during_restart_arms": {
+  "median": 189050,
+  "n": 23
+ }
+}

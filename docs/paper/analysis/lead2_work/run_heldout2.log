@@ -1,0 +1,81 @@
+=== 12:30:19 --manifest /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/data/_src/live/run/manifest.json --ckpt /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/snap_main --name v9_35294 --out /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout/v9_35294 --variant on: --variant pagesoff:page=0,gain=0
+12:30:20 v9_35294: config configs/v9.py hash f29bfeb3ebf353a8
+12:30:21 rows built in 1 s: web 64, chat 64, proxy 16
+12:30:22 checkpoint step 35294 hash f29bfeb3ebf353a8 read in 1 s
+12:30:22 v9_35294/on: switches {'reg': 1.0, 'cand_in': 1.0, 'cand_out': 1.0, 'conf': 0.0, 'sink': 1.0, 'clock': 0.0, 'gain': 1.0, 'sel': 0.0, 'gate': 0.0, 'page': 1.0}
+12:32:15 v9_35294/on: web: 64 rows, loss 2.7344 over 65442 weighted tokens in 112 s
+12:34:04 v9_35294/on: chat: 64 rows, loss 1.5508 over 60438 weighted tokens in 110 s
+12:34:32 v9_35294/on: proxy: 16 rows, loss 2.5849 over 11094 weighted tokens in 28 s
+12:34:32 v9_35294/on: all: loss 2.2001 over 136974
+12:34:32 written /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout/v9_35294_on.npz
+12:34:32 v9_35294/pagesoff: switches {'reg': 1.0, 'cand_in': 1.0, 'cand_out': 1.0, 'conf': 0.0, 'sink': 1.0, 'clock': 0.0, 'gain': 0.0, 'sel': 0.0, 'gate': 0.0, 'page': 0.0}
+12:36:26 v9_35294/pagesoff: web: 64 rows, loss 2.7849 over 65442 weighted tokens in 114 s
+12:38:29 v9_35294/pagesoff: chat: 64 rows, loss 1.6301 over 60438 weighted tokens in 123 s
+12:39:01 v9_35294/pagesoff: proxy: 16 rows, loss 2.6621 over 11094 weighted tokens in 32 s
+12:39:01 v9_35294/pagesoff: all: loss 2.2654 over 136974
+12:39:01 written /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout/v9_35294_pagesoff.npz
+=== 12:39:02 --manifest /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead_work/final_snap/run/manifest.json --ckpt /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/final_look/run/train/ckpt/ckpt-000026-step-000029722 --name final_29722 --out /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout/final_29722
+12:39:02 final_29722: config configs/final.py hash 0a7e9b33372a07ee
+12:39:04 rows built in 1 s: web 64, chat 64, proxy 16
+Traceback (most recent call last):
+  File "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout_eval.py", line 139, in <module>
+    main()
+    ~~~~^^
+  File "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout_eval.py", line 74, in main
+    leaves, cman, _ = snaptar.load_leaves(ck)
+                      ~~~~~~~~~~~~~~~~~~~^^^^
+  File "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/snaptar.py", line 135, in load_leaves
+    mp, buf, tf = open_snapshot(snapdir)
+                  ~~~~~~~~~~~~~^^^^^^^^^
+  File "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/snaptar.py", line 107, in open_snapshot
+    raise FileNotFoundError(f"{snapdir}: no run.tar.NNN parts")
+FileNotFoundError: /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/final_look/run/train/ckpt/ckpt-000026-step-000029722: no run.tar.NNN parts
+=== 12:39:04 --manifest /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead_work/final_snap/run/manifest.json --ckpt /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/snap_look/run/train/ckpt/ckpt-000024-step-000026890 --name final_26890 --out /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout/final_26890
+12:39:05 final_26890: config configs/final.py hash 0a7e9b33372a07ee
+12:39:06 rows built in 1 s: web 64, chat 64, proxy 16
+Traceback (most recent call last):
+  File "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout_eval.py", line 139, in <module>
+    main()
+    ~~~~^^
+  File "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout_eval.py", line 74, in main
+    leaves, cman, _ = snaptar.load_leaves(ck)
+                      ~~~~~~~~~~~~~~~~~~~^^^^
+  File "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/snaptar.py", line 135, in load_leaves
+    mp, buf, tf = open_snapshot(snapdir)
+                  ~~~~~~~~~~~~~^^^^^^^^^
+  File "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/snaptar.py", line 107, in open_snapshot
+    raise FileNotFoundError(f"{snapdir}: no run.tar.NNN parts")
+FileNotFoundError: /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/snap_look/run/train/ckpt/ckpt-000024-step-000026890: no run.tar.NNN parts
+=== 12:39:06 --manifest /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead_work/final_snap/run/manifest.json --ckpt /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/snap_view/cur/run/train/ckpt/ckpt-000021-step-000022613 --name final_22613 --out /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout/final_22613
+12:39:06 final_22613: config configs/final.py hash 0a7e9b33372a07ee
+12:39:07 rows built in 1 s: web 64, chat 64, proxy 16
+Traceback (most recent call last):
+  File "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout_eval.py", line 139, in <module>
+    main()
+    ~~~~^^
+  File "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout_eval.py", line 74, in main
+    leaves, cman, _ = snaptar.load_leaves(ck)
+                      ~~~~~~~~~~~~~~~~~~~^^^^
+  File "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/snaptar.py", line 135, in load_leaves
+    mp, buf, tf = open_snapshot(snapdir)
+                  ~~~~~~~~~~~~~^^^^^^^^^
+  File "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/snaptar.py", line 107, in open_snapshot
+    raise FileNotFoundError(f"{snapdir}: no run.tar.NNN parts")
+FileNotFoundError: /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/snap_view/cur/run/train/ckpt/ckpt-000021-step-000022613: no run.tar.NNN parts
+=== 12:39:08 --manifest /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead_work/final_snap/run/manifest.json --ckpt /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/snap_keep_step5075 --name final_5075 --out /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout/final_5075
+12:39:08 final_5075: config configs/final.py hash 0a7e9b33372a07ee
+12:39:09 rows built in 1 s: web 64, chat 64, proxy 16
+Traceback (most recent call last):
+  File "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout_eval.py", line 139, in <module>
+    main()
+    ~~~~^^
+  File "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout_eval.py", line 74, in main
+    leaves, cman, _ = snaptar.load_leaves(ck)
+                      ~~~~~~~~~~~~~~~~~~~^^^^
+  File "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/snaptar.py", line 135, in load_leaves
+    mp, buf, tf = open_snapshot(snapdir)
+                  ~~~~~~~~~~~~~^^^^^^^^^
+  File "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/snaptar.py", line 107, in open_snapshot
+    raise FileNotFoundError(f"{snapdir}: no run.tar.NNN parts")
+FileNotFoundError: /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/snap_keep_step5075: no run.tar.NNN parts
+=== 12:39:10 all done

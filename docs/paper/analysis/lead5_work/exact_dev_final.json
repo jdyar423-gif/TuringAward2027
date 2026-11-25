@@ -1,0 +1,162 @@
+{
+ "first60_ids": 60,
+ "sets": {
+  "first60": {
+   "default": {
+    "maths": [
+     0,
+     9
+    ],
+    "constraints_all_ok": [
+     13,
+     14
+    ],
+    "cut_at_limit": [
+     1,
+     75
+    ],
+    "degenerate": [
+     1,
+     75
+    ],
+    "words_median": 98,
+    "words_mean": 143.8,
+    "stock": {
+     "turns": 75,
+     "refusal": 0,
+     "deflection": 0
+    }
+   },
+   "k1": {
+    "maths": [
+     0,
+     9
+    ],
+    "constraints_all_ok": [
+     11,
+     14
+    ],
+    "cut_at_limit": [
+     3,
+     75
+    ],
+    "degenerate": [
+     4,
+     75
+    ],
+    "words_median": 116,
+    "words_mean": 159.2,
+    "stock": {
+     "turns": 75,
+     "refusal": 0,
+     "deflection": 0
+    }
+   },
+   "noband": {
+    "maths": [
+     0,
+     9
+    ],
+    "constraints_all_ok": [
+     13,
+     14
+    ],
+    "cut_at_limit": [
+     1,
+     75
+    ],
+    "degenerate": [
+     1,
+     75
+    ],
+    "words_median": 102,
+    "words_mean": 149.9,
+    "stock": {
+     "turns": 75,
+     "refusal": 0,
+     "deflection": 0
+    }
+   }
+  },
+  "dev200": {
+   "default": {
+    "maths": [
+     4,
+     30
+    ],
+    "constraints_all_ok": [
+     41,
+     47
+    ],
+    "cut_at_limit": [
+     3,
+     248
+    ],
+    "degenerate": [
+     3,
+     248
+    ],
+    "words_median": 105,
+    "words_mean": 139.6,
+    "stock": {
+     "turns": 248,
+     "refusal": 0,
+     "deflection": 0
+    },
+    "matches_report": true
+   },
+   "k1": {
+    "maths": [
+     3,
+     30
+    ],
+    "constraints_all_ok": [
+     38,
+     47
+    ],
+    "cut_at_limit": [
+     15,
+     248
+    ],
+    "degenerate": [
+     16,
+     248
+    ],
+    "words_median": 118,
+    "words_mean": 160.2,
+    "stock": {
+     "turns": 248,
+     "refusal": 0,
+     "deflection": 0
+    },
+    "matches_report": true
+   },
+   "noband": {
+    "maths": [
+     4,
+     30
+    ],
+    "constraints_all_ok": [
+     43,
+     47
+    ],
+    "cut_at_limit": [
+     3,
+     248
+    ],
+    "degenerate": [
+     3,
+     248
+    ],
+    "words_median": 104,
+    "words_mean": 148.2,
+    "stock": {
+     "turns": 248,
+     "refusal": 0,
+     "deflection": 0
+    },
+    "matches_report": true
+   }
+  }
+ }
+}

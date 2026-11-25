@@ -1,0 +1,64 @@
+{
+ "r1": {
+  "pairs_with_notes": 200,
+  "box": 46,
+  "box_and_bad_in_the_same_clause": 32,
+  "box_and_bad_in_any_clause_on_its_reply": 32
+ },
+ "r2": {
+  "pairs_with_notes": 200,
+  "box": 49,
+  "box_and_bad_in_the_same_clause": 40,
+  "box_and_bad_in_any_clause_on_its_reply": 40
+ },
+ "examples": [
+  [
+   "r1",
+   "B only boxes 'Santa Claus'"
+  ],
+  [
+   "r1",
+   "A is boxed nonsense, no story"
+  ],
+  [
+   "r1",
+   "B degenerate boxed loop, truncated"
+  ],
+  [
+   "r1",
+   "A outputs boxed fragments, truncated"
+  ],
+  [
+   "r1",
+   "B just boxes the word"
+  ],
+  [
+   "r1",
+   "A outputs nonsense box"
+  ],
+  [
+   "r1",
+   "B degenerate boxed loops"
+  ],
+  [
+   "r1",
+   "A only boxes MOON"
+  ],
+  [
+   "r1",
+   "B is degenerate boxed looping, ignores turn 2"
+  ],
+  [
+   "r1",
+   "A gives boxed nonsense"
+  ],
+  [
+   "r1",
+   "A is incoherent 'take a pause' boxes"
+  ],
+  [
+   "r1",
+   "A outputs boxed 40 and rambles"
+  ]
+ ]
+}

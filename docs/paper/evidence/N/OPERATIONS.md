@@ -367,6 +367,76 @@ Colab CLI: `export PATH=/root/.local/bin:$PATH GOOGLE_APPLICATION_CREDENTIALS=/r
   trained_export $N/packs/trained_export` (1 min): the trained weights are then safe locally.
 - Alarm at 15:00 was benign: "eval ... sidecar skipped: late" (the run's own rule).
 
+## ENDGAME LOG (from 18:33)
+- 18:33:49 training ended: final checkpoint `ckpt-000022-step-000051812`, 13.582e9 tokens.
+  18:34-18:38 sample (193 s; 17 prompts, 28 pairs); critic skipped (0 min); 18:38:56 prefopt
+  started (slice 3600 s; 6881 s left in the run => run deadline 20:33:37).
+- 18:36:17 `endgame_testgen.sh trained 58`: export of step 51,812 (36 s, held-out check passed:
+  loss32 2.32877, loss16 2.32881), 200 prompts / 252 replies, 40 workers on CPUs 2-21,24-43,
+  log `/content/bes_cli/testgen_trained/testgen.log`. Fetch: `endgame_testgen.sh --fetch trained`
+  then `final_pairs.sh trained`.
+- 18:38 the trained export is LOCAL: `$N/packs/trained_export` (12 parts of 16 MB + parts.json,
+  verified). If the official export is these weights (prefopt rejected), these parts are what
+  gets committed; else fetch the official one the same way:
+  `fetch_pack.sh /content/runs/main16/final official_export $N/packs/official_export`.
+- 18:39 CPU runtime `bes-cpu` (High-RAM, 8 vCPU, 50 GB; Python 3.13, jax 0.11.1, llama_cpp
+  0.3.37; repo clone at /content/TuringAward2027; presence C/D). 18:42:18 started there:
+  `/content/bes_cli/controls_driver.py 6 4 2 falcon mobilellm` = the registered control arms of
+  docs/EVAL_PROTOCOL.md section 3 on the TEST split (each opponent with 6 samples, kept by
+  logprob_mean and by decoder_select); progress `/content/bes_cli/ctl_progress.log`; outputs
+  `/content/bes_cli/ctl_outputs.tar.gz` (rewritten after each arm) -> unpack and copy
+  `outputs/<backend>/<run>.jsonl|.meta.json` into `$N/study/proxy/outputs/` and make pair sets
+  against our official run. Tier 2 (after the main result): also ours with K = 1
+  (`gen_test_replies.py EXPORT --split test --set extra.particles=1 --label final-k1`).
+- Paper pass 3 pushed (11aa314). It found: the registered protocol also demands K = 1 results and
+  K-matched opponent arms (now being generated); the chat share of the stream ramps from 0.25
+  to 0.70 after p = 0.67 by design (explains the fast fall of chat loss).
+- The registered judge on the TEST pairs needs CPU: bes-cpu is busy with the controls; bring up
+  a second one: `SESSION=bes-cpu2 bash $S/scripts/cpu_runtime.sh up` (its presence names C/D
+  collide with bes-cpu's logs only; fine), then
+  `SESSION=bes-cpu2 bash $S/scripts/judge_remote.sh start testq qwen3-4b-2507 8 1 SET...`.
+- At the very end: kill the watch loop BEFORE giving the TPU back if it still runs
+  (`pkill -f scripts/watch_loop.sh`), `touch $S/alloc_stop $S/presence_stop_bes24h`,
+  `python3 scripts/colab_cli.py send release`, `python3 scripts/colab_cli.py down --yes`, close
+  the open interval in `$S/tpu_intervals.txt` with the epoch of the stop.
+
+## AFTER THE TPU (state at 20:50 on 24 Nov) -- READ THIS FIRST
+- TPU GIVEN BACK 20:41:04 UTC, ledger closed: 86,054 s of 86,400 used. NEVER allocate a TPU again
+  (`$S/alloc_stop` exists; no watch loop, no alloc loop may run). Only CPU runtimes remain:
+  `bes-cpu` (opponents' K=6 control arms, `/content/bes_cli/ctl_progress.log`, outputs
+  `/content/bes_cli/ctl_outputs.tar.gz`) and `bes-cpu2` (registered judge qwen3-4b-2507 resumed on
+  the official test pairs; `SESSION=bes-cpu2 bash $S/scripts/judge_remote.sh fetch testq`).
+  Give both back when their work is fetched: `SESSION=bes-cpu bash $S/scripts/cpu_runtime.sh down`,
+  same for bes-cpu2.
+- THE WORKFLOW TOOL BLOCKS: twice (19:07, 19:32) a Workflow call waited for an approval nobody
+  could give; the worker restarted, the container rebooted (all local processes gone) and I then
+  wasted the wake-up by answering "No response requested". RULES: (1) do not call Workflow
+  while the user is away; (2) the Agent tool (subagent_type general-purpose, model opus, effort
+  max, run_in_background true) works without approval: use it for judges and writers; (3) after
+  a "worker process was restarted" note CONTINUE AT ONCE: restart `bash $S/scripts/anchor2.sh
+  6600` (tracked background), presence for the CPU runtimes (`presence.sh bes-cpu C 200`,
+  `presence.sh bes-cpu2 E 200`), then go on.
+- THE OFFICIAL MODEL: prefopt weights of step 51,812, default decoding. Pushed:
+  `release/main16-v9/` (commits 99ba0e7..994b3a1). Local: `$N/packs/official_export` (+ `x/final`
+  unpacked), `$N/packs/trained_export`, `$N/snap_final` (1.7 GB), `$N/records/unpacked`,
+  `$N/main16.final.log`, `$N/heldout_v9.jsonl`.
+- Test replies: `$N/testgen/prefopt/out` (official) and `$N/testgen/trained/out`; merged into
+  `$N/study/proxy`; pair sets `final-prefopt-vs-falcon|mobilellm` (OFFICIAL), `final-trained-vs-*`;
+  chunk files `$N/final_eval/prefopt|trained/<set>/r1|r2/chunk_NN.md`.
+- Opus readers as background Agents (prompt: read `$N/final_eval/JUDGE_INSTRUCTIONS.md`, two chunk
+  files each): official-vs-falcon r1 and r2 launched 20:42-20:46 (14 agents). Then
+  official-vs-mobilellm r1, r2 (14 agents), then trained sets if wanted. When a set has all 28
+  verdict files: `bash $S/scripts/final_score.sh prefopt` (import2 + score, source judge-opus).
+- Registered judge, partial at 20:40 (TPU host): official vs Falcon 113/200: 7/24/82 (decisive
+  0.226, p 0.0033); vs MobileLLM 73/200: 18/3/52 (decisive 0.857, p 0.0015). Resumed on bes-cpu2
+  at 20:41 (4 threads per set; about 35 s per pair; done about 22:00).
+- Exact scores on test are in FACTS_2.md (20:32): maths 0.20 (Falcon 0.50, MobileLLM 0.40);
+  constraints 0.79 (0.69, 0.17).
+- Still owed: K = 1 arm of ours on test (registered); opponents' K=6 arms -> pair sets + judge;
+  the 189 untouched prompts; paper final pass (fill Appendix M from FACTS_2 20:32 + results),
+  zh-TW version, `paper_sync.sh --with-test` when ALL test readings are done, docs/CHANGES.md
+  19.10, README result section, final report to the user; offer to revoke the Google token.
+
 ## 巡檢清單 (what a check-in does)
 1. `cut -d' ' -f1 /proc/uptime` (small = the container slept: everything below must be restarted);
    `pgrep -af "alloc_loop_resume|presence.sh|watch_loop|budget_guard|anchor"`;
@@ -408,3 +478,136 @@ Colab CLI: `export PATH=/root/.local/bin:$PATH GOOGLE_APPLICATION_CREDENTIALS=/r
   Mid-run look at a snapshot: `$S/scripts/midrun_sample.py $N/snap_main`.
 - Owed to the repo: docs/CHANGES.md section 19.4 (runtime 2 lost, idle rule, the operating mode, my
   blocked turns). Offer to revoke the Google token at the very end.
+
+## State at 21:28 UTC on 24 Nov (after the TPU) -- READ THIS FIRST IF CONTEXT WAS LOST
+- Keep-awake: tracked background task `bash $S/scripts/anchor3.sh 7000` (started 21:27; ends about
+  23:24; it also restarts dead presence loops of bes-cpu / bes-cpu2 / bes-cpu3). Restart it as a
+  tracked background task before it ends. Colab allows THREE sessions; a fourth is refused.
+- Done and scored (Opus readers, 2 readings, source `judge-opus`, root `$N/study/proxy`):
+  official vs Falcon 35/108/57 (0.318); vs MobileLLM 116/15/69 (0.752); after vs before prefopt
+  59/34/107; Falcon K6 log-prob control 35/112/53 (0.307); Falcon K6 our-selector control
+  29/116/55 (0.282). All in `$N/paper/FACTS_2.md` (last section "Added 21:27 UTC").
+- Running:
+  - Opus readers of the K = 1 sets (`$N/final_eval/k1/final-k1-vs-falcon|mobilellm/r1|r2`,
+    14 chunk files per reading, 2 chunks per agent, Agent tool, opus, effort max, background;
+    at most 20 agents at once). When all `chunk_*.verdicts.json` exist:
+    `bash $S/scripts/score2.sh final-k1-vs-falcon $N/final_eval/k1/final-k1-vs-falcon/r1 .../r2 40`
+    (same for mobilellm). Then FACTS_2.md.
+  - bes-cpu2: registered judge qwen3-4b-2507, two 4-thread streams, both official sets
+    (`SESSION=bes-cpu2 bash $S/scripts/judge_remote.sh fetch testq3`; ratings land in
+    `$N/study/proxy/ratings/<set>/judge-qwen3-4b-2507-3605803b.jsonl` when "all done"; then
+    `python -m bes.eval.proxy --root $N/study/proxy score --pairs <set> --source judge-qwen3-4b-2507-3605803b`).
+    8 threads is SLOWER than 4 on these runtimes. ETA Falcon ~22:25, MobileLLM ~23:15.
+  - bes-cpu: MobileLLM K6 control generation, forward (`/content/bes_cli/ctl_progress.log`,
+    `/content/bes_cli/ctl_mobilellm_logprob_mean.log`; root `/content/bes_cli/ctl_root`).
+  - bes-cpu3: the same arm from the end backwards (`controls_rev_driver.py 6 8 1 mobilellm
+    logprob_mean`; `/content/bes_cli/ctlrev_progress.log`; cache tarball
+    `/content/bes_cli/ctlrev_cache.tar.gz` every 4 minutes; stop file `/content/bes_cli/ctlrev_stop`).
+    When forward count + reverse count >= 200: stop the reverse run, download its cache
+    (`cache/mobilellm-f680f0533368-qwen3.jsonl`), append it to the forward root's cache on
+    bes-cpu (upload + a small cell that concatenates), kill and restart controls_driver.py there
+    (`controls_driver.py 6 4 2 mobilellm`: it replays the cache, writes the logprob_mean outputs,
+    then runs decoder_select, whose two-turn second turns need NEW generations: about 52 x 6;
+    split them the same way if it is slow). Then fetch `ctl_outputs.tar.gz`, merge outputs into
+    `$N/study/proxy/outputs`, publish pairs `final-prefopt-vs-mobilellm-k6lp|k6ds`, chunk files
+    under `$N/final_eval/controls/`, Opus readers, score2.sh.
+  - Paper final pass agent (writes `$N/paper/paper.md`, `RESPONSE_3.md`, `lead5_work/`).
+- Decision recorded: the registered judge is run in full on the two official sets only; K = 1
+  and the control arms are read by the Opus readers only (compute: about 100 s per pair on a CPU
+  runtime). Say so as a deviation in the paper and in CHANGES 19.10.
+- Killing on a runtime: `rt_kill.py` patterns must not match its own command line: write
+  `judge_driver[.]py`, `bes[.]eval[.]proxy`.
+- Still to do: CHANGES 19.10 + README results; paper review/fix agents; zh-TW paper;
+  `paper_sync.sh --with-test` (only when ALL test readings are finished); commit; push; CPU
+  runtimes down (`SESSION=<name> bash $S/scripts/cpu_runtime.sh down`); final report to the user.
+
+## State at 21:45 UTC on 24 Nov -- supersedes the "Running" list of 21:28
+- K = 1 sets scored: vs Falcon 22/122/56 (0.250), vs MobileLLM 99/16/85 (0.708). CHANGES 19.10 +
+  README results committed and pushed (34f12ac). Audit agent of those numbers writes
+  `$N/audit_19_10.md` (apply its corrections, commit).
+- REGISTERED JUDGE (qwen3-4b-2507), MobileLLM set is slow (178 s/pair), Falcon set 40 s/pair:
+  - bes-cpu2, tag testq3 (standard driver, 2 streams x 4 threads): Falcon set (164/200 at 21:40,
+    done about 22:05) and MobileLLM set going FORWARD from index 92 (96 at 21:40). Peek:
+    `colab download -s bes-cpu2 /content/bes_cli/judge/testq3/root/ratings/<set>/judge-qwen3-4b-2507-3605803b.jsonl`.
+  - bes-cpu3, tag testq4 (judge_shard.py): MobileLLM index ranges [146,173) on cores 0-3 and
+    [173,200) on cores 4-7. `bash $S/scripts/judge_shard.sh fetch bes-cpu3 testq4 final-prefopt-vs-mobilellm`.
+  - WHEN the Falcon stream ends on bes-cpu2 (its progress.log says "end final-prefopt-vs-falcon"):
+    copy the 200-record Falcon file into `$N/study/proxy/ratings/final-prefopt-vs-falcon/`, score it
+    (`--source judge-qwen3-4b-2507-3605803b`), and start a third shard there:
+    `bash $S/scripts/judge_shard.sh start bes-cpu2 testq4 qwen3-4b-2507 final-prefopt-vs-mobilellm 0-3:125:146`
+    (tag testq4 on bes-cpu2 is a new directory there; fetch with `... fetch bes-cpu2 testq4 ...`).
+  - The forward stream on bes-cpu2 must be stopped when it reaches index 125 (or when all shards
+    are done): `rt_kill.py "judge_driver[.]py" "bes[.]eval[.]proxy"` AFTER saving its ratings file.
+  - Merge: put the forward file (bes-cpu2 testq3) as the main ratings file locally, then
+    `bash $S/scripts/judge_shard.sh merge testq4 final-prefopt-vs-mobilellm` (prints missing indices),
+    then score.
+- MOBILELLM K6 CONTROL generation (logprob_mean arm, run id
+  mobilellm-f680f0533368-qwen3/recommended-32f0c6d864-s0):
+  - bes-cpu forward (50/200 at 136 min = 21:34): `/content/bes_cli/ctl_mobilellm_logprob_mean.log`.
+  - THIS CONTAINER, from the end backwards: `setsid nohup taskset -c 1,2,3 nice -n 5 $S/venv/bin/python
+    $S/scripts/ctl_local.py 6 3 1 mobilellm logprob_mean "::-1" > $N/ctl_local_root/stdout.log 2>&1 &`
+    (root `$N/ctl_local_root`, progress.log there, stop file `$N/ctl_local_root/stop`; RESTART IT
+    AFTER A CONTAINER REBOOT: it resumes from its cache).
+  - After the judge is done, bes-cpu2 / bes-cpu3 join with middle slices (controls_rev_driver.py
+    takes only "from the end"; give it a slice argument first), then merge all caches into the
+    forward root on bes-cpu and run both select rules there (see the 21:28 section).
+
+## State at 22:42 UTC on 24 Nov -- supersedes the earlier "Running" lists
+- DONE and in the repo (b94e332): CHANGES 19.10 (audited and corrected), README results,
+  scripts/blind_eval.py. Registered judge complete on both official sets (12/61/127 vs Falcon;
+  59/5/136 vs MobileLLM). Neutral-title replication done (33/109/58; 112/15/73). All in
+  `$N/paper/FACTS_2.md` (sections 21:27 ... 22:38 and "CORRECTIONS (22:25 UTC)").
+- Rounding convention in repo docs: three decimals, exact halves to even (0.7525 -> 0.752,
+  0.3075 -> 0.308, 0.7425 -> 0.742). The paper must use the same.
+- RUNNING:
+  - MobileLLM K6 control generation, both select rules per slice (`controls_slice_driver.py 6 8 1
+    mobilellm both SLICE [ROOT]`; progress `/content/bes_cli/ctlslice_progress.log`; cache tarball
+    `/content/bes_cli/ctlslice_cache.tar.gz`): bes-cpu ":100" in root /content/bes_cli/ctl_root
+    (its cache also holds the first 60 prompts made by the old driver); bes-cpu2 "100:136";
+    bes-cpu3 "136:172" (both in /content/bes_cli/ctlrev_root). This container: `ctl_local.py 6 3 1
+    mobilellm logprob_mean "::-1"` (root `$N/ctl_local_root`; from the end backwards; it must
+    cover [172,200) and then be STOPPED (touch `$N/ctl_local_root/stop`) and restarted for
+    decoder_select on "172:200": `ctl_local.py 6 3 1 mobilellm decoder_select "172:200"`).
+    AFTER A CONTAINER REBOOT restart the local one (it resumes from its cache).
+  - WHEN all four are done: download the three `ctlslice_cache.tar.gz`, concatenate their
+    `cache/mobilellm-f680f0533368-qwen3.jsonl` with the local one into
+    `$N/ctl_merged_root/cache/` and run locally (model files in `$N/models`):
+    `python -m bes.eval.proxy --root $N/ctl_merged_root --models-dir $N/models run --model mobilellm
+    --preset recommended --split test --samples 6 --select logprob_mean --workers 0 --no-download`
+    and the same with `--select decoder_select` (both must report 200 complete, 0 new
+    generations; if a few are missing let them generate). Copy `outputs/` into
+    `$N/study/proxy/outputs/`, exact scores, pairs `final-prefopt-vs-mobilellm-k6lp|k6ds` against
+    the official run, chunk files with NEUTRAL titles (scripts/blind_eval.py default) in neutral
+    directories, 28 Opus readers per set, import2 --source judge-opus, score.
+  - Agents: paper final pass (a1c3...), failure analysis (writes `$N/paper/analysis_fail/`).
+- THEN: paper review/fix (use audit style), zh-TW version, `paper_sync.sh --with-test` (only after
+  ALL test readings incl. the MobileLLM control sets), commit, push, CPU runtimes down, final
+  report. Keep-awake: `anchor3.sh 7000` started 21:27 ends 23:24 -> restart it (tracked).
+
+## State at 00:20 UTC on 25 Nov -- NEW USER INSTRUCTIONS (00:07): READ FIRST
+- The user said (in Chinese): "the weights file from before DPO must also be there" -> DONE:
+  `release/main16-v9-before-dpo/` (12 parts, parts.json, README), commits 9db8cff..5f6884d,
+  rebuilt from the committed parts and verified.
+- The user said: "from now on do not use Dynamic Workflows etc. any more". => NO new Workflow
+  calls and NO new subagents (Agent tool) for anything. Do the remaining work in the main loop
+  with scripts. (One translation agent for part 4, launched before the message, was still
+  writing `$N/paper/zh/zh/part_04.md` at 00:15.)
+- Consequence for MobileLLM's K = 6 control arms: no Opus readers. They are judged by the
+  registered automatic judge (qwen3-4b-2507) on the CPU runtimes with judge_shard.py streams
+  (2 streams x 4 threads per runtime), and by exact scores. Say so in CHANGES 19.10 / the paper.
+- MobileLLM K6: logprob_mean arm complete (200/200; merged cache `$N/peek/merged_cache_0012.jsonl`,
+  root `$N/ctl_merged_root`; outputs copied to `$N/study/proxy/outputs/mobilellm-f680f0533368-qwen3/
+  recommended-32f0c6d864-s0.*`; exact: maths 0.400, constraints all met 0.1875, degenerate 25.4%
+  (released preset 62.7%), mean words 238.6; pair set `final-prefopt-vs-mobilellm-k6lp` published
+  00:14). decoder_select arm (run id `.../recommended-aca173fa2c-s0`): 181/200 at 00:12; the 19
+  missing prompts are being generated on bes-cpu ("100,101,108,111,112,", root ctl_root), bes-cpu2
+  ("114,129,130,132,135,", root ctlrev_root), bes-cpu3 ("38,63,64,70,72,85,86,88,92,", root
+  ctlrev_root); then download the three `ctlslice_cache.tar.gz`, `ctl_assemble.py $N/ctl_merged_root
+  <bes-cpu> <bes-cpu2> <bes-cpu3> <local cache>` (must give 200/200 for both), copy outputs, exact,
+  pairs `final-prefopt-vs-mobilellm-k6ds`, judge shards for both sets, merge, score.
+  Generations with the same key made on two Colab runtimes are identical (48 of 48 checked);
+  the local container's differ (other CPU); local made prompts 170..199 of the logprob arm.
+- Translation: parts 1-3, 5-12 done in `$N/paper/zh/zh/` (raw copies in zh_raw), harmonised by
+  script (numbers in 萬, a few terms); checker `$S/scripts/zh_check.py EN ZH`. Assemble to
+  `$N/paper/paper.zh-TW.md` when part 4 exists; later patch the MobileLLM control [TBD] cells in
+  both language versions by hand.

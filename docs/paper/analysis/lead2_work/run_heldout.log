@@ -1,0 +1,34 @@
+=== 12:12:38 --manifest /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/data/_src/live/run/manifest.json --ckpt /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/snap_main --name v9_newest --out /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout/v9_newest --variant on: --variant pagesoff:page=0,gain=0 --variant pageoff:page=0 --variant gainoff:gain=0
+12:12:38 v9_newest: config configs/v9.py hash f29bfeb3ebf353a8
+12:12:40 rows built in 2 s: web 64, chat 64, proxy 16
+12:12:41 checkpoint step 34166 hash f29bfeb3ebf353a8 read in 1 s
+12:12:42 v9_newest/on: switches {'reg': 1.0, 'cand_in': 1.0, 'cand_out': 1.0, 'conf': 0.0, 'sink': 1.0, 'clock': 0.0, 'gain': 1.0, 'sel': 0.0, 'gate': 0.0, 'page': 1.0}
+12:14:51 v9_newest/on: web: 64 rows, loss 2.7437 over 65442 weighted tokens in 129 s
+12:16:52 v9_newest/on: chat: 64 rows, loss 1.5630 over 60438 weighted tokens in 122 s
+12:17:24 v9_newest/on: proxy: 16 rows, loss 2.6000 over 11094 weighted tokens in 31 s
+12:17:24 v9_newest/on: all: loss 2.2111 over 136974
+12:17:24 written /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout/v9_newest_on.npz
+12:17:24 v9_newest/pagesoff: switches {'reg': 1.0, 'cand_in': 1.0, 'cand_out': 1.0, 'conf': 0.0, 'sink': 1.0, 'clock': 0.0, 'gain': 0.0, 'sel': 0.0, 'gate': 0.0, 'page': 0.0}
+12:19:14 v9_newest/pagesoff: web: 64 rows, loss 2.7804 over 65442 weighted tokens in 111 s
+12:21:04 v9_newest/pagesoff: chat: 64 rows, loss 1.6218 over 60438 weighted tokens in 110 s
+12:21:31 v9_newest/pagesoff: proxy: 16 rows, loss 2.6604 over 11094 weighted tokens in 27 s
+12:21:31 v9_newest/pagesoff: all: loss 2.2594 over 136974
+12:21:31 written /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout/v9_newest_pagesoff.npz
+12:21:31 v9_newest/pageoff: switches {'reg': 1.0, 'cand_in': 1.0, 'cand_out': 1.0, 'conf': 0.0, 'sink': 1.0, 'clock': 0.0, 'gain': 1.0, 'sel': 0.0, 'gate': 0.0, 'page': 0.0}
+12:23:46 v9_newest/pageoff: web: 64 rows, loss 2.7597 over 65442 weighted tokens in 135 s
+12:25:38 v9_newest/pageoff: chat: 64 rows, loss 1.5848 over 60438 weighted tokens in 112 s
+12:26:06 v9_newest/pageoff: proxy: 16 rows, loss 2.6322 over 11094 weighted tokens in 28 s
+12:26:06 v9_newest/pageoff: all: loss 2.2310 over 136974
+12:26:06 written /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout/v9_newest_pageoff.npz
+12:26:06 v9_newest/gainoff: switches {'reg': 1.0, 'cand_in': 1.0, 'cand_out': 1.0, 'conf': 0.0, 'sink': 1.0, 'clock': 0.0, 'gain': 0.0, 'sel': 0.0, 'gate': 0.0, 'page': 1.0}
+12:27:56 v9_newest/gainoff: web: 64 rows, loss 2.7616 over 65442 weighted tokens in 109 s
+12:29:40 v9_newest/gainoff: chat: 64 rows, loss 1.5944 over 60438 weighted tokens in 104 s
+12:30:07 v9_newest/gainoff: proxy: 16 rows, loss 2.6227 over 11094 weighted tokens in 27 s
+12:30:07 v9_newest/gainoff: all: loss 2.2353 over 136974
+12:30:07 written /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout/v9_newest_gainoff.npz
+=== 12:30:07 --manifest /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/data/_src/live/run/manifest.json --ckpt /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/snap_main.prev --name v9_prev --out /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout/v9_prev --variant on: --variant pagesoff:page=0,gain=0
+12:30:08 v9_prev: config configs/v9.py hash f29bfeb3ebf353a8
+12:30:09 rows built in 1 s: web 64, chat 64, proxy 16
+12:30:10 checkpoint step 34166 hash f29bfeb3ebf353a8 read in 1 s
+12:30:11 v9_prev/on: switches {'reg': 1.0, 'cand_in': 1.0, 'cand_out': 1.0, 'conf': 0.0, 'sink': 1.0, 'clock': 0.0, 'gain': 1.0, 'sel': 0.0, 'gate': 0.0, 'page': 1.0}
+=== 12:39:10 all done

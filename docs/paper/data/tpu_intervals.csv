@@ -1,4 +1,4 @@
 runtime,start_utc,end_utc,open,counted_until_utc,seconds,hours,ledger_note,summary
 1,2026-11-23 02:58:32,2026-11-23 05:00:37,0,2026-11-23 05:00:37,7325,2.0347,"first runtime (profiling, discarded runs; stopped on request)",profiling and the glue rewrite; runs discarded; stopped at the user's request
 2,2026-11-23 17:13:00,2026-11-23 19:30:00,0,2026-11-23 19:30:00,8220,2.2833,"second runtime (assigned by a request that had given up; counted from 17:13:00 UTC, the earliest it can have been) [taken back by Colab about 19:29; closed at 19:30:00]","run main16 created 17:34:54, trained from 17:46:31; taken back by Colab about 19:29"
-3,2026-11-24 01:05:55,,1,2026-11-24 16:27:21,55287,15.3574,third runtime (after VM restart 00:57),"resumed 01:54:14 from step 5,075; graft to v9 at step 29,722; open"
+3,2026-11-24 01:05:55,2026-11-24 20:41:04,0,2026-11-24 20:41:04,70509,19.5858,third runtime (after VM restart 00:57) [run finished; given back by hand at the end],"resumed 01:54:14 from step 5,075; graft to v9 at step 29,722; open"

@@ -1,0 +1,28 @@
+{
+ "split": "test",
+ "prompts": 189,
+ "turns": 240,
+ "two_turn": 51,
+ "by_category": {
+  "chat": 48,
+  "code": 28,
+  "instruct": 37,
+  "math": 28,
+  "writing": 48
+ },
+ "constrained_prompts": 44,
+ "maths_prompts": 28,
+ "excluded": [
+  "chat-002",
+  "chat-017",
+  "code-002",
+  "code-026",
+  "instruct-001",
+  "instruct-034",
+  "instruct-062",
+  "math-001",
+  "math-034",
+  "writing-001",
+  "writing-100"
+ ]
+}

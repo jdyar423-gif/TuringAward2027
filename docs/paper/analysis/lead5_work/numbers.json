@@ -1,0 +1,936 @@
+{
+ "rate.rt2_16rows": {
+  "value": {
+   "median_tok_per_s": 222031,
+   "n": 101,
+   "min": 199135,
+   "max": 225408,
+   "achieved_median": 221859,
+   "achieved_n": 100,
+   "first_step": 50,
+   "last_step": 5050,
+   "first_utc": "17:47:35",
+   "last_utc": "19:26:13"
+  },
+  "how": "runtime 2, final, 16-row micro-batches, splash kernel: median of the train log's per-step tok_per_s over the step records with 0 < step <= 5075 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.rt3_same": {
+  "value": {
+   "median_tok_per_s": 216548,
+   "n": 85,
+   "min": 60820,
+   "max": 222177,
+   "achieved_median": 216706,
+   "achieved_n": 82,
+   "first_step": 5100,
+   "last_step": 9300,
+   "first_utc": "01:54:46",
+   "last_utc": "03:28:34"
+  },
+  "how": "runtime 3, the same program, before the pieces: median of the train log's per-step tok_per_s over the step records with 5075 < step <= 9332 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.pieces": {
+  "value": {
+   "median_tok_per_s": 240131,
+   "n": 266,
+   "min": 228015,
+   "max": 246229,
+   "achieved_median": 239984,
+   "achieved_n": 264,
+   "first_step": 9350,
+   "last_step": 22600,
+   "first_utc": "03:31:46",
+   "last_utc": "07:43:56"
+  },
+  "how": "4 pieces per micro-batch: median of the train log's per-step tok_per_s over the step records with 9332 < step <= 22613 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.kernel_to_deflection": {
+  "value": {
+   "median_tok_per_s": 281387,
+   "n": 53,
+   "min": 270471,
+   "max": 283271,
+   "achieved_median": 281171,
+   "achieved_n": 52,
+   "first_step": 22650,
+   "last_step": 25250,
+   "first_utc": "07:54:10",
+   "last_utc": "08:34:34"
+  },
+  "how": "one-tile kernel + ReLU^2 backward, to the deflection rule: median of the train log's per-step tok_per_s over the step records with 22613 < step <= 25280 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.kernel_to_graft": {
+  "value": {
+   "median_tok_per_s": 281389,
+   "n": 142,
+   "min": 255222,
+   "max": 284130,
+   "achieved_median": 281207,
+   "achieved_n": 141,
+   "first_step": 22650,
+   "last_step": 29700,
+   "first_utc": "07:54:10",
+   "last_utc": "09:45:11"
+  },
+  "how": "one-tile kernel + ReLU^2 backward, to the graft: median of the train log's per-step tok_per_s over the step records with 22613 < step <= 29722 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.prekernel_21000": {
+  "value": {
+   "median_tok_per_s": 240143,
+   "n": 32,
+   "min": 232858,
+   "max": 241305,
+   "achieved_median": 239984,
+   "achieved_n": 31,
+   "first_step": 21050,
+   "last_step": 22600,
+   "first_utc": "07:15:43",
+   "last_utc": "07:43:56"
+  },
+  "how": "the 1,600 steps before the kernel switch: median of the train log's per-step tok_per_s over the step records with 21000 < step <= 22613 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.final_25300_29700": {
+  "value": {
+   "median_tok_per_s": 281399,
+   "n": 89,
+   "min": 255222,
+   "max": 284130,
+   "achieved_median": 281220,
+   "achieved_n": 88,
+   "first_step": 25300,
+   "last_step": 29700,
+   "first_utc": "08:36:48",
+   "last_utc": "09:45:11"
+  },
+  "how": "final, steps 25,300-29,700 (review item 26): median of the train log's per-step tok_per_s over the step records with 25250 < step <= 29700 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.v9_take": {
+  "value": {
+   "median_tok_per_s": 178087,
+   "n": 44,
+   "min": 174098,
+   "max": 179098,
+   "achieved_median": 178009,
+   "achieved_n": 43,
+   "first_step": 29750,
+   "last_step": 31900,
+   "first_utc": "09:59:24",
+   "last_utc": "10:52:11"
+  },
+  "how": "v9 as grafted (take), before the three switches: median of the train log's per-step tok_per_s over the step records with 29722 < step <= 31912 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.v9_switches_1024": {
+  "value": {
+   "median_tok_per_s": 196874,
+   "n": 99,
+   "min": 143462,
+   "max": 200081,
+   "achieved_median": 196879,
+   "achieved_n": 98,
+   "first_step": 31950,
+   "last_step": 36850,
+   "first_utc": "10:58:39",
+   "last_utc": "12:47:27"
+  },
+  "how": "v9 with flat, rows, tokn at 1,024 tokens: median of the train log's per-step tok_per_s over the step records with 31912 < step <= 1000000000 at 1,024 tokens; achieved = 262,144 x 50 / time between consecutive records"
+ },
+ "rate.v9_switches_2048": {
+  "value": {
+   "median_tok_per_s": 189067,
+   "n": 226,
+   "min": 188467,
+   "max": 193886,
+   "achieved_median": 188841,
+   "achieved_n": 225,
+   "first_step": 36900,
+   "last_step": 48150,
+   "first_utc": "12:48:36",
+   "last_utc": "17:09:00"
+  },
+  "how": "v9 with the switches at 2,048 tokens, trainer phase 'long' (p from 0.67 to 0.92)"
+ },
+ "rate.v9_tail_2048": {
+  "value": {
+   "median_tok_per_s": 189035,
+   "n": 73,
+   "min": 187948,
+   "max": 190098,
+   "achieved_median": 188851,
+   "achieved_n": 72,
+   "first_step": 48200,
+   "last_step": 51800,
+   "first_utc": "17:10:10",
+   "last_utc": "18:33:30"
+  },
+  "how": "v9 at 2,048 tokens, trainer phase 'tail' (p >= 0.92: chat share 0.70, loss on assistant tokens only)"
+ },
+ "rate.v9_all_2048": {
+  "value": {
+   "median_tok_per_s": 189058,
+   "n": 299,
+   "min": 187948,
+   "max": 193886,
+   "achieved_median": 188850,
+   "achieved_n": 298,
+   "first_step": 36900,
+   "last_step": 51800,
+   "first_utc": "12:48:36",
+   "last_utc": "18:33:30"
+  },
+  "how": "v9 at 2,048 tokens, phases 'long' and 'tail' together"
+ },
+ "v9.phases_seen": {
+  "value": {
+   "long": 226,
+   "short": 143,
+   "tail": 73
+  },
+  "how": "trainer phases in the v9 step records, with record counts (short = 1,024 tokens, long = 2,048, tail = p >= 0.92)"
+ },
+ "ratio.kernel_gain_live": {
+  "value": 0.1717,
+  "how": "median after the kernel switch (to 25,280) / median of the 1,600 steps before, minus 1"
+ },
+ "ratio.final_over_v9_take_live": {
+  "value": 1.5801,
+  "how": "final 25,300-29,700 median / v9 (take) median"
+ },
+ "ratio.final_over_v9_switches_live": {
+  "value": 1.4293,
+  "how": "final 25,300-29,700 median / v9 with the switches median (1,024 tokens)"
+ },
+ "ratio.v9_switches_gain_live": {
+  "value": 0.1055,
+  "how": "v9 with the switches / v9 as grafted, live medians, minus 1"
+ },
+ "ratio.v9_2048_vs_1024": {
+  "value": -0.0397,
+  "how": "v9 at 2,048 tokens (phase long) / at 1,024, live medians, minus 1"
+ },
+ "ratio.reference_to_kernel_live": {
+  "value": [
+   2.411,
+   2.439
+  ],
+  "how": "final's live median after the kernel (steps 25,300-29,700) / the two monitor readings of the reference implementation on runtime 1 (116,718 and 115,394 tokens/s, S/colab_bes24h_final.log 04:17:59 and 04:28:00)"
+ },
+ "rate.largest_gap_live_achieved_pct": {
+  "value": {
+   "largest": 0.12,
+   "by_stretch": {
+    "rate.rt2_16rows": 0.077,
+    "rate.rt3_same": 0.073,
+    "rate.pieces": 0.061,
+    "rate.kernel_to_deflection": 0.077,
+    "rate.kernel_to_graft": 0.065,
+    "rate.prekernel_21000": 0.066,
+    "rate.final_25300_29700": 0.064,
+    "rate.v9_take": 0.044,
+    "rate.v9_switches_1024": 0.003,
+    "rate.v9_switches_2048": 0.12,
+    "rate.v9_tail_2048": 0.097,
+    "rate.v9_all_2048": 0.11
+   }
+  },
+  "how": "|live median - achieved median| / live median, in percent, per stretch"
+ },
+ "v9.final_ledger": {
+  "value": {
+   "steps": 51812,
+   "tokens": 13582204928,
+   "mark_utc": "18:33:54",
+   "phase": "done",
+   "train_s": 62893.1,
+   "train_h": 17.47,
+   "ckpt_s": 23.2,
+   "setup_s": 279.6,
+   "lost_s": 26046.6,
+   "lost_h": 7.24,
+   "restarts": 10,
+   "rollbacks": 0,
+   "v9_tokens_since_graft": 5790760960,
+   "v9_steps_since_graft": 22090,
+   "tokens_check": true
+  },
+  "how": "the trainer's time ledger in the last snapshot (run/train/ledger.json): steps and tokens trained, seconds by phase"
+ },
+ "v9.end": {
+  "value": {
+   "step": 51812,
+   "p": 1.0,
+   "reason": "deadline",
+   "end_utc": "18:33:54",
+   "last_step_record": 51800,
+   "last_record_utc": "18:33:30",
+   "last_loss": 1.745,
+   "last_phase": "tail",
+   "last_lr": 0.1003,
+   "last_chat_frac": 0.7,
+   "assistant_only": true
+  },
+  "how": "the end event of the train log and its last step record"
+ },
+ "v9.train_end_setup_event": {
+  "value": "18:33:49",
+  "how": "the training end of the run's setup event (train_end, epoch)"
+ },
+ "tpu.final": {
+  "value": {
+   "intervals_utc": [
+    [
+     "23 Nov 02:58:32",
+     "23 Nov 05:00:37"
+    ],
+    [
+     "23 Nov 17:13:00",
+     "23 Nov 19:30:00"
+    ],
+    [
+     "24 Nov 01:05:55",
+     "24 Nov 20:41:04"
+    ]
+   ],
+   "seconds_by_runtime": [
+    7325,
+    8220,
+    70509
+   ],
+   "total_s": 86054,
+   "total_h": 23.904,
+   "limit_s": 86400,
+   "unused_s": 346,
+   "train_s_ledger": 62893.1,
+   "train_share": 0.7309,
+   "runtime3_train_share": null
+  },
+  "how": "TPU seconds held per runtime (S/tpu_intervals.txt, all three intervals closed; the third given back by hand at its end epoch) and the share in training steps of the kept trajectory (ledger 'train' seconds)"
+ },
+ "stages": {
+  "value": {
+   "deadline_utc": "24 Nov 20:31:49",
+   "supervisor_end_utc": "24 Nov 20:02:22",
+   "rows": {
+    "benchmark": {
+     "status": "finished",
+     "planned_s": 900.0,
+     "slice_s": 900.0,
+     "used_s": 693.993,
+     "down_s": 0.0,
+     "attempts": 1,
+     "started_utc": "23 Nov 17:34:57",
+     "finished_utc": "23 Nov 17:46:31"
+    },
+    "train": {
+     "status": "finished",
+     "planned_s": 68562.0,
+     "slice_s": 27420.082,
+     "used_s": 65208.339,
+     "down_s": 20488.149,
+     "attempts": 15,
+     "started_utc": "24 Nov 10:56:48",
+     "finished_utc": "24 Nov 18:33:55"
+    },
+    "sample": {
+     "status": "finished",
+     "planned_s": 180.0,
+     "slice_s": 180.0,
+     "used_s": 192.506,
+     "down_s": 0.0,
+     "attempts": 1,
+     "started_utc": "24 Nov 18:33:55",
+     "finished_utc": "24 Nov 18:37:07"
+    },
+    "critic": {
+     "status": "skipped",
+     "planned_s": null,
+     "slice_s": null,
+     "used_s": 0.0,
+     "down_s": 0.0,
+     "attempts": 0,
+     "started_utc": null,
+     "finished_utc": "24 Nov 18:37:07"
+    },
+    "prefopt": {
+     "status": "finished",
+     "planned_s": 3600.0,
+     "slice_s": 3600.0,
+     "used_s": 1783.772,
+     "down_s": 0.0,
+     "attempts": 1,
+     "started_utc": "24 Nov 18:37:07",
+     "finished_utc": "24 Nov 19:06:51"
+    },
+    "select": {
+     "status": "finished",
+     "planned_s": 2100.0,
+     "slice_s": 3897.285,
+     "used_s": 3295.3,
+     "down_s": 0.0,
+     "attempts": 1,
+     "started_utc": "24 Nov 19:06:51",
+     "finished_utc": "24 Nov 20:01:47"
+    },
+    "judge": {
+     "status": "skipped",
+     "planned_s": null,
+     "slice_s": null,
+     "used_s": 0.0,
+     "down_s": 0.0,
+     "attempts": 0,
+     "started_utc": null,
+     "finished_utc": "24 Nov 20:01:47"
+    },
+    "export": {
+     "status": "finished",
+     "planned_s": 300.0,
+     "slice_s": 300.0,
+     "used_s": 34.997,
+     "down_s": 0.0,
+     "attempts": 1,
+     "started_utc": "24 Nov 20:01:47",
+     "finished_utc": "24 Nov 20:02:22"
+    }
+   },
+   "post_used_s": 5306.6,
+   "slack_before_deadline_s": 1767.0
+  },
+  "how": "run/stages.json: each stage's status, planned, slice and used seconds and its UTC start and finish"
+ },
+ "post.results": {
+  "value": {
+   "sample": {
+    "checkpoint": "/content/runs/main16/train/ckpt/ckpt-000022-step-000051812",
+    "pairs_new_upper": 28,
+    "partial": true,
+    "pool": 3996,
+    "prompts": 17,
+    "prompts_new": 17
+   },
+   "prefopt": {
+    "accepted": true,
+    "from_checkpoint": "/content/runs/main16/train/ckpt/ckpt-000022-step-000051812",
+    "labels_recomputed": 0,
+    "lr": 3e-06,
+    "n_heldout_pairs": 1826,
+    "n_train_pairs": 35201,
+    "pairs_by_source": {
+     "heldout": 1826,
+     "sampled": {
+      "duplicate": 0,
+      "identical": 0,
+      "invalid": 0,
+      "kept": 20,
+      "length_ratio": 0,
+      "too_long": 1
+     },
+     "train": 35201,
+     "ultrafeedback": {
+      "duplicate": 0,
+      "identical": 306,
+      "invalid": 0,
+      "kept": 37007,
+      "length_ratio": 8366,
+      "too_long": 7995
+     }
+    },
+    "pairs_sampled": 21,
+    "reason": "lr=3e-06 accepted with held-out preference accuracy 0.6944 (start 0.5000)"
+   },
+   "select": {
+    "chosen": "default",
+    "library": {
+     "dev": null,
+     "factual": null,
+     "factual_error": null,
+     "reason": "no library was built",
+     "ship": false
+    },
+    "n_common": 200,
+    "n_dev": 200,
+    "scores": {
+     "default": 0.91,
+     "k1": 0.85,
+     "noband": 0.915
+    }
+   },
+   "export": {
+    "by": "bes.export.export_run",
+    "checkpoint": "/content/runs/main16/post/ckpt/ckpt-000001-step-000051812",
+    "exported": true,
+    "result": {
+     "abs_delta": 2.193632209390728e-05,
+     "active_step": 19631240,
+     "check_ok": true,
+     "checkpoint": "/content/runs/main16/post/ckpt/ckpt-000001-step-000051812",
+     "errors": 0,
+     "export_dir": "/content/runs/main16/final",
+     "float32_kept": false,
+     "library": "none",
+     "seconds": 34.7,
+     "tol": 0.002,
+     "total_numbers": 98036104,
+     "weights": "prefopt"
+    },
+    "weights": "prefopt"
+   }
+  },
+  "how": "the stage ledger's result record of each post-training stage"
+ },
+ "prefopt": {
+  "value": {
+   "beta": 0.1,
+   "lrs": [
+    1e-06,
+    3e-06
+   ],
+   "chosen_lr": 3e-06,
+   "reason": "lr=3e-06 accepted with held-out preference accuracy 0.6944 (start 0.5000)",
+   "n_train_pairs": 35201,
+   "n_heldout_pairs": 1826,
+   "steps_per_epoch": 551,
+   "time_s": 1772.5,
+   "start": {
+    "acc": 0.5,
+    "heldout_loss": 1.50427,
+    "mean_len": 284.9,
+    "rep4": 0.2166,
+    "policy_acc": 0.5005
+   },
+   "candidates": [
+    {
+     "lr": 1e-06,
+     "accepted": true,
+     "reasons": [],
+     "checked": [
+      "nonfinite",
+      "accuracy",
+      "loss",
+      "length",
+      "repetition"
+     ],
+     "acc": 0.6884,
+     "acc_se": 0.0108,
+     "acc_gain_needed": 0.0108,
+     "heldout_loss": 1.51721,
+     "heldout_loss_rise_pct": 0.86,
+     "mean_len": 282.7,
+     "mean_len_ratio": 0.992,
+     "rep4": 0.1856,
+     "rep4_ratio": 0.857,
+     "n_sampled": 64.0,
+     "steps": 551,
+     "train_time_s": 485.3,
+     "train_acc": 0.6771,
+     "max_grad_norm": 360.5,
+     "skipped": 0,
+     "policy_acc": 0.5071
+    },
+    {
+     "lr": 3e-06,
+     "accepted": true,
+     "reasons": [],
+     "checked": [
+      "nonfinite",
+      "accuracy",
+      "loss",
+      "length",
+      "repetition"
+     ],
+     "acc": 0.6944,
+     "acc_se": 0.0108,
+     "acc_gain_needed": 0.0108,
+     "heldout_loss": 1.52079,
+     "heldout_loss_rise_pct": 1.1,
+     "mean_len": 270.0,
+     "mean_len_ratio": 0.948,
+     "rep4": 0.1889,
+     "rep4_ratio": 0.872,
+     "n_sampled": 64.0,
+     "steps": 551,
+     "train_time_s": 423.8,
+     "train_acc": 0.685,
+     "max_grad_norm": 437.6,
+     "skipped": 0,
+     "policy_acc": 0.5066
+    }
+   ],
+   "pairs_by_source": {
+    "heldout": 1826,
+    "sampled": {
+     "duplicate": 0,
+     "identical": 0,
+     "invalid": 0,
+     "kept": 20,
+     "length_ratio": 0,
+     "too_long": 1
+    },
+    "train": 35201,
+    "ultrafeedback": {
+     "duplicate": 0,
+     "identical": 306,
+     "invalid": 0,
+     "kept": 37007,
+     "length_ratio": 8366,
+     "too_long": 7995
+    }
+   }
+  },
+  "how": "run/post/prefopt_report.json (bes/train/prefopt.py): the start and each candidate learning rate, the acceptance checks (accuracy gain > 1 x its standard error; held-out assistant loss +3% at most; length 0.7-1.6 x and repetition 1.2 x + 0.01 of the start, 2 standard errors) and the choice (best accuracy)"
+ },
+ "select": {
+  "value": {
+   "chosen": "default",
+   "scores": {
+    "default": 0.91,
+    "k1": 0.85,
+    "noband": 0.915
+   },
+   "n_common": 200,
+   "vs_default": {
+    "k1": {
+     "a_better": 1,
+     "b_better": 18,
+     "mean_score_diff": -0.06,
+     "n": 200,
+     "p": 7.6e-05,
+     "same": 181
+    },
+    "noband": {
+     "a_better": 2,
+     "b_better": 0,
+     "mean_score_diff": 0.005,
+     "n": 200,
+     "p": 0.5,
+     "same": 198
+    }
+   },
+   "rule": "decoding settings: the default unless a variant's exact score (math correct, constraints satisfied, not degenerate) is higher on significantly more of the dev prompts every variant answered than lower (sign test p < 0.05); then the highest mean among those; the library: the rule of library.rule (not shipped: switched off)",
+   "weights": "prefopt",
+   "checkpoint": "/content/runs/main16/post/ckpt/ckpt-000001-step-000051812",
+   "summaries": {
+    "default": {
+     "maths_correct": 0.1333,
+     "maths_n": 30,
+     "constraints_all_ok": 0.8723,
+     "constrained_n": 47,
+     "degenerate": 0.0121,
+     "truncated": 0.0121,
+     "run_id": "ours-step51812-c04f3f6b3fca71f1/select-default-9a89782942-s0"
+    },
+    "k1": {
+     "maths_correct": 0.1,
+     "maths_n": 30,
+     "constraints_all_ok": 0.8085,
+     "constrained_n": 47,
+     "degenerate": 0.0645,
+     "truncated": 0.0605,
+     "run_id": "ours-step51812-c04f3f6b3fca71f1/select-k1-f93654208f-s0"
+    },
+    "noband": {
+     "maths_correct": 0.1333,
+     "maths_n": 30,
+     "constraints_all_ok": 0.9149,
+     "constrained_n": 47,
+     "degenerate": 0.0121,
+     "truncated": 0.0121,
+     "run_id": "ours-step51812-c04f3f6b3fca71f1/select-noband-9680da6210-s0"
+    }
+   },
+   "library": "no library was built"
+  },
+  "how": "run/manifest.json 'decode' (scripts/run_24h.py stage_select): exact scores of the three variants on the 200 dev prompts (mean of maths correct, all constraints met, not degenerate), paired sign tests against the default"
+ },
+ "loss.v9_to_34350": {
+  "value": {
+   "mean": 2.4675,
+   "sd": 0.0399,
+   "n": 93
+  },
+  "how": "v9 step losses from the graft to step 34,350 (all at 1,024 tokens)"
+ },
+ "loss.v9_long": {
+  "value": {
+   "n": 226,
+   "first5": 2.4038,
+   "last5": 1.8149,
+   "first_step": 36900,
+   "last_step": 48150,
+   "lr_first": 0.3964,
+   "lr_last": 0.1728,
+   "chat_frac_first": 0.2512888777128796,
+   "chat_frac_last": 0.6983730939320016
+  },
+  "how": "v9 step losses of phase long (2,048 tokens, p 0.67-0.92): means of the first and last five records"
+ },
+ "loss.v9_tail": {
+  "value": {
+   "n": 73,
+   "first5": 1.7783,
+   "last5": 1.7331,
+   "first_step": 48200,
+   "last_step": 51800,
+   "lr_first": 0.1718,
+   "lr_last": 0.1003
+  },
+  "how": "v9 step losses of phase tail (p >= 0.92; loss on assistant tokens only, not comparable with earlier records)"
+ },
+ "loss.final_p045_050": {
+  "value": {
+   "mean": 2.4962,
+   "sd_sample": 0.0373,
+   "n": 68,
+   "min": 2.4158,
+   "max": 2.5698
+  },
+  "how": "final step losses with 0.45 <= p < 0.50 (sample sd)"
+ },
+ "loss.final_p000_001": {
+  "value": {
+   "mean": 3.613,
+   "sd_sample": 0.535,
+   "sd_population": 0.507,
+   "n": 10
+  },
+  "how": "final step losses with p < 0.01"
+ },
+ "records.counts": {
+  "value": {
+   "final": 594,
+   "v9": 442,
+   "v9_first_step": 29750,
+   "v9_last_step": 51800
+  },
+  "how": "step records of the two logs (one every 50 steps)"
+ },
+ "p.graft": {
+  "value": {
+   "final_end_event": 0.5049,
+   "v9_stage_event": 0.5112,
+   "last_final_step_record": 0.5045,
+   "first_v9_step_record": 0.5118
+  },
+  "how": "p at the stop (end event of step 29,722), at the restore (stage event), and of the nearest step records"
+ },
+ "v9.stage_events": {
+  "value": [
+   {
+    "step": 29722,
+    "p": 0.5112,
+    "phase": "short",
+    "utc": "09:58:45",
+    "assistant_only": false
+   },
+   {
+    "step": 31912,
+    "p": 0.5651,
+    "phase": "short",
+    "utc": "10:57:50",
+    "assistant_only": false
+   },
+   {
+    "step": 36867,
+    "p": 0.67,
+    "phase": "long",
+    "utc": "12:47:51",
+    "assistant_only": false
+   },
+   {
+    "step": 48190,
+    "p": 0.92,
+    "phase": "tail",
+    "utc": "17:09:57",
+    "assistant_only": true
+   }
+  ],
+  "how": "stage events of the v9 log (restores and the phase changes at p = 0.67 and 0.92)"
+ },
+ "proj.third_pass_vs_ledger": {
+  "value": {
+   "projected_tokens": 13580000000.0,
+   "projected_steps": 51821,
+   "ledger_tokens": 13582204928,
+   "ledger_steps": 51812,
+   "error_tokens": 2204928.0,
+   "error_share": 0.00016,
+   "final_counterfactual_tokens": 15910000000.0,
+   "deficit_vs_final_counterfactual": 2330000000.0,
+   "deficit_share": 0.146
+  },
+  "how": "the third pass's projection of the run's tokens (lead3_work/numbers.json proj.v9_total_from_newest) against the ledger; final's counterfactual total (proj.final_total, a projection with a scaled 2,048-token rate) minus the ledger"
+ },
+ "proj.v9_scratch_at_graft": {
+  "value": 6020000000.0,
+  "how": "a v9 started from scratch in the 30,969 s left at the graft, at the rates with the switches (optimistic: the switches did not exist at 09:45)"
+ },
+ "tokens.gap_to_opponents": {
+  "value": {
+   "falcon_factor": 59,
+   "mobilellm_factor": 309
+  },
+  "how": "Falcon-H1-Tiny-90M-Instruct's 8e11 and MobileLLM-R1's 4.2e12 pre-training tokens over ours (ledger)"
+ },
+ "power.falcon_dev": {
+  "value": {
+   "tie_rate": 0.25,
+   "n_for_10pt": 259,
+   "n_for_5pt": 1044,
+   "mde_decisive_at_n200": 0.113,
+   "mde_decisive_at_n189": 0.117
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.mobilellm_dev": {
+  "value": {
+   "tie_rate": 0.6167,
+   "n_for_10pt": 506,
+   "n_for_5pt": 2042,
+   "mde_decisive_at_n200": 0.158,
+   "mde_decisive_at_n189": 0.162
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.protocol_30pct": {
+  "value": {
+   "tie_rate": 0.3,
+   "n_for_10pt": 277,
+   "n_for_5pt": 1118,
+   "mde_decisive_at_n200": 0.117,
+   "mde_decisive_at_n189": 0.121
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.falcon_dev_v9_two_readings": {
+  "value": {
+   "tie_rate": 0.3,
+   "n_for_10pt": 277,
+   "n_for_5pt": 1118,
+   "mde_decisive_at_n200": 0.117,
+   "mde_decisive_at_n189": 0.121
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.mobilellm_dev_v9_two_readings": {
+  "value": {
+   "tie_rate": 0.55,
+   "n_for_10pt": 431,
+   "n_for_5pt": 1739,
+   "mde_decisive_at_n200": 0.146,
+   "mde_decisive_at_n189": 0.15
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.falcon_dev_v9_qwen_judge": {
+  "value": {
+   "tie_rate": 0.7167,
+   "n_for_10pt": 685,
+   "n_for_5pt": 2762,
+   "mde_decisive_at_n200": 0.182,
+   "mde_decisive_at_n189": 0.187
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.mobilellm_dev_v9_qwen_judge": {
+  "value": {
+   "tie_rate": 0.85,
+   "n_for_10pt": 1293,
+   "n_for_5pt": 5217,
+   "mde_decisive_at_n200": 0.246,
+   "mde_decisive_at_n189": 0.252
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.falcon_test_opus": {
+  "value": {
+   "tie_rate": 0.285,
+   "n_for_10pt": 272,
+   "n_for_5pt": 1095,
+   "mde_decisive_at_n200": 0.116,
+   "mde_decisive_at_n189": 0.119
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.mobilellm_test_opus": {
+  "value": {
+   "tie_rate": 0.345,
+   "n_for_10pt": 296,
+   "n_for_5pt": 1195,
+   "mde_decisive_at_n200": 0.121,
+   "mde_decisive_at_n189": 0.125
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.prefopt_vs_trained_test_opus": {
+  "value": {
+   "tie_rate": 0.535,
+   "n_for_10pt": 417,
+   "n_for_5pt": 1683,
+   "mde_decisive_at_n200": 0.143,
+   "mde_decisive_at_n189": 0.147
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.falcon_test_qwen": {
+  "value": {
+   "tie_rate": 0.635,
+   "n_for_10pt": 532,
+   "n_for_5pt": 2144,
+   "mde_decisive_at_n200": 0.161,
+   "mde_decisive_at_n189": 0.166
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.mobilellm_test_qwen": {
+  "value": {
+   "tie_rate": 0.68,
+   "n_for_10pt": 606,
+   "n_for_5pt": 2446,
+   "mde_decisive_at_n200": 0.172,
+   "mde_decisive_at_n189": 0.177
+  },
+  "how": "smallest true decisive win rate above 0.5 detected with 80% power by a two-sided 5% test (bes.eval.proxy.score.n_required, normal approximation, inflated by 1/(1 - tie rate))"
+ },
+ "power.score_halfwidth_n200": {
+  "value": 0.069,
+  "how": "normal half-width of a score near 0.5 at n = 200"
+ },
+ "heldout.three_point": {
+  "value": {
+   "slope_per_min": -0.000186,
+   "pred_at_592.5": 2.2495,
+   "v9_at_592.5": 2.2337,
+   "gap": 0.0158,
+   "pi95_halfwidth_t1": 0.025
+  },
+  "how": "least-squares line through final's three held-out losses (all rows; training minutes 494.7, 519.7, 538.7), 95% prediction interval with t(1 dof) = 12.706 (review1_work/stats.py); kept as the old computation, not cited"
+ },
+ "flop.final_1024": {
+  "value": {
+   "analytic_GFLOP_per_token": 0.781,
+   "executed_GFLOP_per_token": [
+    1.179,
+    1.195
+   ],
+   "live_rate": 281399,
+   "analytic_TFLOP_s": 220,
+   "executed_TFLOP_s": [
+    332,
+    336
+   ],
+   "executed_share_of_814": [
+    0.408,
+    0.413
+   ],
+   "analytic_share_of_814": 0.27
+  },
+  "how": "analytic: forward + backward = 3 x forward multiply-adds, causal attention, no recomputation; executed: the loop body's products 4 x (forward, rematerialised forward, two backward), the rotation's q and k as two products each, attention over the 62.5% of the score square the one-tile strips cover, its forward once (save) and its backward 2.0 or 2.5 times the forward, the head 3 x; FLOP = 2 x MAC"
+ },
+ "loops.time": {
+  "value": {
+   "one_loop_ms": 42.9,
+   "eight_loops_ms": 289.0,
+   "per_loop_ms": 35.2,
+   "non_block_ms_estimate": 7.7
+  },
+  "how": "TPU_NOTES l.202: one loop 42.9 ms against 289 ms for eight, 32 x 1,024 micro-batch, reference code"
+ }
+}

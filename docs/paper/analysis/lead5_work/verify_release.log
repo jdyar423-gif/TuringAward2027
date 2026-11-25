@@ -1,0 +1,20 @@
+official_export.tar.000 16777216 True same as the fetched part: True
+official_export.tar.001 16777216 True same as the fetched part: True
+official_export.tar.002 16777216 True same as the fetched part: True
+official_export.tar.003 16777216 True same as the fetched part: True
+official_export.tar.004 16777216 True same as the fetched part: True
+official_export.tar.005 16777216 True same as the fetched part: True
+official_export.tar.006 16777216 True same as the fetched part: True
+official_export.tar.007 16777216 True same as the fetched part: True
+official_export.tar.008 16777216 True same as the fetched part: True
+official_export.tar.009 16777216 True same as the fetched part: True
+official_export.tar.010 16777216 True same as the fetched part: True
+official_export.tar.011 12406784 True same as the fetched part: True
+parts: 12 bytes 196956160 == parts.json True ; whole-tar sha256 matches: True f82784404ab0dc46a46365e0c1706b57a0a04fdc7489de7a8a1e424cb4c308e8
+ALL PARTS OK: True
+      1 weights16.npz: OK
+      1 weights.json: OK
+      1 tokenizer/tokenizer.json: OK
+      1 tokenizer/meta.json: OK
+      1 reports/train_run.json: OK
+files not OK: 0

@@ -1,0 +1,15 @@
+16:54:13 v9_46178: config configs/v9.py hash f29bfeb3ebf353a8
+16:54:15 rows built in 1 s: web 64, chat 64, proxy 16
+16:54:16 checkpoint step 46178 hash f29bfeb3ebf353a8 read in 2 s
+16:54:17 v9_46178/on: switches {'reg': 1.0, 'cand_in': 1.0, 'cand_out': 1.0, 'conf': 0.0, 'sink': 1.0, 'clock': 0.0, 'gain': 1.0, 'sel': 0.0, 'gate': 0.0, 'page': 1.0}
+16:56:03 v9_46178/on: web: 64 rows, loss 2.6867 over 65442 weighted tokens in 106 s
+16:57:55 v9_46178/on: chat: 64 rows, loss 1.3790 over 60438 weighted tokens in 112 s
+16:58:27 v9_46178/on: proxy: 16 rows, loss 2.4614 over 11094 weighted tokens in 31 s
+16:58:27 v9_46178/on: all: loss 2.0914 over 136974
+16:58:27 written /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead3_work/heldout/v9_46178_on.npz
+16:58:27 v9_46178/pagesoff: switches {'reg': 1.0, 'cand_in': 1.0, 'cand_out': 1.0, 'conf': 0.0, 'sink': 1.0, 'clock': 0.0, 'gain': 0.0, 'sel': 0.0, 'gate': 0.0, 'page': 0.0}
+17:00:14 v9_46178/pagesoff: web: 64 rows, loss 2.8509 over 65442 weighted tokens in 107 s
+17:02:01 v9_46178/pagesoff: chat: 64 rows, loss 1.6523 over 60438 weighted tokens in 107 s
+17:02:27 v9_46178/pagesoff: proxy: 16 rows, loss 2.6920 over 11094 weighted tokens in 27 s
+17:02:27 v9_46178/pagesoff: all: loss 2.3091 over 136974
+17:02:27 written /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead3_work/heldout/v9_46178_pagesoff.npz

@@ -1,0 +1,31 @@
+{
+ "summary": {
+  "v9_46178_on": {
+   "web": 2.686694868212736,
+   "chat": 1.3789600370315793,
+   "proxy": 2.461358220692877,
+   "chat_assistant": 1.265083844066058,
+   "web_chat": 2.0588200848720404,
+   "all": 2.0914230465932167,
+   "step": 46178,
+   "tokens": 12105285632,
+   "train_minutes": 917.9
+  },
+  "v9_46178_pagesoff": {
+   "web": 2.8508499545589516,
+   "chat": 1.6522856577396903,
+   "proxy": 2.692008069609769,
+   "chat_assistant": 1.5386226251649489,
+   "web_chat": 2.275390556948827,
+   "all": 2.3091338563009702,
+   "step": 46178,
+   "tokens": 12105285632,
+   "train_minutes": 917.9
+  }
+ },
+ "source": [
+  "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead3_work/heldout/v9_46178_on.npz",
+  "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead3_work/heldout/v9_46178_pagesoff.npz"
+ ],
+ "runtime_all_46178": 2.091423044359696
+}

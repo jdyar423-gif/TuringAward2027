@@ -1,0 +1,728 @@
+{
+ "200": {
+  "ours": {
+   "run": "ours-export-step51812-47fd99c151a50a58/final-prefopt-9a89782942-s0",
+   "prompts": 200,
+   "turns": 252,
+   "maths_correct": 6,
+   "maths_n": 30,
+   "maths_share": 0.2,
+   "constraints_all_ok": 38,
+   "constrained_n": 48,
+   "constraints_share": 0.7917,
+   "single_ok": 46,
+   "single_n": 56,
+   "single_share": 0.8214,
+   "degenerate": 5,
+   "degenerate_share": 0.0198,
+   "truncated": 5,
+   "loop": 0,
+   "repeated_lines": 0,
+   "empty": 0,
+   "unclosed_fence": 0,
+   "role_leak": 0,
+   "degenerate_detail": {
+    "degenerate": 0.0198,
+    "empty": 0.0,
+    "truncated": 0.0198,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.0,
+    "role_leak": 0.0
+   },
+   "stock": {
+    "turns": 252,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "words": {
+    "mean": 130.4,
+    "median": 101,
+    "p90": 274
+   },
+   "rep4_mean": 0.0342,
+   "report": "ours-export-step51812-47fd99c151a50a58__final-prefopt-9a89782942-s0-test.json",
+   "matches_report": {
+    "math": true,
+    "constraints": true,
+    "degenerate": true,
+    "words": true
+   }
+  },
+  "ours_k1": {
+   "run": "ours-export-step51812-47fd99c151a50a58/final-k1-f93654208f-s0",
+   "prompts": 200,
+   "turns": 252,
+   "maths_correct": 5,
+   "maths_n": 30,
+   "maths_share": 0.1667,
+   "constraints_all_ok": 37,
+   "constrained_n": 48,
+   "constraints_share": 0.7708,
+   "single_ok": 44,
+   "single_n": 56,
+   "single_share": 0.7857,
+   "degenerate": 17,
+   "degenerate_share": 0.0675,
+   "truncated": 17,
+   "loop": 0,
+   "repeated_lines": 0,
+   "empty": 0,
+   "unclosed_fence": 0,
+   "role_leak": 0,
+   "degenerate_detail": {
+    "degenerate": 0.0675,
+    "empty": 0.0,
+    "truncated": 0.0675,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.0,
+    "role_leak": 0.0
+   },
+   "stock": {
+    "turns": 252,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "words": {
+    "mean": 149.7,
+    "median": 105,
+    "p90": 363
+   },
+   "rep4_mean": 0.0537,
+   "report": "ours-export-step51812-47fd99c151a50a58__final-k1-f93654208f-s0-test.json",
+   "matches_report": {
+    "math": true,
+    "constraints": true,
+    "degenerate": true,
+    "words": true
+   }
+  },
+  "trained": {
+   "run": "ours-export-step51812-ef5599caa3974edc/final-trained-9a89782942-s0",
+   "prompts": 200,
+   "turns": 252,
+   "maths_correct": 6,
+   "maths_n": 30,
+   "maths_share": 0.2,
+   "constraints_all_ok": 41,
+   "constrained_n": 48,
+   "constraints_share": 0.8542,
+   "single_ok": 48,
+   "single_n": 56,
+   "single_share": 0.8571,
+   "degenerate": 3,
+   "degenerate_share": 0.0119,
+   "truncated": 3,
+   "loop": 0,
+   "repeated_lines": 0,
+   "empty": 0,
+   "unclosed_fence": 0,
+   "role_leak": 0,
+   "degenerate_detail": {
+    "degenerate": 0.0119,
+    "empty": 0.0,
+    "truncated": 0.0119,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.0,
+    "role_leak": 0.0
+   },
+   "stock": {
+    "turns": 252,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "words": {
+    "mean": 119.2,
+    "median": 99,
+    "p90": 252
+   },
+   "rep4_mean": 0.0384,
+   "report": "ours-export-step51812-ef5599caa3974edc__final-trained-9a89782942-s0-test.json",
+   "matches_report": {
+    "math": true,
+    "constraints": true,
+    "degenerate": true,
+    "words": true
+   }
+  },
+  "falcon": {
+   "run": "falcon-e60034381f4a/recommended-5ccec0259b-s0",
+   "prompts": 200,
+   "turns": 252,
+   "maths_correct": 15,
+   "maths_n": 30,
+   "maths_share": 0.5,
+   "constraints_all_ok": 33,
+   "constrained_n": 48,
+   "constraints_share": 0.6875,
+   "single_ok": 41,
+   "single_n": 56,
+   "single_share": 0.7321,
+   "degenerate": 2,
+   "degenerate_share": 0.0079,
+   "truncated": 1,
+   "loop": 0,
+   "repeated_lines": 0,
+   "empty": 0,
+   "unclosed_fence": 1,
+   "role_leak": 0,
+   "degenerate_detail": {
+    "degenerate": 0.0079,
+    "empty": 0.0,
+    "truncated": 0.004,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.004,
+    "role_leak": 0.0
+   },
+   "stock": {
+    "turns": 252,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "words": {
+    "mean": 173.4,
+    "median": 155,
+    "p90": 350
+   },
+   "rep4_mean": 0.0201,
+   "report": "falcon-e60034381f4a__recommended-5ccec0259b-s0-test.json",
+   "matches_report": {
+    "math": true,
+    "constraints": true,
+    "degenerate": true,
+    "words": true
+   }
+  },
+  "falcon_k6lp": {
+   "run": "falcon-e60034381f4a/recommended-2dcb1c92a6-s0",
+   "prompts": 200,
+   "turns": 252,
+   "maths_correct": 17,
+   "maths_n": 30,
+   "maths_share": 0.5667,
+   "constraints_all_ok": 35,
+   "constrained_n": 48,
+   "constraints_share": 0.7292,
+   "single_ok": 42,
+   "single_n": 56,
+   "single_share": 0.75,
+   "degenerate": 1,
+   "degenerate_share": 0.004,
+   "truncated": 0,
+   "loop": 0,
+   "repeated_lines": 0,
+   "empty": 0,
+   "unclosed_fence": 1,
+   "role_leak": 0,
+   "degenerate_detail": {
+    "degenerate": 0.004,
+    "empty": 0.0,
+    "truncated": 0.0,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.004,
+    "role_leak": 0.0
+   },
+   "stock": {
+    "turns": 252,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "words": {
+    "mean": 174.3,
+    "median": 147,
+    "p90": 363
+   },
+   "rep4_mean": 0.0262,
+   "report": "falcon-e60034381f4a__recommended-2dcb1c92a6-s0-test.json",
+   "matches_report": {
+    "math": true,
+    "constraints": true,
+    "degenerate": true,
+    "words": true
+   }
+  },
+  "falcon_k6ds": {
+   "run": "falcon-e60034381f4a/recommended-d1f2a63f82-s0",
+   "prompts": 200,
+   "turns": 252,
+   "maths_correct": 18,
+   "maths_n": 30,
+   "maths_share": 0.6,
+   "constraints_all_ok": 42,
+   "constrained_n": 48,
+   "constraints_share": 0.875,
+   "single_ok": 50,
+   "single_n": 56,
+   "single_share": 0.8929,
+   "degenerate": 0,
+   "degenerate_share": 0.0,
+   "truncated": 0,
+   "loop": 0,
+   "repeated_lines": 0,
+   "empty": 0,
+   "unclosed_fence": 0,
+   "role_leak": 0,
+   "degenerate_detail": {
+    "degenerate": 0.0,
+    "empty": 0.0,
+    "truncated": 0.0,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.0,
+    "role_leak": 0.0
+   },
+   "stock": {
+    "turns": 252,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "words": {
+    "mean": 168.4,
+    "median": 145,
+    "p90": 353
+   },
+   "rep4_mean": 0.0205,
+   "report": "falcon-e60034381f4a__recommended-d1f2a63f82-s0-test.json",
+   "matches_report": {
+    "math": true,
+    "constraints": true,
+    "degenerate": true,
+    "words": true
+   }
+  },
+  "mobilellm_recommended": {
+   "run": "mobilellm-f680f0533368-qwen3/recommended-d9f149b0d3-s0",
+   "prompts": 200,
+   "turns": 252,
+   "maths_correct": 12,
+   "maths_n": 30,
+   "maths_share": 0.4,
+   "constraints_all_ok": 8,
+   "constrained_n": 48,
+   "constraints_share": 0.1667,
+   "single_ok": 10,
+   "single_n": 56,
+   "single_share": 0.1786,
+   "degenerate": 158,
+   "degenerate_share": 0.627,
+   "truncated": 150,
+   "loop": 14,
+   "repeated_lines": 54,
+   "empty": 2,
+   "unclosed_fence": 7,
+   "role_leak": 0,
+   "degenerate_detail": {
+    "degenerate": 0.627,
+    "empty": 0.0079,
+    "truncated": 0.5952,
+    "loop": 0.0556,
+    "repeated_lines": 0.2143,
+    "unclosed_fence": 0.0278,
+    "role_leak": 0.0
+   },
+   "stock": {
+    "turns": 252,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "words": {
+    "mean": 474.1,
+    "median": 395,
+    "p90": 836
+   },
+   "rep4_mean": 0.2576,
+   "report": "mobilellm-f680f0533368-qwen3__recommended-d9f149b0d3-s0-test.json",
+   "matches_report": {
+    "math": true,
+    "constraints": true,
+    "degenerate": true,
+    "words": true
+   }
+  },
+  "mobilellm_neutral": {
+   "run": "mobilellm-f680f0533368-qwen3/neutral-48fefc857c-s0",
+   "prompts": 200,
+   "turns": 252,
+   "maths_correct": 11,
+   "maths_n": 30,
+   "maths_share": 0.3667,
+   "constraints_all_ok": 9,
+   "constrained_n": 48,
+   "constraints_share": 0.1875,
+   "single_ok": 11,
+   "single_n": 56,
+   "single_share": 0.1964,
+   "degenerate": 148,
+   "degenerate_share": 0.5873,
+   "truncated": 146,
+   "loop": 17,
+   "repeated_lines": 50,
+   "empty": 1,
+   "unclosed_fence": 10,
+   "role_leak": 0,
+   "degenerate_detail": {
+    "degenerate": 0.5873,
+    "empty": 0.004,
+    "truncated": 0.5794,
+    "loop": 0.0675,
+    "repeated_lines": 0.1984,
+    "unclosed_fence": 0.0397,
+    "role_leak": 0.0
+   },
+   "stock": {
+    "turns": 252,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "words": {
+    "mean": 533.7,
+    "median": 517,
+    "p90": 853
+   },
+   "rep4_mean": 0.2903,
+   "report": null
+  }
+ },
+ "189": {
+  "ours": {
+   "run": "ours-export-step51812-47fd99c151a50a58/final-prefopt-9a89782942-s0",
+   "prompts": 189,
+   "turns": 240,
+   "maths_correct": 6,
+   "maths_n": 28,
+   "maths_share": 0.2143,
+   "constraints_all_ok": 34,
+   "constrained_n": 44,
+   "constraints_share": 0.7727,
+   "single_ok": 42,
+   "single_n": 52,
+   "single_share": 0.8077,
+   "degenerate": 5,
+   "degenerate_share": 0.0208,
+   "truncated": 5,
+   "loop": 0,
+   "repeated_lines": 0,
+   "empty": 0,
+   "unclosed_fence": 0,
+   "role_leak": 0,
+   "degenerate_detail": {
+    "degenerate": 0.0208,
+    "empty": 0.0,
+    "truncated": 0.0208,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.0,
+    "role_leak": 0.0
+   },
+   "stock": {
+    "turns": 240,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "words": {
+    "mean": 132.6,
+    "median": 103,
+    "p90": 282
+   },
+   "rep4_mean": 0.0347
+  },
+  "ours_k1": {
+   "run": "ours-export-step51812-47fd99c151a50a58/final-k1-f93654208f-s0",
+   "prompts": 189,
+   "turns": 240,
+   "maths_correct": 5,
+   "maths_n": 28,
+   "maths_share": 0.1786,
+   "constraints_all_ok": 33,
+   "constrained_n": 44,
+   "constraints_share": 0.75,
+   "single_ok": 40,
+   "single_n": 52,
+   "single_share": 0.7692,
+   "degenerate": 15,
+   "degenerate_share": 0.0625,
+   "truncated": 15,
+   "loop": 0,
+   "repeated_lines": 0,
+   "empty": 0,
+   "unclosed_fence": 0,
+   "role_leak": 0,
+   "degenerate_detail": {
+    "degenerate": 0.0625,
+    "empty": 0.0,
+    "truncated": 0.0625,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.0,
+    "role_leak": 0.0
+   },
+   "stock": {
+    "turns": 240,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "words": {
+    "mean": 150.8,
+    "median": 108,
+    "p90": 363
+   },
+   "rep4_mean": 0.0539
+  },
+  "trained": {
+   "run": "ours-export-step51812-ef5599caa3974edc/final-trained-9a89782942-s0",
+   "prompts": 189,
+   "turns": 240,
+   "maths_correct": 6,
+   "maths_n": 28,
+   "maths_share": 0.2143,
+   "constraints_all_ok": 37,
+   "constrained_n": 44,
+   "constraints_share": 0.8409,
+   "single_ok": 44,
+   "single_n": 52,
+   "single_share": 0.8462,
+   "degenerate": 3,
+   "degenerate_share": 0.0125,
+   "truncated": 3,
+   "loop": 0,
+   "repeated_lines": 0,
+   "empty": 0,
+   "unclosed_fence": 0,
+   "role_leak": 0,
+   "degenerate_detail": {
+    "degenerate": 0.0125,
+    "empty": 0.0,
+    "truncated": 0.0125,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.0,
+    "role_leak": 0.0
+   },
+   "stock": {
+    "turns": 240,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "words": {
+    "mean": 121.7,
+    "median": 102,
+    "p90": 259
+   },
+   "rep4_mean": 0.0392
+  },
+  "falcon": {
+   "run": "falcon-e60034381f4a/recommended-5ccec0259b-s0",
+   "prompts": 189,
+   "turns": 240,
+   "maths_correct": 14,
+   "maths_n": 28,
+   "maths_share": 0.5,
+   "constraints_all_ok": 29,
+   "constrained_n": 44,
+   "constraints_share": 0.6591,
+   "single_ok": 37,
+   "single_n": 52,
+   "single_share": 0.7115,
+   "degenerate": 2,
+   "degenerate_share": 0.0083,
+   "truncated": 1,
+   "loop": 0,
+   "repeated_lines": 0,
+   "empty": 0,
+   "unclosed_fence": 1,
+   "role_leak": 0,
+   "degenerate_detail": {
+    "degenerate": 0.0083,
+    "empty": 0.0,
+    "truncated": 0.0042,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.0042,
+    "role_leak": 0.0
+   },
+   "stock": {
+    "turns": 240,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "words": {
+    "mean": 175.4,
+    "median": 161,
+    "p90": 351
+   },
+   "rep4_mean": 0.0203
+  },
+  "falcon_k6lp": {
+   "run": "falcon-e60034381f4a/recommended-2dcb1c92a6-s0",
+   "prompts": 189,
+   "turns": 240,
+   "maths_correct": 16,
+   "maths_n": 28,
+   "maths_share": 0.5714,
+   "constraints_all_ok": 32,
+   "constrained_n": 44,
+   "constraints_share": 0.7273,
+   "single_ok": 39,
+   "single_n": 52,
+   "single_share": 0.75,
+   "degenerate": 1,
+   "degenerate_share": 0.0042,
+   "truncated": 0,
+   "loop": 0,
+   "repeated_lines": 0,
+   "empty": 0,
+   "unclosed_fence": 1,
+   "role_leak": 0,
+   "degenerate_detail": {
+    "degenerate": 0.0042,
+    "empty": 0.0,
+    "truncated": 0.0,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.0042,
+    "role_leak": 0.0
+   },
+   "stock": {
+    "turns": 240,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "words": {
+    "mean": 175.6,
+    "median": 153,
+    "p90": 366
+   },
+   "rep4_mean": 0.0266
+  },
+  "falcon_k6ds": {
+   "run": "falcon-e60034381f4a/recommended-d1f2a63f82-s0",
+   "prompts": 189,
+   "turns": 240,
+   "maths_correct": 17,
+   "maths_n": 28,
+   "maths_share": 0.6071,
+   "constraints_all_ok": 38,
+   "constrained_n": 44,
+   "constraints_share": 0.8636,
+   "single_ok": 46,
+   "single_n": 52,
+   "single_share": 0.8846,
+   "degenerate": 0,
+   "degenerate_share": 0.0,
+   "truncated": 0,
+   "loop": 0,
+   "repeated_lines": 0,
+   "empty": 0,
+   "unclosed_fence": 0,
+   "role_leak": 0,
+   "degenerate_detail": {
+    "degenerate": 0.0,
+    "empty": 0.0,
+    "truncated": 0.0,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.0,
+    "role_leak": 0.0
+   },
+   "stock": {
+    "turns": 240,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "words": {
+    "mean": 170.4,
+    "median": 151,
+    "p90": 362
+   },
+   "rep4_mean": 0.0206
+  },
+  "mobilellm_recommended": {
+   "run": "mobilellm-f680f0533368-qwen3/recommended-d9f149b0d3-s0",
+   "prompts": 189,
+   "turns": 240,
+   "maths_correct": 11,
+   "maths_n": 28,
+   "maths_share": 0.3929,
+   "constraints_all_ok": 8,
+   "constrained_n": 44,
+   "constraints_share": 0.1818,
+   "single_ok": 10,
+   "single_n": 52,
+   "single_share": 0.1923,
+   "degenerate": 150,
+   "degenerate_share": 0.625,
+   "truncated": 142,
+   "loop": 13,
+   "repeated_lines": 52,
+   "empty": 2,
+   "unclosed_fence": 7,
+   "role_leak": 0,
+   "degenerate_detail": {
+    "degenerate": 0.625,
+    "empty": 0.0083,
+    "truncated": 0.5917,
+    "loop": 0.0542,
+    "repeated_lines": 0.2167,
+    "unclosed_fence": 0.0292,
+    "role_leak": 0.0
+   },
+   "stock": {
+    "turns": 240,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "words": {
+    "mean": 474.6,
+    "median": 388,
+    "p90": 836
+   },
+   "rep4_mean": 0.2568
+  },
+  "mobilellm_neutral": {
+   "run": "mobilellm-f680f0533368-qwen3/neutral-48fefc857c-s0",
+   "prompts": 189,
+   "turns": 240,
+   "maths_correct": 10,
+   "maths_n": 28,
+   "maths_share": 0.3571,
+   "constraints_all_ok": 8,
+   "constrained_n": 44,
+   "constraints_share": 0.1818,
+   "single_ok": 10,
+   "single_n": 52,
+   "single_share": 0.1923,
+   "degenerate": 141,
+   "degenerate_share": 0.5875,
+   "truncated": 140,
+   "loop": 17,
+   "repeated_lines": 47,
+   "empty": 1,
+   "unclosed_fence": 10,
+   "role_leak": 0,
+   "degenerate_detail": {
+    "degenerate": 0.5875,
+    "empty": 0.0042,
+    "truncated": 0.5833,
+    "loop": 0.0708,
+    "repeated_lines": 0.1958,
+    "unclosed_fence": 0.0417,
+    "role_leak": 0.0
+   },
+   "stock": {
+    "turns": 240,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "words": {
+    "mean": 532.7,
+    "median": 518,
+    "p90": 857
+   },
+   "rep4_mean": 0.2899
+  }
+ }
+}

@@ -2,7 +2,9 @@
 
 Second figures pass of 24 November 2026, 14:40–15:30 UTC, after the figure check; brought up to the
 third draft by the lead author after the second programme-committee check (`REVIEW_2.md`, items 10–13),
-18:20–18:55 UTC. Figure numbers and captions are now the third draft's: each caption below is copied
+18:20–18:55 UTC; rebuilt for the final paper at the final cut-off (section "Final pass" below; the captions
+are the final ones, copied by `lead5_work/scripts/sync_figures_md.py`; the "Reading" paragraphs further down
+keep the 18:25 build's numbers). Figure numbers and captions are now the third draft's: each caption below is copied
 verbatim from `paper.md` (`lead4_work/scripts/sync_figures_md.py`), so the two files hold one caption per
 figure. Numbers in the "Reading" paragraphs are those of the rebuild at 18:25 UTC (`make_all.sh
 --no-extract`, log kept as `lead4_work/make_all_1825.log`): records of the snapshot created 17:14:35 UTC
@@ -28,6 +30,53 @@ label and of tags 7 and 8. No other script changed; the originals are kept as `l
 
 Figure 6 (F12, the micro graft experiment) does not read the live run, so the cut-off does not apply to
 it; its numbers come from the experiment's 15 records and the 3 restart records.
+
+## Final pass (24 November, 21:35–22:50 UTC, lead author)
+
+The figures of the final paper were rebuilt at 21:35 UTC with
+
+```
+bash /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/figures/make_all.sh --cutoff newest --blind final-prefopt-vs-falcon,final-prefopt-vs-mobilellm
+```
+
+(log kept as `lead5_work/make_all_final.log`), and again at 22:29 with the same command after the change to
+Figure C2's note below (log `lead5_work/make_all_final2.log`; same data, every check line unchanged; the only
+difference in the log is the list of test-split reports on disk not drawn, which now includes the K = 1, control
+and neutral-title readings). The snapshot read is `N/snap_main` of 18:44:26 UTC, which holds
+the whole train log (51,812 steps); its train log is byte-identical to that of the last snapshot `N/snap_final`
+(20:16), which the text's numbers come from (`lead5_work/scripts/extract_snap.py`). **Cut-off: step 51,800 at
+18:33:30 UTC, the last step record** (the end event of step 51,812 follows 24 s later, so it and the held-out
+evaluation of checkpoint 51,812 are after the cut-off and not drawn; `--cutoff 51812` is refused, exit 4,
+because no step record has that step). The rebuild prints two `MISMATCH` lines, both expected: the 2,048-token
+live rate (189,067, n = 226, here; 189,074, n = 190, in `lead3_work/numbers.json`, which `paths.py` still
+reads; the text now uses `lead5_work/numbers.json`, equal to the figures), and the predictor-test artefact of
+known discrepancy 1. `paths.py` was not changed.
+
+**One script changed** (`fig2_throughput.py`, Figure C2; the original is `lead5_work/orig_fig2_throughput.py`):
+at the final cut-off the runtime-3 note still read "To come: training to 18:33:49, 118 min of post stages, …
+the 24 h of TPU time end at 20:46:50", false once the run had ended (the script's own branch for an ended run
+needs the end event, which the cut-off excludes), and the box of the "5 h 35 min without a runtime" note hid
+the last digit of runtime 2's "n = 101". The note now says, when every TPU interval is closed, "Records to step
+51,800 (18:33:30), the last step record. Training's deadline was 18:33:49; the TPU was given back at
+20:41:04." (from the setup event and `data/tpu_intervals.csv`; until 22:28 it said "Training stopped at its
+deadline, 18:33:49", but the end was recorded at 18:33:54, `FACTS_2.md` CORRECTIONS item 6), and the two gap
+notes stand above the axes. Checked on the PNG. No other script changed.
+
+**Readings at the final cut-off.** Figure F2 / C2: live rates 222.0 (n = 101), 216.5 (85), 240.1 (266),
+281.4 (142), 178.1 (44), 196.9 (99), 189.1 (226, steps 36,900–48,150, rows of 2,048 tokens) and 189.0 (73,
+steps 48,200–51,800, the assistant-only tail); largest gap between live and achieved median 0.120%. Figure 2:
+the 2,048-token tick 1,386.5 ms (n = 226). Figure C1: 594 records of `final`, 442 of `v9` (29,750–51,800);
+panel (e) draws the 73 tail records; the 2,048-token stretch falls from 2.4038 (first 5) to 1.8149 (last 5),
+the tail from 1.7783 to 1.7331. Figure D1: the live loader skipped 30.01% of 64,924 reads of the system chats
+(scan 29.77%), 9.29% of 110,540 of UltraChat (9.47%), 6.27% of 358,375 of Tulu 3 (6.07%) and 1.20% of 396,447
+of SYNTH (1.17%) from step 25,280 to 51,800. Figure 5: runtime checkpoints to 51,588 (1,043.0 minutes), the
+line's gap there −0.0771 ± 0.2246; the CPU evaluations of 51,812 (`lead5_work/heldout5.json`) are not inputs
+of the figure. Figure 7: the official model's test rows, 35 / 57 / 108 (score printed 0.318) and 116 / 69 / 15
+(printed 0.752, as the text prints it: exact halves are rounded to even); the official model is labelled "v9, step 51,812". Figure 6 (F12) is unchanged.
+
+**Known cosmetic defects, not fixed** (no script failed on them): in Figure C1 the list of vertical lines in
+panel (a) runs into the `v9` points near 10¹⁰ tokens, and in panel (d) the label "p = 0.67 (P1)" overlaps the
+label of line 4. Both stay legible.
 
 ## How to rebuild (one command)
 
@@ -173,7 +222,7 @@ numbered alike in F1, F2 and Table C2):
 | 7 | 29,722 | 09:45:34 → 09:58:45 | graft to `v9` (`9a4d652`) |
 | 8 | 31,912 | 10:52:36 → 10:57:50 | `v9` speed switches (`769f240`) |
 | P1 | 36,867 | no stop; stage event 12:47:51, p = 0.6700 | rows of 2,048 tokens (schedule) |
-| P2 | – | to come at p = 0.92 | chat-heavy tail, loss on assistant tokens only (schedule); added automatically when the train log has its stage event before the cut-off |
+| P2 | 48,190 | no stop; stage event 17:09:57, p = 0.9200 | chat share 0.70, loss on assistant tokens only (schedule); added automatically from the train log's stage event |
 
 ## Figure numbers in paper.md (third draft)
 
@@ -205,12 +254,11 @@ manifests with the read rules of `R/bes/budget.py`) and `data/ledger_final_expor
 export accounting: library and index); architecture text from `R/docs/SPEC_MODEL_TRAIN.md` 4.1–4.3,
 `R/docs/V9.md` 4, `R/bes/model/model.py`, `R/bes/config.py`.
 
-**Caption** (as in `paper.md`, Figure 1; copied by `lead4_work/scripts/sync_figures_md.py`). The model at one token position, with stored numbers / numbers read per generated token
-(standard reading) for each part, from the two checkpoints' manifests and `final`'s export accounting
-(`data/ledger_leaves.csv`, `data/ledger_final_export.csv`), as in Table 1. Gray: shared by both
-configurations; blue: `final` only (the written library); orange: `v9` only (attention-output gains and
-private token neurons in each block). The 15 small dense leaves (306,776 numbers) are counted in both
-totals and not drawn. A schematic: only the counts are data.
+**Caption** (as in `paper.md`, Figure 1; copied by `lead5_work/scripts/sync_figures_md.py`). The model at one token position, with stored numbers / numbers read per generated token
+(standard reading) for each part, as in Table 1 (`data/ledger_leaves.csv`, `data/ledger_final_export.csv`).
+Gray: shared by both configurations; blue: `final` only (the written library); orange: `v9` only (gains and
+token neurons). The 15 small dense leaves (306,776 numbers) are counted and not drawn. A schematic: only the
+counts are data.
 
 **Reading.** Core 14,118,912 (the attention and feed-forward matrices of both blocks), head 4,587,520,
 input embedding 6,291,456 / 768, value embedding 8,388,608 / 1,024, register, candidate and trust tables
@@ -232,7 +280,7 @@ caption names the source of the counts.
 (the `KERNELS` line; medians recomputed from the 30 timings agree to 10⁻³ ms, column `median_check`;
 `min`, `max`, `n`).
 
-**Caption** (as in `paper.md`, Figure F1; copied by `lead4_work/scripts/sync_figures_md.py`). One value-and-gradient of a piece of 4,096 tokens (left 4 × 1,024, right 2 × 2,048) of
+**Caption** (as in `paper.md`, Figure F1; copied by `lead5_work/scripts/sync_figures_md.py`). One value-and-gradient of a piece of 4,096 tokens (left 4 × 1,024, right 2 × 2,048) of
 `configs/final.py` on the chip, eight kernel configurations measured in one pause (24 November
 07:44–07:52; `wf/chip_kernels_0745.txt`). Dots: median of 30 timings. The 30 timings of a dot span
 0.09–0.47 ms from minimum to maximum, less than the width of a dot, so the ranges are not drawn; they
@@ -263,22 +311,23 @@ from `throughput_log_points.csv`), `data/interventions.csv` (P1), `data/cutoff.c
 checked against `lead2_work/numbers.json` on every rebuild: at the cut-off all eight are equal, the
 2,048-token stage included.
 
-**Caption** (as in `paper.md`, Figure F2; copied by `lead4_work/scripts/sync_figures_md.py`). Training throughput by cause (Table 2), in the order the changes happened. Upper part,
+**Caption** (as in `paper.md`, Figure F2; copied by `lead5_work/scripts/sync_figures_md.py`). Training throughput by cause (Table 2), in the order the changes happened. Upper part,
 runtime 1 (32-row micro-batches, training runs discarded): start-up benchmarks (hollow bars) and single
 log lines of training (dots; the reference row's two dots are the two monitor readings, 116,718 and
 115,394 tokens/s). Lower part, run main16: each bar spans the live rate (Section 2.2) before and after one
 change, with the window of step records printed under the stage (n, first and last step, UTC); records
-to step 46,350 (24 November, 16:27:21 UTC), the newest record of the paper's live numbers, the 2,048-token
-stage still running then. Diamonds: Table 2's synthetic or benchmark value of the same stage. A bar is a
+to step 51,800 (24 November, 18:33:30 UTC), the last step record, the last stage being the assistant-only
+tail from p = 0.92. Diamonds: Table 2's synthetic or benchmark value of the same stage. A bar is a
 before-and-after difference of medians, not the effect of one change alone: the step from runtime 2 to
 runtime 3 changed no code, and the graft changed the configuration.
 
-**Reading** (18:25 rebuild, cut-off 16:27:21). Runtime 1: benchmark 111,893 → 201,877 tokens/s (+80.4%),
+**Reading** (final rebuild, cut-off 18:33:30). Runtime 1: benchmark 111,893 → 201,877 tokens/s (+80.4%),
 monitor lines 116,718 (step 72, 04:17) and 115,394 (step 301, 04:28), and one log line after the rewrite,
 204,699 (step 50, 04:48). Run main16, live: 222,031 (n = 101, steps 50–5,050) → 216,548 (−2.5%, n = 85)
 → 240,131 (+10.9%, n = 266) → 281,389 (+17.2%, n = 142) → 178,087 (−36.7%, n = 44) → 196,874 (+10.5%,
-n = 99) → 189,074 at 2,048 tokens (−4.0%, n = 190, steps 36,900–46,350, 12:48:36–16:27:21), the values of
-Table 2 and §6.3. Synthetic or benchmark values: 216,681; –; 246,538; 296,371; 182,919; 203,665; –.
+n = 99) → 189,067 at 2,048 tokens (−4.0%, n = 226, steps 36,900–48,150) → 189,035 in the assistant-only tail
+(−0.0%, n = 73, steps 48,200–51,800), the values of Table 2 and §6.3. Synthetic or benchmark values: 216,681;
+–; 246,538; 296,371; 182,919; 203,665; –; –.
 
 **Changed in this pass.** The 2,048-token bar showed 189.1k (n = 59, to 13:55), Table 2 above it 188,980
 (n = 16): the figures read whatever snapshot was newest. They now stop at the paper's cut-off and agree
@@ -295,32 +344,33 @@ rate as the trainer computes it.
 `data/run_events.csv`, `data/interventions.csv`, `data/tpu_intervals.csv`, `data/cutoff.csv`; runtime-1
 measurement windows 03:34–03:57 and 04:08–04:17 from `R/docs/CHANGES.md` 19.1.
 
-**Caption** (as in `paper.md`, Figure C2; copied by `lead4_work/scripts/sync_figures_md.py`). Training throughput against UTC time on the three runtimes (axis broken where no runtime
+**Caption** (as in `paper.md`, Figure C2; copied by `lead5_work/scripts/sync_figures_md.py`). Training throughput against UTC time on the three runtimes (axis broken where no runtime
 was held). Runtime 1 (23 November) holds runs before run main16, all discarded: start-up benchmarks
 (diamonds) of `final` before and after the glue rewrite and of `v9` before it (orange), and single log
 lines of `final`'s training (dots). Runtimes 2 and 3, run main16: lines, the rate achieved between
 consecutive step records (tokens ÷ wall time, checkpoint writes included); numbers, the live rate of
 each stretch in 10³ tokens/s with its number of step records n (Table 2, Figure F2); in runtime 2, the
 start-up benchmark (diamond) and the first log line (dot). Light gray bands: TPU held but not training;
-hatched: no TPU. Tags: restore times of the restarts of Table C2; P1 (dashed): rows of 2,048 tokens from
-p = 0.67, without a stop. Records to step 46,350 (24 November, 16:27:21 UTC), the newest record of the
-paper's live numbers. A change of level at a tag is a before-and-after difference, not the effect of
-that change alone.
+hatched: no TPU (its length printed above the axis). Tags: restore times of the restarts of Table C2; P1
+and P2 (dashed): rows of 2,048 tokens from p = 0.67 and the assistant-only tail from p = 0.92, without a stop.
+Records to step 51,800 (24 November, 18:33:30 UTC), the last step record; the end of training (deadline 18:33:49,
+recorded at 18:33:54), the stages after it (18:33:55–20:02:22) and the hold to 20:41:04 are not drawn. A change of level at a tag is
+a before-and-after difference, not the effect of that change alone.
 
-**Reading** (18:25 rebuild). 222.0 (n = 101) → 216.5 (85) → 240.1 (266) → 281.4 (142) → 178.1 (44) →
-196.9 (99) → 189.1 (190) (10³ tokens/s). Runtime 1's points: `v9` benchmark 88,146 (03:13), `final` 111,893 (03:27), monitor
+**Reading** (final rebuild, 22:29). 222.0 (n = 101) → 216.5 (85) → 240.1 (266) → 281.4 (142) → 178.1 (44) →
+196.9 (99) → 189.1 (226) → 189.0 (73, the tail) (10³ tokens/s). Runtime 1's points: `v9` benchmark 88,146 (03:13), `final` 111,893 (03:27), monitor
 lines 116,718 and 115,394, `final` after the rewrite 201,877, 201,918 and 204,006 (benchmarks, 04:36–04:42)
 and 204,699 (log line, 04:48). Runtime 3 spent 48 min 19 s restoring and fixing two data errors before
 training resumed. The note in runtime 3 is computed from the train log's set-up events, the TPU ledger
-and `cutoff.csv`: records to step 46,350 (16:27:21); to come: training to 18:33:49, 118 min of post
-stages, run deadline 20:31:49; the 24 h of TPU time end at 20:46:50. Since 18:25 the note is set in
-narrow lines between tags 4 and 5, under the 240.1 line; at 17:31 it ran into the 178.1 label and the
-lines of tags 7 and 8 (`REVIEW_2` item 13).
+and `cutoff.csv`; with every TPU interval closed it reads "Records to step 51,800 (18:33:30), the last step
+record. Training's deadline was 18:33:49; the TPU was given back at 20:41:04." (the script's other branch,
+for an open interval, is not used). Since 18:25 the note is set in narrow lines between tags 4 and 5, under
+the 240.1 line; at 17:31 it ran into the 178.1 label and the lines of tags 7 and 8 (`REVIEW_2` item 13).
 
-**Changed in this pass.** The two band greys (`#f0efec` and `#e6e5e0`, 3.5 L* apart) were hard to tell
+**Changed in the third pass.** The two band greys (`#f0efec` and `#e6e5e0`, 3.5 L* apart) were hard to tell
 apart in print; "no TPU" is now a hatch. Every live rate carries its n. The caption said "run main16"
 for a figure whose runtime 1 shows only discarded runs, a `v9` benchmark among them; it now says so. The
-data stop at the cut-off and the time axis ends at 13:30.
+data stop at the cut-off, now the last step record (18:33:30; last tick 18:00), not 13:30 as then.
 
 ## Figure 2 (`F4_v9cost`). Cost of the v9 step against final's
 
@@ -328,13 +378,11 @@ data stop at the cut-off and the time axis ends at 13:30.
 `S/v9_measA.txt`, `S/v9_measB_sorted.txt`, `S/v9_measC_onehot.txt`, `S/v9_measD.txt`; column `timing`),
 `data/throughput_stages.csv` (live rates with n), `data/cutoff.csv`.
 
-**Caption** (as in `paper.md`, Figure 2; copied by `lead4_work/scripts/sync_figures_md.py`). One accumulation step of 262,144 tokens on a synthetic batch, timed on the chip, by
-configuration, table-gradient mode and piece size; ratios against `final`'s fastest step of the same
-length. Each bar is one timing (Section 5.1); `final` timed at 07:44–07:52, `v9` at the switch and with the
-three switches added one by one. Black ticks: 262,144 ÷ the live rate, with n: Table 3's windows and, at
-2,048 tokens, steps 36,900–46,350 (to 16:27:21 UTC on 24 November, the cut-off of the paper's live
-numbers; n = 190, 1,386.5 ms), not timed there on a synthetic batch. `final` was timed with the
-hand-written cross-entropy backward on, which the run does not use (0.177 ms slower per piece).
+**Caption** (as in `paper.md`, Figure 2; copied by `lead5_work/scripts/sync_figures_md.py`). One accumulation step of 262,144 tokens on a synthetic batch, timed on the chip, by
+configuration, table-gradient mode and piece size; ratios against `final`'s fastest step of the same length.
+Each bar is one timing (Section 5.1). Black ticks: 262,144 ÷ the live rate, with n: Table 3's windows and, at
+2,048 tokens, steps 36,900–48,150 (n = 226, 1,386.5 ms), not timed on a synthetic batch. `final` was timed
+with the hand-written cross-entropy backward on (0.177 ms slower per piece; the run does not use it).
 
 **Reading.** Synthetic: 884.5 ms (`final`) against 1,433.1 ms (`v9`, ×1.62), with the switches 1,287.1
 ms (×1.46). Live: 931.6 ms (`final`, 281,399 tokens/s, n = 89), 1,472.0 (`v9`, n = 44), 1,331.5 (with the
@@ -357,13 +405,11 @@ says what a bar is; the 2,048-token tick stops at the cut-off (1,387.2 ms = 262,
 configurations' counts and chip times, and Table 5's predicted and measured differences). The
 leave-one-out predictions are recomputed from the json's rows and checked against its errors.
 
-**Caption** (as in `paper.md`, Figure 3; copied by `lead4_work/scripts/sync_figures_md.py`). The compiler's estimates against the chip. (a) The six configurations of Table 4, sorted by
-the measured step (bar; one timing each). Markers: each static count's leave-one-out prediction of the
-step, joined to the bar by its error; the key gives the mean and the largest absolute error of each
-count. FLOP and reads per token give the same predictions; for `final` their fit is undefined and no
-marker is drawn. (b) The seven changes of Table F5: predicted against measured change of the step,
-absolute values on logarithmic axes; triangles up: the change made the step slower, down: faster; the
-number after each label: predicted ÷ measured. Six configurations chosen after the measurements: the
+**Caption** (as in `paper.md`, Figure 3; copied by `lead5_work/scripts/sync_figures_md.py`). The compiler's estimates against the chip. (a) The six configurations of Table 4, sorted by
+the measured step (bar). Markers: each static count's leave-one-out prediction, joined to the bar by its
+error; FLOP and reads give the same predictions, undefined for `final`. (b) The seven changes of Table F5:
+predicted against measured change of the step, absolute values on logarithmic axes; triangles up: slower,
+down: faster; after each label, predicted ÷ measured. Six configurations chosen after the measurements: the
 figure shows how the counts did here, not that bytes moved predict step time in general.
 
 **Reading.** Leave-one-out error, mean (largest): bytes 6% (11%), cycles 12% (40%, `final`), FLOP or reads
@@ -396,11 +442,10 @@ Table 6 with their batch shape; `lead2_work/graft_grad.json`; the loss guard of 
 `run.log`, the loader's cap before the graft, the first loader plan after it and the speed switches of
 the start that continued the graft). No number is typed in the script.
 
-**Caption** (as in `paper.md`, Figure 4; copied by `lead4_work/scripts/sync_figures_md.py`). Stored numbers of the two configurations at step 29,722, to scale; colours as in Figure 1.
-Gray: the 59 shared leaves, carried with their optimiser slots; blue: `final`'s library and index, which
-`v9` does not have; orange: `v9`'s five new leaves at initialisation, with fresh slots. Right: what else
-was carried, what is new, and the checks of Section 6.4, read from the run's logs and manifests
-(`data/graft_facts.csv`, `data/ledger_leaves.csv`).
+**Caption** (as in `paper.md`, Figure 4; copied by `lead5_work/scripts/sync_figures_md.py`). Stored numbers of the two configurations at step 29,722, to scale; colours as in Figure 1.
+Gray: the 59 shared leaves, carried with their optimiser slots; blue: `final`'s library and index; orange:
+`v9`'s five new leaves, with fresh slots. Right: what else was carried, what is new, and the checks of
+Section 6.4 (`data/graft_facts.csv`, `data/ledger_leaves.csv`).
 
 **Reading.** Source and grafted losses equal on 2 × 256 synthetic tokens at 26,890 (11.2808027), 28,501
 (11.3348608) and, in the re-run under the live hash `f29bfeb3ebf353a8`, 29,722 (11.3726320); on 2 web and
@@ -428,19 +473,18 @@ against the second draft's values in `heldout_analysis.json` on every rebuild). 
 in minutes only; the line in log tokens and the comparison at equal tokens are in Table 5
 (`lead4_work/heldout4.json`).
 
-**Caption** (as in `paper.md`, Figure 5; copied by `lead4_work/scripts/sync_figures_md.py`). Held-out loss on the comparison set of Table 5 against training minutes, checkpoints to
-step 46,178 (917.9 minutes). Filled points: the runtime's evaluations; rings: the four checkpoints
-evaluated again on the CPU (29,722, 34,166, 35,294, 46,178); open diamonds: `v9` with its pages switched
-off at evaluation (34,166, 35,294 and 46,178, where it reads 2.2754). Gray line and band: the
-least-squares line through `final`'s three points in training minutes, extended, with its 95% prediction
-interval (one residual degree of freedom); arrow: `v9`'s distance from it at the newest checkpoint,
-−0.088 ± 0.171. Every `v9` point lies inside this band; the same line drawn in log tokens, and the
-comparison at equal tokens, put `v9` outside their intervals at the later checkpoints (Table 5). The line
-models neither the decaying learning rate nor the chat ramp from p = 0.67, and the data stream changed
-at the graft: the figure does not show that `v9` is ahead of a continued `final`.
+**Caption** (as in `paper.md`, Figure 5; copied by `lead5_work/scripts/sync_figures_md.py`). Held-out loss on the comparison set of Table 5 against training minutes, to step 51,588 (the
+figures stop at the last step record, 51,800; the final checkpoint 51,812, at the same 2.0438, is in Table 5).
+Filled points: the runtime's evaluations; rings: CPU re-evaluations (29,722, 34,166, 35,294, 46,178); open
+diamonds: `v9` with its pages switched off (34,166, 35,294, 46,178). Gray line and band: the least-squares
+line through `final`'s three points, extended, with its 95% prediction interval (one residual degree of
+freedom); arrow: `v9`'s distance from it at 51,588, −0.077 ± 0.225. Every `v9` point lies inside the band; in
+log tokens or at equal tokens later checkpoints lie outside (Table 5). The figure does not show that `v9` is
+ahead of a continued `final` (reading ii).
 
-**Reading** (18:25 rebuild). `final`'s line falls 2.088 × 10⁻⁴ nats per training minute (residual sd
-1.05 × 10⁻³). `v9` minus the line: −0.0096 ± 0.0249 (563.7 min), −0.0152 ± 0.0354 (592.5, step 31,912),
+**Reading** (18:25 rebuild, to step 46,178; the final rebuild draws the runtime's checkpoints to 51,588,
+where the gap is −0.0771 ± 0.2246, section "Final pass" above and Table 5). `final`'s line falls
+2.088 × 10⁻⁴ nats per training minute (residual sd 1.05 × 10⁻³). `v9` minus the line: −0.0096 ± 0.0249 (563.7 min), −0.0152 ± 0.0354 (592.5, step 31,912),
 −0.0277 ± 0.0554 (642.5, step 34,166), −0.0332 ± 0.0657 (667.5, step 35,294), −0.0720 ± 0.1289 (817.7,
 step 41,850) and −0.0882 ± 0.1714 (917.9, step 46,178): every point inside the band. With the pages off,
 2.2241, 2.2305 and 2.2754 at 34,166, 35,294 and 46,178 (above the line, 2.2045, 2.1993 and 2.1470). The
@@ -461,23 +505,21 @@ points will let the band leave the plot.
 passed with `--blind`). Our checkpoint's step is read from each report's `x` field and its configuration
 from the step (after 29,722: `v9`); "two readings" is taken from the report's judge block (orders agree).
 
-**Caption** (as in `paper.md`, Figure 7; copied by `lead4_work/scripts/sync_figures_md.py`). Blind pairwise comparisons on the first 60 development prompts, Opus readers (Table 7):
-`final` at step 25,280 read once per pair, `v9` at step 31,912 read twice on exchanged sides. The figure
-draws only this added reader, because it is the one that decides most pairs; the registered judge
-decided 17 and 9 of the 60 `v9` pairs (against Falcon-H1-Tiny and MobileLLM-R1.5) and the second judge 3
-and 3, so their bars would be almost all ties. Their readings, which point the same way where they
-decide, are in Table 7. Bars: wins, ties or "both bad", losses; dots and whiskers: the score
-with its 95% Wilson interval (about ±12 points at n = 60); the two studies differ in checkpoint,
-configuration and number of readings, so the change between them is not an effect of `v9`. The
-test-split comparison is [TBD: after the evaluation of 24–25 November 2026].
+**Caption** (as in `paper.md`, Figure 7; copied by `lead5_work/scripts/sync_figures_md.py`). Blind pairwise comparisons by the Opus readers (Tables 7, 9): `final` at step 25,280 on the
+first 60 development prompts, read once; `v9` at step 31,912 on the same prompts and the official model
+(labelled `v9`, step 51,812) on the 200 test prompts, read twice. Bars: wins, ties or "both bad", losses;
+dots and whiskers: the score with its 95% Wilson interval. Only this added reader is drawn, because it decides most pairs;
+the registered judge points the same way where it decides (Tables 7, E2).
 
-**Reading.** Against Falcon-H1-Tiny: 2 / 15 / 43 (score 0.158 [0.087, 0.271]) and 3 / 18 / 39 (0.200
-[0.118, 0.318]). Against MobileLLM-R1.5: 15 / 37 / 8 (0.558 [0.433, 0.677]) and 20 / 33 / 7 (0.608 [0.482,
-0.722]).
+**Reading** (final rebuild; wins / ties or "both bad" / losses, as the bars are drawn). Against
+Falcon-H1-Tiny on `dev`: 2 / 15 / 43 (score 0.158 [0.087, 0.271]) and 3 / 18 / 39 (0.200 [0.118, 0.318]); the
+official model on `test`: 35 / 57 / 108 (0.318 [0.257, 0.385]). Against MobileLLM-R1.5 on `dev`: 15 / 37 / 8
+(0.558 [0.433, 0.677]) and 20 / 33 / 7 (0.608 [0.482, 0.722]); on `test`: 116 / 69 / 15 (0.752 [0.688, 0.807]).
 
-**For the final test.** Pass the two `final-<tag>-vs-*` names to `make_all.sh --blind`; their rows appear
-under each opponent after the development rows, labelled with their split (`test`) and n. Then replace
-the last sentence of the caption with the test result and its n.
+**The final test.** The two official test sets are passed with `--blind
+final-prefopt-vs-falcon,final-prefopt-vs-mobilellm` (rebuilds of 21:35 and 22:29); their rows stand under each
+opponent after the development rows, labelled with their split (`test`) and n. The caption's last sentence
+was kept: it says why only the Opus readers are drawn.
 
 ## Figure C1 (`F1_loss`). Training loss, restarts and schedule
 
@@ -485,30 +527,33 @@ the last sentence of the caption with the test result and its n.
 the centred average, with its effective record count, half-width and window centre per record),
 `data/train_steps.csv`, `data/interventions.csv`, `data/cutoff.csv`.
 
-**Caption** (as in `paper.md`, Figure C1; copied by `lead4_work/scripts/sync_figures_md.py`). Training loss of run main16 against training tokens: (a) the whole run on logarithmic
+**Caption** (as in `paper.md`, Figure C1; copied by `lead5_work/scripts/sync_figures_md.py`). Training loss of run main16 against training tokens: (a) the whole run on logarithmic
 tokens; (b) from 10⁹ tokens on, linear. Dots: the loss of one optimiser step (the mean over its 262,144
-tokens), logged every 50th step: 594 records of `final` (steps 50–29,700) and 333 of `v9` (steps
-29,750–46,350; records to 16:27:21 UTC on 24 November, the newest record of the paper's live numbers).
+tokens), logged every 50th step: 594 records of `final` (steps 50–29,700) and 442 of `v9` (steps
+29,750–51,800, the last step record, 18:33:30 UTC on 24 November).
 Lines: a centred average over log₁₀(tokens), computed separately within each stretch between restarts
 and phase changes: each record is weighted by a Gaussian (σ = 0.03 decades, cut at 3σ) times 1/tokens,
 so that the window is centred on the record (to within 0.001 decades), and near the end of a stretch
 the window shrinks symmetrically instead of becoming one-sided; the line is drawn where it averages at
 least 15 records. A step at a restart would show
 as a break between two lines; near the ends of a stretch the line rests on fewer records and wanders by
-about ±0.01 nats. Vertical lines: the restarts of Table C2 (solid; M1, M2: measurement pauses) and the
-switch to rows of 2,048 tokens at p = 0.67 (P1, dashed). (c, d) The learning-rate factor and progress p
-as logged. The loss mixes 22 sources whose shares change with p and the data rules; the stream
-changed at the graft, and from P1 its chat share rises linearly (Appendix C.1), which by itself is
-expected to lower the loss of a step: levels on either side of a restart or of P1 do not compare
+about ±0.01 nats. Vertical lines: the restarts of Table C2 (solid; M1, M2: measurement pauses), the
+switch to rows of 2,048 tokens at p = 0.67 (P1, dashed) and the tail at p = 0.92 (P2, dashed). (c, d) The
+learning-rate factor and progress p as logged. (e) From p = 0.92 the loss covers the assistant tokens of
+conversations (and base text) only; its 73 records are left out of (a) and (b) and drawn on their own scale,
+not comparable with (a) and (b). The loss mixes 22 sources whose shares change with p and the data rules;
+the stream changed at the graft, and from P1 its chat share rises linearly (Appendix C.1), which by itself is
+expected to lower the loss of a step: levels on either side of a restart, of P1 or of P2 do not compare
 configurations.
 
 **Reading.** A step's loss falls from 4.858 at step 50; the average reads 2.736 at step 3,100 (where it is
 first drawn), 2.690 at 3,800 (10⁹ tokens), 2.584 at 11,450, 2.511 at 22,200 and 2.493 at 29,000. Across
 the graft: 2.487 at step 29,300 (last `final` point drawn) and 2.490 at 30,150 (first `v9` point); the last
-21 logged `final` steps average 2.492 (sd 0.039), the first 21 `v9` steps 2.497 (sd 0.045). The 2,048-token
-stretch has 190 records to the cut-off (steps 36,900–46,350; 18:25 rebuild), from 2.404 (mean of the first
-5) to 1.954 (last 5), while the chat share of the stream rises (Appendix C.1); its line is drawn from step
-37,300 to 45,950. The scatter of one step's loss around the line, where the window is full, is 0.037 nats
+21 logged `final` steps average 2.492 (sd 0.039), the first 21 `v9` steps 2.497 (sd 0.045). In the final
+rebuild the 2,048-token stretch before the tail has 226 records (steps 36,900–48,150), from 2.404 (mean of
+the first 5) to 1.815 (last 5), while the chat share of the stream rises (Appendix C.1), and panel (e) draws
+the 73 records of the tail (48,200–51,800), from 1.778 to 1.733; at the 18:25 rebuild (190 records, to
+46,350) the stretch's line was drawn from step 37,300 to 45,950. The scatter of one step's loss around the line, where the window is full, is 0.037 nats
 (sd, 91 records). Largest centre offset of a drawn point: 0.000999 decades (15:17 build; the 18:25 log does
 not print it).
 
@@ -520,9 +565,9 @@ lightness of `final`'s (L* 79.5 against 78.3); the legend now says "from line 7"
 named. The caption gives the number of records and the cut-off.
 
 **After p = 0.92.** From p = 0.92 the trainer logs the loss of assistant tokens only (stage `tail`); those
-records are left out of (a) and (b) and drawn in an extra panel (e) on their own scale, with P2 marked.
-Add to the caption: "(e) From p = 0.92 the loss covers assistant tokens only and is drawn on its own scale;
-it is not comparable with (a) and (b)." (Only once the cut-off is past the stage event.)
+records are left out of (a) and (b) and drawn in an extra panel (e) on their own scale, with P2 marked;
+the caption says so ("(e) From p = 0.92 the loss covers the assistant tokens of conversations (and base
+text) only …").
 
 ## Figure D1 (`F5_openings`). Stock openings and what the loader leaves out
 
@@ -531,21 +576,22 @@ it is not comparable with (a) and (b)." (Only once the cut-off is past the stage
 the cut-off), `data/cutoff.csv`. Shares are computed from the counts in the CSVs and rounded half up in
 decimal (0.15% prints as 0.2).
 
-**Caption** (as in `paper.md`, Figure D1; copied by `lead4_work/scripts/sync_figures_md.py`). (a) Share of each source's assistant turns whose opening (first 44 tokens) matches a stock
+**Caption** (as in `paper.md`, Figure D1; copied by `lead5_work/scripts/sync_figures_md.py`). (a) Share of each source's assistant turns whose opening (first 44 tokens) matches a stock
 pattern, from the scan of the tokenised sources (24 November 08:20; all segments of small sources,
 40,000 sampled otherwise); "Sure …" is a control that no rule removes; a turn can match several
 patterns. (b) Share of each chat source's conversations that the stock-refusal rule (light gray, live
 since step 6,647) and, in addition, the deflection rule (violet, live since step 25,280) leave out,
 measured with the loader's functions on 30,000 sampled conversations per source (2,260 for
 smoltalk_everyday, all it has). Black ticks and the column on the right: share of reads the live loader
-actually skipped for either rule from step 25,280 to step 46,350 (16:27:21 UTC on 24 November, the
-newest record of the paper's live numbers; `final` and `v9` together), with the number of reads. In both
+actually skipped for either rule from step 25,280 to step 51,800 (18:33:30 UTC on 24 November, the last
+step record; `final` and `v9` together), with the number of reads. In both
 panels "<0.1" means above 0 and below 0.05%, and "0" means none.
 
-**Reading** (18:25 rebuild, cut-off 16:27:21). The live loader skipped 29.82% of 44,541 reads of the
-system chats (scan 29.77%), 9.33% of 77,492 of UltraChat (9.47%), 6.30% of 257,801 of Tulu 3 (6.07%),
-1.22% of 254,236 of SYNTH (1.17%); smoltalk_constraints 0.04% of 64,571 (printed "<0.1"; scan: 11 of
-30,000 conversations, 0.04%); smoltalk_everyday 0.00% of 58 reads (scan 0.93%).
+**Reading** (18:25 rebuild, cut-off 16:27:21; the final rebuild's shares to step 51,800, e.g. 30.01% of
+64,924 reads of the system chats, are in the section "Final pass" above). The live loader skipped 29.82% of
+44,541 reads of the system chats (scan 29.77%), 9.33% of 77,492 of UltraChat (9.47%), 6.30% of 257,801 of
+Tulu 3 (6.07%), 1.22% of 254,236 of SYNTH (1.17%); smoltalk_constraints 0.04% of 64,571 (printed "<0.1";
+scan: 11 of 30,000 conversations, 0.04%); smoltalk_everyday 0.00% of 58 reads (scan 0.93%).
 
 **Changed in this pass.** smoltalk_constraints was labelled "0" in (b) although the rule removes 11 of
 30,000 of its conversations; small non-zero shares now print "<0.1" in both panels, "0" only for none.
@@ -571,29 +617,12 @@ three finished `v9_pages` records with a budget of 3,000,000 tokens (configurati
 `v9_pages`; all seeds of `ref` required) are added to (a); otherwise the script prints that they are left
 out and why.
 
-**Caption** (as in `paper.md`, Figure 6; copied by `lead4_work/scripts/sync_figures_md.py`). The graft at the micro width (Table 6; `docs/MICRO_GRAFT.md`): five arms, three seeds each
-(a seed fixes the initialisation and the order of the batches, the same in every arm), width 128, a
-budget of 6 × 10⁶ tokens (1,464 steps of 4,096 tokens, 5,996,544 trained). `ref`: no page; `v9_pages`:
-`v9`'s page from the first step; `graft_25`, `graft_50`, `graft_75`: `ref` up to 0.25, 0.5 or 0.75 of the
-budget, then grafted into `v9_pages` with the shared leaves' optimiser state, update count and step
-carried. Held-out loss: 0.75 × web + 0.25 × chat, each the mean cross-entropy per token over 32 rows,
-evaluated after 1.5, 3.0, 4.5 and 6.0 million tokens. (a) Each arm's loss minus `ref`'s with the same
-seed: lines and large dots, the mean of the three seeds; small dots, each seed, drawn beside the
-checkpoint. A graft arm is `ref` up to its graft (its evaluations equal `ref`'s row for row) and leaves
-the zero line at its diamond, where the loss after the graft equals the loss before. Squares, above a
-break in the axis: the restart, `v9_pages` trained from scratch on half the budget with its own schedule,
-its loss at its own end (3.0 million tokens) minus `ref`'s at the end of the 6 × 10⁶ budget, paired by
-seed: +0.1985 (seeds +0.1962, +0.2055, +0.1938); unlike the rest of (a), this pairs unequal token counts.
-(b) Share of the page gain recovered at the end, (`ref` − graft) / (`ref` − `v9_pages`): large dots, the
-ratio of the mean differences (1.06, 0.69, 0.24); small dots, each seed's share (0.86–1.33, 0.62–0.87,
-0.20–0.29); rings, 1 at the first step and 0 for no graft, by definition. No interval is drawn: three
-seeds are too few. The shares spread between seeds because their denominator is a difference of two runs
-that never shared a state (sd 0.0107 nats), while a graft's difference from `ref` at the end has an sd of
-0.0004–0.0030. A share above 1 means the graft ended below `v9_pages`; at 0.25 that difference, −0.0031 ±
-0.0113 nats (mean ± sd of three seeds), is not resolved. Width 128, a schedule in tokens and a page worth
-1.24% of the loss: the figure shows the mechanism of a graft, not the size of its effect in the 24-hour
-run, where the model is 768 wide, was grafted after 7.79 × 10⁹ tokens, follows a wall-clock schedule and
-changed its data stream at the graft.
+**Caption** (as in `paper.md`, Figure 6; copied by `lead5_work/scripts/sync_figures_md.py`). The graft at the micro width (Table 6; width 128, 6 × 10⁶ tokens, three seeds). (a) Each arm's
+held-out loss (0.75 × web + 0.25 × chat) minus `ref`'s with the same seed: large dots, the mean of the seeds;
+small dots, each seed; a graft arm leaves the zero line at its diamond. Squares, above a break in the axis:
+the restart at its own end (3 × 10⁶ tokens) minus `ref` at 6 × 10⁶, +0.1985, which pairs unequal token
+counts. (b) Share of the page gain recovered at the end: large dots, the ratio of the mean differences (1.06,
+0.69, 0.24); small dots, each seed. No interval is drawn: three seeds are too few.
 
 **Reading** (records of 24 November, 14:12:51–16:41:01 UTC; nats per token, mean ± sd of the three
 paired differences). (a) `v9_pages` − `ref`: −0.0164 ± 0.0062 after 1.50 million tokens, −0.0329 ±

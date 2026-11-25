@@ -1,0 +1,130 @@
+== final-prefopt-vs-falcon x = ours-export-step51812-47fd99c151a50a58/final-prefopt-9a89782942-s0 y = falcon-e60034381f4a/recommended-5ccec0259b-s0 n 200 two-turn 52 seen 11
+  judge-opus-neutral                 rated 200: W/L/T 33/109/58 score 0.31 [0.25, 0.3772] decisive 0.2324 [0.1705, 0.3084] p 0.0; judge {'orders_agree': 0.925, 'first_position_pref_mean': 0.01, 'format_mass_mean': 1.0, 'clipped': 0}; matches report {'overall': True, 'by_category': True, 'by_turns': True, 'by_length': True, 'judge': True}
+      189: n 189 W/L/T 31/102/56 score 0.3122 [0.2504, 0.3814] decisive 0.2331 [0.1693, 0.3118] p 0.0 (seen rated 11)
+      by_category {'chat': '9/24/17 0.35 p 0.013531', 'code': '9/13/8 0.4333 p 0.523467', 'instruct': '8/21/11 0.3375 p 0.02412', 'math': '4/18/8 0.2667 p 0.004344', 'writing': '3/33/14 0.2 p 0.0'}
+      by_turns {'single_turn': '25/80/43 0.3142', 'multi_turn': '8/29/15 0.2981'}
+      by_length {'x_shorter': 'n 93 24/40/29 0.414 p 0.059941', 'similar': 'n 72 7/42/23 0.2569 p 0.0', 'x_longer': 'n 35 2/27/6 0.1429 p 2e-06'}
+      combined raw {'A': 67, 'B': 75, 'tie': 58} order1 {'A': 70, 'B': 77, 'C': 53} order2 {'B': 71, 'A': 82, 'C': 47}
+  judge-opus                         rated 200: W/L/T 35/108/57 score 0.3175 [0.2569, 0.3849] decisive 0.2448 [0.1816, 0.3213] p 0.0; judge {'orders_agree': 0.905, 'first_position_pref_mean': 0.005, 'format_mass_mean': 1.0, 'clipped': 0}; matches report {'overall': True, 'by_category': True, 'by_turns': True, 'by_length': True, 'judge': True}
+      189: n 189 W/L/T 32/101/56 score 0.3175 [0.2553, 0.3869] decisive 0.2406 [0.1759, 0.3199] p 0.0 (seen rated 11)
+      by_category {'chat': '10/24/16 0.36 p 0.024307', 'code': '10/13/7 0.45 p 0.677639', 'instruct': '7/21/12 0.325 p 0.012541', 'math': '4/18/8 0.2667 p 0.004344', 'writing': '4/32/14 0.22 p 2e-06'}
+      by_turns {'single_turn': '28/78/42 0.3311', 'multi_turn': '7/30/15 0.2788'}
+      by_length {'x_shorter': 'n 93 26/41/26 0.4194 p 0.086437', 'similar': 'n 72 7/40/25 0.2708 p 1e-06', 'x_longer': 'n 35 2/27/6 0.1429 p 2e-06'}
+      combined raw {'A': 66, 'B': 77, 'tie': 57} order1 {'A': 71, 'B': 81, 'C': 48} order2 {'B': 72, 'A': 84, 'C': 44}
+  judge-qwen3-4b-2507-3605803b       rated 200: W/L/T 12/61/127 score 0.3775 [0.3132, 0.4464] decisive 0.1644 [0.0966, 0.2657] p 0.0; judge {'orders_agree': 0.605, 'first_position_pref_mean': -0.1336, 'format_mass_mean': 0.9829, 'clipped': 1}; matches report {'overall': True, 'by_category': True, 'by_turns': True, 'by_length': True, 'judge': True}
+      189: n 189 W/L/T 11/57/121 score 0.3783 [0.3122, 0.4492] decisive 0.1618 [0.0928, 0.2669] p 0.0 (seen rated 11)
+      by_category {'chat': '3/10/37 0.43 p 0.092285', 'code': '3/4/23 0.4833 p 1.0', 'instruct': '4/17/19 0.3375 p 0.007197', 'math': '0/12/18 0.3 p 0.000488', 'writing': '2/18/30 0.34 p 0.000402'}
+      by_turns {'single_turn': '10/45/93 0.3818', 'multi_turn': '2/16/34 0.3654'}
+      by_length {'x_shorter': 'n 93 11/14/68 0.4839 p 0.690038', 'similar': 'n 72 1/25/46 0.3333 p 1e-06', 'x_longer': 'n 35 0/22/13 0.1857 p 0.0'}
+      combined raw {'B': 41, 'tie': 127, 'A': 32} order1 {'B': 77, 'C': 81, 'A': 42} order2 {'A': 53, 'B': 69, 'C': 78}
+  reading r1: files 14 pairs 200 raw {'B': 81, 'A': 71, 'both_bad': 44, 'tie': 4} unblinded {'loss': 115, 'win': 37, 'both_bad': 44, 'tie': 4} both_bad share 0.22
+  reading r2: files 14 pairs 200 raw {'A': 84, 'both_bad': 41, 'B': 72, 'tie': 3} unblinded {'loss': 116, 'both_bad': 41, 'win': 40, 'tie': 3} both_bad share 0.205
+  readings match the rating records: {'r1': True, 'r2': True} notes {'r1': 200, 'r2': 200}
+  agree judge-opus | judge-opus-neutral {'n': 200, 'both_side_same': 138, 'both_tie': 53, 'judge-opus_side_judge-opus-neutral_tie': 5, 'judge-opus-neutral_side_judge-opus_tie': 4, 'kappa_3way': 0.924, 'observed_agreement': 0.955, 'tally_on_common': {'judge-opus': {'wins': 35, 'losses': 108, 'ties': 57, 'score': 0.3175, 'score_ci95': [0.2569, 0.3849], 'sign_test_p': 0.0}, 'judge-opus-neutral': {'wins': 33, 'losses': 109, 'ties': 58, 'score': 0.31, 'score_ci95': [0.25, 0.3772], 'sign_test_p': 0.0}}}
+  agree judge-opus | judge-qwen3-4b-2507-3605803b {'n': 200, 'both_side_same': 58, 'judge-opus_side_judge-qwen3-4b-2507-3605803b_tie': 81, 'both_tie': 46, 'both_side_opposite': 4, 'judge-qwen3-4b-2507-3605803b_side_judge-opus_tie': 11, 'kappa_3way': 0.254, 'observed_agreement': 0.52, 'tally_on_common': {'judge-opus': {'wins': 35, 'losses': 108, 'ties': 57, 'score': 0.3175, 'score_ci95': [0.2569, 0.3849], 'sign_test_p': 0.0}, 'judge-qwen3-4b-2507-3605803b': {'wins': 12, 'losses': 61, 'ties': 127, 'score': 0.3775, 'score_ci95': [0.3132, 0.4464], 'sign_test_p': 0.0}}}
+  agree judge-opus-neutral | judge-qwen3-4b-2507-3605803b {'n': 200, 'both_side_same': 58, 'judge-opus-neutral_side_judge-qwen3-4b-2507-3605803b_tie': 80, 'both_tie': 47, 'both_side_opposite': 4, 'judge-qwen3-4b-2507-3605803b_side_judge-opus-neutral_tie': 11, 'kappa_3way': 0.257, 'observed_agreement': 0.525, 'tally_on_common': {'judge-opus-neutral': {'wins': 33, 'losses': 109, 'ties': 58, 'score': 0.31, 'score_ci95': [0.25, 0.3772], 'sign_test_p': 0.0}, 'judge-qwen3-4b-2507-3605803b': {'wins': 12, 'losses': 61, 'ties': 127, 'score': 0.3775, 'score_ci95': [0.3132, 0.4464], 'sign_test_p': 0.0}}}
+  both_bad overlap of the two readings {'pairs': 200, 'both': 36, 'either': 49}
+  neutral reading a: files 14 pairs 200 raw {'B': 77, 'A': 70, 'both_bad': 46, 'tie': 7} unblinded {'loss': 114, 'win': 33, 'both_bad': 46, 'tie': 7}
+  neutral reading b: files 14 pairs 200 raw {'A': 82, 'both_bad': 44, 'B': 71, 'tie': 3} unblinded {'loss': 114, 'both_bad': 44, 'win': 39, 'tie': 3}
+  neutral both_bad overlap {'pairs': 200, 'both': 40, 'either': 50} titles ['# Blind pairs 1-15 of 200', '# Blind pairs 106-120 of 200', '# Blind pairs 121-135 of 200']
+== final-prefopt-vs-mobilellm x = ours-export-step51812-47fd99c151a50a58/final-prefopt-9a89782942-s0 y = mobilellm-f680f0533368-qwen3/recommended-d9f149b0d3-s0 n 200 two-turn 52 seen 11
+  judge-opus-neutral                 rated 200: W/L/T 112/15/73 score 0.7425 [0.6777, 0.7981] decisive 0.8819 [0.8143, 0.9271] p 0.0; judge {'orders_agree': 0.96, 'first_position_pref_mean': -0.01, 'format_mass_mean': 1.0, 'clipped': 0}; matches report {'overall': True, 'by_category': True, 'by_turns': True, 'by_length': True, 'judge': True}
+      189: n 189 W/L/T 106/14/69 score 0.7434 [0.6767, 0.8004] decisive 0.8833 [0.8137, 0.9292] p 0.0 (seen rated 11)
+      by_category {'chat': '28/1/21 0.77 p 0.0', 'code': '16/2/12 0.7333 p 0.001312', 'instruct': '28/0/12 0.85 p 0.0', 'math': '6/12/12 0.4 p 0.237885', 'writing': '34/0/16 0.84 p 0.0'}
+      by_turns {'single_turn': '80/11/57 0.7331', 'multi_turn': '32/4/16 0.7692'}
+      by_length {'x_shorter': 'n 140 76/9/55 0.7393 p 0.0', 'similar': 'n 28 15/5/8 0.6786 p 0.041389', 'x_longer': 'n 32 21/1/10 0.8125 p 1.1e-05'}
+      combined raw {'B': 66, 'A': 61, 'tie': 73} order1 {'B': 66, 'A': 61, 'C': 73} order2 {'A': 68, 'B': 67, 'C': 65}
+  judge-opus                         rated 200: W/L/T 116/15/69 score 0.7525 [0.6883, 0.8072] decisive 0.8855 [0.8197, 0.9294] p 0.0; judge {'orders_agree': 0.96, 'first_position_pref_mean': -0.005, 'format_mass_mean': 1.0, 'clipped': 0}; matches report {'overall': True, 'by_category': True, 'by_turns': True, 'by_length': True, 'judge': True}
+      189: n 189 W/L/T 109/14/66 score 0.7513 [0.6851, 0.8075] decisive 0.8862 [0.818, 0.931] p 0.0 (seen rated 11)
+      by_category {'chat': '28/1/21 0.77 p 0.0', 'code': '16/2/12 0.7333 p 0.001312', 'instruct': '29/0/11 0.8625 p 0.0', 'math': '7/12/11 0.4167 p 0.359283', 'writing': '36/0/14 0.86 p 0.0'}
+      by_turns {'single_turn': '83/11/54 0.7432', 'multi_turn': '33/4/15 0.7788'}
+      by_length {'x_shorter': 'n 140 77/9/54 0.7429 p 0.0', 'similar': 'n 28 17/5/6 0.7143 p 0.016901', 'x_longer': 'n 32 22/1/9 0.8281 p 6e-06'}
+      combined raw {'B': 68, 'A': 63, 'tie': 69} order1 {'B': 69, 'A': 65, 'C': 66} order2 {'A': 69, 'B': 67, 'C': 64}
+  judge-qwen3-4b-2507-3605803b       rated 200: W/L/T 59/5/136 score 0.635 [0.5663, 0.6986] decisive 0.9219 [0.8298, 0.9662] p 0.0; judge {'orders_agree': 0.715, 'first_position_pref_mean': -0.0352, 'format_mass_mean': 0.9951, 'clipped': 88}; matches report {'overall': True, 'by_category': True, 'by_turns': True, 'by_length': True, 'judge': True}
+      189: n 189 W/L/T 56/5/128 score 0.6349 [0.5642, 0.7002] decisive 0.918 [0.8221, 0.9645] p 0.0 (seen rated 11)
+      by_category {'chat': '12/0/38 0.62 p 0.000488', 'code': '13/0/17 0.7167 p 0.000244', 'instruct': '17/0/23 0.7125 p 1.5e-05', 'math': '5/4/21 0.5167 p 1.0', 'writing': '12/1/37 0.61 p 0.003418'}
+      by_turns {'single_turn': '45/5/98 0.6351', 'multi_turn': '14/0/38 0.6346'}
+      by_length {'x_shorter': 'n 140 49/1/90 0.6714 p 0.0', 'similar': 'n 28 4/3/21 0.5179 p 1.0', 'x_longer': 'n 32 6/1/25 0.5781 p 0.125'}
+      combined raw {'tie': 136, 'B': 37, 'A': 27} order1 {'C': 103, 'B': 54, 'A': 43} order2 {'C': 110, 'A': 44, 'B': 46}
+  reading r1: files 14 pairs 200 raw {'both_bad': 66, 'A': 65, 'B': 69} unblinded {'both_bad': 66, 'win': 119, 'loss': 15} both_bad share 0.33
+  reading r2: files 14 pairs 200 raw {'A': 69, 'B': 67, 'both_bad': 64} unblinded {'win': 120, 'both_bad': 64, 'loss': 16} both_bad share 0.32
+  readings match the rating records: {'r1': True, 'r2': True} notes {'r1': 200, 'r2': 200}
+  agree judge-opus | judge-opus-neutral {'n': 200, 'both_side_same': 124, 'both_tie': 66, 'judge-opus_side_judge-opus-neutral_tie': 7, 'judge-opus-neutral_side_judge-opus_tie': 3, 'kappa_3way': 0.908, 'observed_agreement': 0.95, 'tally_on_common': {'judge-opus': {'wins': 116, 'losses': 15, 'ties': 69, 'score': 0.7525, 'score_ci95': [0.6883, 0.8072], 'sign_test_p': 0.0}, 'judge-opus-neutral': {'wins': 112, 'losses': 15, 'ties': 73, 'score': 0.7425, 'score_ci95': [0.6777, 0.7981], 'sign_test_p': 0.0}}}
+  agree judge-opus | judge-qwen3-4b-2507-3605803b {'n': 200, 'both_side_same': 55, 'judge-opus_side_judge-qwen3-4b-2507-3605803b_tie': 75, 'judge-qwen3-4b-2507-3605803b_side_judge-opus_tie': 8, 'both_tie': 61, 'both_side_opposite': 1, 'kappa_3way': 0.291, 'observed_agreement': 0.58, 'tally_on_common': {'judge-opus': {'wins': 116, 'losses': 15, 'ties': 69, 'score': 0.7525, 'score_ci95': [0.6883, 0.8072], 'sign_test_p': 0.0}, 'judge-qwen3-4b-2507-3605803b': {'wins': 59, 'losses': 5, 'ties': 136, 'score': 0.635, 'score_ci95': [0.5663, 0.6986], 'sign_test_p': 0.0}}}
+  agree judge-opus-neutral | judge-qwen3-4b-2507-3605803b {'n': 200, 'both_side_same': 55, 'judge-opus-neutral_side_judge-qwen3-4b-2507-3605803b_tie': 71, 'judge-qwen3-4b-2507-3605803b_side_judge-opus-neutral_tie': 8, 'both_tie': 65, 'both_side_opposite': 1, 'kappa_3way': 0.316, 'observed_agreement': 0.6, 'tally_on_common': {'judge-opus-neutral': {'wins': 112, 'losses': 15, 'ties': 73, 'score': 0.7425, 'score_ci95': [0.6777, 0.7981], 'sign_test_p': 0.0}, 'judge-qwen3-4b-2507-3605803b': {'wins': 59, 'losses': 5, 'ties': 136, 'score': 0.635, 'score_ci95': [0.5663, 0.6986], 'sign_test_p': 0.0}}}
+  both_bad overlap of the two readings {'pairs': 200, 'both': 61, 'either': 69}
+  neutral reading a: files 14 pairs 200 raw {'both_bad': 72, 'A': 61, 'B': 66, 'tie': 1} unblinded {'both_bad': 72, 'win': 112, 'loss': 15, 'tie': 1}
+  neutral reading b: files 14 pairs 200 raw {'A': 68, 'B': 67, 'both_bad': 65} unblinded {'win': 119, 'both_bad': 65, 'loss': 16}
+  neutral both_bad overlap {'pairs': 200, 'both': 64, 'either': 73} titles ['# Blind pairs 1-15 of 200', '# Blind pairs 106-120 of 200', '# Blind pairs 121-135 of 200']
+== final-prefopt-vs-trained x = ours-export-step51812-47fd99c151a50a58/final-prefopt-9a89782942-s0 y = ours-export-step51812-ef5599caa3974edc/final-trained-9a89782942-s0 n 200 two-turn 52 seen 11
+  judge-opus                         rated 200: W/L/T 59/34/107 score 0.5625 [0.4932, 0.6294] decisive 0.6344 [0.533, 0.7251] p 0.012401; judge {'orders_agree': 0.915, 'first_position_pref_mean': 0.01, 'format_mass_mean': 1.0, 'clipped': 0}; matches report {'overall': True, 'by_category': True, 'by_turns': True, 'by_length': True, 'judge': True}
+      189: n 189 W/L/T 55/33/101 score 0.5582 [0.4869, 0.6271] decisive 0.625 [0.5206, 0.7189] p 0.024623 (seen rated 11)
+      by_category {'chat': '16/8/26 0.58 p 0.15159', 'code': '10/1/19 0.65 p 0.011719', 'instruct': '14/8/18 0.575 p 0.286279', 'math': '5/5/20 0.5 p 1.0', 'writing': '14/12/24 0.52 p 0.845019'}
+      by_turns {'single_turn': '45/25/78 0.5676', 'multi_turn': '14/9/29 0.5481'}
+      by_length {'x_shorter': 'n 19 8/1/10 0.6842 p 0.039062', 'similar': 'n 144 42/19/83 0.5799 p 0.004444', 'x_longer': 'n 37 9/14/14 0.4324 p 0.404873'}
+      combined raw {'tie': 107, 'B': 44, 'A': 49} order1 {'C': 100, 'B': 45, 'A': 55} order2 {'C': 94, 'A': 50, 'B': 56}
+  reading r1: files 14 pairs 200 raw {'both_bad': 89, 'B': 45, 'A': 55, 'tie': 11} unblinded {'both_bad': 89, 'loss': 37, 'win': 63, 'tie': 11} both_bad share 0.445
+  reading r2: files 14 pairs 200 raw {'both_bad': 89, 'B': 56, 'A': 50, 'tie': 5} unblinded {'both_bad': 89, 'loss': 41, 'win': 65, 'tie': 5} both_bad share 0.445
+  readings match the rating records: None notes {'r1': 200, 'r2': 200}
+  both_bad overlap of the two readings {'pairs': 200, 'both': 83, 'either': 95}
+== ref-falcon-vs-mobilellm-test x = falcon-e60034381f4a/recommended-5ccec0259b-s0 y = mobilellm-f680f0533368-qwen3/recommended-d9f149b0d3-s0 n 200 two-turn 52 seen 11
+  judge-opus                         rated 200: W/L/T 144/6/50 score 0.845 [0.7884, 0.8886] decisive 0.96 [0.9155, 0.9815] p 0.0; judge {'orders_agree': 0.935, 'first_position_pref_mean': 0.0125, 'format_mass_mean': 1.0, 'clipped': 0}; matches report {'overall': True, 'by_category': True, 'by_turns': True, 'by_length': True, 'judge': True}
+      189: n 189 W/L/T 137/5/47 score 0.8492 [0.7913, 0.8932] decisive 0.9648 [0.9202, 0.9849] p 0.0 (seen rated 11)
+      by_category {'chat': '37/1/12 0.86 p 0.0', 'code': '17/2/11 0.75 p 0.000729', 'instruct': '31/0/9 0.8875 p 0.0', 'math': '15/3/12 0.7 p 0.007538', 'writing': '44/0/6 0.94 p 0.0'}
+      by_turns {'single_turn': '105/5/38 0.8378', 'multi_turn': '39/1/12 0.8654'}
+      by_length {'x_shorter': 'n 137 101/3/33 0.8577 p 0.0', 'similar': 'n 25 16/2/7 0.78 p 0.001312', 'x_longer': 'n 38 27/1/10 0.8421 p 0.0'}
+      combined raw {'A': 73, 'B': 77, 'tie': 50} order1 {'A': 78, 'B': 79, 'C': 43} order2 {'B': 75, 'A': 81, 'C': 44}
+  reading r1: files 14 pairs 200 raw {'A': 78, 'B': 79, 'both_bad': 38, 'tie': 5} unblinded {'win': 150, 'loss': 7, 'both_bad': 38, 'tie': 5} both_bad share 0.19
+  reading r2: files 14 pairs 200 raw {'A': 81, 'B': 75, 'both_bad': 38, 'tie': 6} unblinded {'win': 149, 'both_bad': 38, 'loss': 7, 'tie': 6} both_bad share 0.19
+  readings match the rating records: None notes {'r1': 200, 'r2': 200}
+  both_bad overlap of the two readings {'pairs': 200, 'both': 32, 'either': 44}
+== final-prefopt-vs-falcon-k6lp x = ours-export-step51812-47fd99c151a50a58/final-prefopt-9a89782942-s0 y = falcon-e60034381f4a/recommended-2dcb1c92a6-s0 n 200 two-turn 52 seen 11
+  judge-opus                         rated 200: W/L/T 35/112/53 score 0.3075 [0.2477, 0.3746] decisive 0.2381 [0.1765, 0.3131] p 0.0; judge {'orders_agree': 0.935, 'first_position_pref_mean': 0.02, 'format_mass_mean': 1.0, 'clipped': 0}; matches report {'overall': True, 'by_category': True, 'by_turns': True, 'by_length': True, 'judge': True}
+      189: n 189 W/L/T 34/106/49 score 0.3095 [0.248, 0.3787] decisive 0.2429 [0.1793, 0.3201] p 0.0 (seen rated 11)
+      by_category {'chat': '8/24/18 0.34 p 0.007', 'code': '11/13/6 0.4667 p 0.83882', 'instruct': '9/21/10 0.35 p 0.042774', 'math': '4/19/7 0.25 p 0.002599', 'writing': '3/35/12 0.18 p 0.0'}
+      by_turns {'single_turn': '26/80/42 0.3176', 'multi_turn': '9/32/11 0.2788'}
+      by_length {'x_shorter': 'n 94 26/38/30 0.4362 p 0.168643', 'similar': 'n 76 8/51/17 0.2171 p 0.0', 'x_longer': 'n 30 1/23/6 0.1333 p 3e-06'}
+      combined raw {'B': 69, 'A': 78, 'tie': 53} order1 {'B': 72, 'A': 84, 'C': 44} order2 {'A': 75, 'B': 79, 'C': 46}
+  reading r1: files 14 pairs 200 raw {'B': 72, 'A': 84, 'both_bad': 42, 'tie': 2} unblinded {'loss': 117, 'both_bad': 42, 'win': 39, 'tie': 2} both_bad share 0.21
+  reading r2: files 14 pairs 200 raw {'B': 79, 'A': 75, 'both_bad': 45, 'tie': 1} unblinded {'loss': 115, 'both_bad': 45, 'win': 39, 'tie': 1} both_bad share 0.225
+  readings match the rating records: None notes {'r1': 200, 'r2': 200}
+  both_bad overlap of the two readings {'pairs': 200, 'both': 38, 'either': 49}
+== final-prefopt-vs-falcon-k6ds x = ours-export-step51812-47fd99c151a50a58/final-prefopt-9a89782942-s0 y = falcon-e60034381f4a/recommended-d1f2a63f82-s0 n 200 two-turn 52 seen 11
+  judge-opus                         rated 200: W/L/T 29/116/55 score 0.2825 [0.2247, 0.3485] decisive 0.2 [0.143, 0.2725] p 0.0; judge {'orders_agree': 0.925, 'first_position_pref_mean': 0.0175, 'format_mass_mean': 1.0, 'clipped': 0}; matches report {'overall': True, 'by_category': True, 'by_turns': True, 'by_length': True, 'judge': True}
+      189: n 189 W/L/T 27/110/52 score 0.2804 [0.2212, 0.3483] decisive 0.1971 [0.1391, 0.2716] p 0.0 (seen rated 11)
+      by_category {'chat': '7/25/18 0.32 p 0.002102', 'code': '11/12/7 0.4833 p 1.0', 'instruct': '7/22/11 0.3125 p 0.00813', 'math': '3/20/7 0.2167 p 0.000488', 'writing': '1/37/12 0.14 p 0.0'}
+      by_turns {'single_turn': '21/84/43 0.2872', 'multi_turn': '8/32/12 0.2692'}
+      by_length {'x_shorter': 'n 89 19/37/33 0.3989 p 0.022241', 'similar': 'n 82 10/55/17 0.2256 p 0.0', 'x_longer': 'n 29 0/24/5 0.0862 p 0.0'}
+      combined raw {'B': 77, 'A': 68, 'tie': 55} order1 {'B': 79, 'A': 70, 'C': 51} order2 {'A': 86, 'B': 70, 'C': 44}
+  reading r1: files 14 pairs 200 raw {'A': 70, 'B': 79, 'tie': 8, 'both_bad': 43} unblinded {'loss': 120, 'win': 29, 'tie': 8, 'both_bad': 43} both_bad share 0.215
+  reading r2: files 14 pairs 200 raw {'B': 70, 'A': 86, 'both_bad': 39, 'tie': 5} unblinded {'loss': 121, 'both_bad': 39, 'win': 35, 'tie': 5} both_bad share 0.195
+  readings match the rating records: None notes {'r1': 200, 'r2': 200}
+  both_bad overlap of the two readings {'pairs': 200, 'both': 37, 'either': 45}
+== final-k1-vs-falcon x = ours-export-step51812-47fd99c151a50a58/final-k1-f93654208f-s0 y = falcon-e60034381f4a/recommended-5ccec0259b-s0 n 200 two-turn 52 seen 11
+  judge-opus                         rated 200: W/L/T 22/122/56 score 0.25 [0.1951, 0.3143] decisive 0.1528 [0.1031, 0.2205] p 0.0; judge {'orders_agree': 0.925, 'first_position_pref_mean': 0.015, 'format_mass_mean': 1.0, 'clipped': 0}; matches report {'overall': True, 'by_category': True, 'by_turns': True, 'by_length': True, 'judge': True}
+      189: n 189 W/L/T 20/116/53 score 0.246 [0.1901, 0.3121] decisive 0.1471 [0.0973, 0.2162] p 0.0 (seen rated 11)
+      by_category {'chat': '9/31/10 0.28 p 0.00068', 'code': '7/13/10 0.4 p 0.263176', 'instruct': '2/25/13 0.2125 p 6e-06', 'math': '3/19/8 0.2333 p 0.000855', 'writing': '1/34/15 0.17 p 0.0'}
+      by_turns {'single_turn': '16/85/47 0.2669', 'multi_turn': '6/37/9 0.2019'}
+      by_length {'x_shorter': 'n 81 15/45/21 0.3148 p 0.000135', 'similar': 'n 79 5/46/28 0.2405 p 0.0', 'x_longer': 'n 40 2/31/7 0.1375 p 0.0'}
+      combined raw {'tie': 56, 'B': 72, 'A': 72} order1 {'C': 49, 'B': 75, 'A': 76} order2 {'C': 47, 'A': 79, 'B': 74}
+  reading r1: files 14 pairs 200 raw {'B': 75, 'A': 76, 'both_bad': 45, 'tie': 4} unblinded {'win': 25, 'loss': 126, 'both_bad': 45, 'tie': 4} both_bad share 0.225
+  reading r2: files 14 pairs 200 raw {'A': 79, 'B': 74, 'tie': 6, 'both_bad': 41} unblinded {'loss': 127, 'tie': 6, 'both_bad': 41, 'win': 26} both_bad share 0.205
+  readings match the rating records: None notes {'r1': 200, 'r2': 200}
+  both_bad overlap of the two readings {'pairs': 200, 'both': 37, 'either': 49}
+== final-k1-vs-mobilellm x = ours-export-step51812-47fd99c151a50a58/final-k1-f93654208f-s0 y = mobilellm-f680f0533368-qwen3/recommended-d9f149b0d3-s0 n 200 two-turn 52 seen 11
+  judge-opus                         rated 200: W/L/T 99/16/85 score 0.7075 [0.641, 0.7662] decisive 0.8609 [0.7859, 0.9125] p 0.0; judge {'orders_agree': 0.915, 'first_position_pref_mean': 0.0075, 'format_mass_mean': 1.0, 'clipped': 0}; matches report {'overall': True, 'by_category': True, 'by_turns': True, 'by_length': True, 'judge': True}
+      189: n 189 W/L/T 92/14/83 score 0.7063 [0.6378, 0.7666] decisive 0.8679 [0.7904, 0.9197] p 0.0 (seen rated 11)
+      by_category {'chat': '28/2/20 0.76 p 1e-06', 'code': '13/4/13 0.65 p 0.049042', 'instruct': '24/0/16 0.8 p 0.0', 'math': '6/10/14 0.4333 p 0.454498', 'writing': '28/0/22 0.78 p 0.0'}
+      by_turns {'single_turn': '67/13/68 0.6824', 'multi_turn': '32/3/17 0.7788'}
+      by_length {'x_shorter': 'n 140 71/9/60 0.7214 p 0.0', 'similar': 'n 23 6/5/12 0.5217 p 1.0', 'x_longer': 'n 37 22/2/13 0.7703 p 3.6e-05'}
+      combined raw {'tie': 85, 'A': 55, 'B': 60} order1 {'C': 76, 'A': 61, 'B': 63} order2 {'C': 77, 'B': 59, 'A': 64}
+  reading r1: files 14 pairs 200 raw {'both_bad': 74, 'A': 61, 'B': 63, 'tie': 2} unblinded {'both_bad': 74, 'win': 107, 'loss': 17, 'tie': 2} both_bad share 0.37
+  reading r2: files 14 pairs 200 raw {'both_bad': 74, 'B': 59, 'A': 64, 'tie': 3} unblinded {'both_bad': 74, 'loss': 16, 'win': 107, 'tie': 3} both_bad share 0.37
+  readings match the rating records: None notes {'r1': 200, 'r2': 200}
+  both_bad overlap of the two readings {'pairs': 200, 'both': 66, 'either': 82}
+paired final-prefopt-vs-falcon | final-prefopt-vs-falcon-k6lp {"all": {"n": 200, "a_better": 29, "b_better": 25, "same": 146, "mean_score_diff": 0.01, "p": 0.683489}, "189": {"n": 189, "a_better": 26, "b_better": 23, "same": 140, "mean_score_diff": 0.0079, "p": 0.77545}}
+paired final-prefopt-vs-falcon | final-prefopt-vs-falcon-k6ds {"all": {"n": 200, "a_better": 34, "b_better": 21, "same": 145, "mean_score_diff": 0.035, "p": 0.104789}, "189": {"n": 189, "a_better": 32, "b_better": 19, "same": 138, "mean_score_diff": 0.037, "p": 0.091915}}
+paired final-prefopt-vs-falcon | final-k1-vs-falcon {"all": {"n": 200, "a_better": 31, "b_better": 12, "same": 157, "mean_score_diff": 0.0675, "p": 0.005402}, "189": {"n": 189, "a_better": 30, "b_better": 11, "same": 148, "mean_score_diff": 0.0714, "p": 0.004324}}
+paired final-prefopt-vs-mobilellm | final-k1-vs-mobilellm {"all": {"n": 200, "a_better": 28, "b_better": 13, "same": 159, "mean_score_diff": 0.045, "p": 0.027533}, "189": {"n": 189, "a_better": 26, "b_better": 11, "same": 152, "mean_score_diff": 0.045, "p": 0.020074}}
+paired sources final-prefopt-vs-falcon: judge-opus | judge-opus-neutral {"all": {"n": 200, "a_better": 6, "b_better": 3, "same": 191, "mean_score_diff": 0.0075, "p": 0.507812}, "same_outcome": 191, "n": 200}
+paired sources final-prefopt-vs-mobilellm: judge-opus | judge-opus-neutral {"all": {"n": 200, "a_better": 7, "b_better": 3, "same": 190, "mean_score_diff": 0.01, "p": 0.34375}, "same_outcome": 190, "n": 200}

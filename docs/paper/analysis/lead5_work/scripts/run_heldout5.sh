@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Fifth pass: CPU evaluations of step 51,812 (trained weights: pages on and off; prefopt weights: on).
+set -e
+cd /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead5_work/scripts
+CKPT_KIND=train taskset -c 2,3 nice -n 5 /tmp/claude-0/-home-user/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/venv/bin/python -I -B heldout_eval5.py --manifest /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead5_work/snap_final_x/run/manifest.json --ckpt /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/snap_final --name v9_51812_train --out /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead5_work/heldout/v9_51812_train --variant on: --variant pagesoff:page=0,gain=0
+CKPT_KIND=post taskset -c 2,3 nice -n 5 /tmp/claude-0/-home-user/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/venv/bin/python -I -B heldout_eval5.py --manifest /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead5_work/snap_final_x/run/manifest.json --ckpt /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/snap_final --name v9_51812_post --out /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead5_work/heldout/v9_51812_post --variant on:
+echo DONE

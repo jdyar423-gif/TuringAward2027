@@ -1,0 +1,25 @@
+paused opp_bpb 25185
+=== 12:40:05 final_29722
+12:40:05 final_29722: config configs/final.py hash 0a7e9b33372a07ee
+12:40:07 rows built in 2 s: web 64, chat 64, proxy 16
+12:40:08 checkpoint step 29722 hash 0a7e9b33372a07ee read in 1 s
+12:40:09 final_29722/on: switches {'reg': 1.0, 'cand_in': 1.0, 'cand_out': 1.0, 'conf': 0.0, 'sink': 1.0, 'clock': 0.0, 'gain': 0.0, 'sel': 0.0, 'gate': 0.0, 'page': 0.0}
+12:42:14 final_29722/on: web: 64 rows, loss 2.7886 over 65442 weighted tokens in 125 s
+12:44:16 final_29722/on: chat: 64 rows, loss 1.6183 over 60438 weighted tokens in 122 s
+12:44:49 final_29722/on: proxy: 16 rows, loss 2.6361 over 11094 weighted tokens in 33 s
+12:44:49 final_29722/on: all: loss 2.2598 over 136974
+12:44:49 written /tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/paper/lead2_work/heldout/final_29722_on.npz
+=== 12:44:49 graft_grad
+12:44:50 seeds: final 0, v9 1
+12:44:51 source: step 29722, 59 leaves
+12:45:00 grafted: 59 shared leaves, new ['gain/o', 'page/key', 'page/pin', 'page/pout', 'page/val']
+12:45:00 new leaves at initialisation: {'gain/o': {'max_abs': 0.0, 'shape': [8192, 1, 2, 768]}, 'page/key': {'max_abs': 5.41998291015625, 'shape': [8192, 2, 8, 192]}, 'page/pin': {'max_abs': 0.062499940395355225, 'shape': [2, 768, 192]}, 'page/pout': {'max_abs': 0.12499994039535522, 'shape': [2, 192, 768]}, 'page/val': {'max_abs': 0.0, 'shape': [8192, 2, 8, 192]}}
+12:45:27 web: final loss 2.9320383 in 26 s
+12:45:54 web: v9 loss 2.9320383 in 27 s
+12:45:55 web: loss difference +0.000e+00; shared gradients bit-identical 59/59; worst max |diff| 0.000e+00 (relative 0.000e+00); new: gain/o zero=False max=1.005e-03, page/key zero=True max=0.000e+00, page/pin zero=True max=0.000e+00, page/pout zero=True max=0.000e+00, page/val zero=False max=7.370e-03
+12:46:20 chat: final loss 1.5048378 in 25 s
+12:46:48 chat: v9 loss 1.5048378 in 28 s
+12:46:50 chat: loss difference +0.000e+00; shared gradients bit-identical 59/59; worst max |diff| 0.000e+00 (relative 0.000e+00); new: gain/o zero=False max=1.214e-03, page/key zero=True max=0.000e+00, page/pin zero=True max=0.000e+00, page/pout zero=True max=0.000e+00, page/val zero=False max=9.032e-03
+12:46:50 written graft_grad.json
+resumed opp_bpb 25185
+=== 12:46:50 final done

@@ -2,38 +2,45 @@
 
 [TBD: author list and affiliations, at submission]
 
-**Status of this draft (third pass, revised after the check).** Written while the run is in progress:
-24 November 2026, pass of 16:47–17:45 UTC, revised 18:10–18:55 UTC after the programme-committee check
-(`REVIEW_2.md`; what changed: `RESPONSE_2.md`, "After the check"); the live cut-off is unchanged. The run
-trains `configs/v9.py`. Newest record read: the step record of step 46,350 at
-16:27:21 UTC (p = 0.8794; the trainer's ledger: 46,351 steps, 12,150,636,544 tokens at 16:27:24), from the
-run's snapshot of 16:28 UTC; newest held-out record: step 46,178 (`heldout_v9.jsonl`, evaluated at
-16:25:50 UTC). Training ends at 18:33:49 UTC (the run's own setup event; the operator's notes say
-18:33:45). A result that does not exist yet is written [TBD: what, when it will exist]. Every number has
-an entry in `CLAIMS.md`; numbers derived from logs are recomputed by `lead3_work/make_numbers.py` into
-`lead3_work/numbers.json`, and the figures are rebuilt from the same records (cut-off step 46,350).
+**Status of this draft (final pass).** Written after the run ended: 24 November 2026, 21:10–22:55 UTC
+(what changed: `RESPONSE_3.md`). Records: the run's last packed snapshot (`N/snap_final`, 20:16 UTC; train log
+to the end event of step 51,812 at 18:33:54), the stage ledger, the official export, the test replies and
+every blind reading of the test pairs finished by the time stated in Section 7 and Appendix M. Every number
+has an entry in `CLAIMS.md`; numbers derived from the records are recomputed by the scripts of
+`lead5_work/scripts/` (`numbers.json`, `final_results.json`, `exact_counts.json`, `heldout5.json`), and the
+figures are rebuilt from the same records (last step record 51,800). Still [TBD]: MobileLLM-R1.5's two K = 6
+control arms, in generation (60 of 200 prompts at 22:02 UTC; expected after 00:30 UTC on 25 November), and the
+author list. The audit corrections of 22:25 UTC (`FACTS_2.md`), the neutral-title replication and the
+corrections of `REVIEW_3.md` are included.
 
 ## Abstract
 
 We train a language model from scratch under a budget stated in parameters (at most 100 million stored
-numbers, at most 20 million read per token, 24 hours of one TPU v6e chip) for a blind comparison with
-Falcon-H1-Tiny-90M-Instruct and MobileLLM-R1.5-140M, and report what the budget does not count. In our
-implementation, two configurations that differ by 3.1% in numbers read and 3.6% in analytic FLOP per
-token differed by 1.62× in step time, and by 1.46× after layout changes that hold arithmetic and reads
-fixed. On six configurations, the compiler's count of bytes moved predicts step times within 11%
-(leave-one-out); FLOP and reads per token cannot tell five of them apart. A
-function-preserving graft changed the configuration at 0.505 of the budget without discarding
-7.79 × 10⁹ trained tokens; its loss and shared gradients equal the source's bit for bit on the CPU. In a
-controlled version at width 128 and 6 × 10⁶ tokens, compared at equal tokens (three seeds), every graft
-ended below the arm without the new paths, a graft at half the budget recovered 0.69 of the gain of
-training them from the start (0.62–0.87 by seed), and restarting with them on the remaining half ended
-0.23 nats worse than that graft; the new paths were worth 1.24% of the loss there, and these sizes do
-not transfer to the live run. On 60 development prompts, with our model at step 31,912 (0.56 of
-training), Falcon-H1-Tiny was preferred in 39 of 42 decisive pairs by Opus 5.5 agents (of the builders'
-family; an addition to the protocol) and in 16 of 17 by the pre-registered judge; against
-MobileLLM-R1.5, which Falcon-H1-Tiny beats in 144 of 150 decisive test pairs, our model won 20 of 27
-(p = 0.019) and 7 of 9 (p = 0.18; 51 of 60 pairs tied). The test comparison is [TBD: after the
-evaluation of 24–25 November 2026].
+numbers, at most 20 million read per token, 24 hours of one TPU v6e chip), compare it blind with
+Falcon-H1-Tiny-90M-Instruct and MobileLLM-R1.5-140M, and report what the budget does not count. The run used
+86,054 of the 86,400 TPU seconds, 62,893 of them in training steps, and trained 1.358 × 10¹⁰ tokens; the
+official model is the run's own export after preference optimisation (98.0 million stored numbers, 19.6
+million read per token). On the 200 held-out test prompts, read twice on exchanged sides by Opus 5.5 agents
+(an addition to the pre-registered protocol, of the builders' family, who could see which two systems a set
+compared and often, from MobileLLM-R1.5's boxed, looping style, which reply was its; a replication of the two
+official comparisons under neutral titles agrees), it was preferred to MobileLLM-R1.5 in 116 of 131 decisive pairs
+(score 0.752 [0.688, 0.807]) and not to Falcon-H1-Tiny, which was preferred in 108
+of 143 (our score 0.318 [0.257, 0.385]), and again when given six samples per reply, kept by its own
+log-probability or by our selector (112 and 116 of 147 and 145); with one particle instead of six our model
+loses 22 to 122 and still wins 99 to 16 (MobileLLM-R1.5's six-sample arms: [TBD]); the pre-registered judge,
+which ties two thirds of the pairs (12 to 61 and 59 to 5 over all 200 pairs of each set), and the 189 prompts
+no mid-run sample touched point the same way. The lead is over replies of which
+63% degenerate under MobileLLM-R1.5's recommended preset in our harness; our edge in meeting constraints (38
+of 48 prompts against Falcon-H1-Tiny's 33; 37 with one particle) is gone when Falcon-H1-Tiny gets six samples
+and our selector (42); and it is one run. Preference optimisation moved the readers' preference its way (59 to 34 decisive pairs, p = 0.012;
+no neutral-title or judge reading), not its exact scores. Two
+configurations within 3.1% in numbers read and 3.6% in FLOP per token differed 1.62× in step time (1.46× after
+layout changes); on six configurations the compiler's count of bytes moved predicted step times within 11%
+(leave-one-out) where FLOP and reads could not tell five apart. A function-preserving graft changed the
+configuration at half time without discarding 7.79 × 10⁹ trained tokens; at width 128 and 6 × 10⁶ tokens, at
+equal tokens, every graft ended below the arm without the new paths and a graft at half the budget recovered
+0.69 of the gain of having them from the start (0.62–0.87 by seed), sizes that do not transfer to the live
+run.
 
 ## 1. Introduction
 
@@ -43,13 +50,13 @@ that kind: at most 100 million stored numbers of at most 16 bits, weights, table
 included; at most 20 million read to produce the distribution of one token; 24 hours of one TPU v6e
 chip, from scratch; then a blind pairwise comparison on held-out prompts with
 Falcon-H1-Tiny-90M-Instruct and MobileLLM-R1.5-140M [7, 9, 11]. A dense core that every token reads costs
-about 19 million reads, so the other 80 million stored numbers can only be read sparsely: one row of a
-table per token, or one passage of a library per retrieval. The run trained one configuration (`final`: dense looped core and a written library) for
-the first half of the budget and, at the user's request, a second one (`v9`: the same core and
-per-token *pages*, rows of lookup tables indexed by the token id) for the second half. In the
-parameter ledger the two are nearly equal: 98.3 and 98.0 million stored, 19.03 and 19.63 million read
-per token. This paper is an audited case study of that run, and its subject is what the parameter
-ledger does not count. It makes four contributions.
+about 19 million reads, so the other 80 million stored numbers can only be read sparsely. The run trained one
+configuration (`final`: dense looped core and a written library) for the first half of the budget and, at the
+user's request, a second one (`v9`: the same core and per-token *pages*, rows of lookup tables indexed by the
+token id) for the second half, then spent 88 minutes on sampling, preference optimisation, decoding selection
+and export by rules fixed before the end. In the parameter ledger the two configurations are nearly equal
+(98.3 and 98.0 million stored, 19.03 and 19.63 million read per token). This paper is an audited case study of
+that run: what the ledger does not count, and how the finished model compares. It makes four contributions.
 
 1. **Where the training time goes on one TPU v6e** (Section 5): an intervention series that changes
    layout with arithmetic and reads fixed (1.62× to 1.46×), a post-hoc test of which static count
@@ -57,35 +64,29 @@ ledger does not count. It makes four contributions.
    applications per token, which the ledger counts once.
 2. **A function-preserving graft inside a wall-clock budget, verified on the live run and controlled
    at small width** (Section 6). When the user asked for `v9` at p = 0.505, the run was grafted rather
-   than restarted: shared leaves keep their optimiser state, the step and the time-tied schedule, and
-   new leaves start where their paths add exactly zero. We verify the function and the shared gradients
-   at the live source checkpoint, and, because one run cannot say whether a graft is a good way to add
-   new paths, repeat it under control at width 128 with three seeds: every graft ended below the arm
-   without the new paths, the share of the from-scratch gain it recovered fell with the graft point (1.06,
-   0.69 and 0.24 at a quarter, a half and three quarters of the budget; 0.62–0.87 by seed at half), and
-   restarting with the new paths on the remaining half ended 0.23 nats worse than the graft at half. That
-   experiment runs 6 × 10⁶ tokens, compares arms at equal tokens rather than equal time, and its new
-   paths are worth 1.24% of the loss: it is evidence about the mechanism, and its sizes do not transfer
-   to the live run.
+   than restarted: shared leaves keep their optimiser state, step and schedule, and new leaves start where
+   their paths add exactly zero. We verify the function and the shared gradients at the live checkpoint
+   and repeat the graft under control at width 128 with three seeds: evidence about the mechanism, whose
+   sizes do not transfer to the live run.
 3. **Two ledgers and an audit** (Section 4): stored numbers and numbers read per token in a standard
    and a strict reading, audited by a forward pass that receives only the rows it reads.
-4. **The standing so far, read three ways** (Section 7): exact scores, bits per byte, and blind
-   comparisons of mid-run checkpoints on development prompts, read by Opus 5.5 agents on exchanged
-   sides (an addition to the protocol) and by both pre-registered judges, with the two opponents
-   compared with each other on the test prompts as a scale.
+4. **The outcome under a protocol fixed in advance, and what limits it** (Section 7): the official model
+   on the 200 test prompts against both opponents, read by Opus 5.5 agents (an addition to the protocol,
+   who could see which two systems a set compared) and by the pre-registered judge (which ties two thirds
+   of the pairs); exact scores of every model, including two control arms that give Falcon-H1-Tiny six
+   samples (MobileLLM-R1.5's: [TBD]); the weights before and after preference optimisation compared by the
+   same readers; and the trajectory of mid-run checkpoints.
 
-**What we do not claim.** That per-token pages improve the model at this scale: at width 128 they
-lowered held-out loss by 1.24% at equal tokens, but at full scale there is no `v9` trained from scratch
-and no `final` trained to the end, and the live data stream, its seed and the phase of the learning
-rate changed at the graft. That the live graft was better or worse than restarting or continuing at
-equal wall-clock time. That 1.46–1.62× is the price of per-token tables rather than of this
-implementation, compiler and chip. That our model beats either opponent: against Falcon-H1-Tiny every
-reader that decides pairs points the other way; against MobileLLM-R1.5 the Opus readers' development
-lead of a mid-run checkpoint (20 to 7, p = 0.019) is not significant by the pre-registered judge (7 to 2,
-p = 0.18), is untested on the test half, and is a lead over a model that Falcon-H1-Tiny beats in 144 of
-150 decisive test pairs.
-Mathematical novelty: the accounting and the estimators apply known results (an internal adversarial
-review rated their novelty 2–3 out of 10, `docs/MATH.md`).
+**What we do not claim.** That per-token pages improve the model at this scale: there is no full-scale `v9`
+trained from scratch and no `final` trained to the end, and the data stream, its seed and the phase of the
+learning rate changed at the graft. That the live graft was better or worse than restarting or continuing at
+equal wall-clock time. That 1.46–1.62× is the price of per-token tables rather than of this implementation,
+compiler and chip. That our model is better than Falcon-H1-Tiny: every reader that decides pairs prefers
+Falcon-H1-Tiny. That the lead over MobileLLM-R1.5 measures our model more than that opponent's state in our
+harness, where 63% of its test replies degenerate. That our model meets constraints better than
+Falcon-H1-Tiny: it does so against the released preset only, and Falcon-H1-Tiny with six samples and our
+selector meets more (Section 7.6). The accounting and the estimators apply known results (an internal adversarial review rated their novelty 2–3
+out of 10, `docs/MATH.md`).
 
 ## 2. Setting
 
@@ -96,11 +97,10 @@ stored number of at most 16 bits that ships with the model; the **stored total**
 lookup tables, and a written library as its compressed bytes divided by two, with its index, but not
 the tokenizer. **Numbers read per token** (standard reading) are the distinct numbers read to produce
 the next-token distribution of one position given the cached state: a dense weight counts once however
-often it is applied, a lookup table counts the rows read, the convention behind active parameters
-[32]. The **strict reading** is the union over the context window. Limits: at most 100 million stored and
-20 million read per token in the standard reading; 24 hours of TPU v6e time on one chip, from scratch,
-counted as the time a runtime is allocated and not the waits between runtimes (the operator's reading,
-reported to the user on 23 November).
+often it is applied, a lookup table counts the rows read [32]. The **strict reading** is the union over the
+context window. Limits: at most 100 million stored and 20 million read per token in the standard reading; 24
+hours of TPU v6e time on one chip, from scratch, counted as the time a runtime is allocated (the operator's
+reading, reported to the user on 23 November).
 
 ### 2.2 Hardware, software and terms
 
@@ -110,12 +110,11 @@ TFLOP/s in the forward pass when timed alone (`docs/TPU_NOTES.md`); we use that 
 ceiling. A **micro-batch** is 16 rows of 1,024 tokens (8 of 2,048 from p = 0.67); an optimiser **step**
 accumulates 16 micro-batches, 262,144 tokens; on the device each micro-batch is cut into 4 **pieces**.
 **Exact** means bit-identical; **equal to rounding** means equal in exact arithmetic, with the
-floating-point difference stated. A **live rate** is the median, over the trainer's
-step records (one per 50 steps) in a stretch, of the rate each record logs: 262,144 tokens ÷ the running
-average of the time per step (weight 0.2 on the newest step) in the time ledger's training time, which
-leaves out checkpoint writes (`bes/train/train.py`); n is the number of records. The rate achieved
-between records (wall time) differs from it by at most 0.13% in every stretch. A **synthetic** time is a
-whole step on a synthetic batch on an idle chip. Times of day are UTC.
+floating-point difference stated. A **live rate** is the median, over the trainer's step records (one per
+50 steps) in a stretch, of the rate each record logs (262,144 tokens ÷ a running average of the step time,
+checkpoint writes left out; `bes/train/train.py`); n is the number of records, and the rate achieved between
+records differs from it by at most 0.13% in every stretch. A **synthetic** time is a whole step on a
+synthetic batch on an idle chip. Times of day are UTC.
 
 ### 2.3 The opponents
 
@@ -125,17 +124,18 @@ rewritten, without touching a quantised value, as a `qwen3` model (mean KL 0.003
 against the original tensors), with its publisher's sampling and budget forcing [73]
 (reasoning closed after 3,072 tokens, 1,024 answer tokens), in two arms (`docs/EVAL_PROTOCOL.md` §2).
 Falcon-H1-Tiny-90M-Instruct was trained on 8 × 10¹¹ tokens [11], MobileLLM-R1's pre-training used
-4.2 × 10¹² [7, 9]; our run will see about 1.36 × 10¹⁰ (Section 6.3).
+4.2 × 10¹² [7, 9]; our run trained 1.358 × 10¹⁰ (Section 6.3), 59 and 309 times fewer.
 
 ### 2.4 The run
 
 The 24 hours were spread over three runtimes (Appendix C, Table C1, Figure C2); the second was taken back
 by the provider about 2 h 12 min after its allocation, for a reason we could not establish. Training
 started on 23 November at 17:46:32 (`configs/final.py`), was grafted into `configs/v9.py` at step 29,722
-(7.79 × 10⁹ tokens) and ends at 18:33:49 on 24 November; the 118 minutes before the run's deadline
-(20:31:49) are reserved for preference optimisation, decoding selection, sampling and export. At the newest record (16:27:24), 19.68 of the 24 hours had been used, 15.36 of them
-(78%) in training steps of the kept trajectory. From p = 0.67 (step 36,867) the rows are 2,048 tokens
-long and the chat share of the stream rises linearly from 0.25 to 0.70 at p = 0.92 (Appendix C.1).
+(7.79 × 10⁹ tokens) and stopped at its deadline (18:33:49 on 24 November; end recorded at 18:33:54) at step
+51,812 (13,582,204,928 tokens). From p = 0.67 (step 36,867) the rows are 2,048 tokens long and the chat share of the stream rises
+linearly from 0.25 to 0.70 at p = 0.92 (step 48,190), from where conversations train on their assistant tokens
+only (Appendix C.1). The stages after training ran from 18:33:55 to 20:02:22 (Appendix C.4), and the TPU was
+given back at 20:41:04: 86,054 of the 86,400 TPU seconds were used, 62,893 (73.1%) in training steps (Table M9).
 
 ## 3. Related work
 
@@ -151,17 +151,14 @@ key-value memories [24, 25], larger input vocabularies [26], off-accelerator n-g
 and L3's per-token keys and values [29], to which `v9`'s token neurons are closest; token-keyed
 parameters helped most on values and outputs [30, 31]. Counting numbers read per token is the
 mixture-of-experts convention [32, 33]; we found no published read-set audit. **Changing a model during
-training.** Net2Net [45], network morphism [46], staged training [47] (which copies Adam
-moments for existing layers, zeroes them for new ones, and asks that loss and training dynamics be
-preserved), LLaMA Pro [48], sparse upcycling [49] and LoRA [50] start new paths at an identity or at
-zero; our graft is a loss-preserving operator of this family. What is particular is narrow: vocabulary-indexed tables and a feed-forward
-branch are added, the schedule is tied to the wall clock, the function and the shared gradients were
-checked at the live checkpoint, and a controlled replication measures how much of the from-scratch
-gain a graft at a given point recovers; the training-dynamics property of [47] is not tested.
-**Kernels and judges.** Our kernels follow [58–62]; transformer training is known to be memory-bound on
-GPUs [63]. Language-model judges favour one position, longer replies and their own style [78–81]; we
-count a win only when both orders agree [78], report outcomes by length ratio [80], and read the same
-pairs with judges of two other families.
+training.** Net2Net [45], network morphism [46], staged training [47], LLaMA Pro [48],
+sparse upcycling [49] and LoRA [50] start new paths at an identity or at zero; our graft is a
+loss-preserving operator of this family, applied to vocabulary-indexed tables under a wall-clock schedule,
+checked at the live checkpoint and replicated under control; the training-dynamics property that [47] also
+asks for is not tested. **Kernels and judges.** Our kernels follow [58–62]; transformer training is
+known to be memory-bound on GPUs [63]. Language-model judges favour one position, longer replies and their
+own style [78–81]; we count a win only when both orders agree [78], report outcomes by length ratio [80], and
+set the registered judge of another family beside our added readers.
 
 ## 4. The model and its two ledgers
 
@@ -190,11 +187,10 @@ U = 0 and G = 0, so Π_i = 0 and the gain multiplies by 1, exactly (Section 6.2)
 ![Figure 1](figures/F7_model.svg)
 
 **Figure 1.** The model at one token position, with stored numbers / numbers read per generated token
-(standard reading) for each part, from the two checkpoints' manifests and `final`'s export accounting
-(`data/ledger_leaves.csv`, `data/ledger_final_export.csv`), as in Table 1. Gray: shared by both
-configurations; blue: `final` only (the written library); orange: `v9` only (attention-output gains and
-private token neurons in each block). The 15 small dense leaves (306,776 numbers) are counted in both
-totals and not drawn. A schematic: only the counts are data.
+(standard reading) for each part, as in Table 1 (`data/ledger_leaves.csv`, `data/ledger_final_export.csv`).
+Gray: shared by both configurations; blue: `final` only (the written library); orange: `v9` only (gains and
+token neurons). The 15 small dense leaves (306,776 numbers) are counted and not drawn. A schematic: only the
+counts are data.
 
 ### 4.2 The ledgers and their audit
 
@@ -252,17 +248,16 @@ both**: slices and concatenations, transposes between the model's and the kernel
 copies of the widest tensors, and element-wise work (`docs/TPU_NOTES.md`). One 768 × 768 product took
 0.08 ms forward: one pass over an activation tensor costs about as much as the product that made it.
 
-Three kinds of change followed (Table 2; Appendix F, Tables F1–F3 and Figure F2). Five rewrites of the glue, equal to the
-reference up to rounding (28 tests) with one deliberate extra rounding (the feed-forward pre-activation
-stored in bfloat16, 2⁻⁹ relative), took one `value_and_grad` of a 32 × 1,024 micro-batch from 289.3 to
-162.0 ms. Cutting each micro-batch into 4 pieces on the device equals the original update up to
-rounding. A one-tile attention kernel that holds a (row, head) slice in on-chip memory and covers only
-the causal triangle made one piece 1.212× faster at 1,024 tokens and 1.219× at 2,048 than the library's
-splash kernel [61]; its gradients on the chip differ from the configured kernel's by about twice what a
-change of compiled graph alone gives, so its equality there is not established (Appendix F.2, Figure F1).
+Three kinds of change followed (Table 2; Appendix F, Tables F1–F3 and Figure F2). Five rewrites of the glue,
+equal to the reference up to rounding (28 tests) with one deliberate extra rounding (2⁻⁹ relative), took one
+`value_and_grad` of a 32 × 1,024 micro-batch from 289.3 to 162.0 ms. Cutting each micro-batch into 4 pieces on
+the device equals the original update up to rounding. A one-tile attention kernel that holds a (row, head)
+slice in on-chip memory and covers only the causal triangle made one piece 1.212× faster at 1,024 tokens and
+1.219× at 2,048 than the library's splash kernel [61]; its equality on the chip is not established (Appendix
+F.2, Figure F1).
 
 **Table 2. Training throughput of the run, by cause** (live: median of the logged step rates, with n;
-synthetic and benchmark values are whole-step timings; `lead3_work/numbers.json`, `docs/TPU_NOTES.md`,
+synthetic and benchmark values are whole-step timings; `lead5_work/numbers.json`, `docs/TPU_NOTES.md`,
 `docs/CHANGES.md` §19.1–19.7; monitor readings from the operator's log of runtime 1).
 
 | stage | configuration | live tokens/s (n) | synthetic or benchmark tokens/s |
@@ -275,22 +270,21 @@ synthetic and benchmark values are whole-step timings; `lead3_work/numbers.json`
 | one-tile kernel + ReLU² backward (step 22,613) | `final` | 281,389 (142) | 296,371 (with the `ce` backward on) |
 | graft (step 29,722) | `v9`, `take` table gradient | 178,087 (44) | 182,919 |
 | `flat`, `rows`, `tokn` (step 31,912) | `v9` | 196,874 (99) | 203,665 |
-| rows of 2,048 tokens (p = 0.67, step 36,867) | `v9` | 189,074 (190) | – (not timed with the switches) |
+| rows of 2,048 tokens (p = 0.67, step 36,867) | `v9` | 189,067 (226) | – (not timed with the switches) |
+| chat-heavy tail, loss on assistant tokens only (p = 0.92, step 48,190, to the end) | `v9` | 189,035 (73) | – |
 
 From the reference to the one-tile kernel the live rate of `final` rose 2.41–2.44× (281,399 over steps
 25,300–29,700, against the two monitor readings), including a change of configuration (32 to 16 rows per
-micro-batch, +8% by itself); around the kernel switch it rose 17.2% (240,143, n = 32, to 281,387, n = 53).
-The live rate is about 5% below the synthetic one; the trainer's main thread used 2.9% of a core. At 2,048
-tokens `v9` runs 4.0% below its rate at 1,024.
+micro-batch, +8% by itself). The live rate is about 5% below the synthetic one. At 2,048 tokens `v9` runs 4.0%
+below its rate at 1,024.
 
 ### 5.3 The cost of the pages: an intervention series
 
 Table 3 and Figure 2 compare the two configurations on the same chip, kernels, table-gradient mode
 (`take`, a scatter-add) and pieces, then add three switches to `v9` that change only layout (commit
-`769f240`): `flat` hands the loss function its
-token tables as reshapes of `[V, W]` matrices (exact); `rows` keeps the residuals of the key
-normalisation and carries the page rows through the loop scan in a lane-dense layout (exact); `tokn` lays
-the token neurons out with tokens in lanes (equal to rounding).
+`769f240`): `flat` (token tables as reshapes of `[V, W]` matrices; exact), `rows` (residuals of the key
+normalisation kept, page rows carried lane-dense; exact) and `tokn` (token neurons with tokens in lanes;
+equal to rounding).
 
 **Table 3. `final` against `v9` on the chip** (whole steps 64 × 4 × 1,024 on synthetic batches;
 `wf/chip_kernels_0745.txt`, `S/v9_measA.txt`, `S/v9_measD.txt`; live medians from the train logs).
@@ -307,21 +301,18 @@ the token neurons out with tokens in lanes (equal to rounding).
 So 3.1% more reads and 3.6% more analytic arithmetic cost 62% more time per step at the switch. The
 three switches held the arithmetic and the reads fixed and removed 146 of the 549 extra milliseconds
 (27%), `rows` alone 111; the remaining 403 ms per step have not been attributed by any measurement. The
-compiler's cost model attributes `v9`'s extra cycles mostly to the token neurons' per-token `[8, 192]`
-contractions, which the chip's tiles pad from 8 to 16 sublanes and from 192 to 256 lanes
-(`wf/v9_speed.md`); but `tokn`, the switch aimed at them, was predicted to save 64 ms and saved 8 (Figure
-4b). Before the core was rewritten `v9` already cost about 0.6 s more per step than `final`; at the
-switch, 0.55 s: as the core became faster, the pages did not.
+compiler's cost model attributes `v9`'s extra cycles mostly to the token neurons' `[8, 192]` contractions,
+which the chip's tiles pad to 16 × 256 (`wf/v9_speed.md`); but `tokn`, the switch aimed at them, was predicted
+to save 64 ms and saved 8 (Figure 3b). As the core became faster, the pages did not: they cost about 0.6 s
+more per step before the core was rewritten and 0.55 s at the switch.
 
 ![Figure 2](figures/F4_v9cost.svg)
 
 **Figure 2.** One accumulation step of 262,144 tokens on a synthetic batch, timed on the chip, by
-configuration, table-gradient mode and piece size; ratios against `final`'s fastest step of the same
-length. Each bar is one timing (Section 5.1); `final` timed at 07:44–07:52, `v9` at the switch and with the
-three switches added one by one. Black ticks: 262,144 ÷ the live rate, with n: Table 3's windows and, at
-2,048 tokens, steps 36,900–46,350 (to 16:27:21 UTC on 24 November, the cut-off of the paper's live
-numbers; n = 190, 1,386.5 ms), not timed there on a synthetic batch. `final` was timed with the
-hand-written cross-entropy backward on, which the run does not use (0.177 ms slower per piece).
+configuration, table-gradient mode and piece size; ratios against `final`'s fastest step of the same length.
+Each bar is one timing (Section 5.1). Black ticks: 262,144 ÷ the live rate, with n: Table 3's windows and, at
+2,048 tokens, steps 36,900–48,150 (n = 226, 1,386.5 ms), not timed on a synthetic batch. `final` was timed
+with the hand-written cross-entropy backward on (0.177 ms slower per piece; the run does not use it).
 
 ### 5.4 Which count predicts the step time?
 
@@ -347,21 +338,18 @@ programs `wf/v9_*_work/hlo/` read by their `estimate.py`; chip times as in Table
 Both of the compiler's counts order all six configurations as the chip does. FLOP and reads cannot
 order the five `v9` variants (1,295–1,789 ms): on them a line in either count predicts the mean of the
 other four steps. The byte count predicts best; a line through all six gives 492.5 ms plus 0.73 ms per
-GB, with residuals from −110 to +118 ms. This is consistent with bytes moved, not parameters, setting the
-step time in this implementation, on a test too small to establish it; the attention kernels, invisible
-to the compiler's model, and the half-second intercept are explained by no count. Differences are harder than totals: for the seven changes with both
-a compile-only prediction and a chip measurement, the cost model had the sign right every time and the
-size wrong by factors from 0.36 to 7.9 (Figure 3b; Appendix F.7, Table F5).
+GB, with residuals from −110 to +118 ms: consistent with bytes moved, not parameters, setting the step time
+in this implementation, on a test too small to establish it. Differences are harder than totals: for seven
+changes the cost model had the sign right every time and the size wrong by factors from 0.36 to 7.9
+(Figure 3b; Appendix F.7, Table F5).
 
 ![Figure 3](figures/F10_costmodel.svg)
 
 **Figure 3.** The compiler's estimates against the chip. (a) The six configurations of Table 4, sorted by
-the measured step (bar; one timing each). Markers: each static count's leave-one-out prediction of the
-step, joined to the bar by its error; the key gives the mean and the largest absolute error of each
-count. FLOP and reads per token give the same predictions; for `final` their fit is undefined and no
-marker is drawn. (b) The seven changes of Table F5: predicted against measured change of the step,
-absolute values on logarithmic axes; triangles up: the change made the step slower, down: faster; the
-number after each label: predicted ÷ measured. Six configurations chosen after the measurements: the
+the measured step (bar). Markers: each static count's leave-one-out prediction, joined to the bar by its
+error; FLOP and reads give the same predictions, undefined for `final`. (b) The seven changes of Table F5:
+predicted against measured change of the step, absolute values on logarithmic axes; triangles up: slower,
+down: faster; after each label, predicted ÷ measured. Six configurations chosen after the measurements: the
 figure shows how the counts did here, not that bytes moved predict step time in general.
 
 ### 5.5 What the read ledger hides in the design itself
@@ -373,9 +361,7 @@ times the tokens of 8; at equal tokens, in the micro ablation, 4 loops were 0.12
 loops 0.26% worse, within its noise (`docs/E2_ABLATIONS.md`); under the iso-depth law of [21] with two
 lanes, halving the loops divides the effective recurrent size by 2^0.65 = 1.57. Whether the tokens would
 have made up for it at full scale was neither predicted nor tested: the loop count was set by compute per
-number read, and the clock was never asked. (`final` executed 27% of the 814 TFLOP/s by the analytic
-count and 41% counting what the chip executes, Appendix F.6; changes not adopted: Table F4; other
-negative results: Appendix H, Table H1.)
+number read, and the clock was never asked (arithmetic efficiency: Appendix F.6; negative results: Table H1).
 
 ## 6. Changing the design mid-run: a function-preserving graft
 
@@ -410,131 +396,104 @@ and loss guard; the 5 new leaves (63,504,384 numbers) start at their initialisat
 Because the time ledger is carried, the schedule continues: p went from 0.5049 at the stop to 0.5112 at
 the restore, and the learning-rate factor continued on 1 − 0.9p (0.5394 at step 29,750). The data stream
 cannot be carried: the mixture changed (no library rows), it restarted with another seed, and the
-loader's plan needed two corrections (Appendix G). At the newest record `v9` trains at 189,074 tokens/s
-(2,048 tokens, n = 190). Projected from the trainer's ledger at 16:27:24 (1.2151 × 10¹⁰ tokens) at that
-rate, the run will have seen about 1.358 × 10¹⁰ tokens at 18:33:49, about 2.33 × 10⁹ (14.6%) fewer than
-`final` would have seen without the switch, by a projection in which `final`'s own 2,048-token rate is a
-scaled estimate [TBD: tokens trained, from the trainer's ledger at 18:34 UTC].
+loader's plan needed two corrections (Appendix G). After the graft `v9` trained 22,090 steps and
+5,790,760,960 tokens (189,067 tokens/s at 2,048 tokens, n = 226); the run ended at step 51,812 with
+13,582,204,928 tokens, about 2.33 × 10⁹ (14.6%) fewer than `final` would have trained without the switch by
+a projection in which `final`'s own 2,048-token rate is a scaled estimate.
 
 ![Figure 4](figures/F6_graft.svg)
 
 **Figure 4.** Stored numbers of the two configurations at step 29,722, to scale; colours as in Figure 1.
-Gray: the 59 shared leaves, carried with their optimiser slots; blue: `final`'s library and index, which
-`v9` does not have; orange: `v9`'s five new leaves at initialisation, with fresh slots. Right: what else
-was carried, what is new, and the checks of Section 6.4, read from the run's logs and manifests
-(`data/graft_facts.csv`, `data/ledger_leaves.csv`).
+Gray: the 59 shared leaves, carried with their optimiser slots; blue: `final`'s library and index; orange:
+`v9`'s five new leaves, with fresh slots. Right: what else was carried, what is new, and the checks of
+Section 6.4 (`data/graft_facts.csv`, `data/ledger_leaves.csv`).
 
 ### 6.4 Verification
 
-The tool's `--check` compares the source's loss with the grafted tree's on a synthetic batch of 2 × 256
-tokens and refuses unless they agree to 1e−6 relative; at four source checkpoints, among them the
-switch's own 29,722 (re-run under the live configuration hash, since the live invocation ran without the
-check), the losses agree to every printed digit (Appendix G, Table G1). On 2 web and 2 chat held-out rows
-of 1,024 tokens with the checkpoint of step 29,722, the two programs give the same loss to the last bit,
-bit-identical gradients for all 59 shared leaves, exactly zero gradients for K, P_in and P_out, and
-non-zero gradients for U and G (`lead2_work/graft_grad.py`). Both checks ran on the CPU in float32 with
-dense attention; on the chip, in bfloat16, equality of the shared gradients holds to rounding and was not
-measured.
+The tool's `--check` compares the source's loss with the grafted tree's on a synthetic batch and refuses
+unless they agree to 1e−6 relative; at four source checkpoints, among them the switch's own 29,722 (re-run
+under the live configuration hash, since the live invocation ran without the check), the losses agree to
+every printed digit (Table G1). On 2 web and 2 chat held-out rows with the checkpoint of step 29,722, the two
+programs give the same loss to the last bit, bit-identical gradients for all 59 shared leaves, exactly zero
+gradients for K, P_in and P_out, and non-zero gradients for U and G (`lead2_work/graft_grad.py`). Both checks
+ran on the CPU in float32; on the chip, in bfloat16, equality holds to rounding and was not measured.
 
-### 6.5 Held-out loss across the graft
+### 6.5 Held-out loss across the graft and to the end
 
-The held-out rows are built by the export's row builder (`bes.export.heldout_batches`) with 64 rows per
-domain (`scripts/midrun_eval.py`): 64 web rows (a ClimbMix file beyond the run's download cap), 64 chat
-rows (the smol-smoltalk test split) and the 12 rows that the user turns of the 400 evaluation prompts
-fill, 1,024 tokens each, in float32 with dense attention; the export's own 16-bit check uses 16 rows
-per domain (`heldout_rows` = 16 in `bes/export.py`). The 12 proxy rows hold test-prompt turns and are
-left out: the comparison set is the 128 web and chat rows (125,880 weighted tokens). The runtime
-evaluated 3 checkpoints of `final` and 16 of `v9` (Figure 5; Table G2); we evaluated four of them again
-on the CPU (29,722, 34,166, 35,294 and 46,178), keeping the loss of every position and switching the new
-paths off; the local values reproduce the runtime's to within 3 × 10⁻⁸ on the web and chat rows (and
-2.2 × 10⁻⁷ on the proxy rows at 46,178; `lead4_work/heldout4.json`). Table 5 gives the comparisons.
+The runtime evaluated 3 checkpoints of `final` and 22 of `v9`, the last at step 51,812, on 64 web rows (a
+ClimbMix file beyond the run's download cap), 64 chat rows (the smol-smoltalk test split) and 12 rows of user
+turns of the evaluation prompts, test prompts among them, which are left out of comparisons (1,024 tokens
+each, float32; Figure 5, Table G2). The comparison set is the 128 web and chat rows. Five checkpoints were
+evaluated again on the CPU, also with the new paths switched off and, at 51,812, after preference
+optimisation (Appendix G.5).
 
-**Table 5. Held-out loss across the graft** (web + chat rows; `lead2_work/heldout_analysis.json`,
-`lead3_work/heldout46.json`; the lines from `lead4_work/heldout4.json`, which for the line in log tokens
-counts `final`'s tokens at equal time with the rates of Section 6.3; step 34,166 in Appendix G, Table G3).
+**Table 5. Held-out loss at the end of training** (step 51,812; web + chat rows; intervals by bootstrap over
+rows; `final`'s line by `lead5_work/scripts/heldout5.py`, with `final`'s tokens at equal time at the rates of
+Section 6.3; earlier steps in Table G3).
 
 | comparison (web + chat) | difference (nats) | 95% interval |
 |---|---|---|
-| `v9` 35,294 − `final` 29,722 (same rows, 128.8 more training minutes) | −0.0605 | [−0.0653, −0.0557] (bootstrap over rows) |
-| `v9` 46,178 − `final` 29,722 (379.2 more minutes) | −0.1679 | [−0.1828, −0.1533] |
-| … web rows / chat rows only | −0.1019 / −0.2393 | [−0.1106, −0.0937] / [−0.2560, −0.2235] |
-| `v9` − `final`'s line at equal training time (line in minutes / in log tokens), at 35,294 | −0.033 / −0.038 | ±0.066 / ±0.052 (prediction, 1 degree of freedom); both inside |
-| … at 46,178 | −0.088 / −0.115 | ±0.171 / ±0.107; inside / outside (outside from step 41,850 on) |
-| `v9` − `final`'s line at equal tokens (not the budget's axis), at 35,294 / at 46,178 | −0.044 / −0.127 | ±0.040 / ±0.084; both outside (outside from step 34,166 on) |
-| pages off − on, at 35,294 / at 46,178 | +0.0643 / +0.2166 | [0.0594, 0.0695] / [0.2019, 0.2320] |
-| `v9` with pages off − `final` 29,722, at 35,294 / at 46,178 | +0.0038 / +0.0487 | [−0.0009, 0.0086] / [0.0394, 0.0582] |
+| `v9` 51,812 − `final` 29,722 (same rows, 509.5 more training minutes) | −0.1829 | [−0.2002, −0.1663] |
+| … web rows / chat rows only | −0.1196 / −0.2514 | [−0.1286, −0.1112] / [−0.2759, −0.2274] |
+| `v9` − `final`'s line at equal training time (line in minutes / in log tokens) | −0.076 / −0.117 | ±0.227 / ±0.129 (prediction, 1 degree of freedom); both inside (log tokens: outside from 41,850 to 48,342) |
+| `v9` − `final`'s line at equal tokens (not the budget's axis) | −0.131 | ±0.103; outside (from step 34,166 on) |
+| pages off − on | +0.2631 | [0.2442, 0.2829] |
+| `v9` with pages off − `final` 29,722 | +0.0802 | [0.0674, 0.0938] |
+| after preference optimisation − trained weights, at 51,812 | +0.0124 | [0.0112, 0.0136] |
 
-Three readings, in order of how much they assume. (i) On the same rows the loss fell by 0.061 nats in the
-129 training minutes after the graft and by 0.168 in 379 (web 0.102, chat 0.239; before the graft, 0.009
-in 44 minutes). Since p = 0.67 (between steps 36,422 and 37,522) the chat rows fall much faster than the
-web rows (assistant turns 1.4355 to 1.2651, web 2.7254 to 2.6867): the chat share of the stream rises
-toward 0.70 (Appendix C.1), the learning rate decays, the rows are longer, and some smaller chat sources
-are read a second time, causes this run cannot separate; the held-out chat rows come from the test split
-of a training source, the blind test prompts from neither.
+Four readings, in order of how much they assume. (i) On the same rows the loss fell by 0.061 nats in the
+129 training minutes after the graft (Table G3) and by 0.183 by the end of training (web 0.120, chat 0.251; before the
+graft, 0.009 in 44 minutes), only 0.015 [0.009, 0.021] of it after step 46,178. From p = 0.67 the chat rows
+fell much faster than the web rows (Table G2), while the chat share rose toward 0.70, the rows were longer,
+the learning rate decayed and some chat sources were read again: causes this run cannot separate.
 (ii) The budget's question, equal training time against a `final` that was not continued, has one
-estimate: `final`'s trend through three checkpoints spanning 44 minutes, extended (Figure 5). Drawn in
-training minutes, the line has `v9` 0.033 nats below it at step 35,294 and 0.088 at 46,178, inside its
-95% prediction interval at every checkpoint (±0.066 and ±0.171 there). Drawn in log tokens, with
-`final`'s tokens at equal time counted at the rates of Section 6.3, it has `v9` 0.038 below at 35,294
-(±0.052) and 0.115 below at 46,178 (±0.107): just outside the interval, as at every checkpoint from step
-41,850 on. At equal tokens, not the budget's axis, `v9` is 0.044 below at 35,294 (±0.040) and 0.127 below
-at 46,178 (±0.084): outside, as from step 34,166 on. The intervals assume that the line is right, and the
-line is the weak part: it has one residual degree of freedom (earlier `final` checkpoints were deleted to
-free disk space before they could be evaluated), it is extended from 44 minutes of data over 379 more,
-and it models neither the decaying learning rate nor the chat ramp, both of which a continued `final`
-would also have had, nor the change of data stream at the graft. Whether `v9` falls inside or outside
-an interval therefore does not decide the question, and the gap at equal time is not resolved.
-(iii) Switched off at evaluation, the pages cost 0.064 nats at step 35,294, about the whole improvement
-since the graft, and 0.217 at 46,178, more than it: with
-them off, the network at 46,178 is 0.049 nats worse than at the graft point. The trained network depends
-on the pages, most on rare input tokens (0.299 nats on the rarest quarter of positions, 0.159 on the most
-frequent; Appendix G.5); this decomposes one trained model and is not a counterfactual.
+estimate: `final`'s trend through three checkpoints spanning 44 minutes, extended (Figure 5). In training
+minutes `v9` lies inside its 95% prediction interval at every checkpoint; in log tokens it lay outside
+from step 41,850 to 48,342 and inside again from 49,424, as the
+interval widened and the comparison set stopped falling; at equal tokens, not the budget's axis, outside
+from 34,166 on (Table 5). The line is the weak part: one residual degree of freedom, 44 minutes of data
+extended over 510 more, and no model of the decaying learning rate, the chat ramp, the tail or the change of
+data stream. The gap at equal time is not resolved.
+(iii) Switched off at evaluation, the pages cost 0.263 nats at 51,812, more than the whole improvement since
+the graft (the network is then 0.080 worse than at the graft point), most on rare input tokens (0.356 on the
+rarest quarter of positions, 0.193 on the most frequent; Appendix G.5): this decomposes one trained model
+and is not a counterfactual.
+(iv) What rose at the end. The all-row loss reached its minimum, 2.0840, at step 47,260 and rose to 2.1422
+at 51,812 because the proxy rows, almost all user text (10,594 of 11,094 weighted tokens), rose from 2.4683
+to 3.2580, while the web rows fell (2.6847 to 2.6690) and the chat rows as a whole stayed near 1.36. During
+the chat-share ramp the proxy rows had fallen (2.5430 at 36,422 to 2.4614 at 46,178); from p = 0.92 (step
+48,190) user and system tokens carry no loss weight (Appendix C.1), and the loss on user text rose at once: 2.6651 on the proxy rows at the first checkpoint
+after, 1.8841 to 2.1144 on the chat rows' user and system positions (46,178 to 51,812), while their assistant
+tokens fell from 1.2651 to 1.1983. The model stopped being trained to predict users, as the schedule chose;
+its fit to the assistant and web text it is trained and judged on did not get worse.
 
 ![Figure 5](figures/F8_heldout.svg)
 
-**Figure 5.** Held-out loss on the comparison set of Table 5 against training minutes, checkpoints to
-step 46,178 (917.9 minutes). Filled points: the runtime's evaluations; rings: the four checkpoints
-evaluated again on the CPU (29,722, 34,166, 35,294, 46,178); open diamonds: `v9` with its pages switched
-off at evaluation (34,166, 35,294 and 46,178, where it reads 2.2754). Gray line and band: the
-least-squares line through `final`'s three points in training minutes, extended, with its 95% prediction
-interval (one residual degree of freedom); arrow: `v9`'s distance from it at the newest checkpoint,
-−0.088 ± 0.171. Every `v9` point lies inside this band; the same line drawn in log tokens, and the
-comparison at equal tokens, put `v9` outside their intervals at the later checkpoints (Table 5). The line
-models neither the decaying learning rate nor the chat ramp from p = 0.67, and the data stream changed
-at the graft: the figure does not show that `v9` is ahead of a continued `final`.
+**Figure 5.** Held-out loss on the comparison set of Table 5 against training minutes, to step 51,588 (the
+figures stop at the last step record, 51,800; the final checkpoint 51,812, at the same 2.0438, is in Table 5).
+Filled points: the runtime's evaluations; rings: CPU re-evaluations (29,722, 34,166, 35,294, 46,178); open
+diamonds: `v9` with its pages switched off (34,166, 35,294, 46,178). Gray line and band: the least-squares
+line through `final`'s three points, extended, with its 95% prediction interval (one residual degree of
+freedom); arrow: `v9`'s distance from it at 51,588, −0.077 ± 0.225. Every `v9` point lies inside the band; in
+log tokens or at equal tokens later checkpoints lie outside (Table 5). The figure does not show that `v9` is
+ahead of a continued `final` (reading ii).
 
 ### 6.6 The graft under control: a replication at the micro width
 
 One run cannot say how a graft compares with training the new paths from the first step, or with not
 adding them, so we repeated the graft with the repository's own model and micro bench, everything else
-held equal (`docs/MICRO_GRAFT.md`; Appendix G.4; code at commit `b04478e`, reviewed adversarially before
-the runs, `wf/micro_graft.md`).
-
-**Design.** The model is the live model's code at width 128 (2 weight-shared blocks × 8 loops, rows of 512
-tokens, 4,096 tokens per step). Five arms, each with seeds 0, 1 and 2: `ref`, the micro reference
-(4,402,372 numbers); `v9_pages`, the reference with the `v9` page from the first step (gains and 8
-private token neurons per token and block in a 32-dimensional space; 14,904,516 numbers); and `graft_25`,
-`graft_50`, `graft_75`: `ref` up to 0.25, 0.5 or 0.75 of the budget, then grafted into `v9_pages` by the
-live tool's own function (`graft_run.graft_arrays`), which carries the shared leaves with their optimiser
-slots, update count and step, while the 5 new leaves (10,502,144 numbers) take the values of a fresh
-`v9_pages` tree of the same seed (U = G = 0). The budget is 6 × 10⁶ tokens (1,464
-steps), with held-out evaluations at a quarter, a half, three quarters and the end; the grafts fall on
-steps 366, 732 and 1,098. Within a seed all arms share the data order, the schedule (p = step/1,464) and
-the initial values of the shared leaves. Held-out loss is measured on 32 web and 32 chat rows from other
-files; "mix" weights them 3:1, like the training rows.
-
-**Checks.** Each graft arm trained its own trunk, and its evaluations before the graft equal those of
-`ref` of the same seed row for row, bit for bit. At each of the nine grafts the held-out loss of every
-domain, and the training loss of 8 held-out web rows, are the same before and after: the difference is
-exactly 0, on the held-out domains also per row (the training-loss check stores one aggregate value).
-These checks ran on the CPU in float32, as the whole experiment did.
+held equal (`docs/MICRO_GRAFT.md`; code at `b04478e`, reviewed adversarially before the runs; Appendix G.4).
+At width 128 and a budget of 6 × 10⁶ tokens, five arms ran with seeds 0, 1 and 2: `ref`, the micro
+reference; `v9_pages`, the reference with the `v9` page from the first step; and `graft_25`, `graft_50`,
+`graft_75`, `ref` up to 0.25, 0.5 or 0.75 of the budget, then grafted into `v9_pages` by the live tool's own
+function. Within a seed all arms share data order, schedule and initial values, and each of the nine grafts
+left the held-out loss exactly unchanged (CPU, float32).
 
 **Table 6. The graft at the micro width** (held-out loss, mix of web and chat, nats per token, at
-5,996,544 tokens, the restart row at its own end, 2,998,272 tokens; mean ± standard deviation over seeds
-0, 1, 2; differences paired by seed; share recovered = (`ref` − arm) / (`ref` − `v9_pages`) as the ratio
-of the mean differences, per seed in brackets; `lead3_work/micrograft.py` on
-`micro_graft/6M/results_all.jsonl`, which reproduces the experiment's own `graft_report.txt`; restart
-arms from `micro_graft/3M/results.tar.gz`; checked again by `lead4_work/scripts/micro4.py`).
+5,996,544 tokens, the restart at its own end, 2,998,272; mean ± sd over seeds 0, 1, 2; differences paired
+by seed; share recovered = (`ref` − arm) / (`ref` − `v9_pages`), the ratio of the mean differences, per seed
+in brackets; `lead3_work/micrograft.py` on `micro_graft/6M/results_all.jsonl` and
+`micro_graft/3M/results.tar.gz`, checked by `lead4_work/scripts/micro4.py`).
 
 | arm | new paths from | loss | arm − `ref` | arm − `v9_pages` | share recovered |
 |---|---|---|---|---|---|
@@ -545,298 +504,316 @@ arms from `micro_graft/3M/results.tar.gz`; checked again by `lead4_work/scripts/
 | `graft_75` | 0.75 | 4.1789 ± 0.0074 | −0.0123 ± 0.0004 | +0.0396 ± 0.0103 | 0.24 (0.20, 0.29, 0.24) |
 | restart: `v9_pages` from scratch on half the budget (3 × 10⁶ tokens, own schedule) | step 0 of the half | 4.3897 ± 0.0017 | +0.1985 ± 0.0062 | +0.2504 ± 0.0074 (against `graft_50`: +0.2342 ± 0.0075) | – |
 
-**Reading** (Table 6, Figure 6). The page from the first step ended 0.052 nats (1.24%) below `ref`, a gap
-that grew through training (0.016, 0.033, 0.049, 0.052 at the four evaluations). Every graft ended below
-`ref` in every seed (by 0.054–0.056, 0.033–0.039 and 0.012–0.013 nats for the grafts at 0.25, 0.5 and 0.75).
-Grafted at a quarter of the budget, the page ended with no difference from the page from the first step
-resolved (−0.0031 ± 0.0113, sd of three seeds; per seed +0.0088, −0.0138, −0.0043; a 95% t interval of
-the mean, ±0.028, is about half the page's whole gain); grafted at half, it recovered 0.69 of that gain
-(0.62–0.87 by seed) and ended above it in all three seeds; at three quarters, 0.24, alike on web, chat and
-assistant turns (Appendix G.4). In the 1.5 × 10⁶ tokens after its graft a grafted page gained 0.019,
-0.016 and 0.012 nats over `ref` (at learning-rate factors 0.775, 0.55 and 0.325), against 0.016 in the
-first 1.5 × 10⁶ tokens from scratch: consistent with a late graft losing the time it does not have, with
-the gains also falling with the learning rate, which this design does not separate from time. Restarting
-instead with the page from scratch on the second half (3 × 10⁶ tokens, 732 steps, with the schedule of
-a 3 × 10⁶-token budget, whose learning rate decays to 0.1 of its peak by that end) ended 0.234 nats
-above `graft_50` (+0.227 to +0.241 per seed), 0.199 above `ref` and 0.250 above `v9_pages`: at this
-width and budget the tokens a restart discards were worth four to five times the page's whole gain
-(0.199–0.250 against 0.052, depending on the arm it is set against). This is what a restart costs when
-the loss is still falling steeply (6 × 10⁶ tokens, about one pass over the pools), at equal tokens and
-with the restart reading the first half of the data again (Appendix G.4); it does not say what a restart
-would have cost the live run at 7.79 × 10⁹ tokens and equal wall-clock time, where the curve is far
-flatter and `v9`'s steps are slower.
-
-**Limits, stated here.** Width 128 against 768; 6 × 10⁶ tokens against about 1.36 × 10¹⁰, about one pass
-over small pools; three seeds, so standard deviations with 2 degrees of freedom and shares whose
-denominator is itself a difference of two runs (the per-seed shares range from 0.86 to 1.33 for
-`graft_25` and from 0.62 to 0.87 for `graft_50`); a schedule in tokens, not wall-clock time, so every
-arm sees the same tokens and the page's cost in step time (1.43–1.58× live on the chip) does not
-enter; a data stream that continues unchanged across the graft, where the live one changed its seed and
-dropped the library rows; and a page worth 1.2% of the loss here. The experiment is evidence about the
-mechanism of a graft, not about the size of its effect in the live run.
+**Reading** (Table 6, Figure 6). The page from the first step ended 0.052 nats (1.24%) below `ref`. Every
+graft ended below `ref` in every seed. Grafted at a quarter of the budget, the page ended with no difference
+from the page from the first step resolved (−0.0031 ± 0.0113, sd of three seeds; a 95% t interval of the
+mean, ±0.028, is about half the page's whole gain); grafted at half, it recovered 0.69 of that gain
+(0.62–0.87 by seed); at three quarters, 0.24, consistent with a late graft losing the time it does not have,
+with the learning rate also falling (Appendix G.4). Restarting instead with the page from scratch on the
+second half ended 0.234 nats above `graft_50` (+0.227 to +0.241 per seed) and 0.199 above `ref`: the tokens a
+restart discards were worth four to five times the page's whole gain (0.199–0.250 against 0.052). That is
+what a restart costs while the loss still falls steeply, at equal tokens, not what it would have cost the
+live run at 7.79 × 10⁹ tokens and equal wall-clock time.
 
 ![Figure 6](figures/F12_micrograft.svg)
 
-**Figure 6.** The graft at the micro width (Table 6; `docs/MICRO_GRAFT.md`): five arms, three seeds each
-(a seed fixes the initialisation and the order of the batches, the same in every arm), width 128, a
-budget of 6 × 10⁶ tokens (1,464 steps of 4,096 tokens, 5,996,544 trained). `ref`: no page; `v9_pages`:
-`v9`'s page from the first step; `graft_25`, `graft_50`, `graft_75`: `ref` up to 0.25, 0.5 or 0.75 of the
-budget, then grafted into `v9_pages` with the shared leaves' optimiser state, update count and step
-carried. Held-out loss: 0.75 × web + 0.25 × chat, each the mean cross-entropy per token over 32 rows,
-evaluated after 1.5, 3.0, 4.5 and 6.0 million tokens. (a) Each arm's loss minus `ref`'s with the same
-seed: lines and large dots, the mean of the three seeds; small dots, each seed, drawn beside the
-checkpoint. A graft arm is `ref` up to its graft (its evaluations equal `ref`'s row for row) and leaves
-the zero line at its diamond, where the loss after the graft equals the loss before. Squares, above a
-break in the axis: the restart, `v9_pages` trained from scratch on half the budget with its own schedule,
-its loss at its own end (3.0 million tokens) minus `ref`'s at the end of the 6 × 10⁶ budget, paired by
-seed: +0.1985 (seeds +0.1962, +0.2055, +0.1938); unlike the rest of (a), this pairs unequal token counts.
-(b) Share of the page gain recovered at the end, (`ref` − graft) / (`ref` − `v9_pages`): large dots, the
-ratio of the mean differences (1.06, 0.69, 0.24); small dots, each seed's share (0.86–1.33, 0.62–0.87,
-0.20–0.29); rings, 1 at the first step and 0 for no graft, by definition. No interval is drawn: three
-seeds are too few. The shares spread between seeds because their denominator is a difference of two runs
-that never shared a state (sd 0.0107 nats), while a graft's difference from `ref` at the end has an sd of
-0.0004–0.0030. A share above 1 means the graft ended below `v9_pages`; at 0.25 that difference, −0.0031 ±
-0.0113 nats (mean ± sd of three seeds), is not resolved. Width 128, a schedule in tokens and a page worth
-1.24% of the loss: the figure shows the mechanism of a graft, not the size of its effect in the 24-hour
-run, where the model is 768 wide, was grafted after 7.79 × 10⁹ tokens, follows a wall-clock schedule and
-changed its data stream at the graft.
+**Figure 6.** The graft at the micro width (Table 6; width 128, 6 × 10⁶ tokens, three seeds). (a) Each arm's
+held-out loss (0.75 × web + 0.25 × chat) minus `ref`'s with the same seed: large dots, the mean of the seeds;
+small dots, each seed; a graft arm leaves the zero line at its diamond. Squares, above a break in the axis:
+the restart at its own end (3 × 10⁶ tokens) minus `ref` at 6 × 10⁶, +0.1985, which pairs unequal token
+counts. (b) Share of the page gain recovered at the end: large dots, the ratio of the mean differences (1.06,
+0.69, 0.24); small dots, each seed. No interval is drawn: three seeds are too few.
 
 ### 6.7 What one run cannot show, and what the controlled experiment shows
 
-The graft lets a run change its design without discarding what it has trained. For the mechanism, the
-controlled experiment shows four things at width 128 and 6 × 10⁶ tokens: a graft is function-preserving
-in practice on the CPU in float32 (difference exactly 0 at nine grafts; on the chip in bfloat16 this was
-not measured, Section 6.4); continuing in the grafted configuration never ended worse than not grafting (9
-of 9 runs); the share of the from-scratch gain a graft recovers falls with the graft point, 0.69 at half
-the budget (0.62–0.87 by seed), consistent with new paths that learn at about their from-scratch rate
-and run out of time; and a restart with the new paths on the remaining half ended far behind the graft
-(by 0.227–0.241 nats per seed). It leaves open, for the live run: whether the pages help at width 768 and
-1.36 × 10¹⁰ tokens; whether the graft beat a restart or a continuation at equal wall-clock time there,
-where `v9`'s steps cost 1.43–1.58× those of `final`, the run will see about 2.3 × 10⁹ fewer tokens than
-`final` would have (a projection), and the loss curve is far flatter than at 6 × 10⁶ tokens; what the
-changed data stream and seed did; how the new leaves behaved training only in the low-rate half of the
-schedule (learning-rate factor 0.54 down to 0.1); and run-to-run variation at full scale. Any comparison of the shipped model with the opponents measures all
-of these together.
+At width 128 the controlled experiment shows that a graft is function-preserving in practice (on the CPU in
+float32; on the chip in bfloat16 this was not measured), that continuing in the grafted configuration never
+ended worse than not grafting (9 of 9 runs), that the share of the from-scratch gain a graft recovers falls
+with the graft point, and that a restart with the new paths on the remaining half ended far behind the
+graft. Its limits: width 128 against 768; 6 × 10⁶ tokens against 1.36 × 10¹⁰, about one pass over small
+pools; three seeds; a schedule in tokens, not wall-clock time, so the page's cost in step time (1.43–1.58×
+live on the chip) does not enter; a data stream unchanged across the graft; a page worth 1.2% of the loss.
+It is evidence about the mechanism of a graft, not about the size of its effect in the live run, and it
+leaves open whether the pages help at width 768, whether the graft beat a restart or a continuation at
+equal wall-clock time, what the changed data stream did, how the new leaves behaved training only in the
+low-rate half of the schedule, and run-to-run variation. Any comparison of the shipped model with the
+opponents measures all of these together.
 
-## 7. Evaluation: protocol, deviations and the standing so far
+## 7. Evaluation: protocol, deviations and results
 
 ### 7.1 Protocol
 
 The protocol (`docs/EVAL_PROTOCOL.md`) is in the branch's root commit (`5ff33c5`, 23 November 00:35 UTC)
 and unchanged since: it predates every TPU run and every reply of the full-scale model, not the
 micro-scale runs of gates E2, E4 and E5. **Prompts**: 400 original English prompts in five categories, a
-quarter with a second user turn, 95 with machine-checkable constraints, split by the SHA-256 of their
-identifier into `dev` and `test` (200 each); decisions use `dev`, and `test` is used once. Sides are seeded
-and balanced, and the scorer refuses any rating whose commitment to the hidden key does not match. **Readers**: the registered
-judge `qwen3-4b-2507`, read on its next-token distribution over A, B and C in both orders, with
-`gemma4-e4b` of another family as a second judge; a side wins only if both orders choose it. **Exact
-scores** come first and are trusted over a reader. **Statistics**: the score (wins + ties/2)/n with a
-Wilson interval, an exact two-sided sign test, slices by category, turns and length ratio. **What a
-claim must disclose** (§3 of the protocol): results with K = 1 as well as with our K particles, with the
-library on and off, and two control arms of each opponent run with the same K, one kept by the
-opponent's own mean log-probability (the K-matched control) and one by our selector (the
-selector-matched control); MobileLLM-R1.5 is credited with the better of its two arms on `dev`, decided
-before `test` is looked at (§2).
+quarter with a second user turn, split by the SHA-256 of their identifier into `dev` and `test` (200 each;
+`test`: 252 turns, 30 maths and 48 constrained prompts); decisions use `dev`, and `test` is used once. Sides
+are seeded and balanced, and the scorer refuses any rating whose commitment to the hidden key does not
+match. **Readers**: the registered judge `qwen3-4b-2507` in both orders, with `gemma4-e4b` as a second judge;
+a side wins only if both orders choose it. **Exact scores** come first and are trusted over a reader.
+**Statistics**: the score (wins + ties/2)/n with a Wilson interval, an exact two-sided sign test, slices by
+category, turns and length ratio. **What a claim must disclose** (§3): results with K = 1 as well as with
+our K particles, with the library on and off, and two control arms of each opponent with the same K, kept by
+the opponent's own mean log-probability (K-matched) or by our selector (selector-matched); MobileLLM-R1.5 is
+credited with the better of its two arms on `dev`, decided before `test` is looked at.
 
 ### 7.2 Deviations from the protocol
 
-1. **The readers.** Both registered judges read the four development pair sets in both orders (Table 7);
-   the same pairs are also read by Opus 5.5 agents, of the family of the agents that built the system,
-   once (the `final` sets) or twice on exchanged sides (the `v9` sets), and the test pairs will be read
-   twice on exchanged sides: an addition, reported next to the registered judges.
+1. **The readers.** The registered judge read the development pairs in both orders and all 200 pairs of
+   the two official test sets (rating files complete at 22:11 and 22:35 UTC), no other test set; the second registered judge,
+   which decided 2 to 4 of the 60 development pairs per set (Appendix E.6), was not run on the test pairs. Opus 5.5
+   agents, of the family of the agents that built the system, read every test pair twice on exchanged sides
+   from written instructions (Appendix J): an addition, never averaged with the registered judge. Their
+   instructions speak of two unnamed systems, but every chunk of every test set was titled and filed under
+   the pair set's name (e.g. `final-prefopt-vs-falcon`), so they could know which two systems a set compared;
+   which reply was which they were not told, but MobileLLM-R1.5's boxed, looping replies often show it (the
+   notes say "boxed" in 27 to 37 of 200 pairs per reading). The registered judge, which never sees the names,
+   agrees in direction, and a re-reading of the two official sets under neutral titles (source
+   `judge-opus-neutral`) gave the same outcome on 191 and 190 of the 200 prompts (Section 7.5); the other
+   test sets were read under named titles only.
 2. **Eleven test prompts were seen** by mid-run CPU samples (chat-002, chat-017, math-034, instruct-034,
-   instruct-062, writing-100, code-026, math-001, code-002, writing-001, instruct-001; checked with
-   `bes.eval.proxy.prompts.load()`); two of them motivated the data rules of Appendix D. Every test result
-   will also be reported on the 189 untouched test prompts (R11).
+   instruct-062, writing-100, code-026, math-001, code-002, writing-001, instruct-001). Every test result is
+   also reported on the 189 untouched prompts.
 3. **The proxy held-out rows contain test-split user turns** (Section 6.5); they are left out of
    comparisons.
-4. **MobileLLM's two arms.** The protocol credits MobileLLM-R1.5 with the better of its two arms on `dev`.
-   Only the `recommended` arm has been compared blind with our model, and no blind comparison of the
-   `neutral` arm on `dev` is scheduled before the test readings begin (about 19:30 UTC on 24 November),
-   so on `test` our model is compared with the `recommended` arm by default, not by the protocol's rule. The
-   exact scores on the 60 development prompts, which the protocol reads first, favour the
-   `recommended` arm (Table 8: maths 4 against 1 of 9, constrained prompts met 2 against 1 of 14, replies
-   cut at the limit 42 against 54 of 75); the `neutral` arm's exact scores on `test` will be reported
-   (Table M4).
+4. **MobileLLM's two arms.** No blind comparison of the `neutral` arm was made on `dev`, so our model is
+   compared with the `recommended` arm by default, not by the protocol's rule; its exact scores favoured
+   `recommended` on `dev` (Table E3), and on `test` the two are close (Table 8).
 5. **At training time** (Appendix B.5): an E2 loss reading chosen after seeing the data; registers kept
    despite failing their gate; the E5 copy criterion judged wrong after the fact; the pre-registered
    configuration comparison not run; the configuration changed mid-run.
-6. **No K = 1 result and no matched controls.** Our replies are chosen among K = 6 particles (Appendix
-   E.2) and the opponents draw one sample. The protocol's K-matched and selector-matched opponent arms
-   were not generated and are not scheduled, and no K = 1 test result of our model is planned (unless the
-   decoding selection ships one particle, Table M8); library on and off does not apply, since `v9` ships
-   no library. A result on `test` therefore cannot say how much of a difference comes from selecting
-   among six samples rather than from the model. Selection changes the reply distribution by at most
-   log 6 = 1.79 nats in KL divergence (Appendix E.2); on `dev`, one particle against six on `final` at
-   step 25,280 was 1 / 3 / 56 for one particle (Table E1, p = 0.63), which separates nothing.
+6. **K = 1 and the matched controls, late and incomplete.** Our replies are chosen among K = 6 particles
+   and the opponents draw one sample. Made after training, on `test`, and read by the Opus readers under named
+   titles (Tables 7, 8): our K = 1
+   arm (the official export with one particle) and Falcon-H1-Tiny's two control arms. MobileLLM-R1.5's two
+   arms do not exist yet [TBD: in generation since 19:17 UTC, 60 of 200 prompts at 22:02; since 22:36 three CPU
+   runtimes and the development container generate disjoint slices of the prompt order, both selection rules
+   per slice; expected after 00:30 UTC on 25 November].
+   Library on and off does not apply: `v9` ships no library.
 
 ### 7.3 What 200 comparisons can resolve
 
-The protocol's power table gives the comparisons needed with 30% and with 50% ties. On the development
-pairs of `v9`, ties (including "both bad" and orders that disagree) were 18 and 33 of 60 for the Opus
-readers (against Falcon-H1-Tiny and MobileLLM-R1.5) and 43 and 51 for the registered judge. At 30% and 55% ties, n = 200 detects with 80%
-power (two-sided 5% sign test) a decisive win rate of 0.5 + 0.117 and 0.5 + 0.146; at the registered
-judge's 72% and 85%, only 0.5 + 0.182 and 0.5 + 0.246; on the 189 untouched prompts, 0.121, 0.150, 0.187
-and 0.252 (`bes.eval.proxy.score.n_required`; `lead3_work/numbers.json`). A non-significant test result
-will therefore leave open differences of 12 to 25 points.
+With the Opus readers' tie rates on `test` (28.5% against Falcon-H1-Tiny, 34.5% against MobileLLM-R1.5,
+53.5% between our two sets of weights), n = 200 detects with 80% power (two-sided 5% sign test) a decisive
+win rate of 0.5 ± 0.116, ± 0.121 and ± 0.143 (± 0.120, 0.125 and 0.147 on the 189 untouched prompts at
+their own tie rates; `bes.eval.proxy.score.n_required`, `lead5_work/numbers.json` for n = 200). At the registered judge's tie rates,
+63.5% and 68.0%, they are ± 0.161 and ± 0.172. The observed decisive rates against the two
+opponents, 0.245 and 0.885, lie far beyond these bounds.
 
-### 7.4 The standing so far
+### 7.4 The official model
 
-Tables 7 and 8 and Figure 7 collect what has been measured against the opponents; none of it is the
-planned test.
+The official model is what the run's own rules shipped (Appendix C.4; Tables C4, C5, M7, M8): the weights of
+step 51,812 after preference optimisation, with the default decoding. Preference optimisation (DPO [74],
+β = 0.1, one epoch of 551 steps of 64 pairs, almost all from UltraFeedback [76]) tried two learning rates;
+both passed every check (held-out preference accuracy 0.688 and 0.694 against 0.500; held-out
+assistant-token loss +0.86% and +1.10%, limit 3%), and the rule kept the higher accuracy, 3 × 10⁻⁶. Decoding
+selection keeps the default unless a variant's exact score on the 200 development prompts is higher on
+significantly more prompts than lower: one particle was worse on 18 and better on 1 (p = 7.6 × 10⁻⁵), no
+length band better on 2 and worse on none (p = 0.50), so the default stayed (6 particles, temperature 0.6,
+top-p 0.9, 768 tokens, no library). The export (98,036,104 numbers in float16) passed its 16-bit check; our
+test replies come from a second export of the same checkpoint with the same `weights16.npz` (SHA-256
+`2da7cbd2…`), made with the default decoding before the selection had kept it; the run's own export is
+released as `release/main16-v9` (Appendix J).
 
-**Table 7. Blind comparisons by reader** (W / L / T from the first-named model's side, T including "both
-bad" and pairs whose two orders disagree; score (wins + ties/2)/n with 95% Wilson interval; exact
-two-sided sign test; orders: pairs on which a reader's two orders agree; first: mean preference for the
-first-shown reply; `lead3_work/readers.py` on `study/proxy/ratings/`, which reproduces every report in
-`study/proxy/reports/ab/`; ours with default decoding; first 60 `dev` prompts; p: progress when the
-checkpoint was written, the trainer's stop event).
+### 7.5 Blind comparisons on the test split
 
-| pair set | reader | W / L / T | score [95%] | sign test p | orders; first |
+Table 7 gives every reading of the test pairs; Figure 7 draws the Opus readers' with the development
+studies. The three kinds of reader are kept apart: the exact scorer (Section 7.6), the registered judge (63.5%
+and 68.0% of its pairs undecided) and the Opus readers (28.5% and 34.5% undecided), whose resolutions
+differ too much to be averaged.
+
+**Table 7. Blind comparisons on the 200 test prompts** (W / L / T from the first-named model's side, T
+including "both bad" and pairs whose two orders disagree; score (wins + ties/2)/n and decisive win rate, with
+95% Wilson intervals, rounded once, a value exactly on a half to even; exact two-sided sign test; orders: share of pairs whose two orders agree; first: mean
+preference for the first-shown reply; last column: the untouched prompts among those rated; recomputed with
+the key check by `lead5_work/scripts/final_results.py`, which reproduces every report; the registered judge's
+pass is complete on both sets).
+
+| comparison | reader | n | W / L / T | score [95%] | decisive win rate [95%] | sign test p | orders; first | 189 prompts: W / L / T; score |
+|---|---|---|---|---|---|---|---|---|
+| official vs Falcon-H1-Tiny | Opus, two readings | 200 | 35 / 108 / 57 | 0.318 [0.257, 0.385] | 0.245 [0.182, 0.321] | < 0.0001 | 90.5%; +0.005 | 32 / 101 / 56; 0.317 |
+|  | Opus, neutral titles | 200 | 33 / 109 / 58 | 0.310 [0.250, 0.377] | 0.232 [0.171, 0.308] | < 0.0001 | 92.5%; +0.010 | 31 / 102 / 56; 0.312 |
+|  | `qwen3-4b-2507` (registered) | 200 | 12 / 61 / 127 | 0.378 [0.313, 0.446] | 0.164 [0.097, 0.266] | < 0.0001 | 60.5%; −0.134 | 11 / 57 / 121; 0.378 |
+| official vs Falcon-H1-Tiny, K = 6, own log-probability | Opus | 200 | 35 / 112 / 53 | 0.308 [0.248, 0.375] | 0.238 [0.176, 0.313] | < 0.0001 | 93.5%; +0.020 | 34 / 106 / 49; 0.310 |
+| official vs Falcon-H1-Tiny, K = 6, our selector | Opus | 200 | 29 / 116 / 55 | 0.282 [0.225, 0.349] | 0.200 [0.143, 0.272] | < 0.0001 | 92.5%; +0.018 | 27 / 110 / 52; 0.280 |
+| ours with one particle (K = 1) vs Falcon-H1-Tiny | Opus | 200 | 22 / 122 / 56 | 0.250 [0.195, 0.314] | 0.153 [0.103, 0.220] | < 0.0001 | 92.5%; +0.015 | 20 / 116 / 53; 0.246 |
+| official vs MobileLLM-R1.5 | Opus, two readings | 200 | 116 / 15 / 69 | 0.752 [0.688, 0.807] | 0.885 [0.820, 0.929] | < 0.0001 | 96.0%; −0.005 | 109 / 14 / 66; 0.751 |
+|  | Opus, neutral titles | 200 | 112 / 15 / 73 | 0.742 [0.678, 0.798] | 0.882 [0.814, 0.927] | < 0.0001 | 96.0%; −0.010 | 106 / 14 / 69; 0.743 |
+|  | `qwen3-4b-2507` (registered) | 200 | 59 / 5 / 136 | 0.635 [0.566, 0.699] | 0.922 [0.830, 0.966] | < 0.0001 | 71.5%; −0.035 | 56 / 5 / 128; 0.635 |
+| official vs MobileLLM-R1.5, K = 6, own log-probability or our selector | Opus | – | [TBD: replies in generation, Section 7.2, deviation 6] |  |  |  |  |  |
+| ours with one particle (K = 1) vs MobileLLM-R1.5 | Opus | 200 | 99 / 16 / 85 | 0.708 [0.641, 0.766] | 0.861 [0.786, 0.913] | < 0.0001 | 91.5%; +0.008 | 92 / 14 / 83; 0.706 |
+| official vs trained weights (before preference optimisation) | Opus | 200 | 59 / 34 / 107 | 0.562 [0.493, 0.629] | 0.634 [0.533, 0.725] | 0.012 | 91.5%; +0.010 | 55 / 33 / 101; 0.558 |
+| reference: Falcon-H1-Tiny vs MobileLLM-R1.5 | Opus | 200 | 144 / 6 / 50 | 0.845 [0.788, 0.889] | 0.960 [0.915, 0.982] | < 0.0001 | 93.5%; +0.012 | 137 / 5 / 47; 0.849 |
+
+**Against Falcon-H1-Tiny** the official model loses in every category (code 10 / 13 with p = 0.68, the
+others p ≤ 0.025; Table M2) and on two-turn prompts (7 / 30); its replies fared best where they were the
+shorter of the pair (score 0.419) and worst where they were the longer (0.143). Given six samples per reply,
+Falcon-H1-Tiny was preferred again: paired by prompt, our score against its released preset differs from that
+against the K-matched arm by 0.010 (29 prompts better, 25 worse, p = 0.68) and against the selector-matched
+arm by 0.035 (34 / 21, p = 0.10), so the loss is not an artefact of six particles against one sample. Our own
+six particles are worth something: against the same opponents the official decode scores higher than one
+particle on 31 prompts and lower on 12 against Falcon-H1-Tiny (mean 0.068, p = 0.0054) and 28 / 13 against
+MobileLLM-R1.5 (0.045, p = 0.028).
+**Against MobileLLM-R1.5** the official model wins in every category but maths (7 / 12, p = 0.36). **The
+registered judge** points the same way with fewer decided pairs: it ties 127 and 136 of the 200 pairs (about
+two thirds), prefers Falcon-H1-Tiny in 61 of its 73 decisive pairs and our model over MobileLLM-R1.5 in 59 of
+64; where it and the Opus readers both chose a side they agreed in 58 of 62 and 55 of 56 pairs (Cohen's κ 0.25
+and 0.29), although it never saw the set names. Its diagnostics are weak (orders agreeing on only 60.5% and
+71.5% of the pairs, a first-position preference of −0.134 on the Falcon-H1-Tiny set (it prefers the
+second-shown reply): signs of an
+unreliable judge by the protocol's §8), and 88 of its 200 MobileLLM-R1.5 pairs had a reply cut at 4,000
+characters. **The names in the chunk titles** (deviation 1) did not detectably move the
+result: under neutral titles the official model scores 0.310 and 0.742; paired by prompt, the named readings
+score it higher on 6 and lower on 3 prompts against Falcon-H1-Tiny (p = 0.51), on 7 and 3 against
+MobileLLM-R1.5 (p = 0.34), both in its favour and neither significant, and no prompt decided by both pairs of
+readings was decided both ways; the other sets were not re-read. The restriction to the 189 untouched prompts moves every score by less than 0.005 (Tables 7, M1, M11).
+
+### 7.6 Exact scores and degenerate replies
+
+**Table 8. Exact scores on the 200 test prompts (252 turns)** (`bes.eval.exact_score` on every reply,
+recomputed and equal to the run's exact reports where one exists; in brackets, the 189 untouched prompts, 28
+maths and 44 constrained (in the row of degenerate replies: those cut at the token limit); the trained
+weights and every kind of degenerate reply in Table M4).
+
+| measure | ours, official (K = 6) | ours, K = 1 | Falcon-H1-Tiny | Falcon, K = 6, own log-probability | Falcon, K = 6, our selector | MobileLLM-R1.5 `recommended` | MobileLLM-R1.5 `neutral` | MobileLLM-R1.5, K = 6 (both rules) |
+|---|---|---|---|---|---|---|---|---|
+| maths answers correct, of 30 (of 28) | 6 (6) | 5 (5) | 15 (14) | 17 (16) | 18 (17) | 12 (11) | 11 (10) | [TBD] |
+| prompts with every constraint met, of 48 (of 44) | 38 (34) | 37 (33) | 33 (29) | 35 (32) | 42 (38) | 8 (8) | 9 (8) | [TBD] |
+| degenerate replies, of 252 (of them cut at the token limit) | 5 (5) | 17 (17) | 2 (1) | 1 (0) | 0 | 158 (150) | 148 (146) | [TBD] |
+| words per reply, upper median (the 127th of 252) | 101 | 105 | 155 | 147 | 145 | 395 | 517 | [TBD] |
+
+Against the released Falcon-H1-Tiny our model meets every constraint on more prompts (38 against 33 of 48)
+and answers far fewer maths prompts (6 against 15 of 30). The constraint lead is not the selection among six
+particles: with one particle, where nothing is selected (our exact potentials still act during sampling),
+our model meets 37. **The selector-matched arm shows that the lead does not survive matching**: given six
+samples and our selection rule (constraints compiled from the prompt, failure filter, length band, maths
+majority vote, consensus; not our potentials), Falcon-H1-Tiny meets every constraint on 42 prompts, four
+more than our model. Whether our 37 and 38 are the model's or the potentials' is not separated on `test`, and
+the maths gap does not close (5 and 6 against 15 to 18). MobileLLM-R1.5's
+replies are degenerate in 158 of 252 turns under its recommended preset (150 cut at the token limit; 139 of
+its 200 prompts have at least one degenerate reply) and in 148 under the neutral one (133 prompts); its
+defeat by the readers is largely a defeat of those replies. No model gave a stock
+refusal or deflection.
+
+**From the readers' notes** (Appendix O; labels by one agent with the key open): of the 108 losses to
+Falcon-H1-Tiny, 46 come from wrong content (false facts 19, wrong maths 17, broken code 10) and 43 from
+incoherent, off-task or repetitive text; Falcon-H1-Tiny's reply had no decisive defect in 75. With one
+particle 99 of the 108 are lost again; only 17 of the 35 wins are won again. The readers name repetition as
+our reply's main defect on 25 prompts; the degenerate-reply detectors flag 3. Of the 116 wins over
+MobileLLM-R1.5, 93 are over its degenerate or off-task replies; our reply had a named defect in 60.
+
+### 7.7 Before and after preference optimisation
+
+Read by the Opus readers on the same prompts (4 of the 200 got identical replies), the official weights were
+preferred to the trained weights in 59 pairs and the trained ones in 34 (p = 0.012; 189 prompts: 55 / 33,
+p = 0.025), mostly in code (10 / 1) and chat (16 / 8), not in maths (5 / 5). The exact scores, which the
+protocol trusts over a reader, moved the other way, not significantly: maths 6 and 6 of 30, constraints 38
+against 41 of 48 (2 prompts gained, 5 lost, p = 0.45), degenerate replies 5 against 3; the replies grew longer
+(mean 130 against 119 words), and the held-out loss of the comparison set rose by 0.012 nats (Section 6.5).
+One epoch of DPO (424 s of training at the chosen rate) bought a modest preference of one kind of reader,
+who could see from the titles what the set compared; it was read neither under neutral titles nor by the
+registered judge (Table M5).
+
+### 7.8 In absolute terms
+
+Both replies were judged bad in 89 of 200 pairs in each reading when both were ours (official against
+trained weights, 44.5% per reading; both readings on 83, 41.5%, at least one on 95, 47.5%), against 44 of 60 development pairs (73%, one reading) for two decodings of the
+checkpoint of step 31,912; against Falcon-H1-Tiny in 44 and 41 pairs, against MobileLLM-R1.5 in 66 and 64,
+and in the reference set, where no reply is ours, in 38 and 38 (raw verdicts, `lead5_work/final_results.json`).
+A little under half of the official model's replies were judged useless together with a sibling reply; the
+prompt sets differ, so the fall from 73% is indicative only.
+
+### 7.9 The trajectory
+
+**Table 9. From mid-run checkpoints to the official model** (Opus readers, W / L / T and score; registered
+judge, W / L; exact scores of the same replies; on `dev`, the first 60 prompts, 9 maths and 14 constrained,
+Appendix E.6; the official model's `dev` replies are the run's own decoding-selection replies).
+
+| model (split, n) | vs Falcon-H1-Tiny: Opus | vs MobileLLM-R1.5: Opus | registered judge, W / L (Falcon; MobileLLM) | maths correct | every constraint met |
 |---|---|---|---|---|---|
-| `final` 25,280 (p = 0.44) vs Falcon-H1-Tiny | Opus, one reading | 2 / 43 / 15 | 0.158 [0.087, 0.271] | < 0.0001 | – |
-| | `qwen3-4b-2507` (registered) | 2 / 16 / 42 | 0.383 [0.271, 0.510] | 0.0013 | 63.3%; −0.096 |
-| | `gemma4-e4b` (registered second) | 0 / 4 / 56 | 0.467 [0.346, 0.591] | 0.13 | 80.0%; −0.087 |
-| `final` 25,280 vs MobileLLM-R1.5 | Opus, one reading | 15 / 8 / 37 | 0.558 [0.433, 0.677] | 0.21 | – |
-| | `qwen3-4b-2507` | 7 / 4 / 49 | 0.525 [0.401, 0.646] | 0.55 | 78.3%; −0.000 |
-| | `gemma4-e4b` | 2 / 0 / 58 | 0.517 [0.393, 0.638] | 0.50 | 91.7%; −0.008 |
-| `v9` 31,912 (p = 0.56) vs Falcon-H1-Tiny | Opus, two readings | 3 / 39 / 18 | 0.200 [0.118, 0.318] | < 0.0001 | 93.3%; +0.000 |
-| | `qwen3-4b-2507` | 1 / 16 / 43 | 0.375 [0.264, 0.502] | 0.0003 | 60.0%; −0.114 |
-| | `gemma4-e4b` | 0 / 3 / 57 | 0.475 [0.354, 0.599] | 0.25 | 83.3%; −0.065 |
-| `v9` 31,912 vs MobileLLM-R1.5 | Opus, two readings | 20 / 7 / 33 | 0.608 [0.482, 0.722] | 0.019 | 98.3%; +0.008 |
-| | `qwen3-4b-2507` | 7 / 2 / 51 | 0.542 [0.417, 0.661] | 0.18 | 80.0%; −0.000 |
-| | `gemma4-e4b` | 2 / 1 / 57 | 0.508 [0.385, 0.630] | 1.0 | 93.3%; +0.008 |
-| reference: Falcon-H1-Tiny vs MobileLLM-R1.5, 200 `test` prompts | Opus, two readings | 144 / 6 / 50 | 0.845 [0.788, 0.889] | < 0.0001 | 93.5%; +0.013 |
+| `final` 25,280, p = 0.44 (`dev`, 60; one reading) | 2 / 43 / 15, 0.158 | 15 / 8 / 37, 0.558 | 2 / 16; 7 / 4 | 0 of 9 | 12 of 14 |
+| `v9` 31,912, p = 0.56 (`dev`, 60; two readings) | 3 / 39 / 18, 0.200 | 20 / 7 / 33, 0.608 | 1 / 16; 7 / 2 | 1 of 9 | 12 of 14 |
+| official, 51,812 after preference optimisation (`dev`, 60) | – | – | – | 0 of 9 | 13 of 14 |
+| official (`test`, 200; two readings) | 35 / 108 / 57, 0.318 | 116 / 15 / 69, 0.752 | 12 / 61; 59 / 5 | 6 of 30 | 38 of 48 |
 
-**Three readers.** Against Falcon-H1-Tiny every reader that took sides took Falcon-H1-Tiny's in almost
-every pair: the Opus readers in 39 of 42 decisive pairs (`v9`) and 43 of 45 (`final`), the registered judge
-in 16 of 17 and 16 of 18, the second judge in all it decided. Where the Opus readers and the registered
-judge both chose a side (`v9`), they chose the same one in 14 of 16 pairs against Falcon-H1-Tiny and 6 of 6
-against MobileLLM-R1.5. The readers differ in how much they decide: the registered judge's two orders agreed on only 60–63% of
-the Falcon-H1-Tiny pairs and it preferred the second-shown reply, so most pairs the Opus readers decided
-were ties for it (26 of 42 against Falcon-H1-Tiny, 21 of 27 against MobileLLM-R1.5; Cohen's κ over win,
-loss and tie 0.21 and 0.18); the second judge gave no side (C, "equal or equally poor", or orders that
-disagree) in 93–97% of the pairs and has almost no resolution here. Against MobileLLM-R1.5 the Opus
-readers found a lead for `v9` (20 / 7, p = 0.019), mostly on instruction-following (9 / 0 / 3) and
-two-turn prompts (7 / 0 / 8), with every decisive maths pair lost (0 / 5 / 4); the registered judge found
-7 / 2 (p = 0.18). Both automatic judges cut replies over 4,000 characters, in 30 of the 60 MobileLLM-R1.5
-pairs. Agreement between orders is not validity: no human has read these pairs.
-
-**A scale.** On the 200 test prompts, read the same way, Falcon-H1-Tiny beat MobileLLM-R1.5 in 144 of 150
-decisive pairs, in every category (chat 37 / 1, code 17 / 2, instruct 31 / 0, maths 15 / 3, writing 44 /
-0). This set holds no reply of ours and does not open the test split for our model. MobileLLM-R1.5, a
-reasoning model run with its publisher's sampling and budget forcing, is weak on these prompts: on `dev`
-42 of its 75 replies ran into the token limit (Table 8), and the readers' notes on the reference pairs
-describe its reply as looping or repeating in 87 and 83 of 200 (two readings) and mention a boxed answer
-in 46 and 49, often nonsense or looping (in 32 and 40 of these the same clause also calls it looping,
-repeated, nonsense, degenerate, fragmentary or incoherent; keyword counts, `lead3_work/ref_notes.py`,
-`lead4_work/scripts/ref_notes4.py`). A lead over MobileLLM-R1.5 here is a low bar; the informative
-comparison is with Falcon-H1-Tiny, where our model, at step 31,912, is far behind. The development and
-test prompts are two halves of one set, so the scale is indicative, not a calibration.
-
-**In absolute terms.** In the first reading of the pair set in which both replies were ours (`v9` at step
-31,912, the default decoding against 3-gram blocking), both replies were judged bad in 44 of 60 pairs;
-the readers' notes on those 44 name wrong facts or arithmetic in 20 and incoherent text in 14 (keyword
-count, `lead3_work/ours_notes.py`; for instance "Both wrong; correct is 12,600. A says 30,000, B says 12.").
-Against MobileLLM-R1.5, 31 of 60 pairs were judged "both bad", against Falcon-H1-Tiny 14 of 60; for
-`final` at step 25,280, 46 to 55 of 60 pairs per decoding comparison (Appendix E). At p = 0.56, most of the
-model's replies to these prompts were judged bad, mainly for wrong content and incoherence.
-
-**Table 8. Exact scores and bits per byte** (the same 60 `dev` prompts, 75 turns, default decoding;
-`lead2_work/exact_dev.json`, `lead2_work/opp_bpb_web.json`, `lead3_work/heldout46.json`).
-
-| measure | ours, `final` 25,280 | ours, `v9` 31,912 | Falcon-H1-Tiny | MobileLLM-R1.5 (`neutral` arm) |
-|---|---|---|---|---|
-| maths answers correct (9 prompts) | 0 | 1 | 4 | 4 (1) |
-| constrained prompts with every constraint met (14) | 12 | 12 | 9 | 2 (1) |
-| replies cut at the token limit (75) | 2 | 0 | 0 | 42 (54) |
-| stock refusals / deflections (75) | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
-| median words per reply | 93 | 96 | 188 | 532 (698) |
-| bits per UTF-8 byte, 64 held-out web rows (our training distribution) | 1.017 (step 29,722) | 0.998 (35,294); 0.980 (46,178) | 1.570 | 1.500 |
-
-The exact scores agree with the readers: both opponents answer more maths prompts correctly, and our
-replies meet constraints more often and are shorter than the opponent's in 38 to 45 of the 60 pairs. On
-held-out web text from our own training distribution (ClimbMix, 62% of `final`'s training tokens), our
-model needs 0.98 bits per byte at step 46,178 and the opponents 1.57 and 1.50 (the same rows: 258,814
-bytes as the opponents' tokenizers cut them, 258,817 as ours does);
-this favours us by construction (instruction-tuned opponents read on raw web text, training data
-unknown), and next-token loss on the pre-training distribution said little about preference in chat
-here. Two decoding studies on the same prompts could not separate any setting from the default
-(Appendix E, Table E1).
+The development and test prompts are two halves of one set, and the studies differ in checkpoint,
+configuration and number of readings, so the rows are comparable in kind only. Against Falcon-H1-Tiny the
+decisive win rate rose from 0.044 and 0.071 (`dev`) to 0.245 (`test`); against MobileLLM-R1.5 from 0.652 and
+0.741 to 0.885. The opponents' own reference (Falcon-H1-Tiny over MobileLLM-R1.5 in 144 of 150 decisive test
+pairs) is the scale: the comparison that informs is the one our model loses.
 
 ![Figure 7](figures/F11_blind.svg)
 
-**Figure 7.** Blind pairwise comparisons on the first 60 development prompts, Opus readers (Table 7):
-`final` at step 25,280 read once per pair, `v9` at step 31,912 read twice on exchanged sides. The figure
-draws only this added reader, because it is the one that decides most pairs; the registered judge
-decided 17 and 9 of the 60 `v9` pairs (against Falcon-H1-Tiny and MobileLLM-R1.5) and the second judge 3
-and 3, so their bars would be almost all ties. Their readings, which point the same way where they
-decide, are in Table 7. Bars: wins, ties or "both bad", losses; dots and whiskers: the score
-with its 95% Wilson interval (about ±12 points at n = 60); the two studies differ in checkpoint,
-configuration and number of readings, so the change between them is not an effect of `v9`. The
-test-split comparison is [TBD: after the evaluation of 24–25 November 2026].
+**Figure 7.** Blind pairwise comparisons by the Opus readers (Tables 7, 9): `final` at step 25,280 on the
+first 60 development prompts, read once; `v9` at step 31,912 on the same prompts and the official model
+(labelled `v9`, step 51,812) on the 200 test prompts, read twice. Bars: wins, ties or "both bad", losses;
+dots and whiskers: the score with its 95% Wilson interval. Only this added reader is drawn, because it decides most pairs;
+the registered judge points the same way where it decides (Tables 7, E2).
 
-### 7.5 Results to come
+### 7.10 What limits each statement
 
-The quantities the evaluation will fill are table shells R1–R12 in Appendix M (Tables M1–M12), each
-with the file it will come from [TBD: after the evaluation of 24–25 November 2026].
+**Preferred over MobileLLM-R1.5** (116 to 15): by readers of the builders' family who are an addition to the
+registered protocol, could see which two systems a set compared and could often tell its boxed, looping
+replies (under neutral titles, 112 to 15), with the registered judge 59 to 5 (88 of its pairs clipped); over an opponent whose replies
+are degenerate in 63% of turns under its recommended preset in our harness (a converted community file with
+budget forcing), so that the lead measures that opponent's state here as much as our model; on prompts of
+which 11 were seen (the 189 agree); with six particles against one sample (with one, 99 to 16; MobileLLM-R1.5's
+six-sample arms [TBD]); for one run. **Not preferred over Falcon-H1-Tiny** (35 to
+108): by every reader (the registered judge 12 to 61), in every category, on the 189 prompts, against its K = 6 arms and with our K = 1
+decode (22 to 122); its default sampling may understate it. No human has read the pairs.
 
 ## 8. Limitations and threats to validity
 
 1. **One run, one seed at full scale**, with no full-scale baseline for the design change (no `v9` from
-   scratch, no `final` continued, no restart, no graft at another point); the controlled experiment
-   supplies these at width 128 and 6 × 10⁶ tokens only, at equal tokens (§6.6), where three seeds of
-   `ref` have a standard deviation of 0.18% (range 0.36%).
-2. **Mid-run changes confound every curve**: the training stream changed at steps 6,647, 25,280 and
-   29,722 and its chat share ramps up from step 36,867; the learning-rate factor jumped at step 12,062;
-   the compiled graph changed at steps 9,332, 22,613 and 31,912 (equal to rounding).
-3. **One implementation, one chip, one software stack** (jax 0.11.2, libtpu 0.0.50) for the 1.46–1.62×
-   and the predictor test, which has six points chosen after the fact; compile-only estimates of
-   differences were wrong by up to a factor of 8 (Table F5).
-4. **Equality on the chip is to rounding and partly unverified** for the adopted kernel (§5.2) and the
-   graft's gradients (§6.4).
-5. **The readers.** The registered judge decides few pairs and prefers the second-shown reply; the
-   second judge decides almost none; the Opus readers decide most pairs but are of the builders' family;
-   no human has read the pairs [78–81]. Two readings on exchanged sides remove pure position preference,
-   not a bias both readings share.
-6. **The prompts are ours, and eleven test prompts were seen** (§7.2); the test's resolution is limited
-   (§7.3); our model selects among six particles while the opponents draw one sample, and the
-   protocol's K = 1 result and K-matched and selector-matched controls are not run (§7.2, deviation 6),
-   so a test result cannot separate the model from its selection; the reply budgets differ (768 of our
-   tokens; 1,024 for Falcon-H1-Tiny; 1,024 answer tokens after up to 3,072 of reasoning for
-   MobileLLM-R1.5).
-7. **Opponent settings** (llama.cpp defaults for Falcon-H1-Tiny; a converted community file with budget
-   forcing for MobileLLM-R1.5) may understate either opponent.
+   scratch, no `final` continued, no restart); the controlled experiment supplies these at width 128 and
+   6 × 10⁶ tokens only, at equal tokens (§6.6). The test result is one model's.
+2. **Mid-run changes confound every curve**: the stream changed at steps 6,647, 25,280 and 29,722, its chat
+   share ramps up from step 36,867 and conversations train on assistant tokens only from step 48,190; the
+   learning-rate factor jumped at step 12,062; the compiled graph changed at steps 9,332, 22,613 and 31,912.
+3. **One implementation, one chip, one software stack** (jax 0.11.2, libtpu 0.0.50) for the 1.46–1.62× and
+   the predictor test, which has six points chosen after the fact (§5).
+4. **Equality on the chip is to rounding and partly unverified** for the adopted kernel and the graft's
+   gradients (§5.2, §6.4).
+5. **The readers** (§7.2, §7.5, §7.10): the Opus readers are an addition, of the builders' family, could
+   see which two systems each set compared and could often tell MobileLLM-R1.5's replies by their boxed,
+   looping style (a replication of the two official sets under neutral titles gives the same outcome on 381
+   of 400 prompts; no other set was re-read); the registered judge ties two thirds of the pairs and its
+   diagnostics are weak (§7.5); the second registered judge was not run on
+   the test pairs; no human has read the pairs [78–81]. Two readings on exchanged sides remove pure position
+   preference, not a bias both share. The failure labels of Appendix O are one agent's, made with the key open; no
+   second, blind labeller has checked them.
+6. **The prompts are ours**, eleven test prompts were seen, and the test's resolution is limited (§7.3); our
+   decoder uses six particles and exact potentials against the opponents' single samples, and MobileLLM-R1.5's
+   control arms are [TBD]; the reply budgets differ (768 of our tokens;
+   1,024 for Falcon-H1-Tiny; 1,024 answer tokens after up to 3,072 of reasoning for MobileLLM-R1.5).
+7. **Opponent settings**: a converted community file with budget forcing for MobileLLM-R1.5, 63% of whose
+   test replies are degenerate in our harness; llama.cpp's default sampling for Falcon-H1-Tiny. Either may
+   understate its model.
 8. **Small laboratories** produced the evidence for the pages and the components (widths 48 and 128,
-   1–12 million tokens; Appendix B) and the controlled graft (width 128, 6 million tokens).
-9. **The data rules' effects are not measured**, and from step 6,647 the model is not trained to refuse
-   anything (Appendix D).
-10. **The token gap** to the opponents (about 59 times fewer tokens than Falcon-H1-Tiny and about 310
-    times fewer than MobileLLM-R1's pre-training) cannot be separated from the design in any final
-    comparison.
+   1–12 million tokens; Appendix B) and the controlled graft.
+9. **The data rules' effects are not measured**, from step 6,647 the model is not trained to refuse
+   anything, and it was not evaluated for harmful output (Appendices D, K).
+10. **The token gap** to the opponents (59 and 309 times fewer tokens) cannot be separated from the design
+    in any comparison here.
 
 ## 9. Conclusion
 
-A budget in parameters is a statement about a function: how many numbers it stores and how many it
-reads to produce a token. The cost of training that function on one accelerator for a day is a statement
-about bytes, shapes and repetitions. In this run the two came apart three ways: two configurations that
-the ledger calls nearly equal differed by 1.62× in step time, a quarter of it removed by layout alone;
-the compiler's count of bytes moved predicted step times where FLOP and reads could not, on six
-configurations and after the fact; and the loop count, 97% of the step time in the reference code, is
-invisible to the read ledger. A function-preserving graft let the run change its design at half time
-without discarding 7.79 × 10⁹ trained tokens. Under control at width 128 and 6 × 10⁶ tokens, at equal
-tokens, grafting never ended worse than not grafting, a graft at half the budget recovered 0.69 of the
-gain of having the new paths from the start (0.62–0.87 by seed), and a restart with them on the remaining
-half ended far behind; this supports the mechanism and says nothing about the size of the effect or the
-wall-clock trade at full scale. On development prompts a mid-run checkpoint (step 31,912, 0.56 of
-training) is far behind Falcon-H1-Tiny by every reader that decides pairs, and ahead of MobileLLM-R1.5 by
-the Opus readers, an addition to the protocol (20 of 27 decisive pairs, p = 0.019), but not
-significantly by the registered judge (7 of 9, p = 0.18); Falcon-H1-Tiny is far ahead of MobileLLM-R1.5
-on the test prompts, so the informative comparison is the one the model loses. Whether the finished
-model is preferred to either opponent will be measured on the test split under the protocol fixed in
-advance, with the six deviations of Section 7.2; because the K-matched control is not run (deviation 6),
-a test result cannot separate the model from its selection among six samples [TBD: Appendix M, R1,
-after the evaluation].
+A budget in parameters is a statement about a function: how many numbers it stores and how many it reads
+to produce a token. The cost of training that function on one accelerator for a day is a statement about
+bytes, shapes and repetitions. In this run the two came apart three ways: two configurations that the ledger
+calls nearly equal differed by 1.62× in step time, a quarter of it removed by layout alone; the compiler's
+count of bytes moved predicted step times where FLOP and reads could not, on six configurations and after
+the fact; and the loop count, 97% of the step time in the reference code, is invisible to the read ledger. A
+function-preserving graft let the run change its design at half time without discarding 7.79 × 10⁹ trained
+tokens; under control at width 128, grafting never ended worse than not grafting, which supports the
+mechanism and says nothing about the size of the effect at full scale. The run met its ledger (98.0 of 100
+million stored, 19.6 of 20 million read per token) and its clock (86,054 of 86,400 TPU seconds) and trained
+1.358 × 10¹⁰ tokens. On the 200 test prompts the official model is preferred to MobileLLM-R1.5, whose replies
+are mostly degenerate in our harness, by the Opus 5.5 readers added to the registered protocol (116 of 131
+decisive pairs; they could see which two systems a set compared and often tell its replies by their style) and
+by the registered judge, which ties two thirds of the pairs (59 of 64; MobileLLM-R1.5's six-sample arms: [TBD]);
+it is not preferred to Falcon-H1-Tiny (35 of 143 and 12 of 73), which keeps its lead, and takes our edge in
+meeting constraints, when it gets six samples and our selector. The informative comparison is the one the model loses, to a model trained on 59 times more tokens.
 
 ## References
 
@@ -1045,7 +1022,7 @@ spending the 80 million stored numbers one way or the other was small-scale.
   estimate put `final` at 2.507 nats per token and Falcon-H1-Tiny-90M at 2.358, and `v9` at about 2.45
   (2.41–2.48) after published gains of token-keyed tables; "v9 therefore narrows the predicted gap to
   the 90M opponent and does not close it". Losses per token across different tokenizers are not
-  comparable; Section 7.4 measures bits per byte instead.
+  comparable; Table E3 gives bits per byte instead.
 
 **B.5 Components and the pre-registered micro ablation.** Table B1 gives the micro ablation (width 128,
 8 loops, 1 million tokens per arm, seed replicate 0.42%, margin 0.84%) and the decisions.
@@ -1091,10 +1068,12 @@ the decay to the time budget follows [1–3]). While training, T grows and R shr
 p is linear in wall time and reaches 1 when the window closes, whatever the throughput. The
 learning-rate factor (a linear warm-up over the first 0.2% of p, then 1 − 0.9p), the sequence length
 (1,024 tokens; 2,048 from p = 0.67), the chat share of the mixture (0.25 until p = 0.67, then rising linearly
-to 0.70 at p = 0.92, then 0.70; `chat_frac_at` in `bes/train/schedule.py`), loss on assistant tokens only
-from p = 0.92, and `final`'s library shares are all functions of p. The ramp shows in the loader:
-base-text rows were 75% of the rows of the loader block of step 36,850 (p = 0.670) and 38.4% in that of
-step 46,350 (p = 0.879), where the trainer logged a chat share of 0.627. By itself it is expected to lower
+to 0.70 at p = 0.92, then 0.70; `chat_frac_at` in `bes/train/schedule.py`), loss on the assistant tokens
+only of conversations from p = 0.92 (base text still counts), and `final`'s library shares are all functions
+of p. The ramp shows in the loader: base-text rows were 75% of the rows of the loader block of step 36,850
+(p = 0.670) and 38.4% in that of step 46,350 (p = 0.879), where the trainer logged a chat share of 0.627; the
+tail began at step 48,190 (stage event 17:09:57), after which the logged micro-batches give user and system
+tokens no weight (at step 48,150 they had 1,833 of 14,924 units). By itself the ramp is expected to lower
 the loss of a training step and the held-out chat loss of any configuration; this run does not measure
 that effect apart from the others. Two
 consequences were observed. A pause leaves T fixed and shrinks R, so p advances while nothing trains:
@@ -1109,7 +1088,7 @@ logged steps, give 0.2413 → 0.2196 and 0.5045 → 0.5118; we quote the events.
 (parameters, optimiser state, data cursor, random state, time ledger); after each one a snapshot is
 copied off the runtime. On a new runtime the snapshot is restored, the deadline is moved by the
 downtime (which keeps p continuous) and the trainer continues. A loss guard rolls back on three
-consecutive spikes above 1.3 times the moving average; it has not fired. Restarting on a new machine
+consecutive spikes above 1.3 times the moving average; it never fired (0 rollbacks in the ledger). Restarting on a new machine
 exposed two errors no rehearsal had: the loader replays its journal and needs every shard it lists,
 which a new machine must download and tokenise again (the trainer now waits for them, with 24
 tokenising workers: 363 shards in 9 minutes), and two sources that share raw files deleted them
@@ -1122,10 +1101,11 @@ training resumed (commits `e096dff`, `77305dc`; Figure C2).
 |---|---|---|---|
 | 1 | 23 Nov 02:58:32 – 05:00:37 | 7,325 | profiling and the rewrites of Section 5.2; its training runs were discarded; returned at the user's request |
 | 2 | 23 Nov 17:13:00 – 19:30:00 (from the earliest possible allocation) | 8,220 | training from step 0 to step 5,075 (kept through a snapshot); taken back by the provider at about 19:29 |
-| 3 | from 24 Nov 01:05:55 | 55,290 at 16:27:24 (the trainer's ledger at the cut-off) | training resumed at step 5,075 at 01:54:14; in progress |
+| 3 | 24 Nov 01:05:55 – 20:41:04 | 70,509 | training resumed at step 5,075 at 01:54:14 and stopped at its deadline (18:33:49; end recorded 18:33:54) at step 51,812; post-training stages 18:33:55–20:02:22; given back by hand at 20:41:04 |
+| total | | 86,054 of 86,400 | 62,893 s (73.1%) in training steps of the kept trajectory (trainer's ledger) |
 
-Gaps without a runtime: 12 h 12 min 23 s and 5 h 35 min 55 s. The 24 hours end at 20:46:50 on
-24 November; the run's deadline is 20:31:49.
+Gaps without a runtime: 12 h 12 min 23 s and 5 h 35 min 55 s. Held to its limit the TPU budget would have
+ended at 20:46:50 on 24 November; 346 s were left unused. The run's deadline was 20:31:49.
 
 **Table C2. Events of the run** (train log: stop and restore records; tokens are steps × 262,144; live
 rates are the medians of Table 2).
@@ -1144,12 +1124,13 @@ rates are the medians of Table 2).
 | 7 | 29,722 | 7.79 × 10⁹ | 09:45:34 → 09:58:45 | `v9` timed; graft into `configs/v9.py` (`9a4d652`) |
 | 8 | 31,912 | 8.37 × 10⁹ | 10:52:36 → 10:57:50 | `v9` switches timed and adopted (`769f240`) |
 | P1 | 36,867 | 9.66 × 10⁹ | no stop (stage event 12:47:51) | rows of 2,048 tokens; the chat share starts to rise (schedule) |
-| – | [TBD: final step, at 18:34 UTC; projected about 51,800] | [TBD: final token count, at 18:34 UTC; projected about 1.358 × 10¹⁰] | 18:33:49 | end of training |
+| P2 | 48,190 | 1.26 × 10¹⁰ | no stop (stage event 17:09:57) | chat share 0.70; conversations train on assistant tokens only (schedule) |
+| – | 51,812 | 13,582,204,928 | 18:33:49 (final checkpoint 18:33:54) | end of training at the deadline; the stages after training to 20:02:22 (C.4) |
 
 Averaged over its 32,320.8 training seconds, the trajectory up to the graft trained at 241,065
-tokens/s (7,791,443,968 tokens; trainer's ledger). At the newest record (16:27:24) the ledger holds
-46,351 steps, 12,150,636,544 tokens and 55,310 training seconds; the TPU had been held for 70,835 s
-(19.68 h), 78% of it in training steps of the kept trajectory.
+tokens/s (7,791,443,968 tokens; trainer's ledger). At the end the ledger holds 51,812 steps, 13,582,204,928
+tokens and 62,893.1 training seconds (17.47 h), with 23.2 s booked to checkpoint writes, 279.6 s to set-up,
+10 restarts and no rollback (`lead5_work/numbers.json`).
 
 ![Figure C2](figures/F2_throughput.svg)
 
@@ -1160,10 +1141,11 @@ lines of `final`'s training (dots). Runtimes 2 and 3, run main16: lines, the rat
 consecutive step records (tokens ÷ wall time, checkpoint writes included); numbers, the live rate of
 each stretch in 10³ tokens/s with its number of step records n (Table 2, Figure F2); in runtime 2, the
 start-up benchmark (diamond) and the first log line (dot). Light gray bands: TPU held but not training;
-hatched: no TPU. Tags: restore times of the restarts of Table C2; P1 (dashed): rows of 2,048 tokens from
-p = 0.67, without a stop. Records to step 46,350 (24 November, 16:27:21 UTC), the newest record of the
-paper's live numbers. A change of level at a tag is a before-and-after difference, not the effect of
-that change alone.
+hatched: no TPU (its length printed above the axis). Tags: restore times of the restarts of Table C2; P1
+and P2 (dashed): rows of 2,048 tokens from p = 0.67 and the assistant-only tail from p = 0.92, without a stop.
+Records to step 51,800 (24 November, 18:33:30 UTC), the last step record; the end of training (deadline 18:33:49,
+recorded at 18:33:54), the stages after it (18:33:55–20:02:22) and the hold to 20:41:04 are not drawn. A change of level at a tag is
+a before-and-after difference, not the effect of that change alone.
 
 
 **C.3 The training curve.** Table C3 summarises the step losses logged every 50 steps (each the mean
@@ -1184,10 +1166,12 @@ run's train log; sample standard deviations).
 
 These are training losses on a stream whose composition changed at steps 6,647 and 25,280, in windows
 of progress, not of tokens (p fell once). After the graft the 93 logged steps to 34,350 average 2.4675
-(sd 0.0399); the stream changed at the graft, so the two numbers are not comparable. The 190 logged
-steps at 2,048 tokens (36,900–46,350) fall from 2.404 (mean of the first 5) to 1.954 (the last 5) while
-the chat share of the stream rises from 0.25 to 0.63 and the learning-rate factor falls from 0.40 to
-0.21: their level is not comparable with earlier ones either. The tape gain fell
+(sd 0.0399); the stream changed at the graft, so the two numbers are not comparable. The 226 logged
+steps at 2,048 tokens before the tail (36,900–48,150) fall from 2.404 (mean of the first 5) to 1.815 (the
+last 5) while the chat share of the stream rises from 0.25 to 0.70 and the learning-rate factor falls from
+0.40 to 0.17; the 73 steps of the tail (48,200–51,800), in which conversations train on their assistant
+tokens only, fall from 1.778 to 1.733 as the factor falls to 0.10. Neither level is comparable with earlier
+ones. The tape gain fell
 from 0.319 nats in the first 1% of training to 0.022 nats (0.9% of the loss) by p ≈ 0.5; in the micro
 ablation the tape switched off at evaluation cost 10.5% of the loss at 1 million tokens. One reading,
 which the micro report anticipated, is that the network learns at scale most of what the exact
@@ -1199,37 +1183,60 @@ text and 0.029 on chat at step 29,722.
 
 **Figure C1.** Training loss of run main16 against training tokens: (a) the whole run on logarithmic
 tokens; (b) from 10⁹ tokens on, linear. Dots: the loss of one optimiser step (the mean over its 262,144
-tokens), logged every 50th step: 594 records of `final` (steps 50–29,700) and 333 of `v9` (steps
-29,750–46,350; records to 16:27:21 UTC on 24 November, the newest record of the paper's live numbers).
+tokens), logged every 50th step: 594 records of `final` (steps 50–29,700) and 442 of `v9` (steps
+29,750–51,800, the last step record, 18:33:30 UTC on 24 November).
 Lines: a centred average over log₁₀(tokens), computed separately within each stretch between restarts
 and phase changes: each record is weighted by a Gaussian (σ = 0.03 decades, cut at 3σ) times 1/tokens,
 so that the window is centred on the record (to within 0.001 decades), and near the end of a stretch
 the window shrinks symmetrically instead of becoming one-sided; the line is drawn where it averages at
 least 15 records. A step at a restart would show
 as a break between two lines; near the ends of a stretch the line rests on fewer records and wanders by
-about ±0.01 nats. Vertical lines: the restarts of Table C2 (solid; M1, M2: measurement pauses) and the
-switch to rows of 2,048 tokens at p = 0.67 (P1, dashed). (c, d) The learning-rate factor and progress p
-as logged. The loss mixes 22 sources whose shares change with p and the data rules; the stream
-changed at the graft, and from P1 its chat share rises linearly (Appendix C.1), which by itself is
-expected to lower the loss of a step: levels on either side of a restart or of P1 do not compare
+about ±0.01 nats. Vertical lines: the restarts of Table C2 (solid; M1, M2: measurement pauses), the
+switch to rows of 2,048 tokens at p = 0.67 (P1, dashed) and the tail at p = 0.92 (P2, dashed). (c, d) The
+learning-rate factor and progress p as logged. (e) From p = 0.92 the loss covers the assistant tokens of
+conversations (and base text) only; its 73 records are left out of (a) and (b) and drawn on their own scale,
+not comparable with (a) and (b). The loss mixes 22 sources whose shares change with p and the data rules;
+the stream changed at the graft, and from P1 its chat share rises linearly (Appendix C.1), which by itself is
+expected to lower the loss of a step: levels on either side of a restart, of P1 or of P2 do not compare
 configurations.
 
-**C.4 After training.** The 118 minutes after training are planned as follows (`docs/CHANGES.md` §19.5;
-`bes/train/prefopt.py`). Sampling (3 minutes) adds a few pairs of the model's own replies. Preference
-optimisation (60 minutes) runs one epoch of DPO [74] against the frozen trained model (β = 0.1, 64
-pairs per step, plain Adam on every leaf, gradient-norm clip 1.0), almost entirely on UltraFeedback
-pairs [76], tries the learning rates 1e−6 and 3e−6 from the same start (Falcon-H1-Tiny's choice [11]),
-and accepts a result only if held-out preference accuracy improves beyond its standard error,
-held-out assistant loss rises by at most 3%, and sampled length and repetition stay within fixed bands;
-otherwise the trained weights ship. Decoding selection (35 minutes) may replace the default decoding
-only on a significant paired sign test on development prompts. Export (5 minutes) checks the 16-bit
-weights against float32 on held-out rows. Our replies to the 200 test prompts are generated on the
-runtime's host cores next to these stages (`scripts/gen_test_replies.py` through `endgame_testgen.sh`, 40
-workers): from the trained weights at about 18:36 and, if preference optimisation keeps its weights, again
-at about 19:40; the official replies are those whose weights and decoding equal the run's own export
-(`cmp_exports.py`), else they are generated again on a CPU runtime after the TPU is released
-(`docs/CHANGES.md` §19.9; `N/OPERATIONS.md`). [TBD: what each stage did, from the stage ledger at about
-20:32 UTC; Appendix M, R7–R10.]
+**C.4 After training.** The 118 minutes after training were planned before the end (`docs/CHANGES.md`
+§19.5; `post_plan` = `sample=3 critic=0 prefopt=60 select=35 judge=0 export=5 buffer=15`) and ran by the
+rules fixed in `bes/train/prefopt.py` and `scripts/run_24h.py` (Table C4); the run finished at 20:02:22, 29
+minutes before its deadline.
+
+**Table C4. The stages after training** (the stage ledger `run/stages.json`, the run log and the manifest's
+`decode` record in the last snapshot; UTC; `lead5_work/numbers.json` keys `stages`, `prefopt`, `select`).
+
+| stage | UTC | slice; used (s) | what it did |
+|---|---|---|---|
+| train | to 18:33:55 | – | stopped at its deadline (18:33:49), step 51,812; final checkpoint 18:33:54 |
+| sample | 18:33:55–18:37:07 | 180; 192.5 | sampled the trained model on 17 held-out prompts of 12 chat and maths sources (at most 28 pairs, the stage's bound); of its 21 pairs labelled by the exact verifiers, preference optimisation kept 20 (1 too long) |
+| critic, judge | – | 0; 0 | skipped (planned with 0 minutes) |
+| prefopt | 18:37:07–19:06:51 | 3,600; 1,783.8 | DPO (β = 0.1, plain Adam on every leaf, gradient-norm clip 1.0, one epoch of 551 steps of 64 pairs) on 35,201 pairs, 1,826 more held out by prompt: 37,007 UltraFeedback pairs [76] left after dropping 306 identical pairs, 8,366 whose chosen reply is over 3 times the rejected one and 7,995 too long, plus the 20 sampled; two learning rates from the trained weights, both accepted (Table C5); kept 3 × 10⁻⁶, the higher held-out accuracy |
+| select | 19:06:51–20:01:47 | 3,897; 3,295.3 | with the preference-optimised weights, the default, one particle and no length band on the 200 `dev` prompts (19.6, 4.0 and 31.3 minutes); mean exact scores 0.910, 0.850 and 0.915; against the default, one particle worse on 18 prompts and better on 1 (p = 7.6 × 10⁻⁵), no band better on 2 and worse on none (p = 0.50); the rule keeps the default unless a variant is better on significantly more prompts (p < 0.05): default kept; library: none built |
+| export | 20:01:47–20:02:22 | 300; 35.0 | the preference-optimised weights to `final/` (Appendix M, Table M10): 98,036,104 numbers in float16, 16-bit check 2.34440 against 2.34443 nats on 43,138 held-out tokens (tolerance 0.002), passed |
+
+**Table C5. The two candidates of preference optimisation** (`run/post/prefopt_report.json`; held-out
+preference accuracy on 1,826 pairs with its standard error; sampling statistics on 64 held-out prompts,
+paired with the start's; the checks of `bes/train/prefopt.py`).
+
+| quantity | start (trained weights) | 1 × 10⁻⁶ | 3 × 10⁻⁶ (kept) | the check |
+|---|---|---|---|---|
+| held-out preference accuracy (se) | 0.500 | 0.688 (0.011) | 0.694 (0.011) | gain above 1 × its standard error (0.011) |
+| held-out assistant-token loss | 1.5043 | 1.5172 (+0.86%) | 1.5208 (+1.10%) | at most +3% |
+| mean sampled length (tokens) | 284.9 | 282.7 (0.99 ×) | 270.0 (0.95 ×) | 0.7–1.6 × the start's, by 2 standard errors |
+| repeated-4-gram rate | 0.217 | 0.186 (0.86 ×) | 0.189 (0.87 ×) | at most 1.2 × the start's + 0.01, by 2 standard errors |
+| training steps; seconds; training accuracy | – | 551; 485; 0.677 | 551; 424; 0.685 | – |
+| accepted | – | yes | yes | best accuracy among the accepted |
+
+Our replies to the 200 test prompts were generated on the runtime's host cores next to these stages
+(`scripts/gen_test_replies.py` through `endgame_testgen.sh`, 40 workers of one core each): from the trained
+weights at 18:36:25–19:07:06 and from the preference-optimised weights at 19:31:22–20:06:32. The second
+generation's export has the same source checkpoint, fingerprint and `weights16.npz` SHA-256 as the run's own
+export and the default decoding, which the selection kept at 20:01:47, 30 minutes after this generation
+started (`testgen.json`; an export records `default` while the run has no decoding choice), so its replies are the
+official model's; the first is the before-and-after comparison of Section 7.7.
 
 **C.5 The configuration comparison that was not run.** A comparison of `v9` and `final` had been
 pre-registered on 23 November: 75 minutes of each on the chip, decided on held-out assistant loss at
@@ -1308,8 +1315,10 @@ reproducible, and both were triggered by the model's own failures rather than by
 advance. Their effect on the model is not measured: there is no ablation, the second rule acted only on
 the last part of `final` and on `v9`, and the triggering anecdotes are single prompts. On the 60
 development prompts the replies of `final` (step 25,280) and of `v9` (step 31,912) contain no stock
-refusal or deflection (Table 8). [TBD: the share of test replies of ours and of both opponents flagged by `exact_score`, after the
-test replies are generated; Appendix M, R4.]
+refusal or deflection (Table E3), and on the 252 test replies of every model compared (ours with six
+particles, with one and before preference optimisation; Falcon-H1-Tiny and its two control arms; both arms of
+MobileLLM-R1.5) the exact scorer flags none (Table 8). This counts unwanted refusals and deflections only; it
+says nothing about behaviour where a refusal would be right.
 From step 6,647 on, the model is not trained to refuse anything; this was the operator's decision,
 reported to the user, who could have overruled it, and the evaluation does not test behaviour on
 harmful requests. The preference pairs from UltraFeedback are not filtered by either rule (2.44% of its
@@ -1324,8 +1333,8 @@ patterns. (b) Share of each chat source's conversations that the stock-refusal r
 since step 6,647) and, in addition, the deflection rule (violet, live since step 25,280) leave out,
 measured with the loader's functions on 30,000 sampled conversations per source (2,260 for
 smoltalk_everyday, all it has). Black ticks and the column on the right: share of reads the live loader
-actually skipped for either rule from step 25,280 to step 46,350 (16:27:21 UTC on 24 November, the
-newest record of the paper's live numbers; `final` and `v9` together), with the number of reads. In both
+actually skipped for either rule from step 25,280 to step 51,800 (18:33:30 UTC on 24 November, the last
+step record; `final` and `v9` together), with the number of reads. In both
 panels "<0.1" means above 0 and below 0.05%, and "0" means none.
 
 ## Appendix E. Decoding
@@ -1397,8 +1406,95 @@ one reading per pair.
 
 **E.5 Decoding is bound by the host.** On the chip one decoding step took 12.1 ms for 6 rows and 34.5 ms
 for 24; a complete particle decode with 6 particles took 43.1 ms per position, of which about 31 ms was
-host-side Python (sampling, constraints, exact features) (`docs/CHANGES.md` §19.3). [TBD: decoding
-throughput of the final export, measured during the test-reply generation; Appendix M, R12.]
+host-side Python (sampling, constraints, exact features) (`docs/CHANGES.md` §19.3). On the CPU, the
+official replies to the 200 test prompts (252 replies) took 2,110 s on 40 workers of one host core each,
+export and cache calibration included: a median of 207 s and 156 new tokens per reply, and 0.567 s per
+decoding step of six particles on one core (Appendix M, Table M12; `testgen.json`).
+
+**E.6 The development studies in full.** Before the test split was opened, mid-run checkpoints were compared
+blind with both opponents on the first 60 development prompts (Section 7.9 summarises them). Table E2 gives
+every reader; Table E3 the exact scores of the same replies and bits per byte.
+
+**Table E2. Blind comparisons on development prompts, by reader** (W / L / T from the first-named model's side, T including "both
+bad" and pairs whose two orders disagree; score (wins + ties/2)/n with 95% Wilson interval; exact
+two-sided sign test; orders: pairs on which a reader's two orders agree; first: mean preference for the
+first-shown reply; `lead3_work/readers.py` on `study/proxy/ratings/`, which reproduces every report in
+`study/proxy/reports/ab/`; ours with default decoding; first 60 `dev` prompts; p: progress when the
+checkpoint was written, the trainer's stop event).
+
+| pair set | reader | W / L / T | score [95%] | sign test p | orders; first |
+|---|---|---|---|---|---|
+| `final` 25,280 (p = 0.44) vs Falcon-H1-Tiny | Opus, one reading | 2 / 43 / 15 | 0.158 [0.087, 0.271] | < 0.0001 | – |
+| | `qwen3-4b-2507` (registered) | 2 / 16 / 42 | 0.383 [0.271, 0.510] | 0.0013 | 63.3%; −0.096 |
+| | `gemma4-e4b` (registered second) | 0 / 4 / 56 | 0.467 [0.346, 0.591] | 0.13 | 80.0%; −0.087 |
+| `final` 25,280 vs MobileLLM-R1.5 | Opus, one reading | 15 / 8 / 37 | 0.558 [0.433, 0.677] | 0.21 | – |
+| | `qwen3-4b-2507` | 7 / 4 / 49 | 0.525 [0.401, 0.646] | 0.55 | 78.3%; −0.000 |
+| | `gemma4-e4b` | 2 / 0 / 58 | 0.517 [0.393, 0.638] | 0.50 | 91.7%; −0.008 |
+| `v9` 31,912 (p = 0.56) vs Falcon-H1-Tiny | Opus, two readings | 3 / 39 / 18 | 0.200 [0.118, 0.318] | < 0.0001 | 93.3%; +0.000 |
+| | `qwen3-4b-2507` | 1 / 16 / 43 | 0.375 [0.264, 0.502] | 0.0003 | 60.0%; −0.114 |
+| | `gemma4-e4b` | 0 / 3 / 57 | 0.475 [0.354, 0.599] | 0.25 | 83.3%; −0.065 |
+| `v9` 31,912 vs MobileLLM-R1.5 | Opus, two readings | 20 / 7 / 33 | 0.608 [0.482, 0.722] | 0.019 | 98.3%; +0.008 |
+| | `qwen3-4b-2507` | 7 / 2 / 51 | 0.542 [0.417, 0.661] | 0.18 | 80.0%; −0.000 |
+| | `gemma4-e4b` | 2 / 1 / 57 | 0.508 [0.385, 0.630] | 1.0 | 93.3%; +0.008 |
+| reference: Falcon-H1-Tiny vs MobileLLM-R1.5, 200 `test` prompts | Opus, two readings | 144 / 6 / 50 | 0.845 [0.788, 0.889] | < 0.0001 | 93.5%; +0.012 |
+
+**Three readers.** Against Falcon-H1-Tiny every reader that took sides took Falcon-H1-Tiny's in almost
+every pair: the Opus readers in 39 of 42 decisive pairs (`v9`) and 43 of 45 (`final`), the registered judge
+in 16 of 17 and 16 of 18, the second judge in all it decided. Where the Opus readers and the registered
+judge both chose a side (`v9`), they chose the same one in 14 of 16 pairs against Falcon-H1-Tiny and 6 of 6
+against MobileLLM-R1.5. The readers differ in how much they decide: the registered judge's two orders agreed on only 60–63% of
+the Falcon-H1-Tiny pairs and it preferred the second-shown reply, so most pairs the Opus readers decided
+were ties for it (26 of 42 against Falcon-H1-Tiny, 21 of 27 against MobileLLM-R1.5; Cohen's κ over win,
+loss and tie 0.21 and 0.18); the second judge gave no side (C, "equal or equally poor", or orders that
+disagree) in 93–97% of the pairs and has almost no resolution here. Against MobileLLM-R1.5 the Opus
+readers found a lead for `v9` (20 / 7, p = 0.019), mostly on instruction-following (9 / 0 / 3) and
+two-turn prompts (7 / 0 / 8), with every decisive maths pair lost (0 / 5 / 4); the registered judge found
+7 / 2 (p = 0.18). Both automatic judges cut replies over 4,000 characters, in 30 of the 60 MobileLLM-R1.5
+pairs. Agreement between orders is not validity: no human has read these pairs.
+
+**A scale.** On the 200 test prompts, read the same way, Falcon-H1-Tiny beat MobileLLM-R1.5 in 144 of 150
+decisive pairs, in every category (chat 37 / 1, code 17 / 2, instruct 31 / 0, maths 15 / 3, writing 44 /
+0). This set holds no reply of ours and does not open the test split for our model. MobileLLM-R1.5, a
+reasoning model run with its publisher's sampling and budget forcing, is weak on these prompts: on `dev`
+42 of its 75 replies ran into the token limit (Table E3), and the readers' notes on the reference pairs
+describe its reply as looping or repeating in 87 and 83 of 200 (two readings) and mention a boxed answer
+in 46 and 49, often nonsense or looping (in 32 and 40 of these the same clause also calls it looping,
+repeated, nonsense, degenerate, fragmentary or incoherent; keyword counts, `lead3_work/ref_notes.py`,
+`lead4_work/scripts/ref_notes4.py`). A lead over MobileLLM-R1.5 here is a low bar; the informative
+comparison is with Falcon-H1-Tiny, where our model, at step 31,912, is far behind. The development and
+test prompts are two halves of one set, so the scale is indicative, not a calibration.
+
+**In absolute terms.** In the first reading of the pair set in which both replies were ours (`v9` at step
+31,912, the default decoding against 3-gram blocking), both replies were judged bad in 44 of 60 pairs;
+the readers' notes on those 44 name wrong facts or arithmetic in 20 and incoherent text in 14 (keyword
+count, `lead3_work/ours_notes.py`; for instance "Both wrong; correct is 12,600. A says 30,000, B says 12.").
+Against MobileLLM-R1.5, 31 of 60 pairs were judged "both bad", against Falcon-H1-Tiny 14 of 60; for
+`final` at step 25,280, 46 to 55 of 60 pairs per decoding comparison (Table E1). At p = 0.56, most of the
+model's replies to these prompts were judged bad, mainly for wrong content and incoherence.
+
+**Table E3. Exact scores and bits per byte on development prompts** (the same 60 `dev` prompts, 75 turns,
+default decoding; `lead2_work/exact_dev.json`, `lead2_work/opp_bpb_web.json`, `lead3_work/heldout46.json`;
+the official model's column: the run's own decoding-selection replies at the end, prefopt weights of step
+51,812, `lead5_work/exact_dev_final.json`, and its bits per byte from `lead5_work/heldout5.json`).
+
+| measure | ours, `final` 25,280 | ours, `v9` 31,912 | ours, official (51,812, after DPO) | Falcon-H1-Tiny | MobileLLM-R1.5 `recommended` (`neutral` arm) |
+|---|---|---|---|---|---|
+| maths answers correct (9 prompts) | 0 | 1 | 0 | 4 | 4 (1) |
+| constrained prompts with every constraint met (14) | 12 | 12 | 13 | 9 | 2 (1) |
+| replies cut at the token limit (75) | 2 | 0 | 1 | 0 | 42 (54) |
+| stock refusals / deflections (75) | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 | 0 / 0 |
+| median words per reply | 93 | 96 | 98 | 188 | 532 (698) |
+| bits per UTF-8 byte, 64 held-out web rows (our training distribution) | 1.017 (step 29,722) | 0.998 (35,294); 0.980 (46,178) | 0.978 (0.974 before DPO) | 1.570 | 1.500 |
+
+The exact scores agree with the readers: both opponents answer more maths prompts correctly, and our
+replies meet constraints more often and are shorter than the opponent's in 38 to 45 of the 60 pairs. On
+held-out web text from our own training distribution (ClimbMix, 62% of `final`'s training tokens), our
+model needs 0.98 bits per byte at step 46,178 and the opponents 1.57 and 1.50 (the same rows: 258,814
+bytes as the opponents' tokenizers cut them, 258,817 as ours does);
+this favours us by construction (instruction-tuned opponents read on raw web text, training data
+unknown), and next-token loss on the pre-training distribution said little about preference in chat
+here. Two decoding studies on the same prompts could not separate any setting from the default
+(Table E1).
 
 ## Appendix F. On-chip measurements in full
 
@@ -1540,8 +1636,8 @@ runtime 1 (32-row micro-batches, training runs discarded): start-up benchmarks (
 log lines of training (dots; the reference row's two dots are the two monitor readings, 116,718 and
 115,394 tokens/s). Lower part, run main16: each bar spans the live rate (Section 2.2) before and after one
 change, with the window of step records printed under the stage (n, first and last step, UTC); records
-to step 46,350 (24 November, 16:27:21 UTC), the newest record of the paper's live numbers, the 2,048-token
-stage still running then. Diamonds: Table 2's synthetic or benchmark value of the same stage. A bar is a
+to step 51,800 (24 November, 18:33:30 UTC), the last step record, the last stage being the assistant-only
+tail from p = 0.92. Diamonds: Table 2's synthetic or benchmark value of the same stage. A bar is a
 before-and-after difference of medians, not the effect of one change alone: the step from runtime 2 to
 runtime 3 changed no code, and the graft changed the configuration.
 
@@ -1672,13 +1768,32 @@ seventh (the maximum) and 1.04 times at the fiftieth (β = 0.8, 0.95; our arithm
 another seed. A stream that starts mid-run needs two corrections. The loader's horizon estimate
 tokens/p − tokens was 40 times too small one block after the graft (1.9 × 10⁸ against 8.2 × 10⁹, found
 by the graft's review), so small sources would have been read out at once; told the tokens before the
-graft, the loader planned over 7.45 × 10⁹ remaining tokens, of which about 5.8 × 10⁹ will in fact be
-trained (a projection from the newest record): about 1.3 times too long rather than right. And every source may be read
+graft, the loader planned over 7.45 × 10⁹ remaining tokens, of which 5.79 × 10⁹ were in fact trained:
+about 1.3 times too long rather than right. And every source may be read
 max_epochs × (1 − p) = 3.96 more times; small sources were capped as before the graft (GSM8K's planned
 share 0.0126 became 0.0007; before the graft, 0.0114 became 0.0008).
 
 
-**G.4 The controlled experiment in detail** (`docs/MICRO_GRAFT.md`, `wf/micro_graft.md`,
+**G.4 The controlled experiment in detail.** *Design.* The model is the live model's code at width 128 (2 weight-shared blocks × 8 loops, rows of 512
+tokens, 4,096 tokens per step). Five arms, each with seeds 0, 1 and 2: `ref`, the micro reference
+(4,402,372 numbers); `v9_pages`, the reference with the `v9` page from the first step (gains and 8
+private token neurons per token and block in a 32-dimensional space; 14,904,516 numbers); and `graft_25`,
+`graft_50`, `graft_75`: `ref` up to 0.25, 0.5 or 0.75 of the budget, then grafted into `v9_pages` by the
+live tool's own function (`graft_run.graft_arrays`), which carries the shared leaves with their optimiser
+slots, update count and step, while the 5 new leaves (10,502,144 numbers) take the values of a fresh
+`v9_pages` tree of the same seed (U = G = 0). The budget is 6 × 10⁶ tokens (1,464
+steps), with held-out evaluations at a quarter, a half, three quarters and the end; the grafts fall on
+steps 366, 732 and 1,098. Within a seed all arms share the data order, the schedule (p = step/1,464) and
+the initial values of the shared leaves. Held-out loss is measured on 32 web and 32 chat rows from other
+files; "mix" weights them 3:1, like the training rows.
+
+*Checks.* Each graft arm trained its own trunk, and its evaluations before the graft equal those of
+`ref` of the same seed row for row, bit for bit. At each of the nine grafts the held-out loss of every
+domain, and the training loss of 8 held-out web rows, are the same before and after: the difference is
+exactly 0, on the held-out domains also per row (the training-loss check stores one aggregate value).
+These checks ran on the CPU in float32, as the whole experiment did.
+
+*Sources.* (`docs/MICRO_GRAFT.md`, `wf/micro_graft.md`,
 `micro_graft/6M/`; recomputed by `lead3_work/micrograft.py`). Code: graft arms in `bes/eval/microbench.py`
 (`run_graft_arm`), `scripts/micro_ablate.py` (`GRAFT_ARMS`), `scripts/micro_graft_report.py` and 11 tests in
 `tests/eval/test_micro_graft.py` (commit `b04478e`; results in `b1e9140`); written by one agent and
@@ -1686,9 +1801,9 @@ reviewed by a second before the runs (trunk equality, function preservation, car
 schedule and data order, unchanged hashes of the 31 E2 arms, report arithmetic). The runs used a separate
 clone of the repository with the patch, on the idle host cores of the training runtime (one physical
 core, two threads, per run; CPU only), 14:12:51 to 16:41:01 UTC; the main run's live rate at 2,048 tokens
-was 189,054 tokens/s over 73 step records before 14:12:51 and 189,086 over 117 during, to the cut-off of
-the paper's live numbers at 16:27:21 (`lead3_work/rate_during_micro.py`); the last 14 minutes of these
-runs and the restart arms (16:42:47–17:29:56) fall after the cut-off and are not covered. A graft is refused
+was 189,054 tokens/s over 73 step records before 14:12:51, 189,077 over the 128 during these runs and 189,050
+over the 23 of the restart arms' window (16:42:47–17:29:56) before the tail began at 17:09:57
+(`lead5_work/scripts/rate_during_micro5.py` on the final train log). A graft is refused
 before training when a base leaf is missing or reshaped in the target, when an optimiser setting or the
 schedule differs, or when the graft fraction is not an evaluation fraction. The carried update count
 makes the page tables' updates 1, 2, 5 and 50 after a graft 0.89, 1.15, 1.41 and 1.04 times those of a
@@ -1723,43 +1838,60 @@ of the same seed (the row plan is a prefix-stable round robin, `microbench.row_k
 half of the data again, not the unseen second half; with about one pass over the pools in all this should
 matter little, and it was not tested.
 
-**G.5 Held-out loss of every evaluated checkpoint.**
+**G.5 Held-out loss of every evaluated checkpoint.** The rows are built by `bes.export.heldout_batches` with
+64 rows per domain (`scripts/midrun_eval.py`); the export's own 16-bit check uses 16 per domain
+(`heldout_rows` = 16 in `bes/export.py`). We evaluated five checkpoints again on the CPU (29,722, 34,166,
+35,294, 46,178 and 51,812, the last from the final snapshot by `lead5_work/scripts/heldout_eval5.py`),
+keeping the loss of every position and switching the new paths off, and the weights after preference
+optimisation at 51,812; the local values reproduce the runtime's to within 5 × 10⁻⁸ on the web and chat rows
+(2.3 × 10⁻⁷ on the proxy rows at 51,812; `lead5_work/heldout5.json`).
 
 **Table G2. Held-out loss of every evaluated checkpoint** (nats per token; "web + chat" is the comparison
 set of 128 rows and 125,880 weighted tokens; local evaluations reproduce the runtime's values to within
-3 × 10⁻⁸ on the web and chat rows, `lead4_work/heldout4.json`; `lead2_work/heldout_analysis.json`,
-`lead3_work/heldout3.json`, `lead3_work/heldout46.json`; from step 37,522 the training stream's chat
-share is rising, Appendix C.1).
+5 × 10⁻⁸ on the web and chat rows, `lead4_work/heldout4.json`, `lead5_work/heldout5.json`;
+`lead2_work/heldout_analysis.json`, `lead3_work/heldout3.json`, `lead3_work/heldout46.json`; checkpoints
+from 37,522 on were trained while the stream's chat share rose (from step 36,867), and from 48,342 on after
+conversations began to train on assistant tokens only (step 48,190), Appendix C.1; the proxy rows, left out
+of every comparison, in the last column).
 
-| checkpoint | tokens | training minutes | web | chat | chat, assistant tokens | web + chat | evaluated |
-|---|---|---|---|---|---|---|---|
-| `final` 26,890 | 7.05 × 10⁹ | 494.7 | 2.7952 | 1.6300 | 1.5269 | 2.2358 | runtime |
-| `final` 28,501 | 7.47 × 10⁹ | 519.7 | 2.7905 | 1.6217 | 1.5191 | 2.2293 | runtime |
-| `final` 29,722 (the graft) | 7.79 × 10⁹ | 538.7 | 2.7886 | 1.6183 | 1.5164 | 2.2267 | runtime and local |
-| `v9` 30,742 | 8.06 × 10⁹ | 563.7 | 2.7739 | 1.6022 | 1.4994 | 2.2113 | runtime |
-| `v9` 31,762 | 8.33 × 10⁹ | 588.8 | 2.7666 | 1.5950 | 1.4918 | 2.2041 | runtime |
-| `v9` 31,912 | 8.37 × 10⁹ | 592.5 | 2.7662 | 1.5865 | 1.4830 | 2.1998 | runtime |
-| `v9` 33,038 | 8.66 × 10⁹ | 617.5 | 2.7541 | 1.5752 | 1.4713 | 2.1881 | runtime |
-| `v9` 34,166 | 8.96 × 10⁹ | 642.5 | 2.7437 | 1.5630 | 1.4569 | 2.1768 | runtime and local |
-| `v9` 35,294 | 9.25 × 10⁹ | 667.5 | 2.7344 | 1.5508 | 1.4463 | 2.1661 | runtime and local |
-| `v9` 36,422 | 9.55 × 10⁹ | 692.6 | 2.7254 | 1.5413 | 1.4355 | 2.1569 | runtime |
-| `v9` 37,522 | 9.84 × 10⁹ | 717.6 | 2.7137 | 1.5225 | 1.4167 | 2.1418 | runtime |
-| `v9` 38,604 | 1.012 × 10¹⁰ | 742.6 | 2.7066 | 1.5042 | 1.3967 | 2.1293 | runtime |
-| `v9` 39,686 | 1.040 × 10¹⁰ | 767.7 | 2.7035 | 1.4838 | 1.3761 | 2.1179 | runtime |
-| `v9` 40,768 | 1.069 × 10¹⁰ | 792.7 | 2.6997 | 1.4627 | 1.3546 | 2.1058 | runtime |
-| `v9` 41,850 | 1.097 × 10¹⁰ | 817.7 | 2.6977 | 1.4443 | 1.3339 | 2.0959 | runtime |
-| `v9` 42,932 | 1.125 × 10¹⁰ | 842.8 | 2.6922 | 1.4230 | 1.3111 | 2.0828 | runtime |
-| `v9` 44,014 | 1.154 × 10¹⁰ | 867.8 | 2.6910 | 1.4112 | 1.2965 | 2.0765 | runtime |
-| `v9` 45,096 | 1.182 × 10¹⁰ | 892.8 | 2.6857 | 1.3942 | 1.2795 | 2.0656 | runtime |
-| `v9` 46,178 | 1.211 × 10¹⁰ | 917.9 | 2.6867 | 1.3790 | 1.2651 | 2.0588 | runtime and local |
-| `v9` 34,166, pages off (token neurons and gains) | | | 2.7804 | 1.6218 | 1.5162 | 2.2241 | local |
-| `v9` 34,166, token neurons off | | | 2.7597 | 1.5848 | 1.4780 | 2.1956 | local |
-| `v9` 34,166, gains off | | | 2.7616 | 1.5944 | 1.4900 | 2.2012 | local |
-| `v9` 35,294, pages off | | | 2.7849 | 1.6301 | 1.5248 | 2.2305 | local |
-| `v9` 46,178, pages off | | | 2.8508 | 1.6523 | 1.5386 | 2.2754 | local |
+| checkpoint | tokens | training minutes | web | chat | chat, assistant tokens | web + chat | evaluated | proxy rows |
+|---|---|---|---|---|---|---|---|---|
+| `final` 26,890 | 7.05 × 10⁹ | 494.7 | 2.7952 | 1.6300 | 1.5269 | 2.2358 | runtime | 2.6332 |
+| `final` 28,501 | 7.47 × 10⁹ | 519.7 | 2.7905 | 1.6217 | 1.5191 | 2.2293 | runtime | 2.6382 |
+| `final` 29,722 (the graft) | 7.79 × 10⁹ | 538.7 | 2.7886 | 1.6183 | 1.5164 | 2.2267 | runtime and local | 2.6361 |
+| `v9` 30,742 | 8.06 × 10⁹ | 563.7 | 2.7739 | 1.6022 | 1.4994 | 2.2113 | runtime | 2.6112 |
+| `v9` 31,762 | 8.33 × 10⁹ | 588.8 | 2.7666 | 1.5950 | 1.4918 | 2.2041 | runtime | 2.6105 |
+| `v9` 31,912 | 8.37 × 10⁹ | 592.5 | 2.7662 | 1.5865 | 1.4830 | 2.1998 | runtime | 2.6187 |
+| `v9` 33,038 | 8.66 × 10⁹ | 617.5 | 2.7541 | 1.5752 | 1.4713 | 2.1881 | runtime | 2.5867 |
+| `v9` 34,166 | 8.96 × 10⁹ | 642.5 | 2.7437 | 1.5630 | 1.4569 | 2.1768 | runtime and local | 2.6000 |
+| `v9` 35,294 | 9.25 × 10⁹ | 667.5 | 2.7344 | 1.5508 | 1.4463 | 2.1661 | runtime and local | 2.5849 |
+| `v9` 36,422 | 9.55 × 10⁹ | 692.6 | 2.7254 | 1.5413 | 1.4355 | 2.1569 | runtime | 2.5430 |
+| `v9` 37,522 | 9.84 × 10⁹ | 717.6 | 2.7137 | 1.5225 | 1.4167 | 2.1418 | runtime | 2.5700 |
+| `v9` 38,604 | 1.012 × 10¹⁰ | 742.6 | 2.7066 | 1.5042 | 1.3967 | 2.1293 | runtime | 2.5742 |
+| `v9` 39,686 | 1.040 × 10¹⁰ | 767.7 | 2.7035 | 1.4838 | 1.3761 | 2.1179 | runtime | 2.5473 |
+| `v9` 40,768 | 1.069 × 10¹⁰ | 792.7 | 2.6997 | 1.4627 | 1.3546 | 2.1058 | runtime | 2.5258 |
+| `v9` 41,850 | 1.097 × 10¹⁰ | 817.7 | 2.6977 | 1.4443 | 1.3339 | 2.0959 | runtime | 2.5157 |
+| `v9` 42,932 | 1.125 × 10¹⁰ | 842.8 | 2.6922 | 1.4230 | 1.3111 | 2.0828 | runtime | 2.5151 |
+| `v9` 44,014 | 1.154 × 10¹⁰ | 867.8 | 2.6910 | 1.4112 | 1.2965 | 2.0765 | runtime | 2.4841 |
+| `v9` 45,096 | 1.182 × 10¹⁰ | 892.8 | 2.6857 | 1.3942 | 1.2795 | 2.0656 | runtime | 2.4868 |
+| `v9` 46,178 | 1.211 × 10¹⁰ | 917.9 | 2.6867 | 1.3790 | 1.2651 | 2.0588 | runtime and local | 2.4614 |
+| `v9` 47,260 | 1.239 × 10¹⁰ | 942.9 | 2.6847 | 1.3630 | 1.2475 | 2.0501 | runtime | 2.4683 |
+| `v9` 48,342 | 1.267 × 10¹⁰ | 967.9 | 2.6833 | 1.3612 | 1.2319 | 2.0485 | runtime | 2.6651 |
+| `v9` 49,424 | 1.296 × 10¹⁰ | 992.9 | 2.6815 | 1.3671 | 1.2148 | 2.0504 | runtime | 3.0764 |
+| `v9` 50,506 | 1.324 × 10¹⁰ | 1018.0 | 2.6762 | 1.3684 | 1.2071 | 2.0483 | runtime | 3.1946 |
+| `v9` 51,588 | 1.352 × 10¹⁰ | 1043.0 | 2.6719 | 1.3638 | 1.1981 | 2.0438 | runtime | 3.2241 |
+| `v9` 51,812 (the end of training) | 1.358 × 10¹⁰ | 1048.2 | 2.6690 | 1.3668 | 1.1983 | 2.0438 | runtime and local | 3.2580 |
+| `v9` 34,166, pages off (token neurons and gains) |  |  | 2.7804 | 1.6218 | 1.5162 | 2.2241 | local |  |
+| `v9` 34,166, token neurons off |  |  | 2.7597 | 1.5848 | 1.4780 | 2.1956 | local |  |
+| `v9` 34,166, gains off |  |  | 2.7616 | 1.5944 | 1.4900 | 2.2012 | local |  |
+| `v9` 35,294, pages off |  |  | 2.7849 | 1.6301 | 1.5248 | 2.2305 | local |  |
+| `v9` 46,178, pages off |  |  | 2.8508 | 1.6523 | 1.5386 | 2.2754 | local | 2.6920 |
+| `v9` 51,812, pages off | | | 2.8627 | 1.7051 | 1.5446 | 2.3069 | local | 3.5195 |
+| `v9` 51,812 after preference optimisation (the official weights) | | | 2.6804 | 1.3803 | 1.2095 | 2.0562 | local | 3.2842 |
 
-**Table G3. Comparisons at step 34,166** (the second draft's Table 7 rows; web + chat;
-`lead2_work/heldout_analysis.json`).
+**Table G3. Comparisons at steps 34,166, 35,294 and 46,178** (web + chat; bootstrap over rows;
+`lead2_work/heldout_analysis.json`, `lead3_work/heldout46.json`, `lead4_work/heldout4.json`; the lines
+recomputed by `lead5_work/scripts/heldout5.py`).
 
 | comparison | difference (nats) | 95% interval |
 |---|---|---|
@@ -1767,13 +1899,24 @@ share is rising, Appendix C.1).
 | `v9` 34,166 − `final`'s line at equal training time (line in minutes / in log tokens) | −0.028 / −0.031 | ±0.055 / ±0.045 (prediction, 1 degree of freedom) |
 | pages off − on; token neurons only; gains only | +0.0473; +0.0188; +0.0244 | [0.0436, 0.0511]; [0.0168, 0.0209]; [0.0221, 0.0267] |
 | `v9` with pages off − `final` 29,722 | −0.0026 | [−0.0064, 0.0014] |
+| `v9` 35,294 − `final` 29,722 (128.8 more training minutes) | −0.0605 | [−0.0653, −0.0557] |
+| `v9` 35,294 − `final`'s line at equal training time (minutes / log tokens); at equal tokens | −0.033 / −0.038; −0.044 | ±0.066 / ±0.052, both inside; ±0.040, outside |
+| pages off − on, at 35,294; `v9` with pages off − `final` 29,722 | +0.0643; +0.0038 | [0.0594, 0.0695]; [−0.0009, 0.0086] |
+| `v9` 46,178 − `final` 29,722 (379.2 more minutes) | −0.1679 | [−0.1828, −0.1533] |
+| … web rows / chat rows only | −0.1019 / −0.2393 | [−0.1106, −0.0937] / [−0.2560, −0.2235] |
+| `v9` 46,178 − `final`'s line at equal training time (minutes / log tokens) | −0.088 / −0.115 | ±0.171 / ±0.107; inside / outside |
+| `v9` 46,178 − `final`'s line at equal tokens | −0.127 | ±0.084; outside |
+| pages off − on, at 46,178; `v9` with pages off − `final` 29,722 | +0.2166; +0.0487 | [0.2019, 0.2320]; [0.0394, 0.0582] |
 
 At 34,166 the pages carried 0.066 nats on the rarest quarter of the held-out positions (1–16 occurrences
 of the input token) against 0.032 on the most frequent quarter (497–4,425), and the improvement since
 the graft was the same in every quarter (−0.049 to −0.051). At 46,178 the pages carry 0.299, 0.241, 0.170
 and 0.159 nats on the four quarters, from the rarest, and the improvement since the graft is −0.152,
 −0.153, −0.167 and −0.199; with the pages off at 46,178 the network is worse than at the graft point by
-0.0623 nats on the web rows and 0.0340 on the chat rows (`lead3_work/heldout46.json`).
+0.0623 nats on the web rows and 0.0340 on the chat rows (`lead3_work/heldout46.json`). At 51,812 the pages
+carry 0.356, 0.295, 0.213 and 0.193 nats on the four quarters, the improvement since the graft is −0.171,
+−0.183, −0.140 and −0.236, and with the pages off the network is worse than at the graft point by 0.074 nats
+on the web rows and 0.087 on the chat rows (`lead5_work/heldout5.json`).
 
 ## Appendix H. Negative results
 
@@ -1793,7 +1936,7 @@ and 0.159 nats on the four quarters, from the rarest, and the improvement since 
 | per-token gains on feed-forward neurons | −0.035 nats at four times the storage of the output gain | off |
 | hashed n-gram input tables | about 0.007 nats at this budget by the published slope | not implemented |
 | the written library after its precision fix | coverage on NQ-open validation 35.0% → 6.0%; answers mainly through stored near-duplicates; the gate opens on 8 of 200 dev first turns | not in the shipped configuration |
-| the plan's throughput | 300–450 thousand tokens/s assumed; 111,893 (start-up benchmark) and 115–117 thousand (two monitor readings) measured | planned for 16–25 × 10⁹ tokens; the run will see about 1.358 × 10¹⁰ (projection) |
+| the plan's throughput | 300–450 thousand tokens/s assumed; 111,893 (start-up benchmark) and 115–117 thousand (two monitor readings) measured | planned for 16–25 × 10⁹ tokens; the run trained 1.358 × 10¹⁰ |
 | the pre-registered `v9`-against-`final` comparison | not run (Appendix C.5) | `final` trained; `v9` adopted later at the user's request |
 | the critic | its gate (within-prompt rank correlation ≥ 0.3) was never measurable; its stage was given 0 minutes | off |
 | the learning-rate transfer rule at micro scale | +14.4% loss when applied at 4,096 tokens per step | not applied in the micro ablations; applied at full scale by extrapolation |
@@ -1814,11 +1957,51 @@ runtimes did not reproduce it.
 At 12:10 on 24 November the development container's disk filled (about 20 GB written by the
 verification agents of a research workflow); to free it, old snapshots were deleted, among them the
 local copies of `final`'s checkpoints of steps 5,075, 22,613 and 26,890 that Section 6.5 could
-otherwise have evaluated. The run was not affected. None of this is evidence for a
-claim of the paper; it is reported because it shaped what could be measured.
+otherwise have evaluated. The run was not affected. At the end of the run the operating agent's session
+worker was restarted twice, by the operator's account each time a tool call waited for an approval that
+nobody present could give, and the agent was inactive for about 23 and 41 minutes after them. The
+container's local loops (the watch loop and two presence keepers; the TPU-budget guard keeps no log) were
+down once for about 18 to 20 minutes (19:13:12–19:30:55, 19:10:57–19:31:15 and 19:14:31–19:34:21 in their
+logs), then ran until about 20:05 (the watch loop stopped at 20:03:48, the run having completed); after the
+development container rebooted at 20:12:56 the presence keepers were back at 20:13:41 and 20:16:45. The Opus
+readings of the test pairs could start only after the TPU was given back. The run on the runtime was not
+affected: its stages and the test-reply generations ran on the runtime itself. The registered judge's pass
+over the test pairs moved between machines (seconds per pair from its rating records): the TPU host's idle
+cores until 20:40 (Falcon-H1-Tiny pairs 1–113 at 9.8 s with 16 threads, MobileLLM-R1.5 pairs 1–73 at 15.1 s);
+a CPU runtime from 20:41 with two 4-thread streams (Falcon-H1-Tiny pairs 114–136 at 63.8 s, MobileLLM-R1.5
+pairs 74–89 at 91.9 s), then one 8-thread stream (Falcon-H1-Tiny pairs 137–142 at 144.4 s); from 21:22 two
+4-thread streams again (Falcon-H1-Tiny pairs 143–200 at 49.9 s, finished at 22:11; MobileLLM-R1.5 pairs 90–92
+at 177.7 s, its replies being long); from 21:36 two more streams on a third CPU runtime, taken from
+MobileLLM-R1.5's control-arm generation ([146, 173) and [173, 200) of the MobileLLM-R1.5 set), later three
+more index ranges ([125, 128), [128, 136), [136, 146)), five in all on two runtimes, the merged file complete at 22:35 (the 127 pairs judged on CPU runtimes took 105.2 s each on average; 3 pairs
+judged twice, the forward stream's record kept). A fourth CPU runtime was refused by the provider ("too many active
+sessions, or a temporary usage or capacity limit"). The TPU
+runtime was given back by hand at 20:41:04 (`colab_cli.py send release`, `down --yes`), closing the ledger at
+86,054 s. None of this is evidence for a claim of the paper; it is reported because it shaped what could be
+measured and when.
 
 ## Appendix J. Reproducibility
 
+- **Paths.** `N/` and `S/` are the scratch directories of the session that ran the experiment; the files
+  cited are copied under the same prefixes into the repository's `docs/paper/evidence/` (its README says the
+  test-split records are added once every reading of the test pairs is finished).
+- **The released model.** `release/main16-v9/` of the project repository holds the run's official export
+  as 12 parts of at most 16 MB (`official_export.tar.000`–`.011`, 196,956,160 bytes), committed in
+  `99ba0e7`…`994b3a1` (24 November, 20:22:37–20:23:25 UTC), with `parts.json` (the SHA-256 of every part and
+  of the whole tar, `f8278440…`) and a README giving the commands below. To rebuild and verify:
+  `mkdir -p runs/main16; cat release/main16-v9/official_export.tar.* | tar -x -C runs/main16; python
+  scripts/export.py --verify runs/main16/final`, which checks every file against `SHA256SUMS` and repeats the
+  16-bit held-out check (Python 3.13, `jax` 0.11.1 on CPU suffices). We checked that every committed part
+  matches `parts.json` and equals the part fetched from the runtime, that the parts' concatenation has the
+  recorded SHA-256, and that the 21 files of the copy unpacked from the committed parts match `SHA256SUMS`
+  (`lead5_work/scripts/verify_release.sh`); `weights16.npz` has SHA-256 `2da7cbd2e2f1fe49…`, as in the run's
+  `export.json`. To use it: `python scripts/chat.py --export runs/main16/final --device cpu`; a blind arena
+  against both opponents: `python scripts/arena.py --export runs/main16/final --device cpu --prompts
+  proxy:test`. The weights before preference optimisation (the last training checkpoint, exported at
+  18:37:02 UTC; `weights16.npz` SHA-256 `63423022…`; 16-bit check 2.32877 against 2.32881 nats) are kept the
+  same way in `release/main16-v9-before-dpo/` (`trained_export.tar.000`–`.011`, 196,352,000 bytes; it unpacks
+  to `export/`), rebuilt from the committed parts and verified; this is the export behind the replies
+  "before preference optimisation" of Section 7.7, not the official model.
 - **Code.** Branch `claude/modest-carson-yi2d9g` of the project repository. The run was created at
   commit `98598c2` (clean tree, recorded in the run manifest) and continued with code-only changes that
   leave the configuration hash unchanged: `e096dff`, `77305dc` (continuation on a new machine),
@@ -1827,7 +2010,11 @@ claim of the paper; it is reported because it shaped what could be measured.
   (deflections), `9a4d652` (graft), `769f240` (the `v9` switches; tests of the graft and of a `v9`
   export); documentation commits `ba0db12`, `d9f0ce4`, `1b9d1b8`, `8a86bcb`. The controlled graft
   experiment adds `b04478e` (graft arms of the micro bench), `b1e9140` (the results of its 15 runs) and
-  `190e0b2` (the restart arms' records, Table 6); the repository is at `190e0b2` for this draft.
+  `190e0b2` (the restart arms' records, Table 6); then `11aa314` (third draft), the release commits,
+  `34f12ac` (the operator's record of the results), `71121cb` (that record corrected after an independent
+  audit, with the readers' instructions and `scripts/blind_eval.py`) and `b94e332` (the registered judge's
+  full passes and the neutral-title replication added to that record); this draft rests on the repository
+  history up to the commit that adds this revision of the paper (after `b94e332`).
 - **Configurations.** `configs/final.py` (effective hash `0a7e9b33372a07ee` with the run's overrides)
   and `configs/v9.py` (`f29bfeb3ebf353a8`). The run's command line: `scripts/run_24h.py --config
   configs/final.py --out /content/runs/main16 --budget-minutes 1279.7 --override model.table_grad=take
@@ -1836,37 +2023,67 @@ claim of the paper; it is reported because it shaped what could be measured.
   RUN --resume`. Per-run files outside the hash: `micro_split` = `4`; `fast` = `kernel=onetile:save
   relu2=1 ce=0` for `final` and `kernel=onetile:save relu2=1 ce=0 flat=1 rows=1 tokn=1` for `v9`;
   `post_plan` = `sample=3 critic=0 prefopt=60 select=35 judge=0 export=5 buffer=15`.
+- **The test replies.** On the runtime's host, the operator's `endgame_driver.py TAG MINUTES` ran
+  `scripts/gen_test_replies.py /content/runs/main16 --make-export --no-download --split test --workers 40
+  --cores-per-worker 1 --nice 5 --max-rss-gb 8 --label final-TAG` (CPUs 2–21 and 24–43), which exports the
+  newest weights with the decoding the run has recorded (none yet at 18:36 and 19:31, so the default, which the
+  selection kept at 20:01:47) and generates every reply (settings hash `9a89782942`:
+  6 particles, temperature 0.6, top-p 0.9, 768 tokens, no library); TAG `trained` at 18:36, `prefopt` at
+  19:31. The K = 1 arm: the same script on a CPU runtime with the export rebuilt from the committed parts
+  and `--set extra.particles=1` (settings hash `f93654208f`). Falcon-H1-Tiny's control arms: `python -m
+  bes.eval.proxy run --model falcon --preset recommended --split test --samples 6 --select logprob_mean`
+  (`2dcb1c92a6`) and `--select decoder_select` (`d1f2a63f82`). Exact scores: `python -m bes.eval.proxy exact
+  RUN --split test`.
+- **The pair sets and their readings.** `gen_test_replies.py OUT --merge-into N/study/proxy`, then `python -m
+  bes.eval.proxy --root N/study/proxy pairs --x OURS --y OPPONENT --name final-TAG-vs-OPPONENT --split test`
+  (seed 0; the operator's `final_pairs.sh TAG`); the chunk files of the two readings by `blind_eval.py
+  export --chunk 15` (the second with `--swap`; in the repository since `71121cb` as `scripts/blind_eval.py`,
+  whose titles are neutral by default, `--title-with-set` reproducing the files of 24 November: each began
+  "# Blind pairs 1-15 of 200 (set final-prefopt-vs-falcon)" and lay in a directory of the set's name). Each
+  Opus 5.5 reader (model `claude-opus-5-5`), a background agent, received two chunk files and the written instructions `N/final_eval/JUDGE_INSTRUCTIONS.md` (judge what the user who
+  asked would prefer, in this order: correctness checked by the reader, every instruction followed,
+  usefulness; length is no merit; "tie" and "both_bad" when true; read no other file, no shell, no web) and
+  wrote one verdict file and one notes file per chunk; `blind_eval.py import2 --source judge-opus` combines
+  the two readings (a side wins only when both choose it) and `python -m bes.eval.proxy score --pairs SET
+  --source judge-opus` writes the report. The registered judge: `python -m bes.eval.proxy --root ROOT judge
+  --pairs SET --judge qwen3-4b-2507 --threads N` (the operator's `judge_remote.sh`), scored with `--source
+  judge-qwen3-4b-2507-3605803b`; the last 72 pairs of the MobileLLM-R1.5 set were judged in index ranges by the
+  operator's `judge_shard.py` (the registered `judge_pair`, model file and prompt unchanged) and merged by
+  `judge_shard_merge.py` (one record per pair, the main file's first). The neutral-title replication:
+  `blind_eval.py export` without `--title-with-set` into `neutral/x1|x2/a|b` (b with `--swap`), read the same
+  way and combined by `import2 --source judge-opus-neutral`.
 - **Measurements.** `scripts/tpu_kernels.py`, `scripts/tpu_micro.py`, `scripts/tpu_tune.py` and
   `docs/tpu_profile/*` on an idle chip; raw outputs of 24 November: `wf/chip_kernels_0745.txt`,
   `S/v9_meas{A,B_sorted,C_onehot,D}.txt`. Compile-only programs: `wf/v9_*_work/`.
-- **This paper's own analyses** (`N/paper/lead2_work/`, second pass): `make_numbers.py`,
-  `predictor_test.py` (Table 4, Table F5), `heldout_eval.py` and `heldout_analysis.py` (Section 6.5),
-  `graft_grad.py` (Section 6.4), `exact_dev.py` and `opp_bpb.py` (Table 8), `deflection_labels.py`
-  (Appendix D.4). Third pass (`N/paper/lead3_work/`): `make_numbers.py` (a copy reading the snapshot of
-  16:28 UTC: live medians, ratios, projections, power, FLOP), `heldout3.py` (every runtime evaluation and
-  the extrapolations), `heldout_eval.py` (a copy) and `heldout46.py` (step 46,178 with pages on and off),
-  `micrograft.py` (Section 6.6, Table 6), `readers.py` (Table 7), `ref_notes.py` and `ours_notes.py` (keyword
-  counts over the readers' notes). After the check (`N/paper/lead4_work/scripts/`): `heldout4.py` (the
-  three lines of Table 5 at every checkpoint; local against runtime), `micro4.py` (Section 6.6's
-  per-seed values and the restart comparisons), `readers4.py` (sign tests and Wilson bounds),
-  `ref_notes4.py` (boxed answers in the notes), `local46178.py` (Figure 5's points at 46,178), and for the
-  shells `bpb_web.py`, `exact_split.py` and `restrict_report.py` (Tables M4, M6, M11). The figures:
-  `figures/make_all.sh`, whose default cut-off is now the newest step of `lead3_work/numbers.json`
-  (46,350).
-- **Evaluation.** `python -m bes.eval.proxy` (`docs/EVAL_PROTOCOL.md` §9), `scripts/gen_test_replies.py`
-  for our replies, the operator's `blind_eval.py` for the readings.
+- **This paper's own analyses.** Second pass (`N/paper/lead2_work/`): `make_numbers.py`, `predictor_test.py`
+  (Table 4, Table F5), `heldout_eval.py` and `heldout_analysis.py`, `graft_grad.py` (Section 6.4),
+  `exact_dev.py` and `opp_bpb.py`, `deflection_labels.py` (Appendix D.4). Third pass (`lead3_work/`):
+  `make_numbers.py`, `heldout3.py`, `heldout_eval.py`, `heldout46.py`, `micrograft.py` (Table 6),
+  `readers.py` (Table E2), `ref_notes.py` and `ours_notes.py`. After the check (`lead4_work/scripts/`):
+  `heldout4.py`, `micro4.py`, `readers4.py`, `ref_notes4.py`, `local46178.py`, `bpb_web.py`,
+  `exact_split.py` and `restrict_report.py`. Final pass (`lead5_work/scripts/`): `extract_snap.py` (the
+  records of the last snapshot), `make_numbers.py` (live rates, ledger, TPU time, stages, preference
+  optimisation, decoding selection, power), `final_results.py` (every test reading with the repository's key
+  check, the 189-prompt restriction, raw verdicts per reading, paired comparisons, reader agreement),
+  `paper_values.py` (Table 7's values rounded once), `exact_check.py` and `exact_dev_final.py` (Tables 8,
+  E3), `heldout_eval5.py` and `heldout5.py` (Section 6.5, Tables 5, G2, G3), `rate_during_micro5.py`,
+  `verify_release.sh`, `wordcount.py`. The figures: `figures/make_all.sh --cutoff newest --blind
+  final-prefopt-vs-falcon,final-prefopt-vs-mobilellm` (`FIGURES.md`; log `lead5_work/make_all_final.log`).
 - **Determinism.** The same batch gives the same loss twice, bit for bit, on the chip (the start-up
   canary); a restart after 10 steps reproduces 20 uninterrupted steps bit for bit on the CPU (tests); the
   data position is a function of the step. Bitwise reproducibility across restarts on the chip was not
-  tested. What cannot be reproduced is the provider's allocation of runtimes.
-- **Tests.** 1,367 test functions in `tests/` at `b1e9140` and at `190e0b2` (static count of
+  tested. What cannot be reproduced is the provider's allocation of runtimes, and the Opus readers'
+  verdicts are not deterministic.
+- **Tests.** 1,367 test functions in `tests/` at `b1e9140`, `190e0b2`, `34f12ac` and `71121cb` (static count of
   `def test_`; 1,356 at `8a86bcb`).
 
 ## Appendix K. Licences, safety and conduct
 
 ClimbMix, the largest base source, is distributed under an MIT card but derives from a corpus under
-CC BY-NC 4.0; we treat it as non-commercial, so the trained weights inherit that restriction [TBD:
-licence review of the released weights, before release]. Several chat and preference sources were
+CC BY-NC 4.0; we treat it as non-commercial, so the trained weights inherit that restriction. The weights
+were committed to the public repository at the end of the run (Appendix J) without a separate licence
+review; the model card lists every training source with its licence and marks ClimbMix as non-permissive,
+and the release's README says the model is a research artefact not fit to deploy. Several chat and preference sources were
 generated by third-party models whose terms set conditions on training with their outputs
 (`docs/DATA_SOURCES.md` §4). The model is not trained to refuse (Appendix D.5) and has not been evaluated
 for harmful output; it should not be deployed. The development container held the user's Colab
@@ -1884,220 +2101,213 @@ arithmetic was 1.18–1.19, not 1.13 GFLOP per token; the headline time ratio wa
 audits found a gate whose logit saturated (by an ablation, not by review) and the loader's horizon
 estimate after the graft (by the graft's review). We report this because it is the evidence that the
 numbers here were checked against their sources, and because the checks were not complete. A third pass
-(this draft) added the controlled graft experiment, the registered judges' readings and the opponents'
+added the controlled graft experiment, the registered judges' readings and the opponents'
 reference comparison, moved the live numbers to the records of 16:27 UTC, recomputed every new number
 from the raw records (`lead3_work/`), and corrected the first row of Table 2, Table 4's FLOP cell, the
 definition of the live rate and the description of whole-step timings (`RESPONSE_2.md`). A second check
 of that pass (`REVIEW_2.md`) found that Section 6.5 called a gap "inside 95% prediction intervals" that
 the log-token line and the equal-token comparison put outside, that the protocol's K = 1 result and
 matched controls had been dropped without a deviation, and that several result shells could not be
-filled from the files they named; this draft corrects them, with the numbers recomputed from the raw
-records (`lead4_work/`; `RESPONSE_2.md`, "After the check").
+filled from the files they named; its revision corrected them, with the numbers recomputed from the raw
+records (`lead4_work/`; `RESPONSE_2.md`, "After the check"). The final pass (`RESPONSE_3.md`)
+recomputed every result from the run's last records and the rating files (`lead5_work/`), checked the Opus
+reports, the exact reports and the release against their sources, and found statements in the
+orchestrator's notes that the records do not support as written: that the constraint lead over
+Falcon-H1-Tiny is "the selector's doing" (with one particle, where nothing is selected, our model meets every
+constraint on 37 of the 48 constrained prompts, against 38 with six particles; 34 prompts are met by both), that the all-row held-out loss rose "after 46,178" (it fell to step 47,260 and rose from
+the tail at step 48,190 on), and several intervals printed by rounding a 4-decimal value a second time. An
+independent audit of the operator's record (`docs/paper/evidence/audit_19_10.md` in the repository, since
+`71121cb`) found the same and more, among them that the Opus readers could see which two systems each set
+compared; the corrections (`FACTS_2.md`, 22:25 UTC) are applied here, a replication of the two official sets
+under neutral titles was read (Section 7.5), and scores exactly on a half are printed rounded to even. A last
+hostile check of this pass (`REVIEW_3.md`) found 33 more discrepancies, among them a value rounded twice in
+Table M4, a misattributed count and claims of blindness without their caveats; those in the paper are corrected.
 
-## Appendix M. Results to come: table shells
+## Appendix M. Results on the test split and at the end of the run
 
-The last pass fills these shells without restructuring them. Every cell marked [TBD] is copied from the
-file named for its table, or from the output of the command named there (the scripts of
-`lead4_work/scripts/` were checked on `dev`, where they reproduce the files the paper already cites);
-nothing is to be computed by hand. Conventions: W / L / T, score, interval,
-sign test and the reader diagnostics are as in Table 7 (from our side; T includes "both bad" and pairs
-whose two orders disagree). R = `N/study/proxy/reports/ab/`. TAG = the test generation whose weights
-and decoding equal the run's own export (`trained` or `prefopt`): `S/scripts/cmp_exports.py` compares
-`/content/runs/main16/final` with `/content/bes_cli/testgen_TAG/export` (same `weights16.npz` hash and
-`decode_choice`); if neither matches, the replies are generated again on a CPU runtime and TAG names that
-generation (OPERATIONS, "Since 12:10"). The pair sets are `final-TAG-vs-falcon` and
-`final-TAG-vs-mobilellm` on the 200 `test` prompts (`S/scripts/final_pairs.sh TAG`); the Opus readings are
-imported by `S/scripts/final_score.sh TAG` (source `judge-opus`, two readings on exchanged sides from
-`N/final_eval/TAG/<set>/r1|r2/chunk_*.verdicts.json`); the registered judges' ratings come from
-`S/scripts/judge_remote.sh` on a CPU runtime into `N/study/proxy/ratings/<set>/`, then
-`python -m bes.eval.proxy score`. MobileLLM-R1.5 is its `recommended` arm: no blind comparison of the
-`neutral` arm on `dev` is scheduled (Section 7.2, deviation 4). The protocol's K = 1 result and K-matched
-and selector-matched controls have no shell, because they are not run (deviation 6).
+The shells of the third draft, filled. Every value is recomputed from the records named for its table by
+the scripts of `lead5_work/scripts/` (this appendix is written by `make_appendix_m.py` from their outputs; no
+number is typed, except the corrections of `REVIEW_3.md`: one repeated-4-gram rate of Table M4, recomputed
+from the replies, and the placeholder rows of MobileLLM-R1.5's K = 6 arms). Conventions as in Table 7: W / L / T from our side (T includes "both bad" and pairs whose
+two orders disagree), score (wins + ties/2)/n with its 95% Wilson interval, the decisive win rate wins /
+(wins + losses) with its interval, exact two-sided sign test; values rounded once from full precision, a value
+exactly on a half to even. R = `N/study/proxy/reports/ab/`. Our official run is
+`ours-export-step51812-47fd99c151a50a58/final-prefopt-9a89782942-s0` (TAG = `prefopt`: its export has the
+run's own `weights16.npz` and the default decoding, which the selection kept), the opponents' runs `falcon-e60034381f4a/recommended-5ccec0259b-s0`
+and `mobilellm-f680f0533368-qwen3/recommended-d9f149b0d3-s0`. The registered judge's pass is complete on both official sets: its rows give the pairs rated in its files as read at 22:38 UTC (final-prefopt-vs-falcon: 200 records, last written 22:11:18, final-prefopt-vs-mobilellm: 200 records, last written 22:35:20). The second registered judge
+(`gemma4-e4b`) was not run on the test pairs, so its rows of the shells are gone (Section 7.2, deviation 1).
 
-**Table M1 (R1). The test split, 200 prompts: each opponent and each reader** (`R/final-TAG-vs-<opponent>--<source>.json`,
-fields `overall` and `judge`; sources `judge-qwen3-4b-2507-3605803b`, `judge-gemma4-e4b-85a896a0`,
-`judge-opus`) [TBD: Opus readings once the test replies exist, from about 19:30 UTC on 24 November;
-registered judges on a CPU runtime after the TPU is released, 24–25 November].
+**Table M1 (R1). The test split, 200 prompts: each opponent and each reader** (`R/<set>--<source>.json`, fields `overall` and `judge`, reproduced by `final_results.py`; sets `final-prefopt-vs-falcon`, `-vs-falcon-k6lp`, `-vs-falcon-k6ds`, `-vs-mobilellm`, `final-k1-vs-falcon`, `final-k1-vs-mobilellm`, `ref-falcon-vs-mobilellm-test`; sources `judge-opus`, `judge-opus-neutral`, `judge-qwen3-4b-2507-3605803b`).
 
 | opponent | reader | n | W / L / T | score [95%] | decisive win rate [95%] | sign test p | orders agree | first-position preference |
 |---|---|---|---|---|---|---|---|---|
-| Falcon-H1-Tiny-90M-Instruct | `qwen3-4b-2507` (registered) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| Falcon-H1-Tiny-90M-Instruct | `gemma4-e4b` (registered second) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| Falcon-H1-Tiny-90M-Instruct | Opus, two readings | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| MobileLLM-R1.5-140M | `qwen3-4b-2507` (registered) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| MobileLLM-R1.5-140M | `gemma4-e4b` (registered second) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| MobileLLM-R1.5-140M | Opus, two readings | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| reference: Falcon-H1-Tiny vs MobileLLM-R1.5 | Opus, two readings | 200 | 144 / 6 / 50 | 0.845 [0.788, 0.889] | 0.960 [0.915, 0.982] | < 0.0001 | 93.5% | +0.013 |
+| Falcon-H1-Tiny-90M-Instruct | `qwen3-4b-2507` (registered), full pass | 200 | 12 / 61 / 127 | 0.378 [0.313, 0.446] | 0.164 [0.097, 0.266] | < 0.0001 | 60.5% | −0.134 |
+| Falcon-H1-Tiny-90M-Instruct | Opus, two readings | 200 | 35 / 108 / 57 | 0.318 [0.257, 0.385] | 0.245 [0.182, 0.321] | < 0.0001 | 90.5% | +0.005 |
+| Falcon-H1-Tiny-90M-Instruct | Opus, two readings, neutral titles | 200 | 33 / 109 / 58 | 0.310 [0.250, 0.377] | 0.232 [0.171, 0.308] | < 0.0001 | 92.5% | +0.010 |
+| Falcon-H1-Tiny, K = 6 kept by its own log-probability | Opus, two readings | 200 | 35 / 112 / 53 | 0.308 [0.248, 0.375] | 0.238 [0.176, 0.313] | < 0.0001 | 93.5% | +0.020 |
+| Falcon-H1-Tiny, K = 6 kept by our selector | Opus, two readings | 200 | 29 / 116 / 55 | 0.282 [0.225, 0.349] | 0.200 [0.143, 0.272] | < 0.0001 | 92.5% | +0.018 |
+| MobileLLM-R1.5-140M | `qwen3-4b-2507` (registered), full pass | 200 | 59 / 5 / 136 | 0.635 [0.566, 0.699] | 0.922 [0.830, 0.966] | < 0.0001 | 71.5% | −0.035 |
+| MobileLLM-R1.5-140M | Opus, two readings | 200 | 116 / 15 / 69 | 0.752 [0.688, 0.807] | 0.885 [0.820, 0.929] | < 0.0001 | 96.0% | −0.005 |
+| MobileLLM-R1.5-140M | Opus, two readings, neutral titles | 200 | 112 / 15 / 73 | 0.742 [0.678, 0.798] | 0.882 [0.814, 0.927] | < 0.0001 | 96.0% | −0.010 |
+| MobileLLM-R1.5, K = 6 (both rules) | – | [TBD: replies in generation since 19:17 UTC, 60 of 200 prompts at 22:02; since 22:36 in disjoint slices on three CPU runtimes and the development container; expected after 00:30 UTC on 25 November] | | | | | | |
+| Falcon-H1-Tiny, against our K = 1 arm | Opus, two readings | 200 | 22 / 122 / 56 | 0.250 [0.195, 0.314] | 0.153 [0.103, 0.220] | < 0.0001 | 92.5% | +0.015 |
+| MobileLLM-R1.5, against our K = 1 arm | Opus, two readings | 200 | 99 / 16 / 85 | 0.708 [0.641, 0.766] | 0.861 [0.786, 0.913] | < 0.0001 | 91.5% | +0.008 |
+| reference: Falcon-H1-Tiny vs MobileLLM-R1.5 | Opus, two readings | 200 | 144 / 6 / 50 | 0.845 [0.788, 0.889] | 0.960 [0.915, 0.982] | < 0.0001 | 93.5% | +0.012 |
 
-**Table M2 (R2). By category and by turns** (W / L / T; the same files, fields `by_category` and
-`by_turns`; the counts of prompts are those of the `test` split) [TBD: with R1].
+**Table M2 (R2). By category and by turns** (W / L / T; the same files, fields `by_category` and `by_turns`; prompts of the `test` split).
 
-| slice (prompts) | Falcon-H1-Tiny: `qwen3-4b-2507` | Falcon-H1-Tiny: `gemma4-e4b` | Falcon-H1-Tiny: Opus | MobileLLM-R1.5: `qwen3-4b-2507` | MobileLLM-R1.5: `gemma4-e4b` | MobileLLM-R1.5: Opus |
-|---|---|---|---|---|---|---|
-| chat (50) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| code (30) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| instruction-following (40) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| maths (30) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| writing (50) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| single-turn (148) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| two-turn (52) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
+| slice (prompts) | Falcon-H1-Tiny: Opus | Falcon-H1-Tiny: `qwen3-4b-2507` | Falcon, K = 6 own log-prob.: Opus | Falcon, K = 6 our selector: Opus | MobileLLM-R1.5: Opus | MobileLLM-R1.5: `qwen3-4b-2507` | ours K = 1 vs Falcon: Opus | ours K = 1 vs MobileLLM: Opus |
+|---|---|---|---|---|---|---|---|---|
+| chat (50) | 10 / 24 / 16 | 3 / 10 / 37 | 8 / 24 / 18 | 7 / 25 / 18 | 28 / 1 / 21 | 12 / 0 / 38 | 9 / 31 / 10 | 28 / 2 / 20 |
+| code (30) | 10 / 13 / 7 | 3 / 4 / 23 | 11 / 13 / 6 | 11 / 12 / 7 | 16 / 2 / 12 | 13 / 0 / 17 | 7 / 13 / 10 | 13 / 4 / 13 |
+| instruction-following (40) | 7 / 21 / 12 | 4 / 17 / 19 | 9 / 21 / 10 | 7 / 22 / 11 | 29 / 0 / 11 | 17 / 0 / 23 | 2 / 25 / 13 | 24 / 0 / 16 |
+| maths (30) | 4 / 18 / 8 | 0 / 12 / 18 | 4 / 19 / 7 | 3 / 20 / 7 | 7 / 12 / 11 | 5 / 4 / 21 | 3 / 19 / 8 | 6 / 10 / 14 |
+| writing (50) | 4 / 32 / 14 | 2 / 18 / 30 | 3 / 35 / 12 | 1 / 37 / 12 | 36 / 0 / 14 | 12 / 1 / 37 | 1 / 34 / 15 | 28 / 0 / 22 |
+| single-turn (148) | 28 / 78 / 42 | 10 / 45 / 93 | 26 / 80 / 42 | 21 / 84 / 43 | 83 / 11 / 54 | 45 / 5 / 98 | 16 / 85 / 47 | 67 / 13 / 68 |
+| two-turn (52) | 7 / 30 / 15 | 2 / 16 / 34 | 9 / 32 / 11 | 8 / 32 / 12 | 33 / 4 / 15 | 14 / 0 / 38 | 6 / 37 / 9 | 32 / 3 / 17 |
 
-**Table M3 (R3). Length buckets and reader diagnostics** (the same files, fields `by_length` (ratio of
-our words to the opponent's: shorter below 2/3, longer above 3/2) and `judge`) [TBD: with R1].
+**Table M3 (R3). Length buckets and reader diagnostics** (the same files, fields `by_length` (ratio of our words to the opponent's, +1 each: shorter below 2/3, longer above 3/2) and `judge`; the Opus records carry no probability mass and no clipping, since the readers read the chunk files).
 
-| row | Falcon-H1-Tiny: `qwen3-4b-2507` | Falcon-H1-Tiny: `gemma4-e4b` | Falcon-H1-Tiny: Opus | MobileLLM-R1.5: `qwen3-4b-2507` | MobileLLM-R1.5: `gemma4-e4b` | MobileLLM-R1.5: Opus |
-|---|---|---|---|---|---|---|
-| ours shorter: n; W / L / T | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| similar: n; W / L / T | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| ours longer: n; W / L / T | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| orders agree | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| first-position preference | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| probability mass on A, B, C (automatic judges; field `judge.format_mass_mean`) | [TBD] | [TBD] | – | [TBD] | [TBD] | – |
-| pairs with a reply cut for the judge (over 4,000 characters) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
+| row | Falcon-H1-Tiny: Opus | Falcon-H1-Tiny: `qwen3-4b-2507` | Falcon, K = 6 own log-prob.: Opus | Falcon, K = 6 our selector: Opus | MobileLLM-R1.5: Opus | MobileLLM-R1.5: `qwen3-4b-2507` | ours K = 1 vs Falcon: Opus | ours K = 1 vs MobileLLM: Opus |
+|---|---|---|---|---|---|---|---|---|
+| ours shorter: n; W / L / T | 93; 26 / 41 / 26 | 93; 11 / 14 / 68 | 94; 26 / 38 / 30 | 89; 19 / 37 / 33 | 140; 77 / 9 / 54 | 140; 49 / 1 / 90 | 81; 15 / 45 / 21 | 140; 71 / 9 / 60 |
+| similar: n; W / L / T | 72; 7 / 40 / 25 | 72; 1 / 25 / 46 | 76; 8 / 51 / 17 | 82; 10 / 55 / 17 | 28; 17 / 5 / 6 | 28; 4 / 3 / 21 | 79; 5 / 46 / 28 | 23; 6 / 5 / 12 |
+| ours longer: n; W / L / T | 35; 2 / 27 / 6 | 35; 0 / 22 / 13 | 30; 1 / 23 / 6 | 29; 0 / 24 / 5 | 32; 22 / 1 / 9 | 32; 6 / 1 / 25 | 40; 2 / 31 / 7 | 37; 22 / 2 / 13 |
+| orders agree | 90.5% | 60.5% | 93.5% | 92.5% | 96.0% | 71.5% | 92.5% | 91.5% |
+| first-position preference | +0.005 | −0.134 | +0.020 | +0.018 | −0.005 | −0.035 | +0.015 | +0.008 |
+| probability mass on A, B, C (field `judge.format_mass_mean`) | – | 0.983 | – | – | – | 0.995 | – | – |
+| pairs with a reply cut for the judge (over 4,000 characters) | – | 1 | – | – | – | 88 | – | – |
 
-**Table M4 (R4). Exact scores on the 200 test prompts (252 turns)** (`bes.eval.exact_score` on every
-reply, by `lead4_work/scripts/exact_split.py --split test --run ours=<x of the R1 report> --run
-other=<x of the other weights' report, if generated> --run falcon=falcon-e60034381f4a/recommended-5ccec0259b-s0
---run mobilellm_recommended=mobilellm-f680f0533368-qwen3/recommended-d9f149b0d3-s0 --run
-mobilellm_neutral=mobilellm-f680f0533368-qwen3/neutral-48fefc857c-s0 --out lead4_work/exact_test.json`,
-over the outputs in `N/study/proxy/outputs/`: ours from `N/testgen/TAG/out` merged by `final_pairs.sh`, the
-opponents' test replies already there; on `dev` the same script reproduces `lead2_work/exact_dev.json`
-for the four runs of Table 8, `lead4_work/exact_split_dev_check.json`) [TBD: after the test replies are
-generated, from about 19:30 UTC on 24 November].
+**Table M4 (R4). Exact scores on the 200 test prompts (252 turns), in full** (`bes.eval.exact_score` on every reply, by `lead4_work/scripts/exact_split.py --split test` with every run below, `lead5_work/exact_test.json`; equal field by field to the run's report in `study/proxy/reports/exact/` where one exists, which is every run but MobileLLM-R1.5's `neutral` arm; counts from `lead5_work/exact_counts.json`).
 
-| measure | ours (TAG) | ours (the other weights, if generated) | Falcon-H1-Tiny | MobileLLM-R1.5 `recommended` | MobileLLM-R1.5 `neutral` |
-|---|---|---|---|---|---|
-| maths answers correct (of 30 maths prompts) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| constrained prompts with every constraint met (of 48) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| replies cut at the token limit (of 252) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| replies with a looping tail or repeated lines (of 252) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| empty replies (of 252) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| stock refusals (of 252) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| stock deflections (of 252) | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
-| median words per reply | [TBD] | [TBD] | [TBD] | [TBD] | [TBD] |
+| measure | ours, official | ours, K = 1 | ours, trained weights | Falcon-H1-Tiny | Falcon K = 6, own log-prob. | Falcon K = 6, our selector | MobileLLM-R1.5 `recommended` | MobileLLM-R1.5 `neutral` |
+|---|---|---|---|---|---|---|---|---|
+| maths answers correct (of 30) | 6 | 5 | 6 | 15 | 17 | 18 | 12 | 11 |
+| constrained prompts with every constraint met (of 48) | 38 | 37 | 41 | 33 | 35 | 42 | 8 | 9 |
+| single constraints met (of 56) | 46 | 44 | 48 | 41 | 42 | 50 | 10 | 11 |
+| degenerate replies (of 252) | 5 | 17 | 3 | 2 | 1 | 0 | 158 | 148 |
+| … cut at the token limit | 5 | 17 | 3 | 1 | 0 | 0 | 150 | 146 |
+| … looping tail; repeated lines | 0; 0 | 0; 0 | 0; 0 | 0; 0 | 0; 0 | 0; 0 | 14; 54 | 17; 50 |
+| … empty; unclosed code fence; role markers | 0; 0; 0 | 0; 0; 0 | 0; 0; 0 | 0; 1; 0 | 0; 1; 0 | 0; 0; 0 | 2; 7; 0 | 1; 10; 0 |
+| stock refusals; stock deflections (of 252) | 0; 0 | 0; 0 | 0; 0 | 0; 0 | 0; 0 | 0; 0 | 0; 0 | 0; 0 |
+| words per reply: upper median (the 127th of 252); mean | 101; 130.4 | 105; 149.7 | 99; 119.2 | 155; 173.4 | 147; 174.3 | 145; 168.4 | 395; 474.1 | 517; 533.7 |
+| mean repeated-4-gram rate | 0.034 | 0.054 | 0.038 | 0.020 | 0.026 | 0.020 | 0.258 | 0.290 |
 
-**Table M5 (R5). The trained weights against the weights after preference optimisation** (pair sets
-`final-trained-vs-*` and `final-prefopt-vs-*`, both generated by `S/scripts/endgame_testgen.sh trained|prefopt`;
-reports `R/final-trained-vs-<opponent>--<source>.json` and `R/final-prefopt-vs-<opponent>--<source>.json`)
-[TBD: the prefopt generation exists only if the stage saved its weights, from about 19:40 UTC; the
-second pair of sets is read only if time allows]. This R5 replaces the second draft's R5, the K-matched
-control, which is not run (Section 7.2, deviation 6).
+A reply can be degenerate in several ways at once, so the sub-rows do not add up. MobileLLM-R1.5's two K = 6
+arms: [TBD] (Section 7.2, deviation 6).
 
-| our weights | opponent | reader | W / L / T | score [95%] | sign test p |
-|---|---|---|---|---|---|
-| trained (end of training) | Falcon-H1-Tiny | Opus, two readings | [TBD] | [TBD] | [TBD] |
-| trained | MobileLLM-R1.5 | Opus, two readings | [TBD] | [TBD] | [TBD] |
-| after preference optimisation | Falcon-H1-Tiny | Opus, two readings | [TBD] | [TBD] | [TBD] |
-| after preference optimisation | MobileLLM-R1.5 | Opus, two readings | [TBD] | [TBD] | [TBD] |
-| paired difference, prefopt against trained, on the same prompts (`python -m bes.eval.proxy --root N/study/proxy compare --a final-prefopt-vs-<opponent> --b final-trained-vs-<opponent> --source judge-opus`, printed JSON saved as `lead4_work/compare_<opponent>.json`; fields `a_better` / `b_better` / `same` in the W / L / T column and `p`) | Falcon-H1-Tiny | Opus | [TBD] | – | [TBD] |
-| the same | MobileLLM-R1.5 | Opus | [TBD] | – | [TBD] |
+**Table M5 (R5). The trained weights against the weights after preference optimisation** (the direct pair set `final-prefopt-vs-trained`, both readings, `R/final-prefopt-vs-trained--judge-opus.json`; exact scores from Table M4; held-out losses from `lead5_work/heldout5.json`; the in-run checks from Table C5). The pair sets `final-trained-vs-falcon` and `-vs-mobilellm` were published at 19:07 UTC and not read: the direct set answers the question on the same prompts.
 
-No pair set of the two weights against each other is planned: the paired comparison against the same
-opponent above answers the question on the same prompts.
+| measure | after preference optimisation (official) | trained weights | difference |
+|---|---|---|---|
+| blind, Opus, two readings, 200 prompts: W / L / T (official's side) | 59 / 34 / 107 | | score 0.562 [0.493, 0.629], p = 0.012 |
+| … the 189 untouched prompts | 55 / 33 / 101 | | score 0.558 [0.487, 0.627], p = 0.025 |
+| … by category: chat; code; instruction-following; maths; writing | 16 / 8 / 26; 10 / 1 / 19; 14 / 8 / 18; 5 / 5 / 20; 14 / 12 / 24 | | |
+| maths answers correct (of 30) | 6 | 6 | +0 |
+| every constraint met (of 48) | 38 | 41 | -3 |
+| single constraints met (of 56) | 46 | 48 | -2 |
+| degenerate replies (of 252) | 5 | 3 | +2 |
+| words per reply, mean | 130.4 | 119.2 | |
+| held-out loss, web + chat (64 + 64 rows) | 2.0562 | 2.0438 | +0.0124 [0.0112, 0.0136] |
+| held-out loss, chat assistant tokens | 1.2095 | 1.1983 | +0.0112 [0.0097, 0.0129] |
+| in-run: held-out preference accuracy (1,826 pairs); assistant-token loss of the stage's own rows | 0.694; 1.5208 | 0.500; 1.5043 | accuracy +0.194; loss +1.10% |
 
-**Table M6 (R6). Held-out losses at the end of training and of the export** (nats per token). Two
-sources with different rows. (a) The comparison set of Section 6.5 (64 web and 64 chat rows): the last
-training checkpoint from `N/heldout_v9.jsonl` if the runtime's loop evaluated it, else from
-`lead3_work/heldout_eval.py --manifest <the manifest in N/snap_final> --ckpt N/snap_final --name last --out
-lead4_work/heldout/last --variant on:`; bits per byte by `lead4_work/scripts/bpb_web.py` on that npz (the
-script reproduces 1.0172, 0.9975 and 0.9801 from the npz files of 29,722, 35,294 and 46,178,
-`lead4_work/bpb_web.log`). (b) The export's own 16-bit check, on 16 rows per domain (`check` record of
-`final/export.json` in the run's export `/content/runs/main16/final`, fetched by `scripts/colab_cli.py
-fetch`; fields `by_domain.<domain>.loss32`, `.loss16`, `.delta`; the record holds no assistant-token loss
-and no bits per byte). The proxy rows are in neither part: they hold user turns of the test prompts
-(Section 7.2, deviation 3). [TBD: (a) after the last snapshot, about 20:30 UTC; (b) after the export,
-about 20:17 UTC.]
+**Table M6 (R6). Held-out losses at the end of training and of the export** (nats per token). (a) The comparison set of Section 6.5 (64 web and 64 chat rows): the runtime's evaluation of the last checkpoint (`N/heldout_v9.jsonl`) and our CPU evaluations of both weights of step 51,812 from `N/snap_final` (`heldout_eval5.py`; bits per byte as `lead4_work/scripts/bpb_web.py` computes them, in `heldout5.py`). (b) The export's own 16-bit check on 16 rows per domain (`check` of `final/export.json`). The proxy rows are in neither part (Section 7.2, deviation 3).
 
-| (a) 64 rows per domain | last training checkpoint [TBD: step] | `final` 29,722 (the graft) |
-|---|---|---|
-| web | [TBD] | 2.7886 |
-| chat | [TBD] | 1.6183 |
-| chat, assistant tokens | [TBD] | 1.5164 |
-| web + chat (comparison set) | [TBD] | 2.2267 |
-| bits per byte, web rows (opponents: 1.570 and 1.500) | [TBD] | 1.017 |
+| (a) 64 rows per domain | trained weights, step 51,812 (runtime) | after preference optimisation (local) | `final` 29,722 (the graft) |
+|---|---|---|---|
+| web | 2.6690 | 2.6804 | 2.7886 |
+| chat | 1.3668 | 1.3803 | 1.6183 |
+| chat, assistant tokens | 1.1983 | 1.2095 | 1.5164 |
+| web + chat (comparison set) | 2.0438 | 2.0562 | 2.2267 |
+| bits per byte, web rows (opponents: 1.570 and 1.500) | 0.974 | 0.978 | 1.017 |
 
 | (b) export check, 16 rows per domain | float32 weights | 16-bit weights | difference |
 |---|---|---|---|
-| web | [TBD] | [TBD] | [TBD] |
-| chat | [TBD] | [TBD] | [TBD] |
+| web (16,354 weighted tokens) | 2.69236 | 2.69243 | +0.000075 |
+| chat (15,690 weighted tokens) | 1.31725 | 1.31721 | -0.000039 |
+| all three domains, proxy included (43,138) | 2.34440 | 2.34443 | +0.000022 (tolerance 0.002) |
 
-**Table M7 (R7). What the preference-optimisation stage did** (the stage ledger `run/stages.json` and the
-stage's records in the last snapshot `N/snap_final`, and the run log `/content/runs/main16.log`, both fetched
-at the end; `bes/train/prefopt.py` defines the checks) [TBD: after the 60-minute stage, about 19:37 UTC].
-
-| quantity | value |
-|---|---|
-| minutes used of 60 | [TBD] |
-| preference pairs used (UltraFeedback; own sampled pairs) | [TBD] |
-| learning rates tried (1e−6, 3e−6) and steps run at each | [TBD] |
-| held-out preference accuracy before / after (standard error) | [TBD] |
-| held-out assistant loss change (limit +3%) | [TBD] |
-| sampled length and repetition against their bands | [TBD] |
-| accepted (weights kept) or rejected (trained weights ship) | [TBD] |
-
-**Table M8 (R8). What the decoding selection chose** (the same stage ledger and records; the export's
-`config.json` field `decode_choice`, printed by `cmp_exports.py`) [TBD: after the 35-minute stage, about
-20:12 UTC].
+**Table M7 (R7). What the preference-optimisation stage did** (`run/stages.json`, `run/post/prefopt_report.json` and the run log in `N/snap_final`; Table C5 gives the candidates in full).
 
 | quantity | value |
 |---|---|
-| settings compared with the default (e.g. one particle, no length band) | [TBD] |
-| development prompts used; paired sign test of each against the default | [TBD] |
-| setting kept | [TBD] |
-| minutes used of 35 | [TBD] |
+| minutes used of 60 | 29.7 (18:37:07–19:06:51 UTC) |
+| preference pairs used | 35,201 for training and 1,826 held out by prompt: 37,007 UltraFeedback pairs and 20 of our own sampled pairs |
+| learning rates tried and steps run at each | 1 × 10⁻⁶ and 3 × 10⁻⁶, 551 steps each (one epoch), 485 s and 424 s of training |
+| held-out preference accuracy before / after (standard error) | 0.500 / 0.688 (0.011) and 0.694 (0.011) |
+| held-out assistant loss change (limit +3%) | +0.86% and +1.10% |
+| sampled length and repetition against their bands | length 0.99 and 0.95 × the start's (band 0.7–1.6), repeated 4-grams 0.86 and 0.87 × (at most 1.2 × + 0.01) |
+| accepted (weights kept) or rejected | both accepted; kept 3e-06, the higher accuracy ("lr=3e-06 accepted with held-out preference accuracy 0.6944 (start 0.5000)") |
 
-**Table M9 (R9). Training totals** (the trainer's ledger `run/train/ledger.json` and train log in
-`N/snap_final`; TPU seconds from `S/tpu_intervals.txt` once the third interval is closed) [TBD: training
-totals at 18:34 UTC; TPU totals after the runtime is released, about 20:46 UTC].
-
-| quantity | value |
-|---|---|
-| final step; tokens trained (`v9` part since step 29,722) | [TBD] ([TBD]); projected about 51,800 steps and 1.358 × 10¹⁰ tokens |
-| training seconds of the kept trajectory; checkpoint seconds; set-up seconds | [TBD] |
-| TPU seconds: runtime 1, runtime 2, runtime 3, total | 7,325; 8,220; [TBD]; [TBD] |
-| share of TPU time in training steps of the kept trajectory | [TBD] |
-| live rate in the last stretch (p ≥ 0.92, loss on assistant tokens only), n | [TBD] |
-
-**Table M10 (R10). The 16-bit check of the export** (`final/export.json`, check record, and the weight
-format record written by `bes/export.py`) [TBD: after the export, about 20:17 UTC].
+**Table M8 (R8). What the decoding selection chose** (the manifest's `decode` record; `run/stages.json`; the export's `decode_choice`).
 
 | quantity | value |
 |---|---|
-| largest absolute loss difference, 16-bit against float32, web and chat (the proxy rows' difference enters only the check's pass or fail) | [TBD] |
-| leaves stored in bfloat16 / float16 (rule: the smaller relative L2 error; ties float16) | [TBD] |
-| export size (bytes) and the `SHA256SUMS` of the weights | [TBD] |
-| read-set audit of the export: numbers read per token, standard reading | [TBD] |
+| settings compared with the default | one particle (`k1`); no length band (`noband`); no library (none was built) |
+| development prompts used; paired sign test of each against the default | the 200 `dev` prompts; mean exact score default 0.910, `k1` 0.850, `noband` 0.915; `k1` better on 1, worse on 18 (p = 7.6e-05); `noband` better on 2, worse on 0 (p = 0.50) |
+| setting kept | `default` (6 particles, temperature 0.6, top-p 0.9, 768 tokens, no library) |
+| minutes used of 35 | 54.9, in a slice of 65.0 (the stage was given the time preference optimisation left) |
 
-**Table M11 (R11). Table M1 and Table M4 on the 189 test prompts no mid-run sample touched** (240
-turns, 28 maths and 44 constrained prompts, `lead4_work/exact_test189_counts.json`). SEEN is the
-comma-separated list, without spaces, of the 11 seen prompt ids of Section 7.2 (as in
-`lead4_work/exact_test189_counts.json`, field `excluded`). Readers: `lead4_work/scripts/restrict_report.py
-R/final-TAG-vs-<opponent>--<source>.json --exclude SEEN` on each R1 report (from its
-`per_prompt_score` field; without `--exclude` it reproduces a report's own `overall`, checked on three
-`dev` reports). Exact scores: `lead4_work/scripts/exact_split.py` with the runs of Table M4 and
-`--exclude SEEN --out lead4_work/exact_test189.json` [TBD: with R1 and R4].
+**Table M9 (R9). Training totals** (the trainer's ledger `run/train/ledger.json` and train log in `N/snap_final`; TPU seconds from `S/tpu_intervals.txt`, all three intervals closed; `lead5_work/numbers.json`).
+
+| quantity | value |
+|---|---|
+| final step; tokens trained (`v9` part since step 29,722) | 51,812; 13,582,204,928 (5,790,760,960 in 22,090 steps) |
+| training seconds of the kept trajectory; checkpoint seconds; set-up seconds | 62,893.1; 23.2; 279.6 |
+| TPU seconds: runtime 1, runtime 2, runtime 3, total | 7,325; 8,220; 70,509; 86,054 of 86,400 |
+| share of TPU time in training steps of the kept trajectory | 73.1% |
+| live rate in the last stretch (p ≥ 0.92, conversations train on assistant tokens only), n | 189,035 tokens/s, n = 73 (steps 48,200–51,800) |
+
+**Table M10 (R10). The 16-bit check of the export** (`final/export.json`: `check`, `weights`, `main_files`, `readset`; `SHA256SUMS`).
+
+| quantity | value |
+|---|---|
+| largest absolute loss difference, 16-bit against float32, web and chat (the proxy rows' difference enters only the check's pass or fail) | 7.5e-05 nats (web); passed |
+| leaves stored in bfloat16 / float16 (rule: the smaller relative L2 error; ties float16) | 0 / 64 (98,036,104 numbers; largest relative L2 error of a leaf 2.84e-04) |
+| export size (bytes) and the SHA-256 of the weights | `weights16.npz` 196,088,804 bytes, `2da7cbd2e2f1fe49e805cb9bde62b15751f41ae92e71f00a3b0ba69f241afcf4`; the packed export 196,956,160 bytes in 12 parts |
+| read-set audit of the export: numbers read per token, standard reading | ledger 19,631,240; measured on held-out sequences 19,427,809 (web, mean over 2,048 positions) and 19,427,956 (chat), at most 19,429,996; strict reading 24,352,024 at 1,024 positions and 27,929,250 at 2,048 (web) |
+
+**Table M11 (R11). Tables M1 and M4 on the 189 test prompts no mid-run sample touched** (240 turns, 28 maths and 44 constrained prompts; the 11 seen ids of Section 7.2 left out; readers from each report's `per_prompt_score` as `lead4_work/scripts/restrict_report.py` does, in `final_results.py`; exact scores by `exact_split.py --exclude`, `lead5_work/exact_test189.json`).
 
 | opponent | reader | n | W / L / T | score [95%] | sign test p |
 |---|---|---|---|---|---|
-| Falcon-H1-Tiny | `qwen3-4b-2507` | 189 | [TBD] | [TBD] | [TBD] |
-| Falcon-H1-Tiny | `gemma4-e4b` | 189 | [TBD] | [TBD] | [TBD] |
-| Falcon-H1-Tiny | Opus, two readings | 189 | [TBD] | [TBD] | [TBD] |
-| MobileLLM-R1.5 | `qwen3-4b-2507` | 189 | [TBD] | [TBD] | [TBD] |
-| MobileLLM-R1.5 | `gemma4-e4b` | 189 | [TBD] | [TBD] | [TBD] |
-| MobileLLM-R1.5 | Opus, two readings | 189 | [TBD] | [TBD] | [TBD] |
-| exact scores of ours, Falcon-H1-Tiny, MobileLLM-R1.5: maths correct (of 28); constrained prompts met (of 44) | – | – | [TBD] | – | – |
+| Falcon-H1-Tiny | `qwen3-4b-2507` | 189 | 11 / 57 / 121 | 0.378 [0.312, 0.449] | < 0.0001 |
+| Falcon-H1-Tiny | Opus, two readings | 189 | 32 / 101 / 56 | 0.317 [0.255, 0.387] | < 0.0001 |
+| Falcon-H1-Tiny | Opus, neutral titles | 189 | 31 / 102 / 56 | 0.312 [0.250, 0.381] | < 0.0001 |
+| Falcon-H1-Tiny, K = 6 own log-probability | Opus, two readings | 189 | 34 / 106 / 49 | 0.310 [0.248, 0.379] | < 0.0001 |
+| Falcon-H1-Tiny, K = 6 our selector | Opus, two readings | 189 | 27 / 110 / 52 | 0.280 [0.221, 0.348] | < 0.0001 |
+| MobileLLM-R1.5 | `qwen3-4b-2507` | 189 | 56 / 5 / 128 | 0.635 [0.564, 0.700] | < 0.0001 |
+| MobileLLM-R1.5 | Opus, two readings | 189 | 109 / 14 / 66 | 0.751 [0.685, 0.808] | < 0.0001 |
+| MobileLLM-R1.5 | Opus, neutral titles | 189 | 106 / 14 / 69 | 0.743 [0.677, 0.800] | < 0.0001 |
+| MobileLLM-R1.5, K = 6 (both rules) | – | [TBD] | | | |
+| our trained weights | Opus, two readings | 189 | 55 / 33 / 101 | 0.558 [0.487, 0.627] | 0.025 |
+| Falcon-H1-Tiny, against our K = 1 arm | Opus, two readings | 189 | 20 / 116 / 53 | 0.246 [0.190, 0.312] | < 0.0001 |
+| MobileLLM-R1.5, against our K = 1 arm | Opus, two readings | 189 | 92 / 14 / 83 | 0.706 [0.638, 0.767] | < 0.0001 |
+| reference: Falcon-H1-Tiny vs MobileLLM-R1.5 | Opus, two readings | 189 | 137 / 5 / 47 | 0.849 [0.791, 0.893] | < 0.0001 |
+| exact scores: maths correct (of 28); constrained prompts met (of 44) | – | – | ours, official 6 and 34; ours, K = 1 5 and 33; ours, trained weights 6 and 37; Falcon-H1-Tiny 14 and 29; Falcon K = 6, own log-prob. 16 and 32; Falcon K = 6, our selector 17 and 38; MobileLLM-R1.5 `recommended` 11 and 8; MobileLLM-R1.5 `neutral` 10 and 8 | – | – |
 
-**Table M12 (R12). Decoding throughput of the export on CPU** (the test generation's summary
-`testgen.json` and `testgen.log` in `N/testgen/TAG/`, fetched by `S/scripts/endgame_testgen.sh --fetch TAG`;
-for comparison, on `dev`: 75 replies in 1,798 s with 16 workers, export and cache calibration included,
-`FACTS_2.md`) [TBD: after the test generation, about 19:30 UTC].
+**Table M12 (R12). Decoding throughput of the export on CPU** (the official test generation's summary `N/testgen/prefopt/out/testgen.json` and its log; the trained weights' generation for comparison, `N/testgen/trained/out/testgen.json`; on `dev`, 75 replies took 1,798 s with 16 workers, `FACTS_2.md`).
 
-| quantity | value |
-|---|---|
-| workers × cores per worker; host | [TBD] |
-| replies; wall time, set-up and calibration included | [TBD] |
-| seconds per reply (median); new tokens per reply (median) | [TBD] |
-| seconds per decoding step, 6 particles, one core | [TBD] |
+| quantity | official (preference-optimised) | trained weights |
+|---|---|---|
+| workers × cores per worker; host | 40 × 1; the TPU runtime's host (CPUs 2–21, 24–43 of 44) | 40 × 1; the same |
+| replies; wall time, export and calibration included | 252; 2,109.8 s (19:31:22–20:06:32) | 252; 1,840.4 s (18:36:25–19:07:06) |
+| seconds per reply (median); new tokens per reply (median) | 206.7; 155.5 | 159.4; 151.5 |
+| seconds per decoding step, 6 particles, one core (median; mean) | 0.567; 0.595 | 0.550; 0.575 |
+
+**Table M13. Paired comparisons of our per-prompt score on the same prompts** (`final_results.py`, `bes.eval.proxy.score.paired_sign_test`, as `python -m bes.eval.proxy compare --a A --b B --source judge-opus`; a prompt is better when our score against the opponent is higher in A than in B).
+
+| A | B | prompts better in A; in B; same | mean difference | sign test p | on the 189 untouched prompts |
+|---|---|---|---|---|---|
+| official vs released Falcon | official vs Falcon K = 6, own log-probability | 29; 25; 146 | +0.0100 | 0.6835 | 26; 23; 140, p = 0.7754 |
+| official vs released Falcon | official vs Falcon K = 6, our selector | 34; 21; 145 | +0.0350 | 0.1048 | 32; 19; 138, p = 0.0919 |
+| official vs released MobileLLM-R1.5 | official vs MobileLLM-R1.5 K = 6, own log-probability or our selector | [TBD] | | | |
+| official (K = 6) vs Falcon | ours K = 1 vs Falcon | 31; 12; 157 | +0.0675 | 0.0054 | 30; 11; 148, p = 0.0043 |
+| official (K = 6) vs MobileLLM-R1.5 | ours K = 1 vs MobileLLM-R1.5 | 28; 13; 159 | +0.0450 | 0.0275 | 26; 11; 152, p = 0.0201 |
+| official vs Falcon-H1-Tiny, first readings (titles named the set) | the same pairs, neutral titles | 6; 3; 191 | +0.0075 | 0.5078 | – |
+| official vs MobileLLM-R1.5, first readings (titles named the set) | the same pairs, neutral titles | 7; 3; 190 | +0.0100 | 0.3438 | – |
+
 
 ## Appendix N. Related work in detail
 
@@ -2158,3 +2368,133 @@ parameters, on one TPU v6e, not a new algorithm. The decoder builds on sequentia
 annotations [72] and budget forcing [73]; DPO [74] with UltraFeedback is a standard last stage
 [11, 12, 75–77]. Language-model judges favour one position, longer replies and their own style [78–81];
 we count a win only when both orders agree, the rule of [78], and report outcomes by length ratio [80].
+
+## Appendix O. What the readers' notes say: a failure analysis of the test comparisons
+
+**O.1 Material and method.** The material is the 1,600 notes (at most 15 words each) that the Opus readers
+wrote blind in the four readings of each official test set (Section 7.5: two with named, two with neutral
+titles). One agent labelled each reply with its main defect as the notes name it (reading the reply where they
+were unclear), from a codebook of ten codes fixed before labelling, to which five clarifications were added,
+and with the key open: the notes are blind, the labels are not, and no second labeller has checked them. The
+full report is `analysis/analysis_fail/failure_modes.md`, with the per-prompt labels and notes (`labels.json`)
+and the scripts behind every number here; outcomes are the first round's unless stated otherwise.
+
+**O.2 Codebook**, in the order that breaks ties; a loss is explained by our label, a win by the opponent's.
+
+| code | meaning |
+|---|---|
+| INCOH | incoherent or off-topic: misses the request, nonsensical or self-contradictory, leaked template or role text, task meta-text or a boxed stub instead of the content |
+| LOOP | repetition or loop: repeated sentences, items or phrases dominate the reply (a loop cut at the token limit included) |
+| FACT | factual error: false facts or invented entities, names, dates, definitions or mechanisms (non-numeric) |
+| MATH | wrong arithmetic or reasoning: wrong set-up, calculation slip, conversion or logic; in maths, a wrong final answer |
+| CODE | broken or wrong code: would not run or does not do what was asked, or a wrong explanation of code |
+| INSTR | instruction not followed: on topic, but an explicit requirement violated (a count, case, required word, P.S., structure, register, a follow-up) |
+| TRUNC | truncated: stops mid-sentence or mid-code at the token limit before the answer or a required part |
+| THIN | too thin: empty, generic or much too short, deflecting a harmless request, or leaving out a key part of it |
+| WEAK | weaker: acceptable, but the readers preferred the other reply for quality; no hard error named |
+| OK | no decisive defect: correct, on topic, following the instructions (a preferred reply is OK unless at least two notes fault it) |
+
+**O.3 The 108 losses to Falcon-H1-Tiny.** Wrong content (FACT, MATH, CODE) explains 46, incoherent, off-task
+or repetitive text (INCOH, LOOP, TRUNC) 43 and missed instructions or thin replies 19; with the 19 labels that
+the tie-break decided taken the other way (Table O1, last column) the groups are 45, 33 and 30, so the split
+between incoherence and missed instructions is the least certain part. Each category fails in its own way:
+writing by incoherent, off-task or repetitive text (21 of 32) and missed forms (7), chat by false facts (14 of
+24), instruction-following by incoherent or off-task replies (9 of 21) and missed instructions (6), code by
+errors in the code or its explanation (10 of 13), maths by MATH (17 of 18, two of them right answers with
+misstated working). Falcon-H1-Tiny's reply had no decisive defect in 75 of the 108. The neutral round (109
+losses, 106 of them shared) ranks the codes the same way.
+
+**Table O1. Our reply's main defect on the 108 losses to Falcon-H1-Tiny** (last column: other tie-break).
+
+| defect | chat | code | instruction-following | maths | writing | all | all, other tie-break |
+|---|---|---|---|---|---|---|---|
+| INCOH | 6 | 2 | 9 | 0 | 12 | 29 | 21 |
+| LOOP | 2 | 1 | 2 | 0 | 9 | 14 | 11 |
+| FACT | 14 | 0 | 3 | 0 | 2 | 19 | 17 |
+| MATH | 0 | 0 | 0 | 17 | 0 | 17 | 17 |
+| CODE | 0 | 10 | 0 | 0 | 0 | 10 | 11 |
+| INSTR | 1 | 0 | 6 | 0 | 7 | 14 | 20 |
+| TRUNC | 0 | 0 | 0 | 0 | 0 | 0 | 1 |
+| THIN | 1 | 0 | 1 | 1 | 2 | 5 | 10 |
+| n | 24 | 13 | 21 | 18 | 32 | 108 | 108 |
+
+**O.4 Both bad, and the other outcomes.** Both first-round readings returned "both bad" on 36 prompts against
+Falcon-H1-Tiny; the two replies share their label on 22, among them all 6 maths and 6 of the 7 code prompts,
+and where they differ ours fails by repetition (LOOP 8, Falcon-H1-Tiny 0) and Falcon-H1-Tiny by incoherence
+(INCOH 10, ours 6). On the 61 both-bad prompts against MobileLLM-R1.5 our reply's commonest defect is a false
+fact (23). Of the 35 wins over Falcon-H1-Tiny, its broken code (10) and false facts (10) give 20, and ours is
+OK in 24; with one particle only 17 of the 35 are won again, while 99 of the 108 losses are lost again. Of the
+116 wins over MobileLLM-R1.5, 93 are over a degenerate or off-task reply (INCOH 56, LOOP 37), and the exact
+scorer flags its reply as degenerate on 82 of the 116; our own reply had a defect named by at least two notes
+in 60 (most often a missed instruction, 21) and was OK in 56. Of the 15 losses to MobileLLM-R1.5, 12 are maths
+(all MATH), 2 code (CODE) and 1 chat (FACT), and MobileLLM-R1.5's reply was OK in 8.
+
+**O.5 Maths and constraints.** By the exact scorer (last-turn answer) ours solves 6 of the 30 maths prompts,
+Falcon-H1-Tiny 15 and MobileLLM-R1.5 12 (its extractor errs against Falcon-H1-Tiny on math-048 and for
+MobileLLM-R1.5 on math-047). Our 24 failures are a wrong set-up in 10 (operation, formula or conversion: 1
+foot = 2.54 cm), a slip in 6 (47 × 23 = 1176), working unrelated to the problem in 5, the right value followed
+by another stated answer in 2 and no answer in 1; the notes name a wrong or missing answer for all 24 (MATH
+23, THIN 1), and three of our 6 correct answers come with faulted working. Of the 56 constraint checks ours
+meets 46 (Falcon-H1-Tiny 41, MobileLLM-R1.5 10), among them every sentence, word, bullet and case check (28 of
+28; Falcon-H1-Tiny 21). Its 10 misses, all on instruction-following prompts, are four structural ones and six
+that put given content in a given place, a required word ("cup", "horizon"), the ending or a postscript: 6 of
+the 9 checks of these types, none of which Falcon-H1-Tiny misses. Meeting the checks does not win the pair: on
+19 of the 26 constraint-checked prompts lost to Falcon-H1-Tiny ours met every check.
+
+**O.6 What the degenerate-reply detectors miss.** The exact scorer's detectors flag 5 of our 252 replies, all
+cut at the 768-token limit, and no loop or repeated line (Falcon-H1-Tiny 2; MobileLLM-R1.5 158). The readers
+name repetition as our reply's main defect on 25 prompts of the Falcon-H1-Tiny set; the detectors flag 3 of
+them, only as cut off. Our repetition is mostly paraphrase, a phrase that keeps returning ("gentle embrace",
+"poignant reminder"): the repeated-4-gram rate has a median of 0.065 on these 25 and 0.015 on the other 175,
+and a threshold of 0.1 would catch 8 of the 25 and flag 11 of the 175. On 4 of the 52 two-turn prompts our
+second reply nearly copies our first (similarity at least 0.9; Falcon-H1-Tiny 1, MobileLLM-R1.5 1).
+
+**O.7 Reliability.** All four readings give the same verdict on 173 of the 200 prompts against Falcon-H1-Tiny
+and 184 against MobileLLM-R1.5 (at least three on 190 and 194); Fleiss' kappa is 0.864 and 0.915 for the
+four-way verdict and 0.909 and 0.916 for whether our reply was worse or unusable, and all four readings chose
+Falcon-H1-Tiny on 106 of the 108 losses. All four notes name the defect chosen for each of the 108 losses, but
+on 19 they name two defects equally often and the tie-break decided. Labelled once from each set's notes, our
+reply gets the same label twice on 142 of the 200 prompts; where both labels name a defect (141) it is the
+same one on 119 (84%), and on 36 prompts one set's notes fault our reply and the other's do not.
+
+**O.8 Four example pairs**: of the twelve that the full report fixes by rule (the first two losses of each
+category and the first two wins, in the order of the Falcon-H1-Tiny pair file), the first four with a single
+turn. In each, all four readings chose the same reply: Falcon-H1-Tiny's in a loss, ours in a win. Replies lose
+their line breaks and are cut at the last word boundary within 250 characters (…); r1 is the first reading,
+its A and B rewritten as OURS and FALCON.
+
+**math-030** (maths, a loss): "How many centimeters are there in 4 feet? Use 1 inch = 2.54 cm."
+- Ours: `First, we need to convert the length from feet to centimeters. Since 1 foot is equal to 2.54 cm, we can convert 4 feet to centimeters as follows: 4 feet * 2.54 cm/foot = 10.2 cm Now, we have 10.2 cm in centimeters. To find the length in centimeters,` …
+- Falcon-H1-Tiny: `To find out how many centimeters are in 4 feet, we start by converting feet to inches. Since 1 foot equals 12 inches, we multiply 4 feet by 12 inches per foot: \[ 4 \text{ feet} \times 12 \text{ inches/foot} = 48 \text{ inches} \] Next, we convert` …
+- Labels: ours MATH, Falcon-H1-Tiny OK; r1: "OURS wrong (4.01 cm); FALCON correct 121.92 cm."
+
+**instruct-038** (instruction-following, a loss): "Describe a thunderstorm using only capital letters."
+- Ours: `CARLENS`
+- Falcon-H1-Tiny: `A THUNDERSTORM WALKS OVER THE WINDING SKY, THE DISTURBANCE RINGING THROUGH THE ROCKY, ITS FLASHES CRASHING INTO THE SNOWFLAKES, AND THE SOUND OF SNOW CRASHING H ABOVE. THE STORM WINDS WITH A SKY-FALLING BLOOM, AND THE PULSE CREATES A SUNSHINE THAT` …
+- Labels: ours INCOH, Falcon-H1-Tiny OK; r1: "OURS outputs a meaningless word 'CARLENS'; FALCON is an all-caps
+  thunderstorm description."
+
+**writing-089** (writing, a win): "Write a slogan for a bakery that only uses local ingredients."
+- Ours: `"To the heart of the bakery lies a culinary sanctuary, where local flavors and aromas are the key to unlocking a sweet treat."`
+- Falcon-H1-Tiny: `"Savor the Bakery, Where Every Sole Felt the Seed"`
+- Labels: ours OK, Falcon-H1-Tiny INCOH; r1: "FALCON is garbled and omits local; OURS wordy but conveys local
+  ingredients."
+
+**chat-047** (chat, a loss): "What is a good way to start learning a new language as an adult?"
+- Ours: `Starting a new language can be both thrilling and intimidating, especially when it comes to building a strong foundation. Here's a simple yet effective way to start learning a new language: Begin by setting a solid foundation in basic vocabulary,` …
+- Falcon-H1-Tiny: `Starting to learn a new language as an adult can be a rewarding and enriching journey. Here are some practical and effective steps to help you on your path: ### 1. **Choose a Language You're Enthusiastic About** - **Research:** Look for language` …
+- Labels: ours FACT, Falcon-H1-Tiny OK; r1: "OURS suggests classical music, Khan Academy for exchange; FALCON
+  practical, mostly accurate resources."
+
+**O.9 What this suggests.** *The records show* that our model loses to Falcon-H1-Tiny about as often by wrong
+content (46 of 108) as by incoherent, off-task or repetitive text (43), mostly against a reply with no
+decisive defect (75); that its wins over MobileLLM-R1.5 come from that model's degenerate or off-task replies
+(93 of 116), and those over Falcon-H1-Tiny mostly from its broken code and false facts (20 of 35) and are
+fragile (17 of 35 won again with one particle, against 99 of 108 losses lost again); that the detectors miss
+most of the repetition the readers name (3 of 25 flagged); and that the labels are less stable than the
+verdicts (84% agreement where both sets name a defect; 19 tie-broken loss labels). *Our interpretation, not
+measured here:* false facts and wrong arithmetic look like limits of what a model of this size and training
+knows and can compute, while incoherent and repetitive replies, common in long open-ended writing and in
+reworking a previous turn, look more like losing track of the task. That the losses survive one particle
+suggests they lie in the weights rather than in the decoder's choice among samples, and the comparison with
+MobileLLM-R1.5 measures that model's degeneracy in our harness more than our model's quality.

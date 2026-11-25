@@ -1,0 +1,141 @@
+{
+ "assumptions": {
+  "logtok_A_rate": 281220.0,
+  "logtok_B": {
+   "rate_1024": 281399.0,
+   "rate_2048": 252972.0,
+   "seconds_at_1024_after_graft": 10061.0
+  },
+  "graft_tokens": 7791443968,
+  "graft_train_seconds": 32320.749530553818
+ },
+ "final_rate_between_checkpoints": {
+  "26890-28501": 281212.1,
+  "28501-29722": 281172.2,
+  "26890-29722": 281194.9
+ },
+ "outside": {
+  "minutes": [],
+  "logtok_A": [
+   "42932",
+   "45096",
+   "46178"
+  ],
+  "logtok_B": [
+   "41850",
+   "42932",
+   "44014",
+   "45096",
+   "46178"
+  ],
+  "equal_tokens": [
+   "34166",
+   "35294",
+   "36422",
+   "37522",
+   "38604",
+   "39686",
+   "40768",
+   "41850",
+   "42932",
+   "44014",
+   "45096",
+   "46178"
+  ]
+ },
+ "since_graft_46178": -0.1679
+}
+30742 563.7 2.2113 minutes -0.0096 ± 0.0249 in | logtok_A -0.0100 ± 0.0220 in | logtok_B -0.0100 ± 0.0220 in | equal_tokens -0.0118 ± 0.0196 in | eq-time tokens A 8.214e+09 B 8.214e+09
+31762 588.8 2.2041 minutes -0.0117 ± 0.0340 in | logtok_A -0.0127 ± 0.0291 in | logtok_B -0.0127 ± 0.0291 in | equal_tokens -0.0161 ± 0.0238 in | eq-time tokens A 8.636e+09 B 8.637e+09
+31912 592.5 2.1998 minutes -0.0152 ± 0.0354 in | logtok_A -0.0163 ± 0.0302 in | logtok_B -0.0163 ± 0.0302 in | equal_tokens -0.0199 ± 0.0245 in | eq-time tokens A 8.699e+09 B 8.699e+09
+33038 617.5 2.1881 minutes -0.0217 ± 0.0453 in | logtok_A -0.0237 ± 0.0375 in | logtok_B -0.0237 ± 0.0375 in | equal_tokens -0.0284 ± 0.0295 in | eq-time tokens A 9.121e+09 B 9.122e+09
+34166 642.5 2.1768 minutes -0.0277 ± 0.0554 in | logtok_A -0.0308 ± 0.0448 in | logtok_B -0.0308 ± 0.0448 in | equal_tokens -0.0366 ± 0.0347 OUT | eq-time tokens A 9.543e+09 B 9.544e+09
+35294 667.5 2.1661 minutes -0.0332 ± 0.0657 in | logtok_A -0.0375 ± 0.0518 in | logtok_B -0.0375 ± 0.0518 in | equal_tokens -0.0443 ± 0.0398 OUT | eq-time tokens A 9.966e+09 B 9.967e+09
+36422 692.6 2.1569 minutes -0.0372 ± 0.0762 in | logtok_A -0.0430 ± 0.0586 in | logtok_B -0.0429 ± 0.0586 in | equal_tokens -0.0507 ± 0.0448 OUT | eq-time tokens A 1.039e+10 B 1.039e+10
+37522 717.6 2.1418 minutes -0.0471 ± 0.0866 in | logtok_A -0.0544 ± 0.0652 in | logtok_B -0.0546 ± 0.0650 in | equal_tokens -0.0631 ± 0.0497 OUT | eq-time tokens A 1.081e+10 B 1.079e+10
+38604 742.6 2.1293 minutes -0.0544 ± 0.0971 in | logtok_A -0.0634 ± 0.0716 in | logtok_B -0.0639 ± 0.0707 in | equal_tokens -0.0729 ± 0.0543 OUT | eq-time tokens A 1.123e+10 B 1.117e+10
+39686 767.7 2.1179 minutes -0.0605 ± 0.1077 in | logtok_A -0.0714 ± 0.0778 in | logtok_B -0.0722 ± 0.0763 in | equal_tokens -0.0818 ± 0.0589 OUT | eq-time tokens A 1.166e+10 B 1.155e+10
+40768 792.7 2.1058 minutes -0.0674 ± 0.1183 in | logtok_A -0.0802 ± 0.0837 in | logtok_B -0.0813 ± 0.0817 in | equal_tokens -0.0914 ± 0.0633 OUT | eq-time tokens A 1.208e+10 B 1.193e+10
+41850 817.7 2.0959 minutes -0.0720 ± 0.1289 in | logtok_A -0.0869 ± 0.0895 in | logtok_B -0.0883 ± 0.0870 OUT | equal_tokens -0.0989 ± 0.0677 OUT | eq-time tokens A 1.25e+10 B 1.231e+10
+42932 842.8 2.0828 minutes -0.0799 ± 0.1395 in | logtok_A -0.0969 ± 0.0951 OUT | logtok_B -0.0986 ± 0.0921 OUT | equal_tokens -0.1096 ± 0.0719 OUT | eq-time tokens A 1.292e+10 B 1.269e+10
+44014 867.8 2.0765 minutes -0.0810 ± 0.1501 in | logtok_A -0.1003 ± 0.1005 in | logtok_B -0.1022 ± 0.0970 OUT | equal_tokens -0.1136 ± 0.0761 OUT | eq-time tokens A 1.334e+10 B 1.307e+10
+45096 892.8 2.0656 minutes -0.0866 ± 0.1607 in | logtok_A -0.1083 ± 0.1057 OUT | logtok_B -0.1105 ± 0.1018 OUT | equal_tokens -0.1223 ± 0.0801 OUT | eq-time tokens A 1.377e+10 B 1.345e+10
+46178 917.9 2.0588 minutes -0.0882 ± 0.1714 in | logtok_A -0.1124 ± 0.1108 OUT | logtok_B -0.1147 ± 0.1065 OUT | equal_tokens -0.1269 ± 0.0841 OUT | eq-time tokens A 1.419e+10 B 1.383e+10
+{
+ "final_29722_on.npz": {
+  "step": 29722,
+  "rows": {
+   "web": 64,
+   "chat": 64,
+   "proxy": 16
+  },
+  "rows_with_weight": {
+   "web": 64,
+   "chat": 64,
+   "proxy": 12
+  },
+  "local_minus_runtime": {
+   "web": -2.72e-08,
+   "chat": 1.64e-08,
+   "proxy": 2.17e-09,
+   "all": -5.56e-09
+  }
+ },
+ "v9_35294_on.npz": {
+  "step": 35294,
+  "rows": {
+   "web": 64,
+   "chat": 64,
+   "proxy": 16
+  },
+  "rows_with_weight": {
+   "web": 64,
+   "chat": 64,
+   "proxy": 12
+  },
+  "local_minus_runtime": {
+   "web": -1.55e-08,
+   "chat": 1.37e-08,
+   "proxy": 8.36e-08,
+   "all": 5.41e-09
+  }
+ },
+ "v9_newest_on.npz": {
+  "step": 34166,
+  "rows": {
+   "web": 64,
+   "chat": 64,
+   "proxy": 16
+  },
+  "rows_with_weight": {
+   "web": 64,
+   "chat": 64,
+   "proxy": 12
+  },
+  "local_minus_runtime": {
+   "web": -3.04e-09,
+   "chat": 1.24e-08,
+   "proxy": -3.45e-08,
+   "all": 1.24e-09
+  }
+ },
+ "v9_46178_on.npz": {
+  "step": 46178,
+  "rows": {
+   "web": 64,
+   "chat": 64,
+   "proxy": 16
+  },
+  "rows_with_weight": {
+   "web": 64,
+   "chat": 64,
+   "proxy": 12
+  },
+  "local_minus_runtime": {
+   "web": -2.96e-08,
+   "chat": -3.24e-09,
+   "proxy": 2.2e-07,
+   "all": 2.23e-09
+  }
+ }
+}

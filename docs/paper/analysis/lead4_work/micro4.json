@@ -1,0 +1,515 @@
+{
+ "mixture_ref": [
+  [
+   "web",
+   0.75
+  ],
+  [
+   "chat",
+   0.25
+  ]
+ ],
+ "end_tokens": 5996544,
+ "checkpoints": [
+  1499136,
+  2998272,
+  4497408,
+  5996544
+ ],
+ "loss_end": {
+  "ref": {
+   "per_seed": [
+    4.192928,
+    4.182952,
+    4.197859
+   ],
+   "mean": 4.191246,
+   "sd": 0.007594
+  },
+  "v9_pages": {
+   "per_seed": [
+    4.130178,
+    4.141586,
+    4.146368
+   ],
+   "mean": 4.139377,
+   "sd": 0.008318
+  },
+  "graft_25": {
+   "per_seed": [
+    4.138985,
+    4.127825,
+    4.142026
+   ],
+   "mean": 4.136279,
+   "sd": 0.007478
+  },
+  "graft_50": {
+   "per_seed": [
+    4.154288,
+    4.147018,
+    4.165152
+   ],
+   "mean": 4.155486,
+   "sd": 0.009126
+  },
+  "graft_75": {
+   "per_seed": [
+    4.180221,
+    4.170989,
+    4.185621
+   ],
+   "mean": 4.178944,
+   "sd": 0.007399
+  }
+ },
+ "ref_spread": {
+  "sd": 0.007594,
+  "sd_share": 0.00181,
+  "range": 0.014906,
+  "range_share": 0.00356
+ },
+ "page_gain_ref_minus_v9pages": {
+  "per_seed": [
+   0.06275,
+   0.041366,
+   0.051491
+  ],
+  "mean": 0.051869
+ },
+ "graft25_minus_v9pages": {
+  "per_seed": [
+   0.008807,
+   -0.013761,
+   -0.004341
+  ],
+  "mean": -0.003099,
+  "sd": 0.011335,
+  "t95_halfwidth": 0.028158,
+  "t95_halfwidth_over_page_gain": 0.543
+ },
+ "shares": {
+  "graft_25": {
+   "ratio_of_means": 1.0597,
+   "per_seed": [
+    0.8597,
+    1.3327,
+    1.0843
+   ],
+   "min": 0.8597,
+   "max": 1.3327,
+   "sd_per_seed": 0.2366
+  },
+  "graft_50": {
+   "ratio_of_means": 0.6894,
+   "per_seed": [
+    0.6158,
+    0.8687,
+    0.6352
+   ],
+   "min": 0.6158,
+   "max": 0.8687,
+   "sd_per_seed": 0.1407
+  },
+  "graft_75": {
+   "ratio_of_means": 0.2372,
+   "per_seed": [
+    0.2025,
+    0.2892,
+    0.2377
+   ],
+   "min": 0.2025,
+   "max": 0.2892,
+   "sd_per_seed": 0.0436
+  }
+ },
+ "gain_after_graft": {
+  "graft_25": {
+   "graft_tokens": 1499136,
+   "eval_tokens": 2998272,
+   "mean": -0.0192,
+   "sd": 0.00192,
+   "lr_factor": [
+    0.775,
+    0.775,
+    0.775
+   ]
+  },
+  "graft_50": {
+   "graft_tokens": 2998272,
+   "eval_tokens": 4497408,
+   "mean": -0.01612,
+   "sd": 0.00189,
+   "lr_factor": [
+    0.55,
+    0.55,
+    0.55
+   ]
+  },
+  "graft_75": {
+   "graft_tokens": 4497408,
+   "eval_tokens": 5996544,
+   "mean": -0.0123,
+   "sd": 0.00038,
+   "lr_factor": [
+    0.325,
+    0.325,
+    0.325
+   ]
+  },
+  "v9_pages_first_checkpoint": {
+   "eval_tokens": 1499136,
+   "mean": -0.01637,
+   "sd": 0.00621
+  }
+ },
+ "graft_checks": {
+  "graft_25_s0": {
+   "check_keys": [
+    "batch",
+    "difference",
+    "loss_after",
+    "loss_before",
+    "ok",
+    "tolerance"
+   ],
+   "check_difference": 0.0,
+   "check_batch": "the first 8 rows of held-out web (8 x 512 positions), bes.model.model.loss_fn",
+   "heldout_max_row_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   },
+   "heldout_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   }
+  },
+  "graft_25_s1": {
+   "check_keys": [
+    "batch",
+    "difference",
+    "loss_after",
+    "loss_before",
+    "ok",
+    "tolerance"
+   ],
+   "check_difference": 0.0,
+   "check_batch": "the first 8 rows of held-out web (8 x 512 positions), bes.model.model.loss_fn",
+   "heldout_max_row_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   },
+   "heldout_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   }
+  },
+  "graft_25_s2": {
+   "check_keys": [
+    "batch",
+    "difference",
+    "loss_after",
+    "loss_before",
+    "ok",
+    "tolerance"
+   ],
+   "check_difference": 0.0,
+   "check_batch": "the first 8 rows of held-out web (8 x 512 positions), bes.model.model.loss_fn",
+   "heldout_max_row_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   },
+   "heldout_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   }
+  },
+  "graft_50_s0": {
+   "check_keys": [
+    "batch",
+    "difference",
+    "loss_after",
+    "loss_before",
+    "ok",
+    "tolerance"
+   ],
+   "check_difference": 0.0,
+   "check_batch": "the first 8 rows of held-out web (8 x 512 positions), bes.model.model.loss_fn",
+   "heldout_max_row_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   },
+   "heldout_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   }
+  },
+  "graft_50_s1": {
+   "check_keys": [
+    "batch",
+    "difference",
+    "loss_after",
+    "loss_before",
+    "ok",
+    "tolerance"
+   ],
+   "check_difference": 0.0,
+   "check_batch": "the first 8 rows of held-out web (8 x 512 positions), bes.model.model.loss_fn",
+   "heldout_max_row_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   },
+   "heldout_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   }
+  },
+  "graft_50_s2": {
+   "check_keys": [
+    "batch",
+    "difference",
+    "loss_after",
+    "loss_before",
+    "ok",
+    "tolerance"
+   ],
+   "check_difference": 0.0,
+   "check_batch": "the first 8 rows of held-out web (8 x 512 positions), bes.model.model.loss_fn",
+   "heldout_max_row_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   },
+   "heldout_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   }
+  },
+  "graft_75_s0": {
+   "check_keys": [
+    "batch",
+    "difference",
+    "loss_after",
+    "loss_before",
+    "ok",
+    "tolerance"
+   ],
+   "check_difference": 0.0,
+   "check_batch": "the first 8 rows of held-out web (8 x 512 positions), bes.model.model.loss_fn",
+   "heldout_max_row_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   },
+   "heldout_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   }
+  },
+  "graft_75_s1": {
+   "check_keys": [
+    "batch",
+    "difference",
+    "loss_after",
+    "loss_before",
+    "ok",
+    "tolerance"
+   ],
+   "check_difference": 0.0,
+   "check_batch": "the first 8 rows of held-out web (8 x 512 positions), bes.model.model.loss_fn",
+   "heldout_max_row_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   },
+   "heldout_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   }
+  },
+  "graft_75_s2": {
+   "check_keys": [
+    "batch",
+    "difference",
+    "loss_after",
+    "loss_before",
+    "ok",
+    "tolerance"
+   ],
+   "check_difference": 0.0,
+   "check_batch": "the first 8 rows of held-out web (8 x 512 positions), bes.model.model.loss_fn",
+   "heldout_max_row_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   },
+   "heldout_difference": {
+    "assistant": 0.0,
+    "chat": 0.0,
+    "web": 0.0
+   }
+  }
+ },
+ "restart": {
+  "0": {
+   "steps_run": 732,
+   "tokens_end": 2998272,
+   "budget_tokens": 3000000,
+   "horizon_tokens": 3000000.0,
+   "finished": 1795541393.060138,
+   "loss_end_mix": 4.389079,
+   "web": 4.628197,
+   "chat": 3.671724,
+   "eval_tokens": [
+    749568,
+    1499136,
+    2248704,
+    2998272
+   ],
+   "config_hash": "f2bbc26c11459b0d",
+   "v9pages6M_config_hash": "a986a6c2951c812d"
+  },
+  "1": {
+   "steps_run": 732,
+   "tokens_end": 2998272,
+   "budget_tokens": 3000000,
+   "horizon_tokens": 3000000.0,
+   "finished": 1795541381.7222373,
+   "loss_end_mix": 4.388469,
+   "web": 4.630577,
+   "chat": 3.662145,
+   "eval_tokens": [
+    749568,
+    1499136,
+    2248704,
+    2998272
+   ],
+   "config_hash": "43a24bb033ffbcbe",
+   "v9pages6M_config_hash": "1bbde53c888d689a"
+  },
+  "2": {
+   "steps_run": 732,
+   "tokens_end": 2998272,
+   "budget_tokens": 3000000,
+   "horizon_tokens": 3000000.0,
+   "finished": 1795541396.3024175,
+   "loss_end_mix": 4.391656,
+   "web": 4.636466,
+   "chat": 3.657226,
+   "eval_tokens": [
+    749568,
+    1499136,
+    2248704,
+    2998272
+   ],
+   "config_hash": "e892029be9fac45b",
+   "v9pages6M_config_hash": "f0c8c06b47572603"
+  }
+ },
+ "restart_comparisons": {
+  "restart_minus_graft_50_6M": {
+   "per_seed": [
+    0.234791,
+    0.241451,
+    0.226504
+   ],
+   "mean": 0.234249,
+   "sd": 0.007488,
+   "min": 0.226504,
+   "max": 0.241451,
+   "over_page_gain": 4.516
+  },
+  "restart_minus_ref_6M": {
+   "per_seed": [
+    0.196151,
+    0.205517,
+    0.193797
+   ],
+   "mean": 0.198488,
+   "sd": 0.006199,
+   "min": 0.193797,
+   "max": 0.205517,
+   "over_page_gain": 3.827
+  },
+  "restart_minus_v9_pages_6M": {
+   "per_seed": [
+    0.258901,
+    0.246883,
+    0.245288
+   ],
+   "mean": 0.250358,
+   "sd": 0.007442,
+   "min": 0.245288,
+   "max": 0.258901,
+   "over_page_gain": 4.827
+  },
+  "restart_minus_graft_25_6M": {
+   "per_seed": [
+    0.250094,
+    0.260644,
+    0.24963
+   ],
+   "mean": 0.253456,
+   "sd": 0.00623,
+   "min": 0.24963,
+   "max": 0.260644,
+   "over_page_gain": 4.886
+  },
+  "restart_minus_graft_75_6M": {
+   "per_seed": [
+    0.208858,
+    0.21748,
+    0.206035
+   ],
+   "mean": 0.210791,
+   "sd": 0.005962,
+   "min": 0.206035,
+   "max": 0.21748,
+   "over_page_gain": 4.064
+  },
+  "restart_minus_v9pages_at_same_tokens": {
+   "per_seed": [
+    -0.04105,
+    -0.055495,
+    -0.056261
+   ],
+   "mean": -0.050935,
+   "sd": 0.00857
+  },
+  "restart_minus_ref_at_same_tokens": {
+   "per_seed": [
+    -0.084401,
+    -0.0835,
+    -0.083584
+   ],
+   "mean": -0.083828
+  },
+  "graft50_minus_ref_6M": {
+   "per_seed": [
+    -0.03864,
+    -0.035934,
+    -0.032707
+   ],
+   "mean": -0.03576
+  }
+ },
+ "checks": {
+  "results_all_equals_own": true,
+  "restart_v9_pages_archive_equals_copy": true,
+  "restart_v9_pages_s1_archive_equals_copy": true,
+  "restart_v9_pages_s2_archive_equals_copy": true
+ }
+}

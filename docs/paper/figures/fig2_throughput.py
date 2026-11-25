@@ -165,8 +165,10 @@ def main():
         for xx in (x1, x0):
             fig.lines.append(Line2D([xx - 0.004, xx + 0.004], [yb - 0.018, yb + 0.018], transform=fig.transFigure,
                                     color=st.INK2, lw=0.7))
-        fig.text((x1 + x0) / 2, axes[i].get_position().y1 - 0.02, f"{h} h {m:02d} min\nwithout\na runtime",
-                 ha="center", va="top", fontsize=st.FS - 0.5, color=st.INK2, linespacing=1.1,
+        # fifth pass: above the axes, so that the box does not hide the stage labels of a narrow runtime
+        # (at the final cut-off runtime 2's "n = 101" was half covered)
+        fig.text((x1 + x0) / 2, axes[i].get_position().y1 + 0.005, f"{h} h {m:02d} min\nwithout\na runtime",
+                 ha="center", va="bottom", fontsize=st.FS - 0.5, color=st.INK2, linespacing=1.1,
                  bbox=dict(boxstyle="square,pad=0.2", fc=st.WHITE, ec="none"))
     a2 = axes[2]
     setups = [e for e in ev if e["event"] == "setup"]
@@ -179,6 +181,13 @@ def main():
     if ended:
         note = (f"Training ended at {ended[-1]['utc'][11:]}\n(step {int(ended[-1]['step']):,}). The run's\n"
                 f"deadline is {deadline[11:]}; the 24 h\nof TPU time end at {budget_end:%H:%M:%S}.")
+    elif all(str(r.get("open")) == "0" for r in tp) and T(train_end) <= T(tp[-1]["end_utc"]):
+        # fifth pass: the run is over (every TPU interval closed), but the cut-off, the last step record,
+        # precedes the end event by seconds: no "to come" any more
+        tp_end = max(T(r["end_utc"]) for r in tp)
+        note = (f"Records to step\n{last['step']:,} ({t_last:%H:%M:%S}),\nthe last step record.\n"
+                f"Training's deadline\nwas {train_end[11:]};\nthe TPU was given\nback at {tp_end:%H:%M:%S}.")
+        assert last["step"] == cut["step"], (last["step"], cut["step"])
     else:
         reserve = round((T(deadline) - T(train_end)).total_seconds() / 60)
         # narrow lines: the note must fit between the restore of step 12,062 (tag 4) and the kernel

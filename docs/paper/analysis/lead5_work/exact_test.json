@@ -1,0 +1,560 @@
+{
+ "split": "test",
+ "prompts": [
+  "chat-002",
+  "chat-004",
+  "chat-005",
+  "chat-008",
+  "chat-009",
+  "chat-013",
+  "chat-014",
+  "chat-016",
+  "chat-017",
+  "chat-018",
+  "chat-019",
+  "chat-021",
+  "chat-022",
+  "chat-025",
+  "chat-028",
+  "chat-029",
+  "chat-031",
+  "chat-035",
+  "chat-036",
+  "chat-038",
+  "chat-040",
+  "chat-041",
+  "chat-046",
+  "chat-047",
+  "chat-049",
+  "chat-052",
+  "chat-054",
+  "chat-055",
+  "chat-056",
+  "chat-057",
+  "chat-060",
+  "chat-061",
+  "chat-065",
+  "chat-068",
+  "chat-069",
+  "chat-070",
+  "chat-073",
+  "chat-075",
+  "chat-076",
+  "chat-077",
+  "chat-080",
+  "chat-081",
+  "chat-082",
+  "chat-083",
+  "chat-086",
+  "chat-087",
+  "chat-089",
+  "chat-092",
+  "chat-093",
+  "chat-099",
+  "code-002",
+  "code-004",
+  "code-006",
+  "code-010",
+  "code-011",
+  "code-013",
+  "code-014",
+  "code-016",
+  "code-018",
+  "code-021",
+  "code-023",
+  "code-026",
+  "code-028",
+  "code-029",
+  "code-031",
+  "code-033",
+  "code-034",
+  "code-036",
+  "code-037",
+  "code-043",
+  "code-044",
+  "code-046",
+  "code-047",
+  "code-048",
+  "code-050",
+  "code-051",
+  "code-052",
+  "code-054",
+  "code-056",
+  "code-059",
+  "instruct-001",
+  "instruct-002",
+  "instruct-003",
+  "instruct-004",
+  "instruct-005",
+  "instruct-010",
+  "instruct-011",
+  "instruct-014",
+  "instruct-017",
+  "instruct-018",
+  "instruct-020",
+  "instruct-024",
+  "instruct-025",
+  "instruct-026",
+  "instruct-027",
+  "instruct-032",
+  "instruct-034",
+  "instruct-038",
+  "instruct-040",
+  "instruct-041",
+  "instruct-043",
+  "instruct-044",
+  "instruct-050",
+  "instruct-051",
+  "instruct-052",
+  "instruct-054",
+  "instruct-056",
+  "instruct-058",
+  "instruct-059",
+  "instruct-062",
+  "instruct-063",
+  "instruct-066",
+  "instruct-067",
+  "instruct-069",
+  "instruct-070",
+  "instruct-073",
+  "instruct-074",
+  "instruct-076",
+  "instruct-077",
+  "instruct-080",
+  "math-001",
+  "math-007",
+  "math-008",
+  "math-010",
+  "math-012",
+  "math-014",
+  "math-015",
+  "math-017",
+  "math-019",
+  "math-020",
+  "math-024",
+  "math-026",
+  "math-030",
+  "math-031",
+  "math-032",
+  "math-034",
+  "math-036",
+  "math-039",
+  "math-042",
+  "math-044",
+  "math-045",
+  "math-047",
+  "math-048",
+  "math-049",
+  "math-050",
+  "math-053",
+  "math-055",
+  "math-057",
+  "math-058",
+  "math-059",
+  "writing-001",
+  "writing-003",
+  "writing-004",
+  "writing-005",
+  "writing-007",
+  "writing-010",
+  "writing-011",
+  "writing-012",
+  "writing-013",
+  "writing-015",
+  "writing-016",
+  "writing-020",
+  "writing-021",
+  "writing-024",
+  "writing-026",
+  "writing-027",
+  "writing-028",
+  "writing-029",
+  "writing-030",
+  "writing-033",
+  "writing-034",
+  "writing-036",
+  "writing-040",
+  "writing-043",
+  "writing-047",
+  "writing-048",
+  "writing-054",
+  "writing-057",
+  "writing-059",
+  "writing-064",
+  "writing-067",
+  "writing-069",
+  "writing-071",
+  "writing-073",
+  "writing-076",
+  "writing-077",
+  "writing-079",
+  "writing-081",
+  "writing-082",
+  "writing-083",
+  "writing-084",
+  "writing-085",
+  "writing-089",
+  "writing-090",
+  "writing-091",
+  "writing-093",
+  "writing-094",
+  "writing-097",
+  "writing-099",
+  "writing-100"
+ ],
+ "excluded": [],
+ "runs": {
+  "ours": "ours-export-step51812-47fd99c151a50a58/final-prefopt-9a89782942-s0",
+  "ours_k1": "ours-export-step51812-47fd99c151a50a58/final-k1-f93654208f-s0",
+  "trained": "ours-export-step51812-ef5599caa3974edc/final-trained-9a89782942-s0",
+  "falcon": "falcon-e60034381f4a/recommended-5ccec0259b-s0",
+  "falcon_k6lp": "falcon-e60034381f4a/recommended-2dcb1c92a6-s0",
+  "falcon_k6ds": "falcon-e60034381f4a/recommended-d1f2a63f82-s0",
+  "mobilellm_recommended": "mobilellm-f680f0533368-qwen3/recommended-d9f149b0d3-s0",
+  "mobilellm_neutral": "mobilellm-f680f0533368-qwen3/neutral-48fefc857c-s0"
+ },
+ "summary": {
+  "ours": {
+   "math": {
+    "n": 30,
+    "correct": 0.2,
+    "n_answers": 38,
+    "answers_correct": 0.2632,
+    "any_match": 0.2333,
+    "methods": {
+     "conclusion": 23,
+     "last": 5,
+     "answer_key": 2
+    }
+   },
+   "constraints": {
+    "n_prompts": 48,
+    "prompts_all_ok": 0.7917,
+    "n_constraints": 56,
+    "constraints_ok": 0.8214
+   },
+   "degenerate": {
+    "degenerate": 0.0198,
+    "empty": 0.0,
+    "truncated": 0.0198,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.0,
+    "role_leak": 0.0
+   },
+   "rep4_mean": 0.0342,
+   "words": {
+    "mean": 130.4,
+    "median": 101,
+    "p90": 274
+   },
+   "stock": {
+    "turns": 252,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "n_prompts": 200,
+   "n_turns": 252
+  },
+  "ours_k1": {
+   "math": {
+    "n": 30,
+    "correct": 0.1667,
+    "n_answers": 38,
+    "answers_correct": 0.2632,
+    "any_match": 0.1667,
+    "methods": {
+     "conclusion": 23,
+     "answer_key": 3,
+     "last": 4
+    }
+   },
+   "constraints": {
+    "n_prompts": 48,
+    "prompts_all_ok": 0.7708,
+    "n_constraints": 56,
+    "constraints_ok": 0.7857
+   },
+   "degenerate": {
+    "degenerate": 0.0675,
+    "empty": 0.0,
+    "truncated": 0.0675,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.0,
+    "role_leak": 0.0
+   },
+   "rep4_mean": 0.0537,
+   "words": {
+    "mean": 149.7,
+    "median": 105,
+    "p90": 363
+   },
+   "stock": {
+    "turns": 252,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "n_prompts": 200,
+   "n_turns": 252
+  },
+  "trained": {
+   "math": {
+    "n": 30,
+    "correct": 0.2,
+    "n_answers": 38,
+    "answers_correct": 0.2895,
+    "any_match": 0.2,
+    "methods": {
+     "conclusion": 22,
+     "boxed": 1,
+     "last": 5,
+     "answer_key": 2
+    }
+   },
+   "constraints": {
+    "n_prompts": 48,
+    "prompts_all_ok": 0.8542,
+    "n_constraints": 56,
+    "constraints_ok": 0.8571
+   },
+   "degenerate": {
+    "degenerate": 0.0119,
+    "empty": 0.0,
+    "truncated": 0.0119,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.0,
+    "role_leak": 0.0
+   },
+   "rep4_mean": 0.0384,
+   "words": {
+    "mean": 119.2,
+    "median": 99,
+    "p90": 252
+   },
+   "stock": {
+    "turns": 252,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "n_prompts": 200,
+   "n_turns": 252
+  },
+  "falcon": {
+   "math": {
+    "n": 30,
+    "correct": 0.5,
+    "n_answers": 38,
+    "answers_correct": 0.6053,
+    "any_match": 0.6,
+    "methods": {
+     "conclusion": 10,
+     "boxed": 14,
+     "bold": 5,
+     "answer_key": 1
+    }
+   },
+   "constraints": {
+    "n_prompts": 48,
+    "prompts_all_ok": 0.6875,
+    "n_constraints": 56,
+    "constraints_ok": 0.7321
+   },
+   "degenerate": {
+    "degenerate": 0.0079,
+    "empty": 0.0,
+    "truncated": 0.004,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.004,
+    "role_leak": 0.0
+   },
+   "rep4_mean": 0.0201,
+   "words": {
+    "mean": 173.4,
+    "median": 155,
+    "p90": 350
+   },
+   "stock": {
+    "turns": 252,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "n_prompts": 200,
+   "n_turns": 252
+  },
+  "falcon_k6lp": {
+   "math": {
+    "n": 30,
+    "correct": 0.5667,
+    "n_answers": 38,
+    "answers_correct": 0.6579,
+    "any_match": 0.6333,
+    "methods": {
+     "bold": 5,
+     "boxed": 14,
+     "conclusion": 11
+    }
+   },
+   "constraints": {
+    "n_prompts": 48,
+    "prompts_all_ok": 0.7292,
+    "n_constraints": 56,
+    "constraints_ok": 0.75
+   },
+   "degenerate": {
+    "degenerate": 0.004,
+    "empty": 0.0,
+    "truncated": 0.0,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.004,
+    "role_leak": 0.0
+   },
+   "rep4_mean": 0.0262,
+   "words": {
+    "mean": 174.3,
+    "median": 147,
+    "p90": 363
+   },
+   "stock": {
+    "turns": 252,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "n_prompts": 200,
+   "n_turns": 252
+  },
+  "falcon_k6ds": {
+   "math": {
+    "n": 30,
+    "correct": 0.6,
+    "n_answers": 38,
+    "answers_correct": 0.6842,
+    "any_match": 0.6,
+    "methods": {
+     "conclusion": 9,
+     "boxed": 18,
+     "bold": 2,
+     "last": 1
+    }
+   },
+   "constraints": {
+    "n_prompts": 48,
+    "prompts_all_ok": 0.875,
+    "n_constraints": 56,
+    "constraints_ok": 0.8929
+   },
+   "degenerate": {
+    "degenerate": 0.0,
+    "empty": 0.0,
+    "truncated": 0.0,
+    "loop": 0.0,
+    "repeated_lines": 0.0,
+    "unclosed_fence": 0.0,
+    "role_leak": 0.0
+   },
+   "rep4_mean": 0.0205,
+   "words": {
+    "mean": 168.4,
+    "median": 145,
+    "p90": 353
+   },
+   "stock": {
+    "turns": 252,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "n_prompts": 200,
+   "n_turns": 252
+  },
+  "mobilellm_recommended": {
+   "math": {
+    "n": 30,
+    "correct": 0.4,
+    "n_answers": 38,
+    "answers_correct": 0.4737,
+    "any_match": 0.4,
+    "methods": {
+     "boxed": 19,
+     "conclusion": 3,
+     "answer_key": 5,
+     "last": 3
+    }
+   },
+   "constraints": {
+    "n_prompts": 48,
+    "prompts_all_ok": 0.1667,
+    "n_constraints": 56,
+    "constraints_ok": 0.1786
+   },
+   "degenerate": {
+    "degenerate": 0.627,
+    "empty": 0.0079,
+    "truncated": 0.5952,
+    "loop": 0.0556,
+    "repeated_lines": 0.2143,
+    "unclosed_fence": 0.0278,
+    "role_leak": 0.0
+   },
+   "rep4_mean": 0.2576,
+   "words": {
+    "mean": 474.1,
+    "median": 395,
+    "p90": 836
+   },
+   "stock": {
+    "turns": 252,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "n_prompts": 200,
+   "n_turns": 252
+  },
+  "mobilellm_neutral": {
+   "math": {
+    "n": 30,
+    "correct": 0.3667,
+    "n_answers": 38,
+    "answers_correct": 0.4737,
+    "any_match": 0.4333,
+    "methods": {
+     "boxed": 20,
+     "answer_key": 4,
+     "last": 4,
+     "bold": 1,
+     "conclusion": 1
+    }
+   },
+   "constraints": {
+    "n_prompts": 48,
+    "prompts_all_ok": 0.1875,
+    "n_constraints": 56,
+    "constraints_ok": 0.1964
+   },
+   "degenerate": {
+    "degenerate": 0.5873,
+    "empty": 0.004,
+    "truncated": 0.5794,
+    "loop": 0.0675,
+    "repeated_lines": 0.1984,
+    "unclosed_fence": 0.0397,
+    "role_leak": 0.0
+   },
+   "rep4_mean": 0.2903,
+   "words": {
+    "mean": 533.7,
+    "median": 517,
+    "p90": 853
+   },
+   "stock": {
+    "turns": 252,
+    "refusal": 0,
+    "deflection": 0
+   },
+   "n_prompts": 200,
+   "n_turns": 252
+  }
+ }
+}

@@ -1,0 +1,2001 @@
+{
+ "counts": {
+  "s1-default-vs-falcon/sources/judge-gemma4-e4b-85a896a0/overall": {
+   "W": 0,
+   "L": 4,
+   "T": 56,
+   "n": 60,
+   "sign_p": 0.125,
+   "score": 0.4667,
+   "wilson": [
+    0.346279,
+    0.591066
+   ]
+  },
+  "s1-default-vs-falcon/sources/judge-gemma4-e4b-85a896a0/by_category/chat": {
+   "W": 0,
+   "L": 1,
+   "T": 14,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.4667,
+   "wilson": [
+    0.248095,
+    0.69883
+   ]
+  },
+  "s1-default-vs-falcon/sources/judge-gemma4-e4b-85a896a0/by_category/code": {
+   "W": 0,
+   "L": 0,
+   "T": 9,
+   "n": 9,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.226529,
+    0.773471
+   ]
+  },
+  "s1-default-vs-falcon/sources/judge-gemma4-e4b-85a896a0/by_category/instruct": {
+   "W": 0,
+   "L": 1,
+   "T": 11,
+   "n": 12,
+   "sign_p": 1.0,
+   "score": 0.4583,
+   "wilson": [
+    0.222867,
+    0.714007
+   ]
+  },
+  "s1-default-vs-falcon/sources/judge-gemma4-e4b-85a896a0/by_category/math": {
+   "W": 0,
+   "L": 1,
+   "T": 8,
+   "n": 9,
+   "sign_p": 1.0,
+   "score": 0.4444,
+   "wilson": [
+    0.188779,
+    0.733349
+   ]
+  },
+  "s1-default-vs-falcon/sources/judge-gemma4-e4b-85a896a0/by_category/writing": {
+   "W": 0,
+   "L": 1,
+   "T": 14,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.4667,
+   "wilson": [
+    0.248095,
+    0.69883
+   ]
+  },
+  "s1-default-vs-falcon/sources/judge-gemma4-e4b-85a896a0/by_turns/single_turn": {
+   "W": 0,
+   "L": 4,
+   "T": 41,
+   "n": 45,
+   "sign_p": 0.125,
+   "score": 0.4556,
+   "wilson": [
+    0.319338,
+    0.598764
+   ]
+  },
+  "s1-default-vs-falcon/sources/judge-gemma4-e4b-85a896a0/by_turns/multi_turn": {
+   "W": 0,
+   "L": 0,
+   "T": 15,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.274233,
+    0.725767
+   ]
+  },
+  "s1-default-vs-falcon/sources/judge-qwen3-4b-2507-3605803b/overall": {
+   "W": 2,
+   "L": 16,
+   "T": 42,
+   "n": 60,
+   "sign_p": 0.001312,
+   "score": 0.3833,
+   "wilson": [
+    0.270883,
+    0.509824
+   ]
+  },
+  "s1-default-vs-falcon/sources/judge-qwen3-4b-2507-3605803b/by_category/chat": {
+   "W": 0,
+   "L": 4,
+   "T": 11,
+   "n": 15,
+   "sign_p": 0.125,
+   "score": 0.3667,
+   "wilson": [
+    0.174568,
+    0.613135
+   ]
+  },
+  "s1-default-vs-falcon/sources/judge-qwen3-4b-2507-3605803b/by_category/code": {
+   "W": 0,
+   "L": 3,
+   "T": 6,
+   "n": 9,
+   "sign_p": 0.25,
+   "score": 0.3333,
+   "wilson": [
+    0.120584,
+    0.645798
+   ]
+  },
+  "s1-default-vs-falcon/sources/judge-qwen3-4b-2507-3605803b/by_category/instruct": {
+   "W": 0,
+   "L": 4,
+   "T": 8,
+   "n": 12,
+   "sign_p": 0.125,
+   "score": 0.3333,
+   "wilson": [
+    0.13812,
+    0.609378
+   ]
+  },
+  "s1-default-vs-falcon/sources/judge-qwen3-4b-2507-3605803b/by_category/math": {
+   "W": 1,
+   "L": 3,
+   "T": 5,
+   "n": 9,
+   "sign_p": 0.625,
+   "score": 0.3889,
+   "wilson": [
+    0.153431,
+    0.690824
+   ]
+  },
+  "s1-default-vs-falcon/sources/judge-qwen3-4b-2507-3605803b/by_category/writing": {
+   "W": 1,
+   "L": 2,
+   "T": 12,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.4667,
+   "wilson": [
+    0.248095,
+    0.69883
+   ]
+  },
+  "s1-default-vs-falcon/sources/judge-qwen3-4b-2507-3605803b/by_turns/single_turn": {
+   "W": 2,
+   "L": 12,
+   "T": 31,
+   "n": 45,
+   "sign_p": 0.012939,
+   "score": 0.3889,
+   "wilson": [
+    0.260631,
+    0.534625
+   ]
+  },
+  "s1-default-vs-falcon/sources/judge-qwen3-4b-2507-3605803b/by_turns/multi_turn": {
+   "W": 0,
+   "L": 4,
+   "T": 11,
+   "n": 15,
+   "sign_p": 0.125,
+   "score": 0.3667,
+   "wilson": [
+    0.174568,
+    0.613135
+   ]
+  },
+  "s1-default-vs-falcon/sources/opus-1/overall": {
+   "W": 2,
+   "L": 43,
+   "T": 1,
+   "n": 46,
+   "sign_p": 0.0,
+   "score": 0.0543,
+   "wilson": [
+    0.016996,
+    0.160396
+   ]
+  },
+  "s1-default-vs-falcon/sources/opus-1/by_category/chat": {
+   "W": 0,
+   "L": 10,
+   "T": 0,
+   "n": 10,
+   "sign_p": 0.001953,
+   "score": 0.0,
+   "wilson": [
+    0.0,
+    0.277533
+   ]
+  },
+  "s1-default-vs-falcon/sources/opus-1/by_category/code": {
+   "W": 2,
+   "L": 6,
+   "T": 0,
+   "n": 8,
+   "sign_p": 0.289062,
+   "score": 0.25,
+   "wilson": [
+    0.071479,
+    0.590725
+   ]
+  },
+  "s1-default-vs-falcon/sources/opus-1/by_category/instruct": {
+   "W": 0,
+   "L": 9,
+   "T": 1,
+   "n": 10,
+   "sign_p": 0.003906,
+   "score": 0.05,
+   "wilson": [
+    0.005242,
+    0.344537
+   ]
+  },
+  "s1-default-vs-falcon/sources/opus-1/by_category/math": {
+   "W": 0,
+   "L": 6,
+   "T": 0,
+   "n": 6,
+   "sign_p": 0.03125,
+   "score": 0.0,
+   "wilson": [
+    0.0,
+    0.390334
+   ]
+  },
+  "s1-default-vs-falcon/sources/opus-1/by_category/writing": {
+   "W": 0,
+   "L": 12,
+   "T": 0,
+   "n": 12,
+   "sign_p": 0.000488,
+   "score": 0.0,
+   "wilson": [
+    0.0,
+    0.242494
+   ]
+  },
+  "s1-default-vs-falcon/sources/opus-1/by_turns/single_turn": {
+   "W": 2,
+   "L": 28,
+   "T": 1,
+   "n": 31,
+   "sign_p": 1e-06,
+   "score": 0.0806,
+   "wilson": [
+    0.025332,
+    0.228431
+   ]
+  },
+  "s1-default-vs-falcon/sources/opus-1/by_turns/multi_turn": {
+   "W": 0,
+   "L": 15,
+   "T": 0,
+   "n": 15,
+   "sign_p": 6.1e-05,
+   "score": 0.0,
+   "wilson": [
+    0.0,
+    0.203883
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/judge-gemma4-e4b-85a896a0/overall": {
+   "W": 2,
+   "L": 0,
+   "T": 58,
+   "n": 60,
+   "sign_p": 0.5,
+   "score": 0.5167,
+   "wilson": [
+    0.393078,
+    0.63825
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/judge-gemma4-e4b-85a896a0/by_category/chat": {
+   "W": 0,
+   "L": 0,
+   "T": 15,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.274233,
+    0.725767
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/judge-gemma4-e4b-85a896a0/by_category/code": {
+   "W": 0,
+   "L": 0,
+   "T": 9,
+   "n": 9,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.226529,
+    0.773471
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/judge-gemma4-e4b-85a896a0/by_category/instruct": {
+   "W": 2,
+   "L": 0,
+   "T": 10,
+   "n": 12,
+   "sign_p": 0.5,
+   "score": 0.5833,
+   "wilson": [
+    0.319511,
+    0.80674
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/judge-gemma4-e4b-85a896a0/by_category/math": {
+   "W": 0,
+   "L": 0,
+   "T": 9,
+   "n": 9,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.226529,
+    0.773471
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/judge-gemma4-e4b-85a896a0/by_category/writing": {
+   "W": 0,
+   "L": 0,
+   "T": 15,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.274233,
+    0.725767
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/judge-gemma4-e4b-85a896a0/by_turns/single_turn": {
+   "W": 2,
+   "L": 0,
+   "T": 43,
+   "n": 45,
+   "sign_p": 0.5,
+   "score": 0.5222,
+   "wilson": [
+    0.380378,
+    0.660571
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/judge-gemma4-e4b-85a896a0/by_turns/multi_turn": {
+   "W": 0,
+   "L": 0,
+   "T": 15,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.274233,
+    0.725767
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/judge-qwen3-4b-2507-3605803b/overall": {
+   "W": 7,
+   "L": 4,
+   "T": 49,
+   "n": 60,
+   "sign_p": 0.548828,
+   "score": 0.525,
+   "wilson": [
+    0.40099,
+    0.646001
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/judge-qwen3-4b-2507-3605803b/by_category/chat": {
+   "W": 0,
+   "L": 1,
+   "T": 14,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.4667,
+   "wilson": [
+    0.248095,
+    0.69883
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/judge-qwen3-4b-2507-3605803b/by_category/code": {
+   "W": 0,
+   "L": 1,
+   "T": 8,
+   "n": 9,
+   "sign_p": 1.0,
+   "score": 0.4444,
+   "wilson": [
+    0.188779,
+    0.733349
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/judge-qwen3-4b-2507-3605803b/by_category/instruct": {
+   "W": 5,
+   "L": 0,
+   "T": 7,
+   "n": 12,
+   "sign_p": 0.0625,
+   "score": 0.7083,
+   "wilson": [
+    0.428356,
+    0.887271
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/judge-qwen3-4b-2507-3605803b/by_category/math": {
+   "W": 1,
+   "L": 2,
+   "T": 6,
+   "n": 9,
+   "sign_p": 1.0,
+   "score": 0.4444,
+   "wilson": [
+    0.188779,
+    0.733349
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/judge-qwen3-4b-2507-3605803b/by_category/writing": {
+   "W": 1,
+   "L": 0,
+   "T": 14,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.5333,
+   "wilson": [
+    0.30117,
+    0.751905
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/judge-qwen3-4b-2507-3605803b/by_turns/single_turn": {
+   "W": 6,
+   "L": 3,
+   "T": 36,
+   "n": 45,
+   "sign_p": 0.507812,
+   "score": 0.5333,
+   "wilson": [
+    0.390775,
+    0.670649
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/judge-qwen3-4b-2507-3605803b/by_turns/multi_turn": {
+   "W": 1,
+   "L": 1,
+   "T": 13,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.274233,
+    0.725767
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/opus-1/overall": {
+   "W": 15,
+   "L": 8,
+   "T": 0,
+   "n": 23,
+   "sign_p": 0.21004,
+   "score": 0.6522,
+   "wilson": [
+    0.448903,
+    0.811887
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/opus-1/by_category/chat": {
+   "W": 3,
+   "L": 0,
+   "T": 0,
+   "n": 3,
+   "sign_p": 0.25,
+   "score": 1.0,
+   "wilson": [
+    0.438503,
+    1.0
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/opus-1/by_category/code": {
+   "W": 1,
+   "L": 1,
+   "T": 0,
+   "n": 2,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.094531,
+    0.905469
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/opus-1/by_category/instruct": {
+   "W": 7,
+   "L": 0,
+   "T": 0,
+   "n": 7,
+   "sign_p": 0.015625,
+   "score": 1.0,
+   "wilson": [
+    0.64567,
+    1.0
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/opus-1/by_category/math": {
+   "W": 0,
+   "L": 7,
+   "T": 0,
+   "n": 7,
+   "sign_p": 0.015625,
+   "score": 0.0,
+   "wilson": [
+    0.0,
+    0.35433
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/opus-1/by_category/writing": {
+   "W": 4,
+   "L": 0,
+   "T": 0,
+   "n": 4,
+   "sign_p": 0.125,
+   "score": 1.0,
+   "wilson": [
+    0.510109,
+    1.0
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/opus-1/by_turns/single_turn": {
+   "W": 10,
+   "L": 6,
+   "T": 0,
+   "n": 16,
+   "sign_p": 0.454498,
+   "score": 0.625,
+   "wilson": [
+    0.38641,
+    0.815188
+   ]
+  },
+  "s1-default-vs-mobilellm/sources/opus-1/by_turns/multi_turn": {
+   "W": 5,
+   "L": 2,
+   "T": 0,
+   "n": 7,
+   "sign_p": 0.453125,
+   "score": 0.7143,
+   "wilson": [
+    0.358934,
+    0.917781
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-gemma4-e4b-85a896a0/overall": {
+   "W": 0,
+   "L": 3,
+   "T": 57,
+   "n": 60,
+   "sign_p": 0.25,
+   "score": 0.475,
+   "wilson": [
+    0.353999,
+    0.59901
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-gemma4-e4b-85a896a0/by_category/chat": {
+   "W": 0,
+   "L": 1,
+   "T": 14,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.4667,
+   "wilson": [
+    0.248095,
+    0.69883
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-gemma4-e4b-85a896a0/by_category/code": {
+   "W": 0,
+   "L": 0,
+   "T": 9,
+   "n": 9,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.226529,
+    0.773471
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-gemma4-e4b-85a896a0/by_category/instruct": {
+   "W": 0,
+   "L": 1,
+   "T": 11,
+   "n": 12,
+   "sign_p": 1.0,
+   "score": 0.4583,
+   "wilson": [
+    0.222867,
+    0.714007
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-gemma4-e4b-85a896a0/by_category/math": {
+   "W": 0,
+   "L": 0,
+   "T": 9,
+   "n": 9,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.226529,
+    0.773471
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-gemma4-e4b-85a896a0/by_category/writing": {
+   "W": 0,
+   "L": 1,
+   "T": 14,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.4667,
+   "wilson": [
+    0.248095,
+    0.69883
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-gemma4-e4b-85a896a0/by_turns/single_turn": {
+   "W": 0,
+   "L": 3,
+   "T": 42,
+   "n": 45,
+   "sign_p": 0.25,
+   "score": 0.4667,
+   "wilson": [
+    0.329351,
+    0.609225
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-gemma4-e4b-85a896a0/by_turns/multi_turn": {
+   "W": 0,
+   "L": 0,
+   "T": 15,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.274233,
+    0.725767
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-opus/overall": {
+   "W": 3,
+   "L": 39,
+   "T": 18,
+   "n": 60,
+   "sign_p": 0.0,
+   "score": 0.2,
+   "wilson": [
+    0.118285,
+    0.317818
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-opus/by_category/chat": {
+   "W": 0,
+   "L": 10,
+   "T": 5,
+   "n": 15,
+   "sign_p": 0.001953,
+   "score": 0.1667,
+   "wilson": [
+    0.053145,
+    0.41611
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-opus/by_category/code": {
+   "W": 1,
+   "L": 6,
+   "T": 2,
+   "n": 9,
+   "sign_p": 0.125,
+   "score": 0.2222,
+   "wilson": [
+    0.063225,
+    0.547411
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-opus/by_category/instruct": {
+   "W": 2,
+   "L": 7,
+   "T": 3,
+   "n": 12,
+   "sign_p": 0.179688,
+   "score": 0.2917,
+   "wilson": [
+    0.112729,
+    0.571644
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-opus/by_category/math": {
+   "W": 0,
+   "L": 5,
+   "T": 4,
+   "n": 9,
+   "sign_p": 0.0625,
+   "score": 0.2222,
+   "wilson": [
+    0.063225,
+    0.547411
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-opus/by_category/writing": {
+   "W": 0,
+   "L": 11,
+   "T": 4,
+   "n": 15,
+   "sign_p": 0.000977,
+   "score": 0.1333,
+   "wilson": [
+    0.037361,
+    0.37882
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-opus/by_turns/single_turn": {
+   "W": 3,
+   "L": 25,
+   "T": 17,
+   "n": 45,
+   "sign_p": 2.7e-05,
+   "score": 0.2556,
+   "wilson": [
+    0.150956,
+    0.398607
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-opus/by_turns/multi_turn": {
+   "W": 0,
+   "L": 14,
+   "T": 1,
+   "n": 15,
+   "sign_p": 0.000122,
+   "score": 0.0333,
+   "wilson": [
+    0.00349,
+    0.253468
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-qwen3-4b-2507-3605803b/overall": {
+   "W": 1,
+   "L": 16,
+   "T": 43,
+   "n": 60,
+   "sign_p": 0.000275,
+   "score": 0.375,
+   "wilson": [
+    0.263528,
+    0.501515
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-qwen3-4b-2507-3605803b/by_category/chat": {
+   "W": 1,
+   "L": 3,
+   "T": 11,
+   "n": 15,
+   "sign_p": 0.625,
+   "score": 0.4333,
+   "wilson": [
+    0.222762,
+    0.671089
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-qwen3-4b-2507-3605803b/by_category/code": {
+   "W": 0,
+   "L": 3,
+   "T": 6,
+   "n": 9,
+   "sign_p": 0.25,
+   "score": 0.3333,
+   "wilson": [
+    0.120584,
+    0.645798
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-qwen3-4b-2507-3605803b/by_category/instruct": {
+   "W": 0,
+   "L": 4,
+   "T": 8,
+   "n": 12,
+   "sign_p": 0.125,
+   "score": 0.3333,
+   "wilson": [
+    0.13812,
+    0.609378
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-qwen3-4b-2507-3605803b/by_category/math": {
+   "W": 0,
+   "L": 3,
+   "T": 6,
+   "n": 9,
+   "sign_p": 0.25,
+   "score": 0.3333,
+   "wilson": [
+    0.120584,
+    0.645798
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-qwen3-4b-2507-3605803b/by_category/writing": {
+   "W": 0,
+   "L": 3,
+   "T": 12,
+   "n": 15,
+   "sign_p": 0.25,
+   "score": 0.4,
+   "wilson": [
+    0.198245,
+    0.642532
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-qwen3-4b-2507-3605803b/by_turns/single_turn": {
+   "W": 1,
+   "L": 11,
+   "T": 33,
+   "n": 45,
+   "sign_p": 0.006348,
+   "score": 0.3889,
+   "wilson": [
+    0.260631,
+    0.534625
+   ]
+  },
+  "s2-default-vs-falcon/sources/judge-qwen3-4b-2507-3605803b/by_turns/multi_turn": {
+   "W": 0,
+   "L": 5,
+   "T": 10,
+   "n": 15,
+   "sign_p": 0.0625,
+   "score": 0.3333,
+   "wilson": [
+    0.151763,
+    0.582865
+   ]
+  },
+  "s2-default-vs-falcon/sources/opus-1/overall": {
+   "W": 3,
+   "L": 41,
+   "T": 2,
+   "n": 46,
+   "sign_p": 0.0,
+   "score": 0.087,
+   "wilson": [
+    0.034336,
+    0.203247
+   ]
+  },
+  "s2-default-vs-falcon/sources/opus-1/by_category/chat": {
+   "W": 0,
+   "L": 10,
+   "T": 0,
+   "n": 10,
+   "sign_p": 0.001953,
+   "score": 0.0,
+   "wilson": [
+    0.0,
+    0.277533
+   ]
+  },
+  "s2-default-vs-falcon/sources/opus-1/by_category/code": {
+   "W": 1,
+   "L": 7,
+   "T": 0,
+   "n": 8,
+   "sign_p": 0.070312,
+   "score": 0.125,
+   "wilson": [
+    0.022417,
+    0.470888
+   ]
+  },
+  "s2-default-vs-falcon/sources/opus-1/by_category/instruct": {
+   "W": 2,
+   "L": 7,
+   "T": 1,
+   "n": 10,
+   "sign_p": 0.179688,
+   "score": 0.25,
+   "wilson": [
+    0.080948,
+    0.557819
+   ]
+  },
+  "s2-default-vs-falcon/sources/opus-1/by_category/math": {
+   "W": 0,
+   "L": 5,
+   "T": 1,
+   "n": 6,
+   "sign_p": 0.0625,
+   "score": 0.0833,
+   "wilson": [
+    0.008762,
+    0.483183
+   ]
+  },
+  "s2-default-vs-falcon/sources/opus-1/by_category/writing": {
+   "W": 0,
+   "L": 12,
+   "T": 0,
+   "n": 12,
+   "sign_p": 0.000488,
+   "score": 0.0,
+   "wilson": [
+    0.0,
+    0.242494
+   ]
+  },
+  "s2-default-vs-falcon/sources/opus-1/by_turns/single_turn": {
+   "W": 3,
+   "L": 27,
+   "T": 1,
+   "n": 31,
+   "sign_p": 8e-06,
+   "score": 0.1129,
+   "wilson": [
+    0.042162,
+    0.269004
+   ]
+  },
+  "s2-default-vs-falcon/sources/opus-1/by_turns/multi_turn": {
+   "W": 0,
+   "L": 14,
+   "T": 1,
+   "n": 15,
+   "sign_p": 0.000122,
+   "score": 0.0333,
+   "wilson": [
+    0.00349,
+    0.253468
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-gemma4-e4b-85a896a0/overall": {
+   "W": 2,
+   "L": 1,
+   "T": 57,
+   "n": 60,
+   "sign_p": 1.0,
+   "score": 0.5083,
+   "wilson": [
+    0.385198,
+    0.630466
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-gemma4-e4b-85a896a0/by_category/chat": {
+   "W": 0,
+   "L": 0,
+   "T": 15,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.274233,
+    0.725767
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-gemma4-e4b-85a896a0/by_category/code": {
+   "W": 0,
+   "L": 1,
+   "T": 8,
+   "n": 9,
+   "sign_p": 1.0,
+   "score": 0.4444,
+   "wilson": [
+    0.188779,
+    0.733349
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-gemma4-e4b-85a896a0/by_category/instruct": {
+   "W": 2,
+   "L": 0,
+   "T": 10,
+   "n": 12,
+   "sign_p": 0.5,
+   "score": 0.5833,
+   "wilson": [
+    0.319511,
+    0.80674
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-gemma4-e4b-85a896a0/by_category/math": {
+   "W": 0,
+   "L": 0,
+   "T": 9,
+   "n": 9,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.226529,
+    0.773471
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-gemma4-e4b-85a896a0/by_category/writing": {
+   "W": 0,
+   "L": 0,
+   "T": 15,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.274233,
+    0.725767
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-gemma4-e4b-85a896a0/by_turns/single_turn": {
+   "W": 2,
+   "L": 1,
+   "T": 42,
+   "n": 45,
+   "sign_p": 1.0,
+   "score": 0.5111,
+   "wilson": [
+    0.370045,
+    0.65043
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-gemma4-e4b-85a896a0/by_turns/multi_turn": {
+   "W": 0,
+   "L": 0,
+   "T": 15,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.274233,
+    0.725767
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-opus/overall": {
+   "W": 20,
+   "L": 7,
+   "T": 33,
+   "n": 60,
+   "sign_p": 0.019157,
+   "score": 0.6083,
+   "wilson": [
+    0.481901,
+    0.721728
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-opus/by_category/chat": {
+   "W": 5,
+   "L": 0,
+   "T": 10,
+   "n": 15,
+   "sign_p": 0.0625,
+   "score": 0.6667,
+   "wilson": [
+    0.417135,
+    0.848237
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-opus/by_category/code": {
+   "W": 1,
+   "L": 2,
+   "T": 6,
+   "n": 9,
+   "sign_p": 1.0,
+   "score": 0.4444,
+   "wilson": [
+    0.188779,
+    0.733349
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-opus/by_category/instruct": {
+   "W": 9,
+   "L": 0,
+   "T": 3,
+   "n": 12,
+   "sign_p": 0.003906,
+   "score": 0.875,
+   "wilson": [
+    0.597539,
+    0.970591
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-opus/by_category/math": {
+   "W": 0,
+   "L": 5,
+   "T": 4,
+   "n": 9,
+   "sign_p": 0.0625,
+   "score": 0.2222,
+   "wilson": [
+    0.063225,
+    0.547411
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-opus/by_category/writing": {
+   "W": 5,
+   "L": 0,
+   "T": 10,
+   "n": 15,
+   "sign_p": 0.0625,
+   "score": 0.6667,
+   "wilson": [
+    0.417135,
+    0.848237
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-opus/by_turns/single_turn": {
+   "W": 13,
+   "L": 7,
+   "T": 25,
+   "n": 45,
+   "sign_p": 0.263176,
+   "score": 0.5667,
+   "wilson": [
+    0.422352,
+    0.700495
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-opus/by_turns/multi_turn": {
+   "W": 7,
+   "L": 0,
+   "T": 8,
+   "n": 15,
+   "sign_p": 0.015625,
+   "score": 0.7333,
+   "wilson": [
+    0.480496,
+    0.891025
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-qwen3-4b-2507-3605803b/overall": {
+   "W": 7,
+   "L": 2,
+   "T": 51,
+   "n": 60,
+   "sign_p": 0.179688,
+   "score": 0.5417,
+   "wilson": [
+    0.416911,
+    0.661408
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-qwen3-4b-2507-3605803b/by_category/chat": {
+   "W": 1,
+   "L": 0,
+   "T": 14,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.5333,
+   "wilson": [
+    0.30117,
+    0.751905
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-qwen3-4b-2507-3605803b/by_category/code": {
+   "W": 0,
+   "L": 1,
+   "T": 8,
+   "n": 9,
+   "sign_p": 1.0,
+   "score": 0.4444,
+   "wilson": [
+    0.188779,
+    0.733349
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-qwen3-4b-2507-3605803b/by_category/instruct": {
+   "W": 6,
+   "L": 0,
+   "T": 6,
+   "n": 12,
+   "sign_p": 0.03125,
+   "score": 0.75,
+   "wilson": [
+    0.467695,
+    0.911058
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-qwen3-4b-2507-3605803b/by_category/math": {
+   "W": 0,
+   "L": 1,
+   "T": 8,
+   "n": 9,
+   "sign_p": 1.0,
+   "score": 0.4444,
+   "wilson": [
+    0.188779,
+    0.733349
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-qwen3-4b-2507-3605803b/by_category/writing": {
+   "W": 0,
+   "L": 0,
+   "T": 15,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.274233,
+    0.725767
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-qwen3-4b-2507-3605803b/by_turns/single_turn": {
+   "W": 6,
+   "L": 2,
+   "T": 37,
+   "n": 45,
+   "sign_p": 0.289062,
+   "score": 0.5444,
+   "wilson": [
+    0.401236,
+    0.680662
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/judge-qwen3-4b-2507-3605803b/by_turns/multi_turn": {
+   "W": 1,
+   "L": 0,
+   "T": 14,
+   "n": 15,
+   "sign_p": 1.0,
+   "score": 0.5333,
+   "wilson": [
+    0.30117,
+    0.751905
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/opus-1/overall": {
+   "W": 20,
+   "L": 7,
+   "T": 2,
+   "n": 29,
+   "sign_p": 0.019157,
+   "score": 0.7241,
+   "wilson": [
+    0.542829,
+    0.853012
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/opus-1/by_category/chat": {
+   "W": 5,
+   "L": 0,
+   "T": 0,
+   "n": 5,
+   "sign_p": 0.0625,
+   "score": 1.0,
+   "wilson": [
+    0.565518,
+    1.0
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/opus-1/by_category/code": {
+   "W": 1,
+   "L": 2,
+   "T": 0,
+   "n": 3,
+   "sign_p": 1.0,
+   "score": 0.3333,
+   "wilson": [
+    0.061492,
+    0.79234
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/opus-1/by_category/instruct": {
+   "W": 9,
+   "L": 0,
+   "T": 0,
+   "n": 9,
+   "sign_p": 0.003906,
+   "score": 1.0,
+   "wilson": [
+    0.700855,
+    1.0
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/opus-1/by_category/math": {
+   "W": 0,
+   "L": 5,
+   "T": 2,
+   "n": 7,
+   "sign_p": 0.0625,
+   "score": 0.1429,
+   "wilson": [
+    0.02568,
+    0.513128
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/opus-1/by_category/writing": {
+   "W": 5,
+   "L": 0,
+   "T": 0,
+   "n": 5,
+   "sign_p": 0.0625,
+   "score": 1.0,
+   "wilson": [
+    0.565518,
+    1.0
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/opus-1/by_turns/single_turn": {
+   "W": 13,
+   "L": 7,
+   "T": 0,
+   "n": 20,
+   "sign_p": 0.263176,
+   "score": 0.65,
+   "wilson": [
+    0.432854,
+    0.818808
+   ]
+  },
+  "s2-default-vs-mobilellm/sources/opus-1/by_turns/multi_turn": {
+   "W": 7,
+   "L": 0,
+   "T": 2,
+   "n": 9,
+   "sign_p": 0.015625,
+   "score": 0.8889,
+   "wilson": [
+    0.565,
+    0.980109
+   ]
+  },
+  "s1-ngram3-vs-default/sources/opus-1/overall": {
+   "W": 6,
+   "L": 3,
+   "T": 1,
+   "n": 10,
+   "sign_p": 0.507812,
+   "score": 0.65,
+   "wilson": [
+    0.353671,
+    0.863069
+   ]
+  },
+  "s1-ngram3-vs-default/sources/opus-1/by_category/chat": {
+   "W": 3,
+   "L": 0,
+   "T": 0,
+   "n": 3,
+   "sign_p": 0.25,
+   "score": 1.0,
+   "wilson": [
+    0.438503,
+    1.0
+   ]
+  },
+  "s1-ngram3-vs-default/sources/opus-1/by_category/code": {
+   "W": 0,
+   "L": 1,
+   "T": 0,
+   "n": 1,
+   "sign_p": 1.0,
+   "score": 0.0,
+   "wilson": [
+    0.0,
+    0.793451
+   ]
+  },
+  "s1-ngram3-vs-default/sources/opus-1/by_category/instruct": {
+   "W": 3,
+   "L": 1,
+   "T": 1,
+   "n": 5,
+   "sign_p": 0.625,
+   "score": 0.7,
+   "wilson": [
+    0.298791,
+    0.927416
+   ]
+  },
+  "s1-ngram3-vs-default/sources/opus-1/by_category/writing": {
+   "W": 0,
+   "L": 1,
+   "T": 0,
+   "n": 1,
+   "sign_p": 1.0,
+   "score": 0.0,
+   "wilson": [
+    0.0,
+    0.793451
+   ]
+  },
+  "s1-ngram3-vs-default/sources/opus-1/by_turns/single_turn": {
+   "W": 4,
+   "L": 3,
+   "T": 1,
+   "n": 8,
+   "sign_p": 1.0,
+   "score": 0.5625,
+   "wilson": [
+    0.258948,
+    0.825501
+   ]
+  },
+  "s1-ngram3-vs-default/sources/opus-1/by_turns/multi_turn": {
+   "W": 2,
+   "L": 0,
+   "T": 0,
+   "n": 2,
+   "sign_p": 0.5,
+   "score": 1.0,
+   "wilson": [
+    0.34238,
+    1.0
+   ]
+  },
+  "s2-ngram3-vs-default/sources/opus-1/overall": {
+   "W": 4,
+   "L": 8,
+   "T": 4,
+   "n": 16,
+   "sign_p": 0.387695,
+   "score": 0.375,
+   "wilson": [
+    0.184812,
+    0.61359
+   ]
+  },
+  "s2-ngram3-vs-default/sources/opus-1/by_category/chat": {
+   "W": 2,
+   "L": 2,
+   "T": 0,
+   "n": 4,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.150039,
+    0.849961
+   ]
+  },
+  "s2-ngram3-vs-default/sources/opus-1/by_category/code": {
+   "W": 1,
+   "L": 0,
+   "T": 0,
+   "n": 1,
+   "sign_p": 1.0,
+   "score": 1.0,
+   "wilson": [
+    0.206549,
+    1.0
+   ]
+  },
+  "s2-ngram3-vs-default/sources/opus-1/by_category/instruct": {
+   "W": 0,
+   "L": 3,
+   "T": 3,
+   "n": 6,
+   "sign_p": 0.25,
+   "score": 0.25,
+   "wilson": [
+    0.05999,
+    0.635177
+   ]
+  },
+  "s2-ngram3-vs-default/sources/opus-1/by_category/math": {
+   "W": 0,
+   "L": 2,
+   "T": 1,
+   "n": 3,
+   "sign_p": 0.5,
+   "score": 0.1667,
+   "wilson": [
+    0.017653,
+    0.690012
+   ]
+  },
+  "s2-ngram3-vs-default/sources/opus-1/by_category/writing": {
+   "W": 1,
+   "L": 1,
+   "T": 0,
+   "n": 2,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.094531,
+    0.905469
+   ]
+  },
+  "s2-ngram3-vs-default/sources/opus-1/by_turns/single_turn": {
+   "W": 2,
+   "L": 5,
+   "T": 3,
+   "n": 10,
+   "sign_p": 0.453125,
+   "score": 0.35,
+   "wilson": [
+    0.136931,
+    0.646329
+   ]
+  },
+  "s2-ngram3-vs-default/sources/opus-1/by_turns/multi_turn": {
+   "W": 2,
+   "L": 3,
+   "T": 1,
+   "n": 6,
+   "sign_p": 1.0,
+   "score": 0.4167,
+   "wilson": [
+    0.139467,
+    0.758922
+   ]
+  },
+  "s1-k1-vs-default/sources/opus-1/overall": {
+   "W": 1,
+   "L": 3,
+   "T": 3,
+   "n": 7,
+   "sign_p": 0.625,
+   "score": 0.3571,
+   "wilson": [
+    0.118083,
+    0.69744
+   ]
+  },
+  "s1-k1-vs-default/sources/opus-1/by_category/chat": {
+   "W": 1,
+   "L": 0,
+   "T": 0,
+   "n": 1,
+   "sign_p": 1.0,
+   "score": 1.0,
+   "wilson": [
+    0.206549,
+    1.0
+   ]
+  },
+  "s1-k1-vs-default/sources/opus-1/by_category/code": {
+   "W": 0,
+   "L": 0,
+   "T": 1,
+   "n": 1,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.054621,
+    0.945379
+   ]
+  },
+  "s1-k1-vs-default/sources/opus-1/by_category/instruct": {
+   "W": 0,
+   "L": 1,
+   "T": 2,
+   "n": 3,
+   "sign_p": 1.0,
+   "score": 0.3333,
+   "wilson": [
+    0.061492,
+    0.79234
+   ]
+  },
+  "s1-k1-vs-default/sources/opus-1/by_category/writing": {
+   "W": 0,
+   "L": 2,
+   "T": 0,
+   "n": 2,
+   "sign_p": 0.5,
+   "score": 0.0,
+   "wilson": [
+    0.0,
+    0.65762
+   ]
+  },
+  "s1-k1-vs-default/sources/opus-1/by_turns/single_turn": {
+   "W": 0,
+   "L": 2,
+   "T": 3,
+   "n": 5,
+   "sign_p": 0.5,
+   "score": 0.3,
+   "wilson": [
+    0.072584,
+    0.701209
+   ]
+  },
+  "s1-k1-vs-default/sources/opus-1/by_turns/multi_turn": {
+   "W": 1,
+   "L": 1,
+   "T": 0,
+   "n": 2,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.094531,
+    0.905469
+   ]
+  },
+  "s1-short-vs-default/sources/opus-1/overall": {
+   "W": 1,
+   "L": 1,
+   "T": 3,
+   "n": 5,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.170424,
+    0.829576
+   ]
+  },
+  "s1-short-vs-default/sources/opus-1/by_category/code": {
+   "W": 0,
+   "L": 0,
+   "T": 1,
+   "n": 1,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.054621,
+    0.945379
+   ]
+  },
+  "s1-short-vs-default/sources/opus-1/by_category/instruct": {
+   "W": 1,
+   "L": 1,
+   "T": 2,
+   "n": 4,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.150039,
+    0.849961
+   ]
+  },
+  "s1-short-vs-default/sources/opus-1/by_turns/single_turn": {
+   "W": 1,
+   "L": 0,
+   "T": 3,
+   "n": 4,
+   "sign_p": 1.0,
+   "score": 0.625,
+   "wilson": [
+    0.219427,
+    0.908101
+   ]
+  },
+  "s1-short-vs-default/sources/opus-1/by_turns/multi_turn": {
+   "W": 0,
+   "L": 1,
+   "T": 0,
+   "n": 1,
+   "sign_p": 1.0,
+   "score": 0.0,
+   "wilson": [
+    0.0,
+    0.793451
+   ]
+  },
+  "s1-t04-vs-default/sources/opus-1/overall": {
+   "W": 5,
+   "L": 6,
+   "T": 3,
+   "n": 14,
+   "sign_p": 1.0,
+   "score": 0.4643,
+   "wilson": [
+    0.240432,
+    0.703518
+   ]
+  },
+  "s1-t04-vs-default/sources/opus-1/by_category/chat": {
+   "W": 2,
+   "L": 1,
+   "T": 0,
+   "n": 3,
+   "sign_p": 1.0,
+   "score": 0.6667,
+   "wilson": [
+    0.20766,
+    0.938508
+   ]
+  },
+  "s1-t04-vs-default/sources/opus-1/by_category/code": {
+   "W": 1,
+   "L": 1,
+   "T": 0,
+   "n": 2,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.094531,
+    0.905469
+   ]
+  },
+  "s1-t04-vs-default/sources/opus-1/by_category/instruct": {
+   "W": 0,
+   "L": 3,
+   "T": 3,
+   "n": 6,
+   "sign_p": 0.25,
+   "score": 0.25,
+   "wilson": [
+    0.05999,
+    0.635177
+   ]
+  },
+  "s1-t04-vs-default/sources/opus-1/by_category/math": {
+   "W": 1,
+   "L": 0,
+   "T": 0,
+   "n": 1,
+   "sign_p": 1.0,
+   "score": 1.0,
+   "wilson": [
+    0.206549,
+    1.0
+   ]
+  },
+  "s1-t04-vs-default/sources/opus-1/by_category/writing": {
+   "W": 1,
+   "L": 1,
+   "T": 0,
+   "n": 2,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.094531,
+    0.905469
+   ]
+  },
+  "s1-t04-vs-default/sources/opus-1/by_turns/single_turn": {
+   "W": 3,
+   "L": 3,
+   "T": 3,
+   "n": 9,
+   "sign_p": 1.0,
+   "score": 0.5,
+   "wilson": [
+    0.226529,
+    0.773471
+   ]
+  },
+  "s1-t04-vs-default/sources/opus-1/by_turns/multi_turn": {
+   "W": 2,
+   "L": 3,
+   "T": 0,
+   "n": 5,
+   "sign_p": 1.0,
+   "score": 0.4,
+   "wilson": [
+    0.117621,
+    0.769276
+   ]
+  },
+  "s1-t08-vs-default/sources/opus-1/overall": {
+   "W": 2,
+   "L": 7,
+   "T": 2,
+   "n": 11,
+   "sign_p": 0.179688,
+   "score": 0.2727,
+   "wilson": [
+    0.097461,
+    0.565645
+   ]
+  },
+  "s1-t08-vs-default/sources/opus-1/by_category/code": {
+   "W": 0,
+   "L": 2,
+   "T": 0,
+   "n": 2,
+   "sign_p": 0.5,
+   "score": 0.0,
+   "wilson": [
+    0.0,
+    0.65762
+   ]
+  },
+  "s1-t08-vs-default/sources/opus-1/by_category/instruct": {
+   "W": 1,
+   "L": 2,
+   "T": 2,
+   "n": 5,
+   "sign_p": 1.0,
+   "score": 0.4,
+   "wilson": [
+    0.117621,
+    0.769276
+   ]
+  },
+  "s1-t08-vs-default/sources/opus-1/by_category/writing": {
+   "W": 1,
+   "L": 3,
+   "T": 0,
+   "n": 4,
+   "sign_p": 0.625,
+   "score": 0.25,
+   "wilson": [
+    0.045587,
+    0.699358
+   ]
+  },
+  "s1-t08-vs-default/sources/opus-1/by_turns/single_turn": {
+   "W": 0,
+   "L": 6,
+   "T": 2,
+   "n": 8,
+   "sign_p": 0.03125,
+   "score": 0.125,
+   "wilson": [
+    0.022417,
+    0.470888
+   ]
+  },
+  "s1-t08-vs-default/sources/opus-1/by_turns/multi_turn": {
+   "W": 2,
+   "L": 1,
+   "T": 0,
+   "n": 3,
+   "sign_p": 1.0,
+   "score": 0.6667,
+   "wilson": [
+    0.20766,
+    0.938508
+   ]
+  },
+  "ref-falcon-vs-mobilellm-test/sources/judge-opus/overall": {
+   "W": 144,
+   "L": 6,
+   "T": 50,
+   "n": 200,
+   "sign_p": 0.0,
+   "score": 0.845,
+   "wilson": [
+    0.788393,
+    0.888604
+   ]
+  },
+  "ref-falcon-vs-mobilellm-test/sources/judge-opus/by_category/chat": {
+   "W": 37,
+   "L": 1,
+   "T": 12,
+   "n": 50,
+   "sign_p": 0.0,
+   "score": 0.86,
+   "wilson": [
+    0.738138,
+    0.930492
+   ]
+  },
+  "ref-falcon-vs-mobilellm-test/sources/judge-opus/by_category/code": {
+   "W": 17,
+   "L": 2,
+   "T": 11,
+   "n": 30,
+   "sign_p": 0.000729,
+   "score": 0.75,
+   "wilson": [
+    0.572998,
+    0.870246
+   ]
+  },
+  "ref-falcon-vs-mobilellm-test/sources/judge-opus/by_category/instruct": {
+   "W": 31,
+   "L": 0,
+   "T": 9,
+   "n": 40,
+   "sign_p": 0.0,
+   "score": 0.8875,
+   "wilson": [
+    0.754041,
+    0.953052
+   ]
+  },
+  "ref-falcon-vs-mobilellm-test/sources/judge-opus/by_category/math": {
+   "W": 15,
+   "L": 3,
+   "T": 12,
+   "n": 30,
+   "sign_p": 0.007538,
+   "score": 0.7,
+   "wilson": [
+    0.521242,
+    0.833353
+   ]
+  },
+  "ref-falcon-vs-mobilellm-test/sources/judge-opus/by_category/writing": {
+   "W": 44,
+   "L": 0,
+   "T": 6,
+   "n": 50,
+   "sign_p": 0.0,
+   "score": 0.94,
+   "wilson": [
+    0.837829,
+    0.979385
+   ]
+  },
+  "ref-falcon-vs-mobilellm-test/sources/judge-opus/by_turns/single_turn": {
+   "W": 105,
+   "L": 5,
+   "T": 38,
+   "n": 148,
+   "sign_p": 0.0,
+   "score": 0.8378,
+   "wilson": [
+    0.770043,
+    0.888539
+   ]
+  },
+  "ref-falcon-vs-mobilellm-test/sources/judge-opus/by_turns/multi_turn": {
+   "W": 39,
+   "L": 1,
+   "T": 12,
+   "n": 52,
+   "sign_p": 0.0,
+   "score": 0.8654,
+   "wilson": [
+    0.747267,
+    0.933231
+   ]
+  }
+ },
+ "raw_first_reading": {
+  "s2-ngram3-vs-default": {
+   "B": 7,
+   "both_bad": 44,
+   "A": 5,
+   "tie": 4
+  },
+  "s2-default-vs-mobilellm": {
+   "A": 14,
+   "both_bad": 31,
+   "tie": 2,
+   "B": 13
+  },
+  "s2-default-vs-falcon": {
+   "B": 22,
+   "both_bad": 14,
+   "A": 22,
+   "tie": 2
+  }
+ },
+ "reading_files": {
+  "ref-falcon-vs-mobilellm-test": [
+   "judge-opus.jsonl"
+  ],
+  "s1-default-vs-falcon": [
+   "judge-gemma4-e4b-85a896a0.jsonl",
+   "judge-qwen3-4b-2507-3605803b.jsonl",
+   "opus-1.jsonl"
+  ],
+  "s1-default-vs-mobilellm": [
+   "judge-gemma4-e4b-85a896a0.jsonl",
+   "judge-qwen3-4b-2507-3605803b.jsonl",
+   "opus-1.jsonl"
+  ],
+  "s1-k1-vs-default": [
+   "opus-1.jsonl"
+  ],
+  "s1-ngram3-vs-default": [
+   "opus-1.jsonl"
+  ],
+  "s1-short-vs-default": [
+   "opus-1.jsonl"
+  ],
+  "s1-t04-vs-default": [
+   "opus-1.jsonl"
+  ],
+  "s1-t08-vs-default": [
+   "opus-1.jsonl"
+  ],
+  "s2-default-vs-falcon": [
+   "judge-gemma4-e4b-85a896a0.jsonl",
+   "judge-opus.jsonl",
+   "judge-qwen3-4b-2507-3605803b.jsonl",
+   "opus-1.jsonl"
+  ],
+  "s2-default-vs-mobilellm": [
+   "judge-gemma4-e4b-85a896a0.jsonl",
+   "judge-opus.jsonl",
+   "judge-qwen3-4b-2507-3605803b.jsonl",
+   "opus-1.jsonl"
+  ],
+  "s2-ngram3-vs-default": [
+   "opus-1.jsonl"
+  ]
+ }
+}

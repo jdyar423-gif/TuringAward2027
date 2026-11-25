@@ -1,0 +1,7644 @@
+{
+  "run_id": "falcon-e60034381f4a/recommended-2dcb1c92a6-s0",
+  "split": "test",
+  "summary": {
+    "n_prompts": 200,
+    "n_turns": 252,
+    "count_backend": "constraints.measure",
+    "math": {
+      "n": 30,
+      "correct": 0.5667,
+      "n_answers": 38,
+      "answers_correct": 0.6579,
+      "any_match": 0.6333,
+      "methods": {
+        "bold": 5,
+        "boxed": 14,
+        "conclusion": 11
+      }
+    },
+    "constraints": {
+      "n_prompts": 48,
+      "prompts_all_ok": 0.7292,
+      "n_constraints": 56,
+      "constraints_ok": 0.75,
+      "by_type": {
+        "bullets": {
+          "n": 6,
+          "ok": 0.8333
+        },
+        "case": {
+          "n": 3,
+          "ok": 0.3333
+        },
+        "ends_with": {
+          "n": 3,
+          "ok": 1.0
+        },
+        "ends_with_question": {
+          "n": 2,
+          "ok": 1.0
+        },
+        "frequency": {
+          "n": 1,
+          "ok": 1.0
+        },
+        "include": {
+          "n": 3,
+          "ok": 1.0
+        },
+        "json": {
+          "n": 2,
+          "ok": 0.5
+        },
+        "json_keys": {
+          "n": 1,
+          "ok": 1.0
+        },
+        "lines": {
+          "n": 1,
+          "ok": 1.0
+        },
+        "no_commas": {
+          "n": 2,
+          "ok": 1.0
+        },
+        "numbered": {
+          "n": 2,
+          "ok": 0.5
+        },
+        "one_of": {
+          "n": 1,
+          "ok": 0.0
+        },
+        "paragraphs": {
+          "n": 2,
+          "ok": 0.5
+        },
+        "placeholders": {
+          "n": 1,
+          "ok": 1.0
+        },
+        "postscript": {
+          "n": 1,
+          "ok": 1.0
+        },
+        "quoted": {
+          "n": 1,
+          "ok": 1.0
+        },
+        "sections": {
+          "n": 1,
+          "ok": 1.0
+        },
+        "sentences": {
+          "n": 10,
+          "ok": 0.7
+        },
+        "separated_parts": {
+          "n": 1,
+          "ok": 1.0
+        },
+        "starts_with": {
+          "n": 2,
+          "ok": 1.0
+        },
+        "title": {
+          "n": 1,
+          "ok": 1.0
+        },
+        "words": {
+          "n": 9,
+          "ok": 0.5556
+        }
+      }
+    },
+    "degenerate": {
+      "degenerate": 0.004,
+      "empty": 0.0,
+      "truncated": 0.0,
+      "loop": 0.0,
+      "repeated_lines": 0.0,
+      "unclosed_fence": 0.004,
+      "role_leak": 0.0
+    },
+    "rep4_mean": 0.0262,
+    "words": {
+      "mean": 174.3,
+      "median": 147,
+      "p90": 363
+    },
+    "project_checker": {
+      "n": 48,
+      "no_violation": 0.75
+    },
+    "by_category": {
+      "chat": {
+        "n": 50,
+        "math_correct": null,
+        "constraints_ok": 1.0,
+        "degenerate": 0.0,
+        "words_mean": 271.0
+      },
+      "code": {
+        "n": 30,
+        "math_correct": null,
+        "constraints_ok": null,
+        "degenerate": 0.0263,
+        "words_mean": 210.5
+      },
+      "instruct": {
+        "n": 40,
+        "math_correct": null,
+        "constraints_ok": 0.725,
+        "degenerate": 0.0,
+        "words_mean": 103.2
+      },
+      "math": {
+        "n": 30,
+        "math_correct": 0.5667,
+        "constraints_ok": null,
+        "degenerate": 0.0,
+        "words_mean": 88.7
+      },
+      "writing": {
+        "n": 50,
+        "math_correct": null,
+        "constraints_ok": 0.7143,
+        "degenerate": 0.0,
+        "words_mean": 163.7
+      }
+    }
+  },
+  "per_prompt": [
+    {
+      "prompt_id": "chat-002",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 334,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0151,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-004",
+      "category": "chat",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 370,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0695,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 313,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0063,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-005",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 258,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0118,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-008",
+      "category": "chat",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 144,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 301,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0133,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-009",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 137,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0073,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-013",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 141,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0072,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-014",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 165,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0061,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-016",
+      "category": "chat",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 326,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0031,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 403,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-017",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 312,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0287,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-018",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 366,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0082,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-019",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 242,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0083,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-021",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 305,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0196,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-022",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 174,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-025",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 236,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.042,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-028",
+      "category": "chat",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 265,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.044,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 208,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0874,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-029",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 251,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0158,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-031",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 386,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0256,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-035",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 317,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0599,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-036",
+      "category": "chat",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 198,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 231,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0306,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-038",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 289,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.007,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-040",
+      "category": "chat",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 369,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0054,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 340,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0029,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-041",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 343,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0029,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-046",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 391,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0514,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-047",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 356,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-049",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 211,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-052",
+      "category": "chat",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 287,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.007,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 166,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0061,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-054",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 422,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0328,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-055",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 53,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.02,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-056",
+      "category": "chat",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 86,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.119,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 50,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0426,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-057",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 206,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0048,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-060",
+      "category": "chat",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 368,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0212,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 319,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0216,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-061",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 366,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0385,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-065",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 380,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0185,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-068",
+      "category": "chat",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 333,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0536,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 444,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0023,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-069",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 361,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0488,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-070",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 239,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0127,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-073",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 407,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0049,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-075",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 453,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0022,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-076",
+      "category": "chat",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 363,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0139,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 32,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "sentences",
+              "ok": true,
+              "measured": 1
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "chat-077",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 153,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-080",
+      "category": "chat",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 234,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.013,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 246,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-081",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 284,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.032,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-082",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 75,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-083",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 286,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0247,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-086",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 310,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0594,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-087",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 196,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.041,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-089",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 357,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0028,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-092",
+      "category": "chat",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 143,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.042,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 45,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-093",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 344,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0175,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "chat-099",
+      "category": "chat",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 384,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0157,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-001",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 65,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": false,
+            "any_match": true,
+            "method": "bold",
+            "extracted": "20",
+            "candidates": [
+              "20"
+            ]
+          }
+        }
+      ],
+      "math_correct": false,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-007",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 100,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0206,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "boxed",
+            "extracted": "1.375",
+            "candidates": [
+              "1.375"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-008",
+      "category": "math",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 44,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "conclusion",
+            "extracted": "126",
+            "candidates": [
+              "126"
+            ]
+          }
+        },
+        {
+          "degenerate": {
+            "words": 30,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "conclusion",
+            "extracted": "42",
+            "candidates": [
+              "42"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-010",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 65,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0323,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "boxed",
+            "extracted": "20",
+            "candidates": [
+              "20"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-012",
+      "category": "math",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 63,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0167,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "boxed",
+            "extracted": "60",
+            "candidates": [
+              "60"
+            ]
+          }
+        },
+        {
+          "degenerate": {
+            "words": 63,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0167,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": false,
+            "any_match": false,
+            "method": "boxed",
+            "extracted": "2",
+            "candidates": [
+              "2"
+            ]
+          }
+        }
+      ],
+      "math_correct": false,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-014",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 39,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "bold",
+            "extracted": "36",
+            "candidates": [
+              "36"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-015",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 90,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0575,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "bold",
+            "extracted": "15",
+            "candidates": [
+              "15"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-017",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 58,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0182,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "conclusion",
+            "extracted": "25",
+            "candidates": [
+              "25"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-019",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 157,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "boxed",
+            "extracted": "45",
+            "candidates": [
+              "45"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-020",
+      "category": "math",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 45,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "conclusion",
+            "extracted": "5000",
+            "candidates": [
+              "5000"
+            ]
+          }
+        },
+        {
+          "degenerate": {
+            "words": 62,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0333,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": false,
+            "any_match": false,
+            "method": "conclusion",
+            "extracted": "1",
+            "candidates": [
+              "1"
+            ]
+          }
+        }
+      ],
+      "math_correct": false,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-024",
+      "category": "math",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 94,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.033,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "conclusion",
+            "extracted": "75",
+            "candidates": [
+              "75"
+            ]
+          }
+        },
+        {
+          "degenerate": {
+            "words": 77,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0135,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": false,
+            "any_match": false,
+            "method": "conclusion",
+            "extracted": "30",
+            "candidates": [
+              "30"
+            ]
+          }
+        }
+      ],
+      "math_correct": false,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-026",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 96,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0323,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "boxed",
+            "extracted": "3276",
+            "candidates": [
+              "3276"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-030",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 71,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0588,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "conclusion",
+            "extracted": "121.92",
+            "candidates": [
+              "121.92"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-031",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 48,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "conclusion",
+            "extracted": "0.75",
+            "candidates": [
+              "0.75"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-032",
+      "category": "math",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 108,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.1028,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "conclusion",
+            "extracted": "165",
+            "candidates": [
+              "165"
+            ]
+          }
+        },
+        {
+          "degenerate": {
+            "words": 99,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0206,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "conclusion",
+            "extracted": "110",
+            "candidates": [
+              "110"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-034",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 85,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0122,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "conclusion",
+            "extracted": "10080",
+            "candidates": [
+              "10080"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-036",
+      "category": "math",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 43,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.05,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "conclusion",
+            "extracted": "84",
+            "candidates": [
+              "84"
+            ]
+          }
+        },
+        {
+          "degenerate": {
+            "words": 92,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0225,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": false,
+            "any_match": false,
+            "method": "conclusion",
+            "extracted": "11.1",
+            "candidates": [
+              "11.1"
+            ]
+          }
+        }
+      ],
+      "math_correct": false,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-039",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 175,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.1047,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": false,
+            "any_match": true,
+            "method": "boxed",
+            "extracted": "2000",
+            "candidates": [
+              "2000"
+            ]
+          }
+        }
+      ],
+      "math_correct": false,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-042",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 108,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.1154,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": false,
+            "any_match": false,
+            "method": "bold",
+            "extracted": "180",
+            "candidates": [
+              "180"
+            ]
+          }
+        }
+      ],
+      "math_correct": false,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-044",
+      "category": "math",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 56,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "boxed",
+            "extracted": "128",
+            "candidates": [
+              "128"
+            ]
+          }
+        },
+        {
+          "degenerate": {
+            "words": 104,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0297,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": false,
+            "any_match": false,
+            "method": "conclusion",
+            "extracted": "0",
+            "candidates": [
+              "0"
+            ]
+          }
+        }
+      ],
+      "math_correct": false,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-045",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 57,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0741,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "conclusion",
+            "extracted": "46",
+            "candidates": [
+              "46"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-047",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 71,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0588,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "boxed",
+            "extracted": "450",
+            "candidates": [
+              "450"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-048",
+      "category": "math",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 97,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0851,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "boxed",
+            "extracted": "1023",
+            "candidates": [
+              "1023"
+            ]
+          }
+        },
+        {
+          "degenerate": {
+            "words": 143,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.1064,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": false,
+            "any_match": false,
+            "method": "boxed",
+            "extracted": "115",
+            "candidates": [
+              "115"
+            ]
+          }
+        }
+      ],
+      "math_correct": false,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-049",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 103,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0396,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "bold",
+            "extracted": "490",
+            "candidates": [
+              "490"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-050",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 78,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.039,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "boxed",
+            "extracted": "24",
+            "candidates": [
+              "24"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-053",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 167,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.1585,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": true,
+            "any_match": true,
+            "method": "boxed",
+            "extracted": "64",
+            "candidates": [
+              "64"
+            ]
+          }
+        }
+      ],
+      "math_correct": true,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-055",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 64,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0164,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": false,
+            "any_match": false,
+            "method": "boxed",
+            "extracted": "396",
+            "candidates": [
+              "396"
+            ]
+          }
+        }
+      ],
+      "math_correct": false,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-057",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 181,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0938,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": false,
+            "any_match": false,
+            "method": "boxed",
+            "extracted": "16",
+            "candidates": [
+              "16"
+            ]
+          }
+        }
+      ],
+      "math_correct": false,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-058",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 127,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0484,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": false,
+            "any_match": false,
+            "method": "boxed",
+            "extracted": "45",
+            "candidates": [
+              "45"
+            ]
+          }
+        }
+      ],
+      "math_correct": false,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "math-059",
+      "category": "math",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 147,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0833,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "math": {
+            "correct": false,
+            "any_match": false,
+            "method": "boxed",
+            "extracted": "209",
+            "candidates": [
+              "209"
+            ]
+          }
+        }
+      ],
+      "math_correct": false,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-002",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 194,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0645,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-004",
+      "category": "code",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 228,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0274,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 212,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0153,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-006",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 267,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.1519,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-010",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 197,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0549,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-011",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 293,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0261,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-013",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 372,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.1594,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-014",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 293,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.083,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-016",
+      "category": "code",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 171,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0435,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 118,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.1379,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-018",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 283,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0144,
+            "unclosed_fence": true,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": true
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-021",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 216,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0388,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-023",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 211,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0817,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-026",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 143,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0284,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-028",
+      "category": "code",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 47,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 76,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0541,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-029",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 159,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.1014,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-031",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 209,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.1015,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-033",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 308,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.2075,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-034",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 296,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0464,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-036",
+      "category": "code",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 217,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.1896,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 156,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0461,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-037",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 184,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0457,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-043",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 94,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0217,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-044",
+      "category": "code",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 200,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.1237,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 226,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.1483,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-046",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 458,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0393,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-047",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 322,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0568,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-048",
+      "category": "code",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 64,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0172,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 93,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0366,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-050",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 184,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0506,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-051",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 191,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0265,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-052",
+      "category": "code",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 164,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0385,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 154,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0483,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-054",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 274,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0161,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-056",
+      "category": "code",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 233,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 186,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.1061,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "code-059",
+      "category": "code",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 307,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0758,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-001",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 61,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "sentences",
+              "ok": false,
+              "measured": 3
+            }
+          ],
+          "constraints_ok": false,
+          "project": {
+            "violations": [
+              "sentences: 3, want exactly 2"
+            ],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": false,
+      "n_constraints": 1,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-003",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 77,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-004",
+      "category": "writing",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 29,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 8,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-005",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 45,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-007",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 33,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "bullets",
+              "ok": true,
+              "measured": 3
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "writing-010",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 67,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-011",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 45,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-012",
+      "category": "writing",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 574,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0052,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 570,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0052,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-013",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 121,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-015",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 71,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0441,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "bullets",
+              "ok": true,
+              "measured": 3
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 2
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "writing-016",
+      "category": "writing",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 65,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 65,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-020",
+      "category": "writing",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 326,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0246,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 15,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-021",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 47,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-024",
+      "category": "writing",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 63,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 12,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-026",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 29,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-027",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 8,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "sentences",
+              "ok": false,
+              "measured": 0
+            }
+          ],
+          "constraints_ok": false,
+          "project": {
+            "violations": [
+              "sentences: 0, want exactly 1"
+            ],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": false,
+      "n_constraints": 1,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-028",
+      "category": "writing",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 189,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 409,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0049,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-029",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 11,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-030",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 322,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0188,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-033",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 13,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-034",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 107,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-036",
+      "category": "writing",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 207,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0049,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 326,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-040",
+      "category": "writing",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 16,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 29,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-043",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 573,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0226,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-047",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 551,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0246,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "starts_with",
+              "ok": true,
+              "measured": null
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "writing-048",
+      "category": "writing",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 81,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 258,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0076,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-054",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 297,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-057",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 212,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0097,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-059",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 305,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-064",
+      "category": "writing",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 43,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 48,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "sentences",
+              "ok": true,
+              "measured": 2
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "writing-067",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 401,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-069",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 64,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-071",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 121,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0079,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-073",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 29,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-076",
+      "category": "writing",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 192,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 155,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-077",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 80,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-079",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 71,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0145,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-081",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 113,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-082",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 240,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0083,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-083",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 11,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-084",
+      "category": "writing",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 281,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0287,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 126,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0079,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-085",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 118,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-089",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 9,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-090",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 329,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0088,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-091",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 34,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "sentences",
+              "ok": true,
+              "measured": 2
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "writing-093",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 216,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.023,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-094",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 527,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0152,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-097",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 245,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-099",
+      "category": "writing",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 103,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "writing-100",
+      "category": "writing",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 222,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 299,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.016,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": null,
+      "n_constraints": 0,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "instruct-001",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 47,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0455,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "bullets",
+              "ok": true,
+              "measured": 5
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 2
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-002",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 61,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "sentences",
+              "ok": true,
+              "measured": 3
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-003",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 21,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "words",
+              "ok": true,
+              "measured": 21
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-004",
+      "category": "instruct",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 104,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 34,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "sentences",
+              "ok": false,
+              "measured": 1
+            },
+            {
+              "type": "case",
+              "ok": true,
+              "measured": null
+            }
+          ],
+          "constraints_ok": false,
+          "project": {
+            "violations": [
+              "sentences: 1, want exactly 2"
+            ],
+            "n_constraints": 2
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": false,
+      "n_constraints": 2,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-005",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 26,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "sentences",
+              "ok": true,
+              "measured": 1
+            },
+            {
+              "type": "include",
+              "ok": true,
+              "measured": []
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 4
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 2,
+      "n_constraints_ok": 2
+    },
+    {
+      "prompt_id": "instruct-010",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 256,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "paragraphs",
+              "ok": true,
+              "measured": 2
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-011",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 25,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "lines",
+              "ok": true,
+              "measured": 4
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-014",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 240,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "ends_with",
+              "ok": true,
+              "measured": null
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-017",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 120,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "numbered",
+              "ok": true,
+              "measured": 4
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [
+              "items: 8, want exactly 4"
+            ],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-018",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 69,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "frequency",
+              "ok": true,
+              "measured": 4
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-020",
+      "category": "instruct",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 259,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0742,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 43,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "json",
+              "ok": false,
+              "measured": null
+            }
+          ],
+          "constraints_ok": false,
+          "project": {
+            "violations": [],
+            "n_constraints": 0
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": false,
+      "n_constraints": 1,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "instruct-024",
+      "category": "instruct",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 143,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.007,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 40,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "no_commas",
+              "ok": true,
+              "measured": 0
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-025",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 94,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.2308,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "one_of",
+              "ok": false,
+              "measured": null
+            }
+          ],
+          "constraints_ok": false,
+          "project": {
+            "violations": [
+              "words: 94, want exactly 1",
+              "one_of: not one of 'yes', 'no', 'maybe'"
+            ],
+            "n_constraints": 2
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": false,
+      "n_constraints": 1,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "instruct-026",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 209,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0048,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "placeholders",
+              "ok": true,
+              "measured": 20
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-027",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 365,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0027,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "sections",
+              "ok": true,
+              "measured": 3
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 0
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-032",
+      "category": "instruct",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 57,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 53,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0179,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "postscript",
+              "ok": true,
+              "measured": null
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-034",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 13,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "words",
+              "ok": true,
+              "measured": 13
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-038",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 58,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "case",
+              "ok": false,
+              "measured": null
+            }
+          ],
+          "constraints_ok": false,
+          "project": {
+            "violations": [
+              "case: not all uppercase"
+            ],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": false,
+      "n_constraints": 1,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "instruct-040",
+      "category": "instruct",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 303,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0096,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 45,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "sentences",
+              "ok": true,
+              "measured": 1
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-041",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 4,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "json",
+              "ok": true,
+              "measured": null
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-043",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 317,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0063,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "separated_parts",
+              "ok": true,
+              "measured": 3
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 2
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-044",
+      "category": "instruct",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 393,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 15,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "words",
+              "ok": true,
+              "measured": 15
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 0
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-050",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 102,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "include",
+              "ok": true,
+              "measured": []
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 2
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-051",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 7,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "words",
+              "ok": false,
+              "measured": 7
+            }
+          ],
+          "constraints_ok": false,
+          "project": {
+            "violations": [
+              "words: 7, want exactly 10"
+            ],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": false,
+      "n_constraints": 1,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "instruct-052",
+      "category": "instruct",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 262,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 2,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "ends_with",
+              "ok": true,
+              "measured": null
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-054",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 85,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "quoted",
+              "ok": true,
+              "measured": null
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-056",
+      "category": "instruct",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 6,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 65,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "bullets",
+              "ok": true,
+              "measured": 3
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 2
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-058",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 37,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "case",
+              "ok": false,
+              "measured": null
+            },
+            {
+              "type": "words",
+              "ok": false,
+              "measured": 37
+            }
+          ],
+          "constraints_ok": false,
+          "project": {
+            "violations": [
+              "words: 37, want at most 29",
+              "case: not all lowercase"
+            ],
+            "n_constraints": 2
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": false,
+      "n_constraints": 2,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "instruct-059",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 53,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0385,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "bullets",
+              "ok": false,
+              "measured": 5
+            }
+          ],
+          "constraints_ok": false,
+          "project": {
+            "violations": [
+              "items: 5, want exactly 6"
+            ],
+            "n_constraints": 2
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": false,
+      "n_constraints": 1,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "instruct-062",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 5,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "json_keys",
+              "ok": true,
+              "measured": []
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-063",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 176,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.1954,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "paragraphs",
+              "ok": false,
+              "measured": 1
+            },
+            {
+              "type": "no_commas",
+              "ok": true,
+              "measured": 0
+            }
+          ],
+          "constraints_ok": false,
+          "project": {
+            "violations": [
+              "paragraphs: 1, want exactly 2"
+            ],
+            "n_constraints": 2
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": false,
+      "n_constraints": 2,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-066",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 9,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "sentences",
+              "ok": true,
+              "measured": 1
+            },
+            {
+              "type": "words",
+              "ok": true,
+              "measured": 9
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 2
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 2,
+      "n_constraints_ok": 2
+    },
+    {
+      "prompt_id": "instruct-067",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 68,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "ends_with",
+              "ok": true,
+              "measured": null
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 0
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-069",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 102,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0198,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "title",
+              "ok": true,
+              "measured": null
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-070",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 202,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0101,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "numbered",
+              "ok": false,
+              "measured": 0
+            }
+          ],
+          "constraints_ok": false,
+          "project": {
+            "violations": [
+              "items: 10, want exactly 5",
+              "list_style: 0 of 10 list items are numbered"
+            ],
+            "n_constraints": 2
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": false,
+      "n_constraints": 1,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "instruct-073",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 74,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "bullets",
+              "ok": true,
+              "measured": 3
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 2
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 1,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-074",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 17,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "words",
+              "ok": true,
+              "measured": 17
+            },
+            {
+              "type": "ends_with_question",
+              "ok": true,
+              "measured": null
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 2,
+      "n_constraints_ok": 2
+    },
+    {
+      "prompt_id": "instruct-076",
+      "category": "instruct",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 345,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0349,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 19,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "words",
+              "ok": false,
+              "measured": 19
+            }
+          ],
+          "constraints_ok": false,
+          "project": {
+            "violations": [
+              "words: 19, want exactly 12"
+            ],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": false,
+      "n_constraints": 1,
+      "n_constraints_ok": 0
+    },
+    {
+      "prompt_id": "instruct-077",
+      "category": "instruct",
+      "multi_turn": false,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 89,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.1758,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "include",
+              "ok": true,
+              "measured": []
+            },
+            {
+              "type": "words",
+              "ok": false,
+              "measured": 89
+            }
+          ],
+          "constraints_ok": false,
+          "project": {
+            "violations": [],
+            "n_constraints": 3
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": false,
+      "n_constraints": 2,
+      "n_constraints_ok": 1
+    },
+    {
+      "prompt_id": "instruct-080",
+      "category": "instruct",
+      "multi_turn": true,
+      "turns": [
+        {
+          "degenerate": {
+            "words": 14,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          }
+        },
+        {
+          "degenerate": {
+            "words": 7,
+            "empty": false,
+            "truncated": false,
+            "loop": false,
+            "loop_period": 0,
+            "loop_span": 0,
+            "repeated_lines": false,
+            "rep4": 0.0,
+            "unclosed_fence": false,
+            "role_leak": false,
+            "refusal": false,
+            "deflection": false,
+            "degenerate": false
+          },
+          "constraints": [
+            {
+              "type": "starts_with",
+              "ok": true,
+              "measured": null
+            },
+            {
+              "type": "ends_with_question",
+              "ok": true,
+              "measured": null
+            }
+          ],
+          "constraints_ok": true,
+          "project": {
+            "violations": [],
+            "n_constraints": 1
+          }
+        }
+      ],
+      "math_correct": null,
+      "constraints_ok": true,
+      "n_constraints": 2,
+      "n_constraints_ok": 2
+    }
+  ]
+}
