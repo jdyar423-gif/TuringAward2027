@@ -1,0 +1,17 @@
+{
+  "p0694e11322": "A lists apples, bananas, duplicate banana; B mostly correct fruits despite extra text.",
+  "pfa0485442e": "A is nonsense with degenerate loop; B at least defines KeyError correctly.",
+  "pd45317bd8a": "B ends cut off with dangling 'Aimed'; A is concise and correct.",
+  "p6074372ea4": "A wrong both turns ($5); B correct $165 first turn, wrong second.",
+  "p5cc29c5dd7": "A correct 1.375; B wrong fractions and no decimal answer.",
+  "p5a141d450c": "A conveys short-term versus long-term distinction; B circular and wrong.",
+  "p1e3f7de71f": "A coherent if simplistic; B contradictory nonsense like post-exercise stretching preparing workout.",
+  "p1af9efd71c": "B written as owner promo, repetitive, non-breakfast dishes; A proper review.",
+  "p11dbab8677": "A correct 10,080; B gives no answer, nonsense sentence.",
+  "pa682c2f790": "Both miss lost-child POV; B long incoherent then repeats original verbatim.",
+  "ped7ac0116e": "B never invites to lunch, no details; A has date, place, RSVP.",
+  "pfe48a4d58b": "Both have errors; B explains oxygen delivery, A repetitive with biological-clock claim.",
+  "p126d1688b4": "A degenerate repetitive dogs-versus-cats loops both turns; B relevant lists.",
+  "pe545c1a131": "A meets two-sentence lowercase rewrite; B degenerate dot loop, many sentences.",
+  "p7a446013dc": "Both fail odd numbers; A's first output wrongly includes 0, B's first turn correct."
+}

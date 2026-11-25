@@ -1,0 +1,22 @@
+{
+  "name": "final-prefopt-vs-mobilellm",
+  "format": 2,
+  "n_pairs": 200,
+  "commitment": "dcb462f26410af0b7fe0df89694a46d6e263bb08560ec8a0b1c9c6407b3cc107",
+  "commitments": [
+    "dcb462f26410af0b7fe0df89694a46d6e263bb08560ec8a0b1c9c6407b3cc107"
+  ],
+  "added": [
+    200
+  ],
+  "by_category": {
+    "chat": 50,
+    "writing": 50,
+    "instruct": 40,
+    "math": 30,
+    "code": 30
+  },
+  "multi_turn": 52,
+  "created": "2026-11-24 20:21:01",
+  "updated": "2026-11-24 20:21:01"
+}

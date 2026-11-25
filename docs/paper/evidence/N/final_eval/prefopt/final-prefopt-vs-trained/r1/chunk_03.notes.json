@@ -1,0 +1,17 @@
+{
+  "pc5321cae39": "Each misses one word; B coherent, A nonsensical and lacks 'aroma'.",
+  "p82ffa6e92a": "B clearly requests extension though omits illness; A garbles request, asks professor to revise.",
+  "pc49f4c4907": "Both examples broken: A invalid loop syntax, B break outside loop.",
+  "p19bf8fd486": "A on-topic despite garbled words; B describes winter's end and spring, off-topic.",
+  "p9a76257141": "A keeps single paragraphs; B writes many paragraphs each turn, repetitive, garbled words.",
+  "p94d240065b": "Neither addresses overnight specifics like sleep; both turn-2 replies irrelevant, A loops.",
+  "p6e3071ff4a": "A offers a short usable slogan; B's is long, ungrammatical, not slogan-like.",
+  "p6805bdd99d": "Both omit trade fact; A garbles bullet two, B misattributes coffee houses.",
+  "p5de919e624": "Both misexplain IndexError, confusing it with in/index(), with wrong outputs.",
+  "p3bf76b86a4": "Both answer 20 square centimeters; correct is 200,000 cm².",
+  "pf3b96ee0e5": "Both get 75 g right, then both wrongly say 75 g for ten (750).",
+  "p1210e4fd6e": "B's n*(n+1)//2 is correct both turns; A's ellipsis code fails, adds loop.",
+  "p592e16ccbc": "A lacks second divider and is cut off mid-sentence; B complete.",
+  "pac69fb1f4a": "Same correct code and wrong outputs; B adds false efficiency claim, longer.",
+  "p7efd43cd83": "B names concrete benefits (heart disease, weight, mood); A vague and repetitive."
+}

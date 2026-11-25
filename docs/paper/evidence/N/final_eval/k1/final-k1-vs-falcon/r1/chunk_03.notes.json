@@ -1,0 +1,17 @@
+{
+  "p9434d698f7": "A drops timeline and changes meaning; B friendlier, keeps timeline, though 'fulfilled' wrong.",
+  "p86800b8b6b": "A always returns 10; B's regex matches literal 'aeiouAEIOU', returning 0.",
+  "p1765337481": "A computes 30.4 nonsense; B correct 60, though doubled area 120 should be 240.",
+  "p280be44ee2": "Neither is funny; A loops 'a day of love', B incoherent.",
+  "p3c33976877": "A's turn-1 code crashes (len with two arguments); B's code works both turns.",
+  "p2fec6111a2": "B returns True for n<=1; A's code correct despite wrong example comments.",
+  "pec266839ec": "Both exceed paragraph counts; A drifts into repetitive incoherence, B more coherent storm.",
+  "p8eb4a0e69e": "A lists only five, partly nonsense items; B is five towels and a blanket.",
+  "p7a8556d836": "B rambles about new roles and school; A is a fitting get-well note with P.S.",
+  "p3b88ada7a9": "B offers concrete techniques (Pomodoro, rewards); A repetitive and thin.",
+  "pfc2c3ad693": "A degenerates into invented words and ignores 25-word limit; B obeys limit.",
+  "p2485b2c418": "A omits solutions and titles it 'A Misconception'; B complete with accurate title.",
+  "p306682841b": "B suggests classical music, Khan Academy as language exchange; A more accurate resources.",
+  "pba01e94d57": "A loops 'a sight of love'; B coherent though not lighthouse's point of view.",
+  "p078ca038b4": "A wrong sum 1024 and wrong division; B gets 1023 and 341."
+}

@@ -1,0 +1,17 @@
+{
+  "pfd584ef725": "B gives correct 1896 Athens despite hallucinations; A wrongly says 1900 London.",
+  "pc8c0cb6028": "B correct: 1023, divisible, 341; A's arithmetic is nonsense throughout.",
+  "p1df244249b": "Both err; A covers melatonin, early starts, later-start results; B omits school points.",
+  "p0192273298": "A ignored the P.S. instruction in turn 2; B added one.",
+  "pbdb2763f6c": "Both correctly compute $64 change; B is shorter.",
+  "p05b4fe6cea": "Both wrong: neither explains lunar phases from sunlit half seen as Moon orbits.",
+  "p9c483f626a": "B keeps 'Hey', not formal; A is formal though slightly shifts meaning.",
+  "pdbc365acb9": "A wrongly says 20 square centimeters; B correctly converts to 200,000 cm².",
+  "p553f570ca4": "Neither gives decline wording; A incoherent tips, B phrases are invitations, not declines.",
+  "pae90eff45b": "A's SQL is nonsense; B close but misses FROM and GROUP BY.",
+  "pbe52a58e82": "A correct Everest 8,848 m despite absurd area claim; B invents 'Peakyr'.",
+  "pa1a9439126": "A deflects with nonsense; B's tips (lists of common names, Duolingo) are useless.",
+  "p36ab037dd6": "Both comma-free; B's rewrite is garbled run-on lists, A's reads fluently.",
+  "p590f668064": "Both include words; A cluttered with placeholders and contradictions, B usable.",
+  "p3e217c343b": "A degenerates into 'magical' loop, cut off; B meets two-sentence lowercase constraint."
+}

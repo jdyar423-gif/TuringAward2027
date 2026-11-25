@@ -1,0 +1,17 @@
+{
+  "p4d08b4b475": "A at least says nectar becomes honey; B fabricates pollen 'cross-pollination' and taxonomy.",
+  "pcbbe876c33": "Both wrong: A puts Dead Sea in Mediterranean/Sinai, B in Indian Ocean.",
+  "p1391c981a3": "A answers 'no', contradicts itself and loops; B gives correct one word.",
+  "pefb5a62ca1": "A's queries miss FROM/GROUP BY but near-correct; B's SQL is nonsense (CASCADE).",
+  "pfe82dfa337": "A misstates 500 employees and omits support change; B accurate and complete.",
+  "pb87cc07d80": "B coherent eerie two sentences; A repetitive, ungrammatical, barely a story.",
+  "pa75d4c6488": "A wrapped, states favorite (no why); B rambling separate quotes, no favorite stated.",
+  "p295502b9ff": "Both weak; A is a readable story, B near-incoherent word salad.",
+  "p617af1f671": "A repetitive gift cards, turn 2 off-topic; B varied, gives gardening ideas.",
+  "p22e33f9d13": "A is a rough limerick; B is rambling prose, ignores limerick form.",
+  "pccbf2f15cc": "A long, repetitive, not short; B short, coherent rhyming poem with title.",
+  "p29883f4a51": "A loops, not funny; B off-topic nonsense, 'Sunday' title; neither funny.",
+  "p64599c18d2": "Both blame airplane mechanics/aerodynamics; neither mentions ear pressure equalization.",
+  "p96344fec8c": "B correct definition and code, flawed output note; A broken code, contradictions.",
+  "pd1cfa3da65": "Both muddled; A redundant, lists solutions as causes; B shorter, all causes."
+}

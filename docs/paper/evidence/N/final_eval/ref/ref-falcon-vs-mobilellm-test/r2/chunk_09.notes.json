@@ -1,0 +1,17 @@
+{
+  "p977ac41f1d": "A loops 'noun phrase'; B calls snowmen flying celestial beings, 16 words not 12.",
+  "p118f698bb7": "A only boxed meta-text; B gives incoherent but on-task story with title.",
+  "p1001f90d72": "B writes dog paragraph ending with exact question; A degenerate boxed loops.",
+  "p7e48ce1ea0": "A's regex matches literal 'aeiouAEIOU'; B counts only uppercase vowels; both broken.",
+  "ped8ae1a09c": "Both correct 46; A's formula reasoning clearer, B misstates a 23-meter side.",
+  "p443a1d0b2a": "B correct 75 g then wrong 3000 g; A wrong both turns, looping.",
+  "p008152ba4b": "A muddled but gives basic washing advice; B says apply a 'chemical stain'.",
+  "paf51cef871": "A correct 0.75 kg concisely; B loops 'Wait, no', claims 75 grams.",
+  "pf4fb103191": "A degenerate parsing loop; B scrambled non-sentence repeating '204'.",
+  "pdb28e2c442": "B correct 27 liters, $40.50; A confused rambling with no answer.",
+  "p893398fc82": "A rambles without code; B's dict counting raises KeyError, false example.",
+  "p0de43e433c": "A correct function, minor example error; B self-contradicting rambling, cut off.",
+  "paf6efe467f": "A covers main results despite one contradiction; B garbled, wrong boxed claim.",
+  "p58878265f2": "A returns length and loops; B returns last/first word with false outputs.",
+  "p55f41ec7b5": "B correct for n>=2, bug for n<=1; A's logic inverted, rambling."
+}

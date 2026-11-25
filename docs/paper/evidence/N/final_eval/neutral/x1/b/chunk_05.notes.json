@@ -1,0 +1,17 @@
+{
+  "pce634dd9a4": "Both codes correct; B's only example output wrong, odd name; A mostly accurate.",
+  "pa5beabb322": "A's hobbies mostly not at-home, duplicated; turn-2 generic. B follows up concretely.",
+  "pbe52a58e82": "A names nonexistent 'Peakyr', no height; B correct Everest height despite area error.",
+  "pd40a0a1420": "B is a long prose story, not a limerick; A attempts limerick form.",
+  "pc1bd6d5134": "A repetitive and incoherent; B more coherent, though ends with letter sign-off.",
+  "pf36bebc075": "A's dictionary code raises KeyError, wrong example; B's sorted approach works.",
+  "p511fa4a5d3": "B is long, repetitive, degenerate, not short; A short, titled correctly.",
+  "p02d62c8939": "B has nine words, only lists seasons; A has exactly ten despite 'July'.",
+  "pb2f21d9c8f": "Correct answer is $36; A says 96, B says 32 with faked output.",
+  "pa2cc50a6da": "Both meet lowercase and length limits; A's definition cleaner and shorter.",
+  "pb731671710": "A just calls int(); B crashes on undefined result_plus. Neither converts numerals.",
+  "pd77a691c32": "A's garbled reasoning gives 5 km/h; B correctly computes 24 km/h.",
+  "pdc241f7694": "B's turn-1 incoherent, turn-2 summary omits cons; A coherent both turns.",
+  "p306f8606c9": "A correctly gets 121.92 cm; B treats feet as inches, answers 4.0125.",
+  "p1df244249b": "A reverses causation and omits school-start findings; B covers key points, verbose."
+}

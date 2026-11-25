@@ -1,0 +1,17 @@
+{
+  "p2574a2ea7e": "Turn 2 both wrong: A computes 62.5% (should be 89.3%), B says 0.",
+  "pf553d6b6f0": "Neither writes a haiku; A loops degenerately, B is eight lines then a fragment.",
+  "p14178e4f9f": "Both add extra keys and wrong years; A's title is a TV series.",
+  "p9bec1d4eee": "Neither explains missing dictionary key; A says undefined variable, B is circular nonsense.",
+  "p55bbb64f20": "Both factually wrong: 19th-century, underground or km-high wall, Chinese invasion.",
+  "p4c50ff78d7": "Both wrong: sum is 80, average 20; A gives 15.75, B 24.",
+  "pade8230612": "B has no waiter, only repetitive customer lines; A muddled but a real dialogue.",
+  "pccdf7d57fc": "Turn 2 both output unrelated JSON objects, not an array of pets.",
+  "p4e87bd7753": "Both incoherent; A cut off, B adds extra friends; neither shows disagreement about destination.",
+  "p5a115ff57d": "Both lists mostly wrong: apples, bananas; A includes cinnamon, B duplicates pineapple.",
+  "p9751c536c7": "Both misexplain eclipses; neither says Moon blocks Sun versus Earth shadows Moon.",
+  "p0108f5a86c": "A is a placeholder template off-topic; B incoherent; both repeat letter instead of reply.",
+  "pcc18aec5e2": "Both copy the original sentence verbatim without simplifying.",
+  "p1dbaf3019e": "Both deflect a harmless question and give no practical name-remembering tips.",
+  "pb98b1f6b4f": "Neither is funny; both loop on joy and love cliches."
+}

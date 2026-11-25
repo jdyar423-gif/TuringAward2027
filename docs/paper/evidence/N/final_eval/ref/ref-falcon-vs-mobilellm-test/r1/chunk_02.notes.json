@@ -1,0 +1,17 @@
+{
+  "p8412b87be0": "B's turn-1 loop correct; turn 2 prints evens. A loops degenerately, ignores turn 2.",
+  "pf184bb407a": "A's turn-2 regex code works (turn-1 len bug); B sums word lengths, loops.",
+  "p816f2369ec": "A answers both turns (150/75 min given); B is degenerate boxed looping, ignores turn 2.",
+  "p92531619b2": "A gives boxed nonsense; B is not an out-of-office reply, invents travel arrangements.",
+  "p704a7ecdd3": "A truncated nonsense; B never mentions lift, claims drag keeps plane airborne.",
+  "pa58d9a66c2": "A gives one sentence not three, but on topic; B is meaningless.",
+  "pf87edf5657": "B gives practical strategies (minor repetition); A is incoherent 'take a pause' boxes.",
+  "p1723a5e0a6": "Both get 128; turn 2 fails: A repeats turn 1, B uses 320/24 not 192/24.",
+  "p7a7f1682db": "A never outputs JSON; B adds prose, lists cactus and nonexistent 'Ramis'.",
+  "pbf3157c6dc": "A correct recursion and exponential-time explanation; B confused, wrong complexity reasoning.",
+  "p5ee514ce15": "B gives a correct 19-word definition; A outputs boxed 40 and rambles.",
+  "p541c766e11": "B is a weak but real dialogue; A is boxed nonsense, no dialogue.",
+  "p9f44f7356c": "B lists accurate benefits; A is degenerate looping boxed text.",
+  "pfc21cb0fed": "A explains generators roughly (turn 2 returns list); B claims generators don't exist.",
+  "pc6a783a81a": "A rambles without answer; B computes 450 then concludes impossible 3,600 liters."
+}

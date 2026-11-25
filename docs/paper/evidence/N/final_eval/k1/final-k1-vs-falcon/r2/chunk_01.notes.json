@@ -1,0 +1,17 @@
+{
+  "p22181475d2": "A's turn-one list mostly right; B's garbage; both ring answers wrong.",
+  "p9ac75d2842": "A contradicts itself on antibodies; B explains antigens and memory, some errors.",
+  "p2fec6111a2": "A's code returns True for n<=1; B's code correct; both mislabel examples.",
+  "p33f29a4b7b": "A answers 225, wrong; B correctly gets 45.",
+  "p281fa18276": "B fails to end with a question; A meets constraints despite odd wording.",
+  "pfa0485442e": "B is nonsense with degenerate ClassClass loop; A defines KeyError correctly.",
+  "p306682841b": "B gives structured, mostly accurate tips; A has odd errors (classical music, Khan Academy).",
+  "p6beee05239": "A nearly right but missing split(); B's code is syntactically broken nonsense.",
+  "p981bb3cda9": "Both formulas correct; A duplicates checks and has nonsense explanation.",
+  "pd3e4ceb58e": "A is one sentence about bread; B loops degenerately and is cut off.",
+  "p8e2a680bdb": "Both codes broken: A returns empty string, B has syntax errors.",
+  "p8e54a4733e": "A correctly computes $40.50; B's arithmetic is nonsense, $540.",
+  "p66c7f6a5c0": "A adds coffee to tea; B has seven steps, no hot water.",
+  "p39450a7f12": "A says 30 minutes per week, wrong; B gives correct 150/75 guideline.",
+  "p7c1486d290": "A accurate and concise; B confuses nutrients (proteins as carbohydrates, etc.)."
+}

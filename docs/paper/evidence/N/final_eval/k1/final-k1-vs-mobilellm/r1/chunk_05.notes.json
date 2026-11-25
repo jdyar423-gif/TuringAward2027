@@ -1,0 +1,17 @@
+{
+  "pdf756703f5": "B's first code is correct; A iterates characters, syntax error.",
+  "pf616cf3998": "A loops boxed title endlessly; B writes story with storm, though overlong.",
+  "p26adfc8135": "Neither shows a real generator: A returns lists, B claims none exist.",
+  "pc5cedad5ba": "A nonsense names; B not a card greeting, ignores 'Dear friend'/question constraints.",
+  "pcf81db77c1": "A never forms a sentence; B omits all three required words.",
+  "p0fe682588f": "A wrongly gets 1048 cm (correct 121.92); B rambles without answer.",
+  "pc088555d07": "A answers O(n) in turn two; B just repeats code.",
+  "p5ae895e359": "A boxed nonsense; B off-topic about family, no memory advice.",
+  "p960efaa0f2": "A partly correct list despite fabrications; B wrongly insists UN has no mandate.",
+  "pf14b5dfac2": "A's turn-one code works; B's has syntax errors; both fail digit check.",
+  "p45ec392f54": "Both get 45; A clean, B has confused wrong intermediate step.",
+  "paa12c956d3": "A gives only the phrase, no explanation; B nonsense about 'bits'.",
+  "p32e9725e62": "A's email never invites anyone to lunch; B degenerate boxed loop.",
+  "pda21edfa7e": "A says 10,000 km, no name; B invents 'Peakyr', no height.",
+  "p16ea34f875": "B short, mostly accurate gist; A long, contradictory, boxed loop."
+}

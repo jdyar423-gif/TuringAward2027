@@ -1,0 +1,17 @@
+{
+  "p6c8d045e9c": "A degenerate, no list; B gives six bullets, some odd items, duplicate.",
+  "pc23ce9ac45": "Both right on turn 1; turn 2 A wrong 62.5%, B ignores question.",
+  "p34a2f6c86b": "A degenerate 'cat + suck' loop; B long prose story, not a limerick.",
+  "p0f5eb1110b": "B degenerate 'Sunlight' loop; A ocean poems though not haiku form.",
+  "p760319db47": "A nonsense 'pause the project'; B gives sound, practical anti-procrastination tips.",
+  "p1965f8bef1": "A degenerate 'metaphorical term' loop; B describes park and removes all commas.",
+  "p5b795185f8": "A never writes a poem; B repetitive, weak rhymes, but on-topic poem.",
+  "p67d92978e9": "B degenerate bracket rambling, no poem; A correct <<title>>, though too long.",
+  "p00b8132d04": "B sums word lengths, not count, and loops; A correct both turns.",
+  "pdf30346ee8": "A confidently wrong definitions (affect as result); B cut off mid-sentence.",
+  "p06d1f77810": "B degenerate 'cycle of water' loop; A mostly right despite factual slips.",
+  "pb455f3cdd9": "B absurd 'people are pets' loop; A gives reasonable reasons and some downsides.",
+  "pcb8d528a98": "A repeats reverse() with wrong outputs, one method; B degenerate rambling, cut off.",
+  "p2fc41d8575": "A wrong 1176; B correct 1081 with clear working.",
+  "p649fd499e7": "Correct is 215 minutes; A says 13.33, B flails through wrong values."
+}

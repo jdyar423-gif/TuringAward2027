@@ -1,0 +1,17 @@
+{
+  "pa6af07838d": "A gives correct 343 m/s; B claims 156,000 mph with bogus formula.",
+  "p78c91b264c": "A's phrases never actually decline; B is a degenerate, truncated loop.",
+  "pfc21cb0fed": "A claims generators don't exist; B partly right, though turn-2 returns list.",
+  "p3a6b076ad4": "A has many factual errors but right purpose; B says sacred site, loops.",
+  "p381356aa62": "B partly wrong on interpreters but coherent; A degenerate looping, truncated.",
+  "pf184bb407a": "B's turn-2 regex count works; A sums word lengths, loops, truncated.",
+  "p17c97b1f07": "B correctly gives 200,000 cm²; A wrongly says 20 cm² and loops.",
+  "p57871fb133": "A is nonsense; B fluent but wrong (pollen, lactic acid bacteria).",
+  "p7d4b152250": "A gives correct core definition and attempts kid version; B degenerate, turn-2 one word.",
+  "paaa5f92b03": "B gives correct formula and code; A loops without ever answering.",
+  "p61f0276137": "Both fail turn 2: A repeats 165, B computes 85% giving 37.5.",
+  "p58bb70ddfc": "B gives friendlier rewrite despite 'fulfilled' slip; A degenerate restating original.",
+  "p5378dbef7f": "B's regex correct though example output wrong; A gives wrong six-character pattern only.",
+  "pef9dc94708": "A is unrelated Spanish; B rambles about probability distributions; neither rewrites.",
+  "pa00160efae": "B writes a fitting poem; A is a degenerate repetition loop."
+}

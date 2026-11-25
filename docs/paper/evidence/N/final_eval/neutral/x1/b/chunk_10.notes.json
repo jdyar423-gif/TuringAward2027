@@ -1,0 +1,17 @@
+{
+  "p36ab037dd6": "Both comma-free; A's rewrite is a garbled run-on list, B's reads fluently.",
+  "p96c8b59304": "Both flawed; A has many wrong steps (light-driven Calvin cycle), B gives correct equation.",
+  "pa81b4cc5a3": "A is incoherent nonsense (score 100, invented DTA/CTE); B has correct core definition.",
+  "p99a92b29bb": "A omits required word 'cup'; B includes all three words in one sentence.",
+  "p9d25cab25f": "Both miss verb/noun distinction; B is self-contradictory gibberish, A partially valid.",
+  "pdf201eb593": "Both functions correct; A duplicates code and claims sum_digits(10)=120; B smaller slips.",
+  "p4dd882e968": "A's code has syntax errors and undefined names; B's function works.",
+  "p55ffa0aafd": "Both poor; A loops on documents, B at least offers hydration/clothing tips.",
+  "p2a3e42245d": "B covers more points faithfully; A invents a cause and garbles 'not forgotten or forgotten'.",
+  "pf61fbaf69f": "Both misexplain the idiom entirely; neither conveys acting early gains advantage.",
+  "p05293062b6": "Both wrong: A omits Mars and claims rocky planets have rings; B nonsense.",
+  "pdb4ba07f4d": "B is a warm usable encouraging message despite odd salutation; A misreads task.",
+  "pa1a9439126": "A's tips (lists of common names) are useless; B deflects with nonsense.",
+  "p028b51af18": "A is incoherent ('wings made of air'); B flawed but mentions thrust, pressure differences.",
+  "p8193aa5cf8": "Both wrong: correct answer is 215 minutes; A says 1080, B 13.33."
+}

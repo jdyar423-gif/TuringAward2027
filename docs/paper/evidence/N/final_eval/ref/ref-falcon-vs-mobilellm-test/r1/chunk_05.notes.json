@@ -1,0 +1,17 @@
+{
+  "p5378dbef7f": "A correct regex, flawed usage example; B wrong six-character pattern, no Python.",
+  "pef9dc94708": "A nonsense about probability distributions; B unrelated Spanish gibberish.",
+  "p7c60b71254": "A degenerate loop, no poem; B cat poem but eight lines, not four.",
+  "pd6bad6c896": "A degenerate contradictory loop; B rough summary with errors but gist correct.",
+  "pfa2d4146ef": "A nonsense, missing required ending; B explains reasons, ends with exact phrase.",
+  "p0b0784516b": "A wrong answer 225; B correct 45.",
+  "p2cd780d82d": "Both 15%; A's formula omits x100 and misnames the conversion.",
+  "ped8ae1a09c": "Both 46; A calls 23 a side, B states correct formula.",
+  "pfb554f86ce": "A degenerate, wrong causes; B includes all four causes despite mislabeled bullets.",
+  "p0ac55c04c1": "A nonsense both turns; B core definitions right despite many factual errors.",
+  "p2c403cf9d5": "A formal rewrite, slight meaning shift; B loops returning original message unchanged.",
+  "p3932e231d6": "Both correct 77; A shorter with hedging line, B clean but longer.",
+  "pd46d261d0a": "Correct is 215 minutes; A says 1080, B loops through wrong values.",
+  "pa6af07838d": "A wildly wrong 156,000 mph; B correct 343 m/s.",
+  "p95d6597dc9": "A empty reply; B three paragraphs with required dividers."
+}

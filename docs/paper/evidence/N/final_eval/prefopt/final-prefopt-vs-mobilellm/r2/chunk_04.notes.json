@@ -1,0 +1,17 @@
+{
+  "pcec146d6b1": "B's final recursive code is correct; A's main code crashes. Both explanations wrong.",
+  "p8ae806beba": "A lists some real hobbies; B is degenerate boxed nonsense in both turns.",
+  "p582b7d3d82": "B is empty; A gives three paragraphs, though dividers are inline.",
+  "p0f2e264756": "A is circular boxed tautology; B gives a coherent, mostly accurate explanation.",
+  "p0d8c4d277b": "A loops endlessly; B just echoes the notes, no complete sentence.",
+  "p09db9356a8": "B degenerates into 'home work' loop both turns; A answers and summarizes.",
+  "pfeb24dc8e2": "A writes a weak but real story; B gives no story at all.",
+  "p4692d62cfd": "A states creditworthiness correctly despite fabricated details; B is entirely wrong.",
+  "p1f6eb96eda": "A loops 'I'm wrong because'; B gives a quote, though turn 2 unexplained.",
+  "paa5becfc9e": "Both regexes wrong: A six word chars, B requires six+ digits.",
+  "p743719ce9b": "A summarizes adequately; B hallucinates '$1 per call' in repeated boxes.",
+  "pd432b05b26": "A's penguin facts are false (Arctic, jaws); B is degenerate '3' loop.",
+  "p0ceef24d56": "A gives false definition and unsafe advice; B is vacuous and nonresponsive.",
+  "p1cb5f998e1": "A has no story; B tells a story, though with four sections.",
+  "pdeb31c8a51": "A correct 75 g in turn one; B wrongly says 300 g, rambles."
+}

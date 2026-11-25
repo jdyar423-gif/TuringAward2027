@@ -1,0 +1,17 @@
+{
+  "pa9d65a0514": "Both misstate the core difference; A says both produce machine code, B incoherent.",
+  "p54278e49d7": "Both riddled with fabrications: A steel wall, Memento Mori; B underground, 19th century.",
+  "p87c0dee1f1": "Both four lines; A has clearer cat imagery, B uses nonword 'Catadels'.",
+  "p19fdc76c5a": "Both turn-1 replies mostly false (A: Chicxulub, Himalayas on Mars; B: warm, habitable).",
+  "p4a12ead9d3": "A's function always returns empty list; B's second version correctly preserves order.",
+  "p3914536627": "A echoes the prompt and repeats itself; B concise, specific, under 50 words.",
+  "p6796b30c69": "Correct answer is 215 minutes; A says 13.33, B says 795.",
+  "pd163e28484": "Neither addresses the two mentioned solutions; A invents others, B incoherent, repeats phrases.",
+  "p49b05c796a": "B explains immune memory correctly; A claims vaccines prevent antibody production.",
+  "pe2c991d424": "B's turn-2 code still prints all numbers and turn-1 output wrong; A correct.",
+  "pb9a64301e6": "A concise and correct; B awkward 'allocated to allocated' repetition.",
+  "pa05d6e04da": "Both codes correct; B's example output [2, 4, 6] is wrong.",
+  "p46e95f1a3e": "B is long, repetitive and incoherent, not short; A a fitting short poem.",
+  "p5792d2ea04": "A's anchored five-digit regex is correct despite flawed example; B's regex wrong.",
+  "pb38d4cf3b2": "A malformed JSON with fictional animals plus prose; B correct format, though caiman/ocelot wrong."
+}

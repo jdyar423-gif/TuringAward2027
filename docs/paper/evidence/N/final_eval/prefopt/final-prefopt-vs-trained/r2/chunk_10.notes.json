@@ -1,0 +1,17 @@
+{
+  "p6805bdd99d": "A misattributes newspaper/business role to Middle East; B's bullets more faithful despite clumsy line.",
+  "p2b6105c4c3": "B is a meaningless two-sentence non-answer; A gives mostly correct reasons for sleep.",
+  "p6ceb59b9f9": "Neither explains yield or shows a working generator; both codes broken or list-based.",
+  "pc16b50a604": "A miscalculates 245x2 as 495; B reaches correct 490.",
+  "p3bf76b86a4": "Both give 20 square centimeters; correct answer is 200,000 cm2.",
+  "p604e77e0c4": "Both muddled; A at least recommends blotting and a stain remover, B none.",
+  "p6d321aeddc": "B wrongly says doubling doubles area, gives no new area; A correct 240.",
+  "pa1aa2cbfca": "A wrongly claims higher productivity, fabricates stress; B mostly accurate except 500 employees.",
+  "pabd4543ceb": "Turn 2 both incoherent, neither picks a mentioned solution; turn 1 weak in both.",
+  "p065eff48da": "A offers assistance instead of an encouraging message; B delivers a short encouraging message.",
+  "pffbd2c6911": "Both main codes crash, both blame stack overflow instead of exponential repeated calls.",
+  "pf41a1f8bc9": "Both definitions wrong: vowel sound versus sad 'haunting'; neither mentions 5-7-5 poem.",
+  "pe073a7530d": "A returns array length; B's loop finds max, only initialization is buggy.",
+  "pb6a105083f": "A is one looping paragraph cut off; B gives two comma-free paragraphs.",
+  "p4e08b1160c": "Both give identical correct Euclidean GCD with example; equivalent."
+}

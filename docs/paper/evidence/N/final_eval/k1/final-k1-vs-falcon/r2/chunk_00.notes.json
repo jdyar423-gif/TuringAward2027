@@ -1,0 +1,17 @@
+{
+  "pdb142585ad": "A is a flawed five-line limerick; B is off-topic prose, not a limerick.",
+  "pd0d842575f": "A describes a custard, no water; B at least boils water then adds egg.",
+  "pe3e9a8886b": "A uses three sentences plus stray 'n'; B keeps two sentences, minor slip.",
+  "p4f9c32ffcb": "A is nonsense (wings made of air); B confused but mentions pressure differences.",
+  "p9c21527a86": "Both codes correct; A's explanation says it filters out evens, B's mostly right.",
+  "pdcb63b1a63": "Both flawed: A repeats phrases; B ends as letter with P.S.",
+  "p1269bf54f7": "A wrongly says credit score measures earnings; B's core definition is correct.",
+  "p87ac0179d9": "A written from wrong perspective with nonsense (motor, fire); B requests repair.",
+  "p563e8fe849": "Correct is 1081; A says 1171, B says 1112, both wrong.",
+  "pe833358b0e": "A uses proper *** dividers on own lines; B appends *** inline.",
+  "pfe48a4d58b": "A has correct pumping/oxygen core; B wrong location, repetitive, temperature claims.",
+  "pec266839ec": "Both overlong; B has typos, confused pronouns, and repeats sentences across turns.",
+  "p1f46770a86": "A wrong regex, broken code, degenerate loop; B gives correct five-digit pattern.",
+  "pd45317bd8a": "A cut off mid-sentence ('Aimed'); B concise, complete, under 40 words.",
+  "pb8c084ef75": "A only echoes the question; B answers though quotes don't wrap everything."
+}

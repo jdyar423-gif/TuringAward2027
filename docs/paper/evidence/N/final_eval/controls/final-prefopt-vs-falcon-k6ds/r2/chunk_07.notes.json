@@ -1,0 +1,17 @@
+{
+  "pb9a64301e6": "A repeats 'allocated', misuses 'expense ratios'; B concise and accurate.",
+  "pf44220087e": "Both turn-2 replies only 'Happy reading!'; A's book-library answer fits intent.",
+  "p58fbf9fa10": "A's tips redundant, follow-up ignores tip two, nonsense; B coherent, mostly relevant.",
+  "p29260a35d1": "Both nonsense; neither explains lift from wings and thrust.",
+  "pe841c51b95": "A's slicing correct, comprehension broken; B repeats reverse() thrice with wrong outputs.",
+  "p9f043c03a1": "A partially correct (plates, stress); B degenerate gibberish, fake etymology; both turn-2 weak.",
+  "pa83f718f0c": "Correct 450; A says 3/8 means 1/8, answers 180.",
+  "pd666114a7c": "A initializes max to arr.length (bug); B uses nonexistent Array.max, always fails.",
+  "pdbf4b7a360": "Perimeter is 46; B forgets doubling, answers 23.",
+  "pff1cab146d": "B places heart in abdomen, repeats 'ventricles'; A's core function correct.",
+  "pca78fcb501": "Both repeat story verbatim without happier ending; turn-1 stories incoherent or looping.",
+  "p1165312332": "Both correct; B's example claims 31 not prime, explanation non sequitur.",
+  "pec9fb7106b": "Answer is 10,080; A gives 168 (hours), B doesn't answer.",
+  "pff8f3b8c13": "Correct 24 km/h; B's confused steps give 5 km/h.",
+  "p55a2485531": "B's summary inverts causality, copies verbatim; A accurate, though title not short."
+}

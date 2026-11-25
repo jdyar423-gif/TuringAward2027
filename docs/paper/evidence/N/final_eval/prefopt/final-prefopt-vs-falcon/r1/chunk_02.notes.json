@@ -1,0 +1,17 @@
+{
+  "p3aeac4712d": "B gives correct short-term vs long-term distinction; A's definitions are wrong and incoherent.",
+  "pb577a07ad9": "A correctly defines inflation; B calls it a price decline and is incoherent.",
+  "p9483cab39f": "A fails to wrap entire answer in quotes; B complies, though omits why.",
+  "p028b51af18": "Both poor; A names relevant forces and pressure differences, B is incoherent nonsense.",
+  "p6634bead48": "8/32 is 25%; A wrongly computes 0.2 and answers 20%.",
+  "pa3c6267f05": "A has errors but gives evaporation mechanism; B places Dead Sea in Indian Ocean.",
+  "p2e77312770": "B lists all four causes, though mislabeled; A is repetitive, garbled, adds solutions.",
+  "pa6e2a7e10b": "Both codes correct; B's explanation states wrong formula ending '= 0'.",
+  "pb731671710": "Both functions broken: A calls undefined result_plus; B just calls int().",
+  "p98ffee8322": "A writes long free verse, not haiku, truncated; B gives short three-line haiku-like poems.",
+  "pce634dd9a4": "Both correct code, one wrong example each; A also says condition filters out evens.",
+  "p4416b99aa5": "47x23=1081; A says 1112, B says 1176, both wrong.",
+  "p9b48761636": "Both mediocre: B better first turn, A more valid downsides; both contain nonsense.",
+  "p50ce39a83f": "Both under 15 words; A ungrammatical 'awe-inspiration to all', B clean.",
+  "pb49ca619e0": "Both broken: A has hyphenated function name syntax error; B loop never runs."
+}

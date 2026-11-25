@@ -1,0 +1,17 @@
+{
+  "p224a17de09": "A puts *** inline, not real dividers, and repeats itself; B formats correctly.",
+  "p07822c027b": "B outputs only the phrase, giving no explanation of why people recycle.",
+  "p8f106d3d38": "Both codes work; A's trace garbled, but B claims sum_digits(10) gives 120.",
+  "p1729f145c9": "B contradicts itself: deadline already passed yet Thursday deadline upcoming; A coherent.",
+  "p22d6418f3f": "B incoherent and cut off in turn 1; A coherent, though disagreement weak.",
+  "pa8d46b3167": "A nonsense (propulsion, wings made of air); B has lift gist amid errors.",
+  "pa75d4c6488": "A is separately quoted fragments never stating a favorite; B clean but omits why.",
+  "p99f8429f67": "A incoherent (owner perspective, oatmeal as adventurous); B a coherent, complete review.",
+  "pe03d11b276": "A wrongly uses 1/8 and miscomputes 180; B correctly gets 450 liters.",
+  "pe73bb2d220": "A fails to end with the required exact question; B complies.",
+  "p64599c18d2": "Both wrong: neither explains middle-ear pressure equalization via Eustachian tubes.",
+  "p148e4c396d": "B recommends 2500-3500 calories for everyone; A's food-group definition mostly correct.",
+  "p03831cf1d1": "A gives outdoor advice (rainfall, crop rotation, mulch); B relevant houseplant tips.",
+  "p7abf9a4dd2": "A written from landlord's perspective, never requests repair; B makes the request.",
+  "p2080d258de": "A misattributes error to 'in' operator, wrong outputs; B states correct cause."
+}

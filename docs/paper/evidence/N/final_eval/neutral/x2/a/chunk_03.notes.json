@@ -1,0 +1,17 @@
+{
+  "p5268d339d9": "A boxes '40' and loops; B gives accurate 33-word definition.",
+  "pdcac8b5b76": "A's function correct (example comment wrong); B counts only uppercase vowels.",
+  "p033cb915ff": "A rewrites paragraph instead of answering; B incoherent 'eyes' nonsense.",
+  "p01484e8c80": "A delivers a weak story; B only boxed descriptions; both fail turn 2.",
+  "pd7d6a1770e": "Correct 121.92 cm; A says 4.0125 cm; B loops, no answer.",
+  "p0f2e264756": "A gives reasonable health reasons; B tautological boxed restatement.",
+  "pd857cdff0c": "A riddled with errors (bacteria lack membrane); B loops 'virus is a bacterium'.",
+  "pd5b88be4ae": "Both fail JSON array turn; A lists tiger, B lists human, loops.",
+  "pc493de02f0": "A correct turn-1 loop; both fail odd-numbers turn; B degenerate.",
+  "p9b40b327a4": "A correct 60 and 240; B repeats 60, ignores doubling question.",
+  "pa29c39c48d": "A says 10,000 km, no name; B invents 'Peakyr', no height.",
+  "pd41e8a6e45": "A no poem; B ignores lighthouse viewpoint, incoherent, repetitive ending.",
+  "p65ecafa08a": "A syntax error, off-by-one; B correct length check; neither adds digit.",
+  "p3f966b9021": "A miscalculates difference, gives -18%; B correct 15%.",
+  "p0ee5b7fa42": "A wrongly multiplies, 1.25; B rambles but reaches correct 1.375."
+}

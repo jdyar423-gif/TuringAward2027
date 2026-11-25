@@ -1,0 +1,17 @@
+{
+  "p8d6c5f7505": "Both fail: A loops without answering 1023; B claims sum is 85, nonsense divisibility.",
+  "pee0f99ddde": "A gives off-topic probability nonsense; B merely repeats the original sentence unchanged.",
+  "p1b827baaec": "A coherent, gets defensive purpose despite false details; B says sacred site, loops, truncated.",
+  "p8fcadc679d": "B writes actual dialogue, weak but on task; A is degenerate boxed nonsense.",
+  "p2183a7ad4e": "Neither mentions sunlight on orbiting Moon; A blames Earth's rotation, B loops '3D rotation'.",
+  "pe7d90e82df": "Both degenerate in turn 2; A's turn-1 beach description is usable, B's nonsense.",
+  "peef0e50737": "A correctly gets 20; B miscalculates sum as 96, average 24.",
+  "pbc84772ca6": "A gives coherent benefits list; B loops boxed 'physical activity' and truncates.",
+  "p2a770e5903": "A's turn-1 definition is correct though turn 2 fails; B only boxes 'Photosynthesis'.",
+  "p06d1f77810": "B explains condensation and precipitation, with errors; A loops on 'cycle of water'.",
+  "pf4feb4c99d": "A is a repetitive but real poem; B loops one sentence endlessly.",
+  "pb8cd30e85f": "B is a tea poem, not a haiku; A is degenerate word-count nonsense.",
+  "p67dbe62ff4": "B gives one 13-word ocean sentence; A loops 'The ocean is the ocean'.",
+  "pa0af5f18c2": "A defines solar eclipse as Earth's shadow on Moon; B invents 'exponential eclipse'.",
+  "pdefcf413fa": "A writes five paragraphs, not two, but on rain; B produces no paragraphs."
+}

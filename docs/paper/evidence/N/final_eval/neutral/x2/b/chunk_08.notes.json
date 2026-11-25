@@ -1,0 +1,17 @@
+{
+  "pd42fe2b533": "A: rough usable summary despite stray edit notes; B: garbled wrong claims, cut off.",
+  "pdcc6c393ad": "A loops with wrong planet lists, ignores rings; B factually absurd in both turns.",
+  "pc493de02f0": "B's turn-1 loop is correct (odd-number turn fails); A degenerate, contradictory, cut off.",
+  "p6cacf9ad85": "B delivers an actual welcome speech; A is boxed meta-nonsense, no speech, cut off.",
+  "pa6293bdb58": "A's generator explanation and code are wrong/broken; B claims generators don't exist.",
+  "p02bc1b0cd1": "B gives three description sentences (one factual error); A is meaningless boxed meta-text.",
+  "pa32e2052be": "Neither writes a limerick: A loops boxed 'limerith'; B repeats off-topic prose.",
+  "p2add80951b": "B gives practical, coherent learning advice; A is garbled formatting, vague, cut off.",
+  "p4b6676fb99": "B correctly says about 343 m/s; A's 1.7 m/s is wrong.",
+  "p40e6240717": "Both wrong: A says light-year/loops, B gives absurd distances; answer is ~8 minutes.",
+  "p7292077305": "A degenerate loop; B's fix is wrong, code shadows str and crashes.",
+  "p97031c28c3": "B provides correct loop-free function; A gives no code, empty second reply.",
+  "pbc84772ca6": "B lists real benefits clearly; A loops on 'physical activity', cut off.",
+  "p330ad45853": "Neither explains recycling: A nonsense without ending phrase; B outputs only the phrase.",
+  "pf64c0a811e": "B is a usable template with several placeholders; A repeats boxed [date] only."
+}

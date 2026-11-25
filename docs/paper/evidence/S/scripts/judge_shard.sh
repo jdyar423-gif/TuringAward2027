@@ -21,10 +21,11 @@ if [ "$mode" = start ]; then
   timeout 120 colab --auth=adc upload -s "$SES" "$D/pairs_$SES.tar.gz" /content/bes_cli/judge/$tag/pairs.tar.gz </dev/null 2>&1 | tail -n 1 | cut -c1-120
   timeout 60 colab --auth=adc upload -s "$SES" "$S/scripts/judge_shard.py" /content/bes_cli/judge_shard.py </dev/null >/dev/null 2>&1; sleep 2
   for spec in "$@"; do
-    cores=${spec%%:*}; rest=${spec#*:}; lo=${rest%%:*}; rest2=${rest#*:}; hi=${rest2%%@*}; wait_=""; case "$rest2" in *@*) wait_=${rest2#*@};; esac
-    echo "$SES $set_ $lo $hi $cores" >> "$D/ranges.txt"
+    cores=${spec%%:*}; rest=${spec#*:}; lo=${rest%%:*}; rest2=${rest#*:}; hi=${rest2%%@*}; wait_="-"; case "$rest2" in *@*) wait_=${rest2#*@};; esac
+    rev=""; case "$hi" in *r) rev="rev"; hi=${hi%r};; esac
+    echo "$SES $set_ $lo $hi${rev:+r} $cores" >> "$D/ranges.txt"
     date +%s > "$S/presence_pause.txt"; timeout 60 colab --auth=adc upload -s "$SES" "$S/presence_pause.txt" /content/bes_cli/presence_pause </dev/null >/dev/null 2>&1
-    TAG=js${tag}_${lo} bash "$S/scripts/exec_detached.sh" "$SES" "$S/js${tag}_${lo}_nonce.txt" 3 --env "BES_CMD=/content/bes_cli/judge_shard.py $tag $judge 4 $cores $set_ $lo $hi $wait_" | tail -n 1
+    TAG=js${tag}_${lo}${rev:+r} bash "$S/scripts/exec_detached.sh" "$SES" "$S/js${tag}_${lo}_nonce.txt" 3 --env "BES_CMD=/content/bes_cli/judge_shard.py $tag $judge 4 $cores $set_ $lo $hi $wait_ $rev" | tail -n 1
     sleep 4
   done
 elif [ "$mode" = fetch ]; then

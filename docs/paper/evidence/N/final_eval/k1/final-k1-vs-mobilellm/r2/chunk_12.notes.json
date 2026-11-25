@@ -1,0 +1,17 @@
+{
+  "p8128bda2f0": "B's code correct (example comments wrong); A's logic inverted, rambling loop, cut off.",
+  "p580160aaae": "A: long non-rhyming poem degenerating into 'cup's cup' loops; B: meta rambling, no poem.",
+  "pee8255a100": "A blames magma, advises only hydration in loops; B tautological boxed answer, ignores turn 2.",
+  "p7f3bde827f": "A gives only a boxed title; B's poem is unfunny, repetitive filler.",
+  "p6c488f00d2": "A's JS nearly right (const bug); B gives invalid C++ instead of JavaScript.",
+  "pff63b97e19": "A only boxes [date] repeatedly; B is incoherent placeholder list, no real invitation.",
+  "pf14b5dfac2": "B's turn-1 code correct, both fail turn 2; A has syntax errors throughout.",
+  "p12d929476c": "A explains library and ends with phrase; B rambles and omits 'Happy reading!'.",
+  "pa2ee904e14": "B lists real benefits; A is degenerate boxed rambling, cut off.",
+  "pad93bb72d0": "A keeps 'precipitation', adds false 'resounding success'; B is probability nonsense.",
+  "ped026d6f5e": "A answers both (turn-2 figure wrong); B degenerate boxing loop, ignores turn 2.",
+  "p71d0bc26e6": "B is a usable short poem; A loops one sentence endlessly.",
+  "paa12c956d3": "A is nonsense about 'bits'; B gives only the phrase, no explanation.",
+  "p218efe16b8": "B writes a usable pitch email; A only boxes the task restated, loops.",
+  "p7cc3c3138f": "A gives correct loop-free code despite garbled explanation; B no code, empty turn 2."
+}

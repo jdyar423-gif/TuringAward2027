@@ -1,0 +1,17 @@
+{
+  "p6f6c069f48": "A confidently wrong (tidal bulges, no phases); B incoherent '3D rotation' loop, cut off.",
+  "p1804d3cf13": "A is nonsense boxed answer; B on-topic though most tips are weak.",
+  "p168bfbd48d": "A gives valid JSON (Inception, 2010); B degenerate, invalid JSON, cut off.",
+  "p541c766e11": "A is a dialogue despite role confusion; B gives no dialogue, boxed nonsense.",
+  "p03f27ed4f0": "B all-caps storm description, somewhat odd; A loops boxed 'A, B, C, D, E'.",
+  "pbe65437613": "B is a usable template with many placeholders; A repeats boxed [date].",
+  "pdfaba29d25": "A off-sense, wrong examples, empty turn 2; B degenerate, misses 'Happy reading!'.",
+  "pd6bad6c896": "A's bullets capture key points despite errors; B contradictory looping boxes.",
+  "pbc5d642aa3": "A gives usable gift ideas and gardening pick; B rambles about birthday problem.",
+  "p2c9a1f4a9d": "B writes exactly two rain paragraphs; A is looping meta-text, no paragraphs.",
+  "p3832aa51ce": "B meets both turns' constraints; A outputs 'John, Mary, Charlie' nonsense.",
+  "p7ed081474d": "A writes broken C++, not JavaScript; B has syntax error, computes minimum.",
+  "pe22ed09f5a": "Correct is 490; A says 70 with loops, B doubles to 980.",
+  "pd105c9faaf": "A's code keeps duplicates and sorts; B never gives working code, cut off.",
+  "pdc4e2c08f9": "A is a coherent rhyming coffee poem; B loops without a poem."
+}

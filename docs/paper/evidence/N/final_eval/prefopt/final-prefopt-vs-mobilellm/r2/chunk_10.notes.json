@@ -1,0 +1,17 @@
+{
+  "p5e7633d2b0": "A gives a muddled but on-genre dialogue; B is boxed nonsense, no dialogue.",
+  "p1b827baaec": "Both factually wrong: A calls it sacred site, loops, cut off; B underground, 19th century.",
+  "p59f243ed25": "Both fail turn 2 (126/3=42); A's turn 1 cleaner, B's garbled.",
+  "pc10bf5215b": "A gets $165 right; B says $15. Both miss turn-2 answer $110.",
+  "p7ef5e55651": "A lists non-desert, fictional animals plus extra text; B rambles without any JSON.",
+  "pf1a97a1bc7": "Neither gives 10,080: A just says 7 days; B loops 'Wait, no'.",
+  "p1f72a6eee4": "A reaches correct 490 despite muddled steps; B loops and settles on wrong 70.",
+  "p282d3ac54b": "Neither rewrites: A repeats original verbatim; B rambles, repeats it, cut off.",
+  "p18a51913b1": "A answers both turns reasonably; B boxes a non-answer then loops endlessly.",
+  "pd784697de7": "B correctly gets $64; A computes -64 and rambles, cut off.",
+  "pfe0e6a9b00": "A gives practical plant-care tips; B is nonsense about logarithmic growth models.",
+  "p47c8c28807": "B is a flawed, role-confused email but on topic; A is degenerate boxed loop.",
+  "p26874fb1f8": "A gives imperfect but usable stain steps; B says apply a chemical stain, loops.",
+  "p74ab0b4ad8": "B gives fluent, mostly correct reasons; A is vague, circular, repeated boxed answers.",
+  "p1a4e3b583f": "A's function correct, though example output wrong; B self-contradicts at length, cut off."
+}

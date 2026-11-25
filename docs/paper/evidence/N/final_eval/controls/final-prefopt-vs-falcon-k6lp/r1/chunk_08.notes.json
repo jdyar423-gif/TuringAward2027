@@ -1,0 +1,17 @@
+{
+  "p1f1263a181": "A's JSON is an unrelated object, not an array; B mostly delivers array.",
+  "p8b6b48ba52": "A gives wrong year for Parasite and adds extra key; B correct.",
+  "paec157bead": "Neither forms a complete sentence; both essentially echo the notes.",
+  "pf809cd96a7": "A miscomputes 8/32 as 0.2 giving 20%; B correctly answers 25%.",
+  "p5fdd77f377": "B's turn 1 incoherent and summary omits cons; A's summary covers both.",
+  "pbebdf4f92f": "B wrongly defines both as temperature; A gets snapshot vs long-term average right.",
+  "p5260bdcd61": "Both misexplain the error; A converts str to int, B has broken repeated code.",
+  "pe714ab1702": "Both fail Santa's reply; A's first letter coherent, B's incoherent and signed Santa.",
+  "p16e12ac982": "A's punctuation fix only strips string ends, outputs wrong; B's regex works.",
+  "pe81f6adc6a": "B says first modern Olympics were 1900 in London; A correctly says 1896 Athens.",
+  "p163ac761f3": "A is long, awkward, not slogan-like; B is concise and on-message.",
+  "pc76ec2d114": "A's rewrite does not end with a question; B meets both turn-2 constraints.",
+  "pddb88cb313": "A is nonsense about biodiversity; B correctly states peace and security mission.",
+  "p5085b0507f": "A loops with repeated sentences and garbled text; B is flawed but coherent.",
+  "p94ca271fd8": "B is incoherent and contradictory (sun, sands, springtime); A celebrates snow coherently."
+}

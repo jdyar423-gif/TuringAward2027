@@ -1,0 +1,17 @@
+{
+  "p6f57279de7": "A's turn 2 divides wrong number, gets 18; B correctly computes 126/3=42.",
+  "pdf942df017": "B's tips redundant and nonsensical; A's first turn useful, though turn 2 drifts.",
+  "p1135e5d9b3": "B writes five paragraphs plus leaked junk; A gives exactly two paragraphs.",
+  "pbe0ddf5c82": "A: one off-topic sentence about bread; B: single looping paragraph, cut off.",
+  "p8d5674c72e": "Identical correct one-word answers.",
+  "peb1f6cec44": "Both examples broken: A's C code invalid, B's break outside loop; contradictory explanations.",
+  "p0244d8b9e1": "A's ideas repetitive and turn 2 ignores gardening; B picks relevant gardening set.",
+  "pb96f5691f8": "Both correct Euclidean GCD; A shorter, B adds a nonsensical closing claim.",
+  "p7aba3b227b": "Both wrong: neither mentions cabin pressure equalizing via Eustachian tubes.",
+  "pe9955fcf13": "B invents facts (purring raises humidity); A short and broadly correct.",
+  "pfb5f06cbd9": "A calls haiku a vowel sound; B gives correct 5-7-5 Japanese form despite errors.",
+  "p4ef8c29446": "A barely condenses and inverts causality; B concise and accurate, titles both fine.",
+  "pfb7f412153": "Both under 40 words; A clean, B repeats 'allocated' and misuses 'expense ratios'.",
+  "p36a98bb715": "Both incoherent; B loops on 'poignant reminder' and repeats lines, A more story-like.",
+  "p85b7bf828b": "A repeats the forecast unchanged; B outputs Spanish gibberish."
+}

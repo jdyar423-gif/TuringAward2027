@@ -1,0 +1,17 @@
+{
+  "p0e355620b8": "Neither mentions light traveling faster than sound; both invent nonsense physics.",
+  "p7b1d30c327": "Turn 2: A gives nonsensical 4w^2; B correctly computes 240 square meters.",
+  "p142fe01b6c": "A wrong both turns ($15, $5); B right turn 1, wrong turn 2 ($220).",
+  "p9809e7d570": "A correct 121.92 cm; B treats foot as 2.54 cm, wrong.",
+  "paa5b185b81": "A correct formula but bogus factorial alternative; B returns 1 for n=0, wrong output.",
+  "p1e82b06ecd": "A's Arctic, jaws claims false; B's flight false but two facts roughly true.",
+  "p13dc31cadd": "A short generic message, odd framing; B warmer but bizarre 'Your Excellency'.",
+  "pd4b66a4ca4": "Both codes correct; B's comment and explanation misstate the remainder; A concise.",
+  "p001486ba66": "A's punctuation fix ineffective, wrong outputs (11); B's regex removal correct.",
+  "p30a923e7c2": "Neither gives verb/noun rule; A circular, B calls them interchangeable.",
+  "p8a8f3c3d4a": "A's code broken nonsense; B partly correct concept, but returns list not generator.",
+  "pc4c956e23a": "Correct 89.3%; A says 62.5%, B 25% (used 12 eggs).",
+  "p9de1a1be00": "Both flawed; A gives correct Jupiter diameter, B's 38x and Sun claim wrong.",
+  "pa9e7df0b5c": "B coherent, creepier two sentences; A repetitive, grammatical error, no horror.",
+  "p8760c31cfc": "A discusses nonexistent ===, ignores is; B contradictory but correct final guidance."
+}

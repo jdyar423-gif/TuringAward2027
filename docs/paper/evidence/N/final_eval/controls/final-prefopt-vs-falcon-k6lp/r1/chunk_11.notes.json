@@ -1,0 +1,17 @@
+{
+  "pefb5a62ca1": "A nonsense SQL; B omits FROM and GROUP BY, so neither query works.",
+  "pef00fcfbbb": "Correct is 215 minutes; A says 180, B says 13.33.",
+  "pa0d268f681": "B contradicts 'new' with decade-old history, odd sections; A on-point despite repetition.",
+  "p6557612c6c": "A regex matches six-plus digits; B regex correct despite flawed demo.",
+  "p8acb3ff333": "Both misexplain idiom: A invents Latin 'bibus' origin; B about observation, humaneness.",
+  "pd1cfa3da65": "B lists solutions as causes, adds 'hives'; A has all causes, messy labels.",
+  "p27b8062309": "Both functions correct; B's example claims is_prime(31) is False, confused explanation.",
+  "pae59420430": "Correct is 216; A answers 31, B miscalculates 18*28 as 488, gives 209.",
+  "pdd42cbc42b": "Turn 2 correct is 89.3%; A says 62.5%, B says 11.1%.",
+  "p6bd95f4629": "Both mostly false: A puts penguins in Arctic; B invents mimicry including flying.",
+  "pb21e82cc8d": "B describes lunar eclipse as solar, nonsense; A core geometry right, details wrong.",
+  "p197b71ed8a": "A clear invite but lacks closing question; B garbled, leaked 'Question:' label.",
+  "p1391c981a3": "A correct single word; B says 'no', contradicts itself, repeats, ignores format.",
+  "pcc02ca0ec2": "A has syntax error, nonsense; B crashes with IndexError, falsely claims output.",
+  "pcdb9522cf9": "A ignores haiku form, truncated line; B three-line haiku-like, syllables off."
+}

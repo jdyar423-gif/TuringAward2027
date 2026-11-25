@@ -1,0 +1,17 @@
+{
+  "p7de0663777": "A is a three-line haiku-like poem; B is four long non-haiku lines.",
+  "p854917c63b": "B's turn 2 wrong (multiplies 18 by 3); A correct 126 and 42.",
+  "p0e355620b8": "Neither mentions light traveling faster than sound; both give false physics.",
+  "p9f1e87e951": "A better turn 1 and gives 150 min/week guideline, despite noisy errors.",
+  "p8760c31cfc": "A contradictory with wrong example outputs; B discusses nonexistent ===, ignores is.",
+  "pde61d20499": "A calls haiku a vowel sound; B correct 5-7-5 Japanese form, one rhyme error.",
+  "p6213f20ed1": "B recommends dangerous 8-10 liters daily; A vague but harmless.",
+  "pc4ead682ae": "B writes as if sender is sick; A correct message though omits P.S.",
+  "p37ea615ffa": "B loops repetitively, garbled text in turn 2; A coherent though overlong.",
+  "pdb8ac2e278": "B more complete, accurate breakdown; A has muddled carbohydrates sentence.",
+  "pefe8d46c22": "A incoherent and repetitive; B has an actual narrative arc.",
+  "p56eb4923b8": "A gives correct core meaning; B circular, nonsensical advice and example.",
+  "pd163e28484": "Both fail turn 2; A's summary accurate, B's summary distorts facts.",
+  "pcd7184cc0a": "Both wrong: correct is 200,000 sq cm; A says 2000, B says 20.",
+  "p8a8f3c3d4a": "A's code runs though returns list, not generator; B's code broken entirely."
+}

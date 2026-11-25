@@ -1,0 +1,17 @@
+{
+  "p67290779d9": "Correct answer is $36; A says 96, B never reaches 36.",
+  "pb1299b2058": "Both incoherent and largely wrong; B also loops and is cut off.",
+  "p166e642c59": "Correct answer is 216; A boxes 21, B says 31.",
+  "p4cee1de9b3": "A is degenerate 'real restaurant' loop; B writes an actual review.",
+  "p27fe7c2b4e": "A gives no list; B's fruits are not high in vitamin C.",
+  "pb5924a17ca": "A is a usable invite lacking final question; B is a degenerate loop.",
+  "pa29c39c48d": "A invents 'Peakyr', no height; B claims 10,000 km. Both wrong.",
+  "p3c599f35f1": "B is lowercase, short, correct; A violates lowercase and is wrong.",
+  "p033cb915ff": "A is wrong and degenerate; B rewrites the paragraph instead of answering.",
+  "pee2dd0e2e0": "Neither gives COUNT(*) or GROUP BY; A loops, B's SQL is invalid.",
+  "p03108789e7": "Neither uses past tense; A echoes original, B loops on present tense.",
+  "pff9652e08e": "A correctly computes 46; B wrongly gives 23.",
+  "pe056ee3807": "A gives no email; B's email is confused but usable as draft.",
+  "p0acf31529a": "B's turn-one sentence fine; A gives boxed nonsense both turns.",
+  "p49c705432a": "A gives no poem; B's poem exists though repetitive and unfunny."
+}

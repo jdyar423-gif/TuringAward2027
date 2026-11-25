@@ -1,0 +1,17 @@
+{
+  "p7389814b1a": "Both codes correct; A misnames function, says it filters out evens, worse example output.",
+  "pf2886ec179": "A oversimplified, outdated one-liner; B full of false claims and contradictory conclusion.",
+  "p07822c027b": "A outputs only the closing phrase, no explanation; B explains and ends correctly.",
+  "p1addd6a6ae": "A correct both turns (126, 42); B turn 2 wrong, divides 18 instead.",
+  "pd7b7a2f118": "Both fail turn 2: 30g and 75g given, correct answer 750g.",
+  "pe94a537df2": "Both codes correct; A's explanation wrong (no common divisor, recursive case); B accurate, concise.",
+  "p7212213587": "A's loop misses last/single elements, bogus bisect64 claim; B correct standard binary search.",
+  "p16e12ac982": "A correct both turns; B wrong outputs, strip() leaves internal punctuation counted.",
+  "pbfd2b9439a": "A says 1.7 m/s, wrong; B gives correct 343 m/s despite bogus formula.",
+  "p861a3892df": "A degenerates into repeated 'gentle embrace' loops; B coherent, partly rhyming poem.",
+  "p22d6418f3f": "A incoherent, repetitive, cut off; B coherent though turn 2 lacks real disagreement.",
+  "pcc686ac2d2": "A's second solution preserves order correctly; B only offers set(), which loses order.",
+  "pe66d8b4de7": "A degenerates into repetitive 'love' loops; B coherent lighthouse poem, though third person.",
+  "p46e3527bce": "A uses nonexistent Array.max; B initializes max to arr.length, wrong results.",
+  "p5fa040df4a": "B's turn 2 only repeats quote, no explanation; A explains; B fabricates attribution."
+}

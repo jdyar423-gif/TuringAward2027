@@ -1,0 +1,17 @@
+{
+  "p2bcbc9604d": "Both incoherent; B inverts size claim, A misstates storage; neither explains real differences.",
+  "p289d5a5265": "A contains non-word 'Catadels' and is incoherent; B is a coherent four-line poem.",
+  "p4dfc9226f7": "Summaries comparable; A's title is a lifted long fragment, B's title is short and apt.",
+  "p5d62b6bde0": "Both wrongly explain lunar phases via orbits around Sun; incoherent, factually wrong.",
+  "pbff87bdc8e": "A's code correct both turns; B claims wrong output and turn-2 returns first word.",
+  "p1c9eb7136f": "Both factually wrong about the UN's role; A biodiversity nonsense, B repetitive loops.",
+  "pf3b96ee0e5": "Turn 1 both correct; both answer 75 g for 10 people (should be 750 g).",
+  "p9e0012a6bf": "B written from the wrong perspective (landlord's business); A is a usable tenant request.",
+  "p0d8bebec6a": "Both omit 'horizon'; A also exceeds 60 words (66), B stays within limit.",
+  "p0f0a392827": "Both sums wrong (85, 6000; correct 1023); turn 2 also wrong in both.",
+  "p887845a28c": "Both wrong (23.668 cm, 4.0125 cm); correct is 121.92 cm.",
+  "p8d2969bda3": "Both within 15 words; B's 'awe-inspiring and awe-inspiration' is ungrammatical.",
+  "pf3648a8bc9": "Both snowman descriptions nonsensical (molten core, tentacle); turn-2 replies truncated.",
+  "p3cbc4496d2": "Both wrong: A gives -18%, B gives 12.5%; correct answer is 15%.",
+  "p4bcb91e04a": "Both have one dubious claim; B repeats itself and wrongly mentions plastic waste."
+}

@@ -1,0 +1,17 @@
+{
+  "pce634dd9a4": "Same correct code; B adds misleading 'filters out evens' wording and odd name.",
+  "pa5beabb322": "A lists outdoor hobbies, vague follow-up; B gives home gardening and concrete steps.",
+  "pbe52a58e82": "A invents 'Peakyr' with no height; B correctly gives Everest, 8,848 m.",
+  "pd40a0a1420": "A is a five-line limerick attempt; B is a long prose story, not limerick.",
+  "pc1bd6d5134": "A repetitive and garbled; B fluent welcome despite odd letter sign-off.",
+  "pf36bebc075": "A's dict counting raises KeyError; B's sorted/Counter solutions work.",
+  "p511fa4a5d3": "A short with correct title format; B long, repetitive, not short.",
+  "p02d62c8939": "A has exactly ten words; B nine words listing seasons, no description.",
+  "pb2f21d9c8f": "Both wrong: correct answer is $36; A says $96, B $32.",
+  "pa2cc50a6da": "Both lowercase, under 30 words, similarly vague but acceptable definitions.",
+  "pb731671710": "Neither converts Roman numerals: A calls int(), B calls undefined function.",
+  "pd77a691c32": "B correctly computes 24 km/h; A's confused steps give 5 km/h.",
+  "pdc241f7694": "A clear pros/cons, one-sentence summary covers both; B incoherent, summary omits cons.",
+  "p306f8606c9": "A correctly gets 121.92 cm; B treats feet as inches, wrong result.",
+  "p1df244249b": "A omits school start times, reverses causality; B covers key points despite errors."
+}

@@ -1,0 +1,17 @@
+{
+  "p99272eb580": "A gives correct list comprehension; B rambles, never cleanly returns comprehension, cut off.",
+  "peabf5f2431": "A correct Euclidean GCD with example; B confused, wrong code versions, cut off.",
+  "p17471ceb90": "A calls planets continents, loops, never names them; B says ten continents.",
+  "p360ae0d482": "A claims Moon is largest planet, loops; B says Mercury. Both wrong.",
+  "p270d016a17": "A writes a weak but real story; B writes no story, boxed fragment.",
+  "p4ba1a247d9": "B gets area 60 right, misses 240; A wrong and incoherent both turns.",
+  "p31f8a449da": "A degenerate 'I'm wrong' loops; B gives on-topic quotes and two-sentence explanation.",
+  "p0392d308d6": "A gives empty boxed text; B lists some ideas though degenerate, ignores 25-word limit.",
+  "pdf955dccef": "A has no dialogue at all; B partial dialogue, degenerates, no disagreement.",
+  "p06c3162abd": "A gives coherent practical advice; B vague broken formatting, cut off.",
+  "p91e7ac556b": "A degenerate letter loop, no code; B code int(XIV)//10 is wrong.",
+  "pf5213d43e6": "Both correct functions; A self-contradicting rambling cut off; B concise, wrong example output.",
+  "p390f20d78b": "Both wrong: A 'US-Canada 2008 World Games' nonsense; B says London 1920.",
+  "p25ef9bda37": "A boxes 'The Sun'; B lists unrelated words. Neither describes a season.",
+  "pc3ddfb40bf": "A facts false (Mars a giant star); B non-answer then degenerate loop."
+}

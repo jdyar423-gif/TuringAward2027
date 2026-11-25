@@ -1,0 +1,17 @@
+{
+  "pa3f84c3264": "A wrongly calls haiku a vowel sound; B is a degenerate cut-off loop.",
+  "p9b40b327a4": "A repeats original area in turn 2 instead of 240; B correct both turns.",
+  "p58d1ca191b": "A blames airplane vibration, omits ear pressure equalization; B is incoherent degenerate loop.",
+  "p41323a9edc": "B explains with correct equation despite minor errors; A degenerates into tautological boxed answer.",
+  "p6325057aa5": "A gives weak but real tips; B loops degenerate nonsense in both turns.",
+  "pa40616298b": "A writes a usable email; B never writes one, loops boxed restatement, cut off.",
+  "p67dbe62ff4": "A gives a valid 13-word sentence; B loops 'The ocean is the ocean', cut off.",
+  "p3bab243b46": "A loops claiming difference is zero; B confidently wrong definitions of weather and climate.",
+  "pfff15e7cbe": "A is an overlong, repetitive but real story; B is no story at all.",
+  "p2c0c358e51": "A wrongly says 448 pages read; B right on turn 1, both fail turn 2.",
+  "p5e432db183": "Both correct (77); B is shorter, A misstates method and mislabels length as unknown.",
+  "pe7d90e82df": "Both degenerate in turn 2; B's turn-1 description is usable, A's is nonsense.",
+  "p8fcadc679d": "A writes actual, if weak, dialogue; B produces no dialogue, degenerate boxed nonsense.",
+  "pc024e7ea38": "A is a circular degenerate loop; B blames 'in' operator with wrong code outputs.",
+  "p33197a9053": "B gives a genuine encouraging message; A loops one unencouraging boxed sentence."
+}

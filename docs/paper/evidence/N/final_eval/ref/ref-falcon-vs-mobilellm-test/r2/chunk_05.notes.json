@@ -1,0 +1,17 @@
+{
+  "p0f1d531619": "A names Jupiter correctly despite wrong ratios; B loops claiming the Moon.",
+  "p5ad65bfcd4": "B captures intelligence main point; A incoherent about communicating through eyes.",
+  "p1cbbbeaf48": "A degenerate; B wrong order (Mars missing) and claims rocky planets have rings.",
+  "pc767adc0c3": "Correct is $36; A says 32 with bad arithmetic, B loops.",
+  "pd153dd969b": "A gives accurate two-sentence summary; B is degenerate and never summarizes.",
+  "p5ee514ce15": "A gives concise valid definition; B outputs boxed 40 and loops.",
+  "pbd159df66f": "A gives correct Euclidean GCD code; B confused loop, no working code.",
+  "pa401431baf": "B on-topic turn 1, misses lost-child view; A nonsense both turns.",
+  "p0ac55c04c1": "A has core definitions right despite errors; B nonsense about star orbits.",
+  "pc277c6e0a7": "A lists five fruits, some weak, extra text; B never lists any.",
+  "p2076cf158d": "B writes a story starting correctly; A only boxes the sentence.",
+  "p200c73fedb": "B meets two lowercase sentences; A repeats boxed nonsense, ignores constraints.",
+  "p1ff64c902f": "Both fail laps (12.5); A's turn 1 clean, B degenerate loops throughout.",
+  "p66e15aea1a": "Both list planets as continents; A unnamed 7, B claims 13.",
+  "p06d2f8b8b5": "A's poem is not an acrostic; B only outputs boxed MOON."
+}

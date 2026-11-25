@@ -1,0 +1,17 @@
+{
+  "p38487ecabe": "A partly correct; turn-2 list not generator but correct squares. B nonsense code.",
+  "p9eb7b14a4b": "A says both check value equality, missing identity; B invents === nonsense.",
+  "p4e534622d9": "A usable template with placeholders; B body incoherent, repeats [date] nonsensically.",
+  "p8a5815a1c7": "B correctly computes 10,080; A never answers, only says 7 days.",
+  "pa35faae4c3": "Both give wrong explanations and broken fixes; A suggests int(), B repeats nonsense.",
+  "p55c8aab3b7": "Neither is an acrostic of MOON; B also degenerates into repetition.",
+  "pa5edc083df": "A incoherent, cut off, loops; B coherent trip dialogue though disagreement missing.",
+  "p04805c8ebc": "A gives several reasonable reasons; B vague, misleading food-dependent opening.",
+  "pe38ec7e685": "A correct Inception 2010; B wrong year for Parasite and extra key.",
+  "p481bce3b4b": "A turn 2 repeats story verbatim, no title; B adds title and ending.",
+  "p44bb8dd8f7": "A reaches correct 490; B doubles again to wrong 980.",
+  "pee2fa1e152": "A lists cactus and non-animals plus extra text; B nonsense nested JSON.",
+  "pae90eff45b": "A near-correct but missing FROM/GROUP BY; B queries are nonsense.",
+  "pb49ca619e0": "Both functions broken: A empty range returns empty; B syntax error.",
+  "pa6e2a7e10b": "Both codes correct; A explanation states wrong formula '+ 32 = 0'."
+}

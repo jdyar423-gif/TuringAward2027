@@ -1,0 +1,17 @@
+{
+  "p08eeae13a3": "Identical turn-2 failures; B's turn-1 definition coherent, A's degenerates into nonsense.",
+  "pec823ca40b": "B's turn-1 ideas sensible, A's nonsensical gift cards; turn 2 similarly weak.",
+  "p86f4dbe3c0": "A's note has confused perspective throughout; B is a usable generic thank-you.",
+  "pb8042b5c57": "B's message usable though P.S. missing; A intrusive message, absurd P.S. asking DOB.",
+  "p97a1b7e68d": "Both turn-2 codes still print all numbers while claiming odd only.",
+  "pdbb221ba51": "Neither uses COUNT(*) or GROUP BY correctly; queries wrong or invalid in both turns.",
+  "p7fcf4ecd5f": "A defines inflation as falling prices, then contradicts itself; B states rising prices.",
+  "pbddaee6a88": "Both comma-free; A coherent, B repeats 'hub of activity' and 'hiking and camping'.",
+  "p65550b78f5": "Neither gives six distinct items: A repeats towels/chairs, B adds pantyhose, duplicates.",
+  "p6ceb59b9f9": "Neither explains yield or shows a real generator; code broken in both.",
+  "pc48b5ebb9e": "Both functions nonsensical: A misuses encode, B has invalid name and no counting.",
+  "p8a8d4c338a": "A fabricates Latin etymology and wrong meaning; B is circular gibberish.",
+  "pd99534fe34": "Neither is a farewell-lunch invitation: A confused addressee, B about a seminar.",
+  "p37f7f4fc27": "Identical wrong turn 2: answers 18 instead of 126/3 = 42.",
+  "pf78d1a4a9b": "Both functions wrong (substring check; character counting); turn-2 answers nonsensical."
+}

@@ -1,0 +1,17 @@
+{
+  "pb6619fa5e8": "B has nonsense 'not forgotten or forgotten' and invented cause; A covers main points.",
+  "p5c42813ebf": "A has nonsense claims ('not overly rested', circular sleep schedule); B more accurate.",
+  "p4b8f2bc3a7": "Both wrong: neither explains middle-ear pressure equalization via Eustachian tube.",
+  "p6b7c95f072": "A omits 'horizon'; B worse: 67 words over limit, two paragraphs, 'icy icy'.",
+  "pbfeaf8da9a": "Both correctly get $64; A is shorter, equally clear.",
+  "p7d644b2869": "Both functions work; A claims sum_digits(10)=120, duplicates block; B one wrong example.",
+  "pa31c6a7774": "A appends irrelevant fabricated editing notes; B accurate summary.",
+  "pe77a21e153": "Correct answer 216; A gives 31, B gives 168.",
+  "p90bc663f6e": "Correct is 1.375; A multiplies fractions wrongly, answers 1.25.",
+  "p5af9f25cf2": "A is meaningless list of seasons; B ten words, though July isn't a season.",
+  "p90220a4aa9": "A repetitive, incoherent ('commitment to excellence' twice, careers); B coherent welcome speech.",
+  "pbd012d273e": "A returns len(vowels), always 10, plus syntax error; B's function correct.",
+  "pf26f9d32a9": "Neither explains phases as changing sunlit portion seen; both wrong.",
+  "p70d147db26": "A's example correct despite wrong output claim; B's C code broken, explanation contradictory.",
+  "pe25782f7f3": "Both fail Santa's reply; A incoherent, signed Santa, repeats; B's letter coherent."
+}

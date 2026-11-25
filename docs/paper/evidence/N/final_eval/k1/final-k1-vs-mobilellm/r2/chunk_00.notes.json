@@ -1,0 +1,17 @@
+{
+  "p2a185ff576": "A incoherent 'sacred site' loop, cut off; B: underground, 19th-century, Tang, Japanese errors.",
+  "pefda328553": "A computes wrong value 253.5; B reaches correct 36 despite confused detour.",
+  "pa262fec36b": "Neither converts to past tense; A repeats original, B rambles and truncates.",
+  "p939d23ee6a": "A loops boxed 'limerith'; B writes rambling prose, no limerick, no remembering.",
+  "pdb7c662f42": "A rambles but states correct 25%; B miscomputes 0.2 and cuts off.",
+  "pdbfa31fbf4": "A degenerate 'A, B, C, D, E' loop; B 'CARLENS' describes nothing.",
+  "pd9029f7704": "A repetitive but gives real hobbies and gardening steps; B boxed nonsense.",
+  "p32e9725e62": "A boxed loop, no email; B's email never actually invites anyone to lunch.",
+  "p68b89a23ed": "A fabricates '$1 per call' loops; B coherent, faithful though misses recruitment problem.",
+  "pcf81db77c1": "A omits all three required words; B degenerate ramble, never a sentence.",
+  "p0873444a6a": "B gives correct recursive code; A's code is iterative, buggy, explanation wrong.",
+  "p08ff6a7d1b": "A defines break correctly though example is broken; B's definition is wrong.",
+  "pc088555d07": "A ignores complexity question, repeats code; B correctly states O(n).",
+  "p487cf656b7": "A rambles without code; B's code is syntactically invalid and wrong.",
+  "pd19726f951": "Both fail laps (12.5); A gives clean 5000, B degenerate loops throughout."
+}

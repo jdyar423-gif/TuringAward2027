@@ -1,0 +1,2 @@
+[21:06:46] judge file after 2 s: exit 0 /content/TuringAward2027/data_cache/opponents/Qwen3-4B-Instruct-2507-Q4_K_M.gguf
+[21:06:46] start final-prefopt-vs-falcon with qwen3-4b-2507 on cores 0-7 (8)

@@ -1,0 +1,17 @@
+{
+  "p4a12ead9d3": "A includes a correct seen-set solution; B always returns an empty list.",
+  "p3fca613bb7": "Both factually wrong: A calls Moon a star; B a 100-km planet.",
+  "pf38a904fbe": "Both comma-free; A's rewrite is an ungrammatical run-on list, B reads naturally.",
+  "p5cd7ac57b5": "Neither function works: A uses nonexistent is_roman, B calls int() on numeral.",
+  "p4e98f67c39": "A is meta-text about the word, not forests; B describes forests with 'green'.",
+  "pa9d65a0514": "Both misstate the distinction; A incoherent, B polished but wrong about interpreters.",
+  "pe7c3b5401e": "B ignores 'at home' with duplicates and vague follow-up; A has usable ideas.",
+  "pe2710adfaa": "Both reasonable; A gives concrete techniques (Pomodoro), B has typos.",
+  "pa5fcd1a634": "A correctly compounds to $3,276; B subtracts the raise and ignores second.",
+  "pcbba2c28ac": "A's core answer is right despite errors; B claims scores below 100 'unlawful'.",
+  "p083ba0e51b": "A is Spanish nonsense; B repeats the original unchanged.",
+  "p3f431a62dc": "A's tips mostly nonsensical (confuses own name); B deflects with no advice.",
+  "p3512d42e73": "A misuses [date] placeholder nonsensically; B is a usable template.",
+  "p20e70b556e": "A wrong throughout; B reverses mechanisms, says 24 hours, recommends sunglasses.",
+  "p9f60253ba7": "A ~160 words, coherent learning arc; B ~280 words, repetitive, degenerate ending."
+}

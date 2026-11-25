@@ -1,0 +1,17 @@
+{
+  "p67290779d9": "Correct is $36; A says 96, B rambles without reaching it.",
+  "pb1299b2058": "Both incoherent and mostly wrong; B also loops repetitively and is cut off.",
+  "p166e642c59": "Correct is 216; A never reaches it and is cut off, B says 31.",
+  "p4cee1de9b3": "A rejects premise and loops; B writes an actual, if odd, review.",
+  "p27fe7c2b4e": "A lists nothing; B's fruits are low in vitamin C, two aren't fruits.",
+  "pb5924a17ca": "A short invitation, misses ending question; B degenerate looping reversed invitation.",
+  "pa29c39c48d": "Everest ~8,849 m: A invents 'Peakyr', B claims 10,000 km.",
+  "p3c599f35f1": "B follows lowercase and length limits correctly; A violates both and is wrong.",
+  "p033cb915ff": "A wrong about eyes and degenerate; B rewrites paragraph instead of answering.",
+  "pee2dd0e2e0": "Neither uses COUNT or GROUP BY; A loops, B gives invalid SQL.",
+  "p03108789e7": "Both leave the sentence in present tense; B also rambles.",
+  "pff9652e08e": "A correctly computes 46; B wrongly adds only two sides, 23.",
+  "pe056ee3807": "B is a flawed but usable email draft; A is degenerate nonsense.",
+  "p0acf31529a": "B's first sentence is good; A gives nonsense 'wind moving into air' both turns.",
+  "p49c705432a": "B gives a repetitive, unfunny poem; A gives no poem at all."
+}

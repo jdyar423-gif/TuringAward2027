@@ -1,0 +1,17 @@
+{
+  "p951916acba": "B cut off mid-sentence ('andS'); A complete and under 40 words.",
+  "pdbb221ba51": "No correct COUNT or GROUP BY query in either; invalid or wrong SQL throughout.",
+  "pbddaee6a88": "Both drop commas; A is repetitive (hiking and camping twice), B fluent and fitting.",
+  "p9b563589d3": "A is degenerate placeholder soup; B is a usable template with several placeholders.",
+  "pd51d642189": "B correct (450 L); A wrongly says 1/8 and answers 180 L.",
+  "p041a642a51": "A correct (24 km/h); B's garbled calculation gives wrong 5 km/h.",
+  "p3cb64b76a7": "Neither gives real egg-boiling steps: A 'toast the egg', B makes egg paste.",
+  "p08eeae13a3": "Turn 2 identical; A's library definition sensible, B's loops nonsensically about sorting sections.",
+  "p59661e724f": "Both final answers wrong ($297,500, $28.67); correct is $40.50.",
+  "p62eeefbe8f": "B correct (77 cm²); A misuses formulas and gets 396 cm².",
+  "pb1ab831570": "Both loop; A far too long for 'short', B shorter despite repetitive ending.",
+  "pc2dbe93e54": "A gives wrong mechanism; B, despite contradictions, explains immune stimulation producing antibodies.",
+  "p048e7f3f95": "Both broadly correct; A's macronutrient breakdown garbled and longer, B concise.",
+  "pfe0b319f59": "A returns len(vowels), always 10; B's function correct despite wrong example comment.",
+  "pb2093f3b26": "Both wildly wrong (1.8, 1.7 m/s); actual is about 343 m/s."
+}

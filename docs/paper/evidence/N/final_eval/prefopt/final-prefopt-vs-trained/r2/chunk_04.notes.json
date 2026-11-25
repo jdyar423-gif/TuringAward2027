@@ -1,0 +1,17 @@
+{
+  "p9a76257141": "B keeps one paragraph per turn; A ignores paragraph count, loops, corrupts words.",
+  "pa1c833f8d9": "Correct is $3,276; A says $3,080, B $15,200; both skip the 5% raise.",
+  "paaf1fb7f6e": "A weakly on topic (get it out, contact manufacturer); B misreads as sink leak.",
+  "p36d0e32adb": "Neither explains 'is' (identity); both invent '===' and show wrong example outputs.",
+  "pd99534fe34": "Neither is a usable retirement-lunch invitation; both incoherent, B treats reader as retiree.",
+  "p46676c3634": "8/32 is 25%; A wrongly computes 0.2 and answers 20%.",
+  "p8a82231275": "Both correct code and O(n); A lists wrong example outputs ('world' gives 'olleh').",
+  "p278c8e5eb7": "B says ocean ice melts into evaporation and lists 'sirens'; A has fewer errors.",
+  "p72fe2d8297": "Neither is a limerick; both are rambling prose stories.",
+  "p5f2b307d34": "Both codes correct; A's explanation wrongly says -1 is returned when target found.",
+  "p5de919e624": "Both misattribute the error (index(), 'in' operator) and show wrong code outputs.",
+  "pd672de42e2": "A merely echoes the notes, no sentence; B invents 'library' and drops time.",
+  "ped5cf00255": "Both nonsense: no mention of lift; talk of 'propulsion', 'exchanges', 'through space'.",
+  "p38a1b394bc": "A's first-turn tips distinct and sensible; both second turns ignore the second tip.",
+  "pe3b76400dc": "Both confuse honey-making with pollination, call nectar pollen; no real process explained."
+}

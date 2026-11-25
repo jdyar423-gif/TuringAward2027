@@ -1,0 +1,17 @@
+{
+  "p201d23f0aa": "Both correct ($64 change); A equally clear and much shorter.",
+  "pf9ffed5d41": "A rambles with nonsense claims; B gives organized, mostly accurate benefits despite duplicate.",
+  "pb55035774e": "A's code correct despite bogus factorial aside; B's returns 1 for n=0, claims O(n).",
+  "p081ee95ea1": "A correctly gets 24 km/h; B's muddled reasoning gives wrong 5 km/h.",
+  "p3d82895b4a": "A's sum is nonsense (85); B sums correctly, though turn 2 divides 345, not 1023.",
+  "pdd42cbc42b": "Both turn-2 answers wrong (11.1%, 62.5%); correct is 89.3%.",
+  "p149e2cf3e6": "Same correct code; A shorter, B's example output wrong on case/punctuation.",
+  "pa5d6b2c639": "A correct 46 m perimeter; B wrongly adds only two sides (23).",
+  "p9540c19fc0": "A accurate summary, minor fee error; B distorts content and adds bogus edit notes.",
+  "p65a9dc56d5": "Neither is a true limerick; B is degenerate, repeated prose essay.",
+  "p2bae708eaf": "A requests extension despite odd date list; B garbled, reverses who requests.",
+  "p217cf3f0a9": "Both weak; A has some valid tips, B incoherent about documents and check-ins.",
+  "p27b8062309": "Both functions correct; A's example wrongly claims is_prime(31) is False.",
+  "pa1c3898889": "Neither is a valid MOON acrostic; B's letters wrong and words gibberish.",
+  "p6a055044ba": "Both fail turn 2 identically; A's turn 1 gives intended book-library meaning."
+}

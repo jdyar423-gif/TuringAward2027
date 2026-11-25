@@ -1,0 +1,4 @@
+[20:41:46] judge file after 9 s: exit 0 rd2027/data_cache/opponents/Qwen3-4B-Instruct-2507-Q4_K_M.gguf
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[20:41:46] start final-prefopt-vs-falcon with qwen3-4b-2507 on cores 0-3 (4)
+[20:41:46] start final-prefopt-vs-mobilellm with qwen3-4b-2507 on cores 4-7 (4)

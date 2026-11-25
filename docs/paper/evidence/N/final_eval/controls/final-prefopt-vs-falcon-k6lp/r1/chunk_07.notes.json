@@ -1,0 +1,17 @@
+{
+  "pccbf2f15cc": "A short coherent poem; B long, repetitive, degenerate, not short.",
+  "pe74431db08": "A irrelevant, gives no steps; B harmful advice (bleach, pliers). Both useless.",
+  "p654a646127": "Both repeat turn 1 unchanged; B's original poem coherent, A's repetitive loop.",
+  "pf9ffed5d41": "A organized, accurate list; B repetitive prose with odd claims.",
+  "p3b46580f31": "A nonsense (4x4 layout); B many errors but some correct differences.",
+  "pd32e636a29": "A turn 1 riddled with false chemistry; B correct, though turn 2 misread.",
+  "p18e08fb8db": "B suggests outdoor hobbies, ignoring 'at home'; vague follow-up. A more relevant.",
+  "p20ab753eb8": "Both O(n); A invents nonexistent loops and minor errors; B accurate, concise.",
+  "p369eb53326": "B shows 0 in output and never filters odds; A code correct.",
+  "pb71e5af8ad": "A ~280 words, robot already master painter; B closer length, on topic.",
+  "pe2eb71a1d4": "A repeats description unchanged in turn 2; B at least attempts child perspective.",
+  "pc3ab171718": "A more concrete techniques (Pomodoro, distractions); B generic with typos.",
+  "p0714540c67": "A lists low-vitamin-C items and cinnamon; B includes citrus, despite extra text.",
+  "p3324a86494": "Both 0.75 kg; B says '1 kilogram per gram' and 'approximately'.",
+  "p22e33f9d13": "A writes long prose, not a limerick; B is a limerick."
+}

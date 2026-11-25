@@ -1,0 +1,17 @@
+{
+  "p2cceda03ff": "A omits the sickness reason and adds degenerate meta note; B states illness.",
+  "p5500074f9e": "Both functions correct; A duplicates its code block and claims 10 sums to 15.",
+  "p8321149e58": "Neither poem is an acrostic of MOON; B is not even about the moon.",
+  "p1ac1fd7a45": "A degenerates into looping 'cup of coffee' repetition; B is a short rhyming poem.",
+  "p8005d8777f": "Both codes broken: A calls undefined result_plus; B's int(XIV)//10 is nonsense.",
+  "p4c191198c9": "A wholly wrong (stars, solar flares); B gets core eclipse geometry right despite errors.",
+  "p7635bc7df2": "A states ~8.5 minutes though its calculation contradicts; B claims 9.2 billion years.",
+  "p03a5d70756": "Both give wrong continent counts (13, 10); A lists planets as continents.",
+  "p10f5e2452b": "A summarizes faithfully; B distorts deposit systems and invents declining recycling rates.",
+  "pe50a74ff3e": "A correct 46 m; B miscomputes perimeter as 38 m.",
+  "p2f72132c3a": "A rambles off-topic about families; B's tips (memorize common names) don't help.",
+  "p6196d3bccc": "Correct answer is 215 minutes; A says 1080, B says 13.33.",
+  "p4e098b05d3": "A's loop is right but for const bug; B has syntax error, min logic.",
+  "pe41d32e368": "A accurate though thin; B misstates facts (later start means less sleep).",
+  "pa457d12288": "A gives three bullets with minor additions; B ignores format and degenerates."
+}

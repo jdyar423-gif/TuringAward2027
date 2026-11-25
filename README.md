@@ -13,7 +13,7 @@
 | MobileLLM-R1.5-140M | 116／15／69 | 0.752 [0.688, 0.807] |
 | Falcon-H1-Tiny-90M-Instruct | 35／108／57 | 0.318 [0.257, 0.385] |
 
-結論照實說：盲測上優於 MobileLLM-R1.5，明顯不如 Falcon-H1-Tiny，「同時超過兩者」的目標只達成一半。MobileLLM-R1.5 在這個評測框架、它的建議設定下有 62.7% 的回覆是退化的，那一項領先的門檻不高；讓 Falcon 也取 6 個樣本再挑一則時結果不變（35／112／53 與 29／116／55）；本模型只用一個粒子時對 Falcon 是 22／122／56。評審知道每一組比較的是哪兩個系統（檔案標題帶有配對集名稱），但不知道哪一側是誰；用中性標題重新判讀一輪的結果相同（33／109／58 與 112／15／73），事先註冊、不經過這些檔名的自動評審方向也相同（對 Falcon 12／61／127，對 MobileLLM 59／5／136）。完整數字（對照組、K = 1、精確計分、自動評審、偏離協定之處、過程中的事故與稽核改正）在 `docs/CHANGES.md` 第 19.10 節與論文（英文 `docs/paper/paper.md`，中文 `docs/paper/paper.zh-TW.md`）。模型的還原、對話與自己做盲測的指令在 `release/main16-v9/README.md`；偏好最佳化（DPO）之前的權重在 `release/main16-v9-before-dpo/`。
+結論照實說：盲測上優於 MobileLLM-R1.5，明顯不如 Falcon-H1-Tiny，「同時超過兩者」的目標只達成一半。MobileLLM-R1.5 在這個評測框架、它的建議設定下有 62.7% 的回覆是退化的，那一項領先的門檻不高；讓它也取 6 個樣本再挑一則時，退化降到 25.4% 與 20.2%，事先註冊的自動評審（這兩組唯一的評審）仍偏好本模型、幅度變小（39／8／153 與 31／8／161，它對原設定判的是 59／5／136）；讓 Falcon 也取 6 個樣本再挑一則時結果不變（35／112／53 與 29／116／55）；本模型只用一個粒子時對 Falcon 是 22／122／56。評審知道每一組比較的是哪兩個系統（檔案標題帶有配對集名稱），但不知道哪一側是誰；用中性標題重新判讀一輪的結果相同（33／109／58 與 112／15／73），事先註冊、不經過這些檔名的自動評審方向也相同（對 Falcon 12／61／127，對 MobileLLM 59／5／136）。完整數字（對照組、K = 1、精確計分、自動評審、偏離協定之處、過程中的事故與稽核改正）在 `docs/CHANGES.md` 第 19.10 節與論文（英文 `docs/paper/paper.md`，中文 `docs/paper/paper.zh-TW.md`）。模型的還原、對話與自己做盲測的指令在 `release/main16-v9/README.md`；偏好最佳化（DPO）之前的權重在 `release/main16-v9-before-dpo/`。
 
 ### 在 Colab 直接開啟
 
@@ -65,7 +65,10 @@ order, every pair twice with the sides exchanged; wins / losses / ties are ours,
 
 Stated plainly: the model is preferred over MobileLLM-R1.5 and is clearly behind Falcon-H1-Tiny, so
 the goal of beating both was half met. 62.7% of MobileLLM-R1.5's replies to these prompts are degenerate under its recommended preset in
-this harness, so that lead clears a low bar. Giving Falcon
+this harness, so that lead clears a low bar. Given six samples per reply it degenerates in 25.4% or
+20.2% of them, and the pre-registered automatic judge, the only reader of those two arms, still
+prefers our model, by less (39 / 8 / 153 and 31 / 8 / 161, where it gave 59 / 5 / 136 against
+the recommended preset). Giving Falcon
 the same six samples per reply does not change the result (35 / 112 / 53 with its own log-probability
 as the selector, 29 / 116 / 55 with our selector); with a single particle our model scores
 22 / 122 / 56 against Falcon. The readers knew which two systems a set compared (the file titles carried the pair

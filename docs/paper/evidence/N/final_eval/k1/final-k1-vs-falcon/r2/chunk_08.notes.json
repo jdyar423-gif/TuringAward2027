@@ -1,0 +1,17 @@
+{
+  "p9e97ac51ba": "A's function is not recursive and is broken; B gives correct recursion, O(2^n).",
+  "peea01378d9": "A repeats near-identical quotes with fake attributions; B coherent, though turn 2 one sentence.",
+  "pb3567ae5c1": "B misdiagnoses the error entirely; A identifies index beyond length, despite wrong examples.",
+  "p66a1b2a593": "A claims bacteria lack cell membranes, viruses photosynthesize; B vaguer but less wrong.",
+  "p9eeb245614": "Neither mentions Eustachian tube pressure equalization; A airflow nonsense, B incoherent anatomy.",
+  "p0694e11322": "B repeats banana and lists low-vitamin-C apples; A has mostly valid fruits.",
+  "pe0dfb37480": "Both answer correctly with the single word 'yes'.",
+  "pcb70b9f682": "Both examples put break outside a loop; B also says loop continues afterward.",
+  "pfe054d1300": "A is unrelated word salad; B lists seasons in nine words, no description.",
+  "p3d650f24da": "A turn 1 correct, turn 2 vacuous; B factually wrong in both turns.",
+  "p87c8693f97": "A keeps duplicates and sorts; B's set loses order, second version inverted.",
+  "p280be44ee2": "Neither funny; B degenerates into repetitive loops, A at least coherent-ish morning poem.",
+  "p8b89032b1a": "A's turn 2 picks library gift card for gardener; B suggests gardening tools.",
+  "p95b3f9bef0": "A writes repetitive prose, repeated verbatim in turn 2; B gives on-topic verses.",
+  "p25a0af97bb": "B blames magma and loops on hydration; A flawed but partly sensible."
+}

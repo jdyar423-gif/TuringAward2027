@@ -1,0 +1,17 @@
+{
+  "p12e28db314": "A's dialogue swaps roles and is incoherent; B mostly coherent despite odd ending.",
+  "p6fc9194748": "B's turn 2 degenerates into a 'magical' loop; A lowercase but only one sentence.",
+  "pba5dbe7c4d": "A states correct fix (index within 0..len-1) despite bad examples; B entirely wrong.",
+  "pbfeaf8da9a": "Both correctly get $64; B is shorter.",
+  "pec9fb7106b": "Correct is 10,080; A doesn't answer, B says 168 minutes.",
+  "p0253843d02": "A reverses causality and omits school start times; B covers all points, minor errors.",
+  "pde61d20499": "B calls haiku a vowel sound; A correct 5-7-5 despite false rhyme claim.",
+  "p90bc663f6e": "A correct 1.375; B wrongly gets 1.25.",
+  "pe022b774f3": "A is nonsense (stored on hard drive, 4x4 layout); B has contradictions but useful content.",
+  "p2eac853a55": "Neither produced a complete sentence; both just echoed the notes.",
+  "p197c2a57e2": "Both get 77; A misstates the method (multiply by perimeter, solve for length).",
+  "pe2710adfaa": "B gives concrete techniques (Pomodoro, Eisenhower); A generic with typos.",
+  "p95efef3d62": "B gives a workable pretreat-scrub-rinse routine; A dries shirt before treating, nonsensical steps.",
+  "pc61df51cc0": "A clear, broader list; B repetitive with nonsense phrase about unwanted activity.",
+  "pf8acb588cb": "Comparable flaws: A's false '1,000 years' header; B garbled bullet, omits final fact."
+}

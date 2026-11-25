@@ -1,0 +1,17 @@
+{
+  "pe8479e2786": "Neither writes Santa's reply; A repeats turn one verbatim, B leaks placeholders, incoherent.",
+  "p36a98bb715": "Both stories incoherent nonsense with no comprehensible plot, despite correct opening line.",
+  "p197a672135": "B shows correct slicing; A repeats .reverse() thrice, mislabeled, wrong outputs.",
+  "p8a5815a1c7": "A correctly computes 10,080; B only says 7 days, never answers.",
+  "pa9f1d0d181": "Turn two wrong in both: correct is 89.3%; A 62.5%, B 75%.",
+  "p58a1240b0a": "A gives three bullet sentences; B degenerates into rambling, garbled, cut-off text.",
+  "p9d25cab25f": "A circular and incoherent; B coherent, partly right, though misses verb/noun distinction.",
+  "pe38ec7e685": "A has wrong year and extra key; B correct, exactly two keys.",
+  "pfb5f06cbd9": "A gets 5-7-5 Japanese form despite errors; B calls haiku a vowel sound.",
+  "pa6bb4772e6": "A long, contradictory, many false claims; B short, oversimplified but defensible.",
+  "pb560927cb4": "A falsely says UN governs biodiversity, founded 1947; B broadly correct functions.",
+  "p7f33d45b78": "Both broken: A's regex accepts only digit strings; B syntax error, no digit check.",
+  "p0f2bf663e9": "B's rewrite repeats turn one verbatim; A at least attempts a child's perspective.",
+  "pa81b4cc5a3": "A correct core with some errors; B invents scores of 100, 'unlawful' scores.",
+  "p07a58b734f": "A is degenerate repetition of 'embrace'; B coherent, mostly rhyming coffee poem."
+}

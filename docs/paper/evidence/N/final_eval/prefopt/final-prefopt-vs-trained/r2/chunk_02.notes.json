@@ -1,0 +1,17 @@
+{
+  "p05adc79be9": "B is a real invitation lacking final question; A is incoherent, not an invitation.",
+  "p76e1a34ae8": "Both give wrong dates/places for first modern Olympics (1896 Athens); contradictory, repetitive.",
+  "p4756fb9f4d": "Both quoted; A self-contradictory (sunny with rain and snow), B coherent though lacks why.",
+  "p6cea04a087": "Neither mentions light traveling faster than sound; both are incoherent pseudo-physics.",
+  "pc7b29991fe": "Both reach 0.75; A's conclusion says kilojoules; B's final unit correct despite garbled rule.",
+  "pc49f4c4907": "Both examples broken (break outside loop / non-compiling loop); explanations self-contradictory.",
+  "p86f4dbe3c0": "A is a coherent, shorter note; B rambles, wrong perspective, off-topic closing.",
+  "pf7078e4b72": "Both three sentences but false: A 'largest of 10 planets', B 'a star'.",
+  "pca08cc48dc": "Both wrong: 128 pages read, 8 more days; A says 448/18, B 96/72.",
+  "pc944f14db3": "A echoes prompt text 'in under 50 words'; B is a clean 44-word review.",
+  "p6febfda149": "Neither is a haiku; A is a coherent tea poem, B degenerate repetition.",
+  "pf78d1a4a9b": "Both functions wrong (char counts / substring check); turn-2 answers are non-answers.",
+  "p35884acb7f": "Turn 1 both fine; turn 2 A on-topic though too technical, B off-topic.",
+  "p524de36ee4": "Turn 2 both degenerate: no three bullets, looping garbled text, cut off.",
+  "p2947549f28": "Both wrong/incoherent: A says compilers execute, nonsense example; B circular, C# interpreted."
+}

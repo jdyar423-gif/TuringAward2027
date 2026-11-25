@@ -1,0 +1,17 @@
+{
+  "p4980443281": "B correctly defines missing dictionary key; A is circular nonsense with repeated try tips.",
+  "p6a8f10d8b0": "A loops heavily with garbled words in turn 2; B more coherent, on keeper.",
+  "p97d3671f3e": "Both wrong: correct is $3,276; A gives $3,216, B subtracts and gets $3,080.",
+  "p4e534622d9": "A's body paragraph is nonsense repeating [date]; B is a usable, fuller template.",
+  "pc51468ec14": "B's single garbled sentence misstates passage, omits press and why-it-matters sentence.",
+  "p1e249070dd": "A garbles second bullet and drops final fact; B complete despite small additions.",
+  "pa5c7fa637b": "B writes repeated prose essay, no limerick; A gives short on-topic verses.",
+  "pd77a691c32": "A correctly gets 24 km/h; B's muddled steps give wrong 5 km/h.",
+  "pfb7f412153": "Both under 40 words; A garbled ('allocated to allocated'), B clean and concise.",
+  "p21b606ff6d": "Both functions wrong (last word; char-count dict); turn-2 answers incoherent.",
+  "p3f06a4b30d": "Neither says light outpaces sound; A wrong mechanism, B false speeds and nonsense.",
+  "p02d62c8939": "B has exactly ten words; A is a nine-word list, not a description.",
+  "p6b3402f3e1": "Both describe snowman falsely; A's 12-word reply has 16, B's truncated.",
+  "p85b7bf828b": "A outputs Spanish gibberish; B repeats the original sentence unchanged.",
+  "pf02444344b": "B fails to end with a question; A meets both constraints, though awkward."
+}

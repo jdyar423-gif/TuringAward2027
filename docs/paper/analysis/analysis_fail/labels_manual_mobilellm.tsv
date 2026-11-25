@@ -1,0 +1,202 @@
+# Manual labels, MobileLLM set (pair-file order). Columns: index, prompt_id, OURS label, support (notes of 4 naming it; - for OK), THEIRS label, support, comment.
+# Codebook: codebook.json (labels OK FACT MATH INSTR INCOH LOOP TRUNC THIN CODE WEAK; rules 1-10 incl. amendments A-D).
+000	chat-073	FACT	4	TRUNC	4	ours 'wings made of air'; theirs cut off, says planes grounded (FACT 3)
+001	chat-076	OK	-	LOOP	4	theirs 'home work' loop
+002	chat-054	FACT	4	INCOH	2	both wrong physics (shared); theirs incoherent (tie FACT 2)
+003	writing-099	OK	-	INCOH	4	theirs boxed nonsense; ours muddled but usable
+004	writing-093	OK	-	INCOH	4	theirs no dialogue, boxed nonsense; ours muddled (quality)
+005	chat-049	OK	-	THIN	4	theirs circular boxed tautology
+006	instruct-041	FACT	4	INCOH	4	ours fictional, non-desert animals (tie INSTR 4: malformed JSON); theirs rambles, never outputs JSON
+007	math-032	MATH	4	INCOH	3	ours $15/$5; theirs turn 2 re-answers turn 1 (rule 4; checked)
+008	writing-034	INSTR	4	INCOH	4	ours overlong; theirs boxed meta-text about a story, no story (checked)
+009	math-050	MATH	4	OK	-	ours 5 km/h
+010	instruct-001	FACT	4	INCOH	4	ours low-vitamin-C items; theirs rambles, never gives a list
+011	writing-007	LOOP	2	INCOH	4	ours duplicate bullets; theirs degenerate rambling (tie FACT 4: solutions as causes; checked)
+012	chat-009	FACT	4	FACT	4	ours size ratios wrong; theirs Moon is largest (LOOP 2)
+013	chat-028	FACT	4	FACT	4	ours solar = lunar eclipse; theirs 'exponential eclipse'
+014	instruct-002	FACT	4	INCOH	4	ours calls the Moon a star; theirs boxed meta-text
+015	writing-054	INCOH	4	LOOP	4	ours roles reversed; theirs boxed line loop
+016	math-039	MATH	4	MATH	4	both 20 cm^2 (theirs loops, 2)
+017	math-048	MATH	4	LOOP	4	ours 85; theirs loops without answering
+018	instruct-066	OK	-	LOOP	4	theirs 'The ocean is the ocean'
+019	writing-016	LOOP	4	LOOP	4	ours turn 2 repeats the poem unrhymed (tie INSTR 4); theirs 'sun' loops
+020	chat-069	FACT	4	LOOP	3	ours Earth's rotation; theirs '3D rotation' loop (rule 10)
+021	writing-004	INSTR	4	LOOP	4	ours not haiku form; theirs 'Sunlight' loop
+022	code-014	OK	-	CODE	4	theirs broken variants (tie TRUNC 4)
+023	code-013	CODE	4	LOOP	4	ours blames the in operator; theirs circular loop
+024	chat-061	OK	-	INCOH	4	theirs 'apply a chemical stain' nonsense
+025	math-045	MATH	4	OK	-	ours 23
+026	chat-036	OK	-	LOOP	4	theirs 'people are pets' loop
+027	chat-002	FACT	4	FACT	4	ours photosynthesis; theirs 'virus is a bacterium' (LOOP 3)
+028	chat-025	FACT	4	TRUNC	4	ours reverses affect/effect; theirs cut off after one sentence
+029	code-054	CODE	4	INCOH	4	ours invalid function name; theirs rambles, no code
+030	instruct-010	INSTR	4	INCOH	4	ours five paragraphs; theirs meta-rambling with placeholders, never about rain (checked)
+031	instruct-014	THIN	4	INCOH	4	ours only the phrase; theirs nonsense without the ending (tie INSTR 4)
+032	chat-086	THIN	2	LOOP	4	ours vague but relevant tips; theirs 'demand the invitation' loop
+033	math-014	MATH	4	OK	-	ours 36.5
+034	writing-029	INSTR	4	INCOH	4	ours copies the forecast; theirs probability nonsense
+035	math-034	THIN	4	LOOP	4	ours says 7 days, never answers (rule 4); theirs 'Wait, no' loop
+036	instruct-077	INSTR	4	INCOH	4	ours lacks 'horizon'; theirs degenerate boxed fragment
+037	instruct-070	INCOH	4	INCOH	4	ours 22 nonsensical steps; theirs fills five cups
+038	chat-018	OK	-	INCOH	4	theirs 'logarithmic growth model'
+039	instruct-059	INSTR	3	INCOH	4	ours six bullets with a duplicate; theirs 'bulp' nonsense, no list
+040	writing-085	LOOP	3	LOOP	4	ours repetitive but real poem; theirs loops one sentence
+041	writing-057	OK	-	INCOH	3	ours muddled but usable (quality); theirs degenerate boxed nonsense
+042	instruct-032	INSTR	4	LOOP	4	ours no P.S.; theirs boxed loops
+043	math-059	MATH	4	MATH	3	ours 31; theirs 21
+044	chat-092	FACT	4	FACT	4	ours London 1900; theirs US-Canada 2008
+045	instruct-050	OK	-	TRUNC	4	theirs cut-off fragment
+046	writing-059	INCOH	4	INCOH	2	ours seminar email; theirs boxed nonsense (tie LOOP 2)
+047	chat-065	FACT	4	LOOP	4	ours underground, 19th century; theirs 'sacred site' loop (tie FACT 4)
+048	math-019	OK	-	MATH	4	both 45; theirs wrong intermediate equation
+049	math-047	MATH	4	TRUNC	3	ours 180; theirs rambles without committing, cut off (rule 4)
+050	writing-012	LOOP	3	INCOH	4	ours repeats the story in turn 2; theirs boxed meta-text, no story (checked)
+051	writing-076	INCOH	4	INCOH	2	ours incoherent letter signed by Santa (tie LOOP 4: repeats it); theirs boxes 'Santa Claus'
+052	instruct-051	FACT	4	INCOH	4	ours July as a season; theirs boxes 'The Sun'
+053	instruct-043	INSTR	3	THIN	4	ours dividers inline; theirs empty
+054	math-044	MATH	4	INCOH	3	ours 448/18; theirs repeats turn 1 in turn 2 (rule 4)
+055	code-002	CODE	3	CODE	4	ours example comment wrong; theirs uppercase vowels only
+056	writing-071	LOOP	4	LOOP	2	ours repetitive poem; theirs degenerate loop, no poem
+057	chat-082	FACT	4	LOOP	4	ours haiku is a vowel sound; theirs degenerate loop
+058	code-048	CODE	4	LOOP	4	ours invalid SQL; theirs 'SELECT rows' loop
+059	chat-060	LOOP	3	INCOH	4	ours repetitive gift ideas; theirs 'birthday problem'
+060	writing-067	OK	-	LOOP	4	theirs loops a boxed restatement, never writes the email
+061	math-015	MATH	4	OK	-	ours -18%
+062	instruct-011	OK	-	LOOP	4	theirs 'the cat, the dog' loop
+063	instruct-063	LOOP	4	INCOH	4	ours one looping paragraph; theirs meta-rambling, no paragraphs
+064	math-010	MATH	4	OK	-	ours 24
+065	instruct-024	OK	-	LOOP	4	theirs 'metaphorical term' loop
+066	code-029	OK	-	LOOP	4	theirs loops through wrong formulas, no code
+067	code-059	CODE	4	LOOP	4	ours int(); theirs repeated letters
+068	math-008	MATH	4	INCOH	2	ours 18*3; theirs repeats 126 instead of dividing (tie MATH 2; rule 4)
+069	code-036	OK	-	THIN	4	theirs no code, empty turn 2
+070	writing-043	INCOH	3	INCOH	4	ours incoherent but on-premise; theirs boxed nonsense
+071	chat-046	FACT	2	INCOH	4	ours nectar = pollen; theirs 'honeybeard'
+072	writing-026	INSTR	4	INCOH	3	neither rewrites; ours verbatim copy; theirs rambles restating it (LOOP 2)
+073	chat-093	FACT	4	LOOP	4	ours tablets larger, '4x4 layout'; theirs 'desktop screen' loop
+074	writing-048	INSTR	3	INCOH	4	ours turn 2 ignores the child's view (copy, LOOP 2); theirs gibberish
+075	math-012	OK	-	INCOH	4	theirs repeats 60, ignores the doubling (rule 4)
+076	writing-069	INCOH	4	INCOH	4	ours not an out-of-office reply; theirs boxed meta-text
+077	writing-084	OK	-	INCOH	4	theirs meta-text and one boxed phrase, no speech (checked)
+078	code-047	OK	-	CODE	4	theirs IndexError
+079	code-004	OK	-	CODE	4	theirs sums word lengths (LOOP 3)
+080	instruct-003	OK	-	INCOH	4	theirs boxes '40' and rambles (rule 11; LOOP 2)
+081	writing-091	OK	-	INCOH	4	theirs boxed meta-text, no story
+082	code-052	CODE	4	CODE	4	ours counts characters; theirs returns the length (LOOP 3)
+083	writing-082	LOOP	4	INCOH	4	ours repetitive unfunny poem (tie INSTR 4); theirs meta-text, no poem (checked)
+084	chat-055	FACT	4	FACT	4	ours 'Peakyr'; theirs 10,000 km
+085	math-030	MATH	4	TRUNC	3	ours 4.0125; theirs never concludes (rule 4)
+086	math-001	MATH	4	OK	-	ours 1176
+087	chat-068	FACT	4	THIN	4	ours volcanoes, unsafe advice; theirs vacuous, ignores turn 2
+088	code-006	LOOP	4	INCOH	4	ours .reverse() three times (tie CODE 4); theirs degenerate rambling (CODE 3)
+089	math-057	MATH	4	TRUNC	3	ours $96; theirs never reaches an answer (rule 4)
+090	chat-056	FACT	4	FACT	4	ours Sun as a planet; theirs wrong lists (LOOP 2)
+091	math-007	MATH	4	INCOH	4	ours 1.25; theirs rambles but reaches 1.375
+092	chat-004	INSTR	3	INCOH	2	ours turn 2 fails the child's version; theirs only a boxed 'Photosynthesis' (rule 11; tie LOOP 2)
+093	code-026	CODE	4	CODE	4	ours arr.length init bug; theirs C++ instead of JavaScript
+094	instruct-067	INSTR	4	INCOH	4	ours misses the exact ending; theirs degenerate boxes
+095	instruct-027	INSTR	4	INCOH	4	ours four sections; theirs placeholder meta-text, no story (checked)
+096	code-028	CODE	4	LOOP	4	both fail odd numbers (shared); theirs degenerate loops
+097	chat-019	FACT	2	LOOP	4	ours muddled, partly wrong; theirs 'difference is zero' loop
+098	chat-057	FACT	4	LOOP	4	ours heart in the abdomen; theirs circular loop
+099	math-049	MATH	3	MATH	4	ours 490 despite garbled steps; theirs loops to 70 (rule 4)
+100	chat-014	FACT	3	THIN	4	ours minor errors; theirs tautological boxed answer
+101	chat-040	OK	-	LOOP	4	ours weak but on-topic (quality); theirs 'dedicated vehicle' loop
+102	writing-003	THIN	4	INCOH	3	ours brief, incomplete (FACT 3: partly accurate); theirs contradictory, degenerate (tie FACT 3)
+103	chat-081	OK	-	INCOH	2	theirs circular, garbled reasoning (tie THIN 2: vague; checked)
+104	code-046	INCOH	4	LOOP	4	ours incoherent, mostly wrong; theirs 'function call' loop
+105	writing-094	OK	-	LOOP	4	theirs 'real restaurant' loop
+106	code-033	INCOH	2	LOOP	3	ours circular advice; theirs invalid looping code (tie CODE 3)
+107	instruct-040	FACT	4	LOOP	3	ours false Mars facts; theirs boxed loop
+108	instruct-034	OK	-	INCOH	4	theirs transforming shoes
+109	instruct-005	INSTR	4	LOOP	3	ours omits 'cup'; theirs loop, no sentence
+110	writing-081	LOOP	4	INCOH	4	ours repetitive (wrong POV 2); theirs boxed meta, no poem
+111	writing-083	INSTR	4	INCOH	4	ours not a haiku; theirs degenerate word-structure meta-text (checked)
+112	math-031	OK	-	LOOP	4	theirs 'Wait, no' loop, claims 75 grams
+113	code-018	CODE	4	CODE	4	ours code crashes; theirs explanation wrong
+114	writing-024	OK	-	INCOH	4	theirs garbled boxed analysis, no title
+115	instruct-076	FACT	4	LOOP	4	ours 'molten core' snowman (TRUNC 2: fragment); theirs 'noun phrase' loop
+116	chat-038	THIN	3	INCOH	4	ours oversimplified; theirs money nonsense (LOOP 2)
+117	instruct-056	INCOH	2	INCOH	4	ours turn 2 garbled; theirs boxed nonsense
+118	writing-001	OK	-	INCOH	4	ours rough gist (quality); theirs rambles, cut off (tie TRUNC 4)
+119	math-042	MATH	4	MATH	3	ours 13.33; theirs 255
+120	chat-005	FACT	4	INCOH	3	ours inflation = falling prices; theirs circular nonsense (tie THIN 3)
+121	instruct-026	OK	-	LOOP	4	theirs repeated boxed [date]
+122	instruct-017	INCOH	4	LOOP	4	ours egg paste, not boiling (same fault in 4 notes); theirs 'water vapor' loop
+123	writing-015	OK	-	LOOP	4	theirs repetitive loop
+124	instruct-069	INSTR	4	INCOH	4	ours poem overlong; theirs bracket rambling, no poem
+125	code-010	CODE	3	CODE	3	ours wrong set() version beside a correct one; theirs no working code
+126	chat-017	OK	-	LOOP	4	ours weak but harmless (quality); theirs 'put it back in the sink' loop (tie FACT 4)
+127	chat-077	FACT	4	FACT	4	ours biodiversity; theirs 'no mandate'
+128	instruct-018	OK	-	LOOP	4	theirs degenerate loop
+129	math-055	MATH	4	OK	-	both 77; ours misstates the method
+130	math-024	MATH	2	MATH	4	ours turn 2 wrong; theirs 300 g per person
+131	writing-028	OK	-	LOOP	4	theirs '$1 per call' loop (tie FACT 4)
+132	instruct-025	OK	-	INCOH	4	theirs rambles, never complies (LOOP 2)
+133	chat-047	OK	-	INCOH	4	theirs garbled fragments, cut off (tie TRUNC 4)
+134	chat-080	OK	-	LOOP	4	theirs boxed stub then endless loop
+135	writing-047	OK	-	INCOH	4	ours weak (quality); theirs boxes the sentence, no story
+136	chat-013	LOOP	2	LOOP	4	neither names continents (shared); ours repeats Antarctica; theirs loops planets
+137	code-051	OK	-	CODE	4	theirs wrong code attempts, cut off (tie TRUNC 4)
+138	writing-073	INSTR	4	LOOP	4	ours prose, not a limerick; theirs 'cat + suck' loop
+139	chat-052	FACT	3	LOOP	4	ours factual slips; theirs 'cycle of water' loop
+140	chat-089	OK	-	THIN	4	theirs vague, circular boxed answers (LOOP 3)
+141	writing-040	INSTR	4	LOOP	4	ours prose, no limerick (INCOH 3); theirs 'limerith' loop
+142	math-053	OK	-	MATH	4	theirs -64 / 136 (rule 4)
+143	writing-090	OK	-	INCOH	4	theirs boxed meta-nonsense, no speech
+144	code-011	CODE	4	LOOP	2	ours wrong fix, shadows str; theirs degenerate loop
+145	chat-016	INSTR	2	INCOH	4	ours some hobbies not at home; theirs boxed nonsense (rule 11)
+146	writing-030	FACT	4	THIN	4	ours fake Latin etymology; theirs restates the phrase
+147	chat-008	OK	-	LOOP	4	theirs 'save money each month' loop
+148	instruct-044	INSTR	4	INCOH	4	ours mostly outdoor ideas; theirs boxed placeholder (rule 11)
+149	writing-097	OK	-	LOOP	4	theirs loops one boxed sentence
+150	writing-036	INSTR	4	LOOP	4	ours overlong, too many paragraphs; theirs boxed title loop
+151	code-044	CODE	4	CODE	4	ours syntax error, off-by-one; neither adds the digit check (shared)
+152	math-036	MATH	4	INCOH	4	ours 62.5%; theirs repeats turn 1 (rule 4)
+153	chat-031	FACT	3	LOOP	4	ours contradictory on antibodies (same fault as falcon 034); theirs 'Final Answer' loop
+154	writing-089	OK	-	INCOH	4	ours wordy but real slogan; theirs meta-text and boxed 'Local ingredients' (rule 11; checked)
+155	writing-020	INSTR	4	INCOH	4	ours ad not one line; theirs reads 'product' as 60! (LOOP 2)
+156	code-056	CODE	4	CODE	4	ours generator never yields; theirs says generators do not exist (rule 5)
+157	writing-100	OK	-	INCOH	4	ours weak but real dialogue; theirs boxed nonsense
+158	writing-079	INSTR	4	INCOH	4	ours not an acrostic; theirs meta-text and boxed 'MOON' (rule 11; checked)
+159	instruct-080	INCOH	4	INCOH	4	ours plaza welcome; theirs boxed names
+160	chat-022	OK	-	LOOP	4	theirs 'called purr' loop
+161	writing-005	INCOH	4	INCOH	4	ours rewrites the paragraph; theirs 'eyes' nonsense
+162	chat-083	FACT	4	FACT	4	ours Indian Ocean; theirs 2% salinity
+163	chat-099	FACT	4	INCOH	4	ours airplane vibration; theirs incoherent loop (LOOP 2)
+164	code-037	CODE	4	INCOH	4	ours wrong example comment; theirs self-contradicting ramble (tie TRUNC 4)
+165	code-043	CODE	4	CODE	4	ours broken example; theirs says break returns a value
+166	code-021	CODE	4	LOOP	3	ours invents ===; theirs meaningless loop
+167	math-058	MATH	4	TRUNC	3	ours $28.67; theirs never answers (rule 4)
+168	instruct-052	OK	-	INCOH	3	theirs rambles, ignores the ending, cut off (tie INSTR 3, TRUNC 3)
+169	writing-064	INSTR	3	LOOP	4	ours repeats the quote instead of explaining; theirs 'I'm wrong' loop
+170	math-017	MATH	4	INCOH	3	ours 20%; theirs rambles but reaches 25%
+171	chat-021	FACT	4	FACT	4	ours fabricated details, right core; theirs 'percentage'
+172	code-031	CODE	2	INCOH	3	ours wrong example output; theirs rambles, no comprehension (INSTR 2)
+173	writing-027	INSTR	4	LOOP	4	ours echoes the notes; theirs looping word breakdown
+174	instruct-038	INCOH	4	LOOP	4	ours 'CARLENS'; theirs boxed letter loop
+175	instruct-020	FACT	3	LOOP	3	both fail the JSON array turn (shared); ours lists a tiger; theirs loops, lists a human
+176	writing-011	THIN	4	LOOP	4	ours omits the press and why it matters; theirs repeated boxes
+177	chat-041	OK	-	INCOH	4	theirs 'pause the project' nonsense
+178	instruct-073	FACT	4	LOOP	4	ours Arctic penguins; theirs '3' loop
+179	chat-070	OK	-	LOOP	4	theirs 'physical activity' loop
+180	chat-029	OK	-	INCOH	4	theirs only a boxed stub, repeated (rule 11; LOOP 3)
+181	chat-075	INCOH	3	INCOH	4	ours 'local recorder' nonsense (tie THIN 3: deflects); theirs boxed nonsense
+182	instruct-074	INSTR	4	LOOP	4	ours lacks the closing question; theirs loop
+183	code-050	CODE	4	CODE	4	ours six-plus digits; theirs six word characters
+184	math-026	MATH	4	MATH	3	ours $3,080; theirs wrong figures
+185	math-020	MATH	4	LOOP	3	ours 0.05 m / 4; theirs loops, never answers the laps
+186	instruct-058	OK	-	INSTR	4	theirs capitals, too long (FACT 3)
+187	writing-077	OK	-	LOOP	4	ours muddled but real (quality); theirs boxed 'Winter snow' loop
+188	chat-087	FACT	4	OK	-	ours 1.7 m/s
+189	code-034	CODE	2	INCOH	4	ours case example slip; theirs rambles, no code
+190	instruct-062	FACT	4	INCOH	4	ours wrong year (tie INSTR 4: extra key); theirs degenerate invalid output
+191	writing-021	INSTR	2	INSTR	4	ours keeps 'Hey'; theirs returns the original unchanged, in a loop (LOOP 3)
+192	writing-033	INSTR	4	LOOP	3	neither past tense (shared); theirs loops
+193	chat-035	FACT	4	LOOP	3	ours absurd distances; theirs light-years loop
+194	writing-010	INCOH	3	INCOH	4	ours leaked edit notes; theirs garbled, wrong (tie FACT 4)
+195	instruct-054	THIN	4	INCOH	4	ours omits why; theirs degenerate rambling
+196	instruct-004	LOOP	3	INCOH	4	both turn 2 loop (shared); theirs turn-1 nonsense (rule 10)
+197	code-016	OK	-	LOOP	3	theirs turn 2 repeats the code, ignores the question
+198	writing-013	FACT	4	INCOH	4	ours '500 employees'; theirs incoherent boxed claim
+199	code-023	OK	-	CODE	4	theirs True for composites

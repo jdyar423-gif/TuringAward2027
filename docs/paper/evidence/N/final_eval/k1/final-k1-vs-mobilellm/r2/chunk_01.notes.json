@@ -1,0 +1,17 @@
+{
+  "p4d1305ee8f": "B gives a four-line cat poem; A degenerate loop, no poem.",
+  "p09928f93f8": "Both fail turn 2 (8 days); B's turn 1 cleaner, A's has nonsense formula.",
+  "pd4b1de0c35": "A wrong regex, broken code; B boxed six word characters, no Python.",
+  "pe64e5b1b94": "Neither mentions light traveling faster than sound; both incoherent.",
+  "pa2e6d79366": "B gives short on-topic ocean poems though not haiku form; A degenerate loops.",
+  "p17ce39e4de": "A's set() loses order, second version wrong; B rambles, no working code.",
+  "pf3accab09e": "Correct is $3,276; A degenerate wrong math, B gives $3,080 ignoring 5%.",
+  "p26adfc8135": "A claims generators don't exist; B confuses generators with list comprehensions.",
+  "p46a39764ec": "Both correct 126; turn 2 both fail: A says 1512, B repeats 126.",
+  "pf2ffd5af6c": "A's turn-1 definition correct and clear; B boxed loops; both fail turn 2.",
+  "pcbb26c1018": "A gives seven steps and omits hot water; B about filling five cups.",
+  "p3fa1572bb0": "Correct is 215 minutes; A says 13.33, B rambles 255 and truncates.",
+  "p50ccc6b690": "A writes dog paragraph but omits ending question; B degenerate boxed loop.",
+  "p2dd0acf5f5": "B near-valid descriptive sentence with blank and junk dots; A tautology loop.",
+  "pdd5b79bd62": "B correct budget definition under 40 words, trailing fragment; A degenerate '40' ramble."
+}

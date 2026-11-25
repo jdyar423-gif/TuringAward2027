@@ -1,0 +1,17 @@
+{
+  "pfd584ef725": "A says first Olympics London 1900; B correctly gives 1896 Athens.",
+  "pc8c0cb6028": "A's arithmetic nonsense (sum 85); B correct 1023 and 341.",
+  "p1df244249b": "B omits school start times and outcome; A verbose but covers key points.",
+  "p0192273298": "A ignored the P.S. request in turn 2; B added P.S. (duplicated).",
+  "pbdb2763f6c": "Both correct ($64); B equally clear and shorter.",
+  "p05b4fe6cea": "Neither explains sunlight-driven lunar phases; both invent wrong physics.",
+  "p9c483f626a": "B keeps 'Hey' and is not formal; A properly formal.",
+  "pdbc365acb9": "A wrongly gives 20 square centimeters; B correct 200,000.",
+  "p553f570ca4": "Neither gives usable decline advice; B's phrases don't decline anything.",
+  "pae90eff45b": "Both queries buggy; B only misses FROM/GROUP BY, A nonsense SQL.",
+  "pbe52a58e82": "B names nonexistent 'Peakyr', no height; A correct Everest 8,848 m.",
+  "pa1a9439126": "Neither offers real name-memory techniques; both give incoherent advice.",
+  "p36ab037dd6": "Both comma-free; B's comma-stripped lists become ungrammatical run-ons.",
+  "p590f668064": "A full of placeholders and leaked template text; B usable.",
+  "p3e217c343b": "A degenerates into 'magical' loop; B gives two lowercase sentences."
+}

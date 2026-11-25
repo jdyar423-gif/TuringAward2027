@@ -1,0 +1,3027 @@
+{
+ "falcon_first_round": [
+  35,
+  108,
+  57
+ ],
+ "falcon_first_round_chat": [
+  10,
+  24,
+  16
+ ],
+ "falcon_first_round_code": [
+  10,
+  13,
+  7
+ ],
+ "falcon_first_round_instruct": [
+  7,
+  21,
+  12
+ ],
+ "falcon_first_round_math": [
+  4,
+  18,
+  8
+ ],
+ "falcon_first_round_writing": [
+  4,
+  32,
+  14
+ ],
+ "falcon_neutral_round": [
+  33,
+  109,
+  58
+ ],
+ "falcon_neutral_round_chat": [
+  9,
+  24,
+  17
+ ],
+ "falcon_neutral_round_code": [
+  9,
+  13,
+  8
+ ],
+ "falcon_neutral_round_instruct": [
+  8,
+  21,
+  11
+ ],
+ "falcon_neutral_round_math": [
+  4,
+  18,
+  8
+ ],
+ "falcon_neutral_round_writing": [
+  3,
+  33,
+  14
+ ],
+ "mobilellm_first_round": [
+  116,
+  15,
+  69
+ ],
+ "mobilellm_first_round_chat": [
+  28,
+  1,
+  21
+ ],
+ "mobilellm_first_round_code": [
+  16,
+  2,
+  12
+ ],
+ "mobilellm_first_round_instruct": [
+  29,
+  0,
+  11
+ ],
+ "mobilellm_first_round_math": [
+  7,
+  12,
+  11
+ ],
+ "mobilellm_first_round_writing": [
+  36,
+  0,
+  14
+ ],
+ "mobilellm_neutral_round": [
+  112,
+  15,
+  73
+ ],
+ "mobilellm_neutral_round_chat": [
+  28,
+  1,
+  21
+ ],
+ "mobilellm_neutral_round_code": [
+  16,
+  2,
+  12
+ ],
+ "mobilellm_neutral_round_instruct": [
+  28,
+  0,
+  12
+ ],
+ "mobilellm_neutral_round_math": [
+  6,
+  12,
+  12
+ ],
+ "mobilellm_neutral_round_writing": [
+  34,
+  0,
+  16
+ ],
+ "n_loss_falcon": 108,
+ "n_loss_falcon_neutral": 109,
+ "loss_both_rounds": 106,
+ "loss_all4_theirs": 106,
+ "loss_group::content (FACT, MATH, CODE)": 46,
+ "loss_group::degenerate or off-task (INCOH, LOOP, TRUNC)": 43,
+ "loss_group::instruction, thin or weaker (INSTR, THIN, WEAK)": 19,
+ "n_bb_falcon_first": 36,
+ "n_bb_falcon_all4": 34,
+ "n_bb_falcon_ge3": 41,
+ "n_bb_falcon_any": 54,
+ "bb_falcon_by_cat": {
+  "instruct": 8,
+  "writing": 8,
+  "code": 7,
+  "math": 6,
+  "chat": 7
+ },
+ "bb_falcon_same_label": 22,
+ "n_bb_mobilellm_first": 61,
+ "n_bb_both_sets": 21,
+ "n_win_mobilellm": 116,
+ "n_win_falcon": 35,
+ "n_loss_mobilellm": 15,
+ "win_falcon_ids": [
+  "writing-084",
+  "writing-089",
+  "instruct-051",
+  "code-010",
+  "instruct-054",
+  "math-053",
+  "writing-013",
+  "math-049",
+  "chat-022",
+  "math-012",
+  "code-016",
+  "code-034",
+  "instruct-052",
+  "instruct-011",
+  "chat-018",
+  "chat-029",
+  "chat-017",
+  "instruct-059",
+  "instruct-024",
+  "code-023",
+  "math-019",
+  "code-026",
+  "chat-081",
+  "chat-014",
+  "code-051",
+  "writing-091",
+  "chat-041",
+  "code-014",
+  "chat-061",
+  "instruct-050",
+  "code-047",
+  "chat-004",
+  "chat-038",
+  "code-004",
+  "code-002"
+ ],
+ "loss_mobilellm_ids": [
+  "math-032",
+  "math-050",
+  "math-045",
+  "math-014",
+  "math-044",
+  "math-015",
+  "math-010",
+  "math-008",
+  "math-001",
+  "math-007",
+  "code-018",
+  "math-055",
+  "code-044",
+  "math-017",
+  "chat-087"
+ ],
+ "win_m_theirs_degenerate_flag": 82,
+ "n_tie_falcon": 57,
+ "tie_falcon_split": 21,
+ "math_rows": [
+  {
+   "prompt_id": "math-001",
+   "turns": 1,
+   "answer": "1081",
+   "ours": false,
+   "falcon": false,
+   "mobilellm": true,
+   "ours_extracted": "1176",
+   "falcon_extracted": "1112",
+   "mobilellm_extracted": "1081",
+   "ours_subcode": "SLIP",
+   "ours_how": "47 x 23 = 1176",
+   "outcome_vs_falcon": "tie",
+   "outcome_vs_mobilellm": "loss",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-007",
+   "turns": 1,
+   "answer": "1.375",
+   "ours": false,
+   "falcon": true,
+   "mobilellm": true,
+   "ours_extracted": "1.25",
+   "falcon_extracted": "1.375",
+   "mobilellm_extracted": "1.375",
+   "ours_subcode": "SETUP",
+   "ours_how": "multiplies the fractions instead of adding",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "loss",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-008",
+   "turns": 2,
+   "answer": [
+    "126",
+    "42"
+   ],
+   "ours": false,
+   "falcon": true,
+   "mobilellm": false,
+   "ours_extracted": "126/54",
+   "falcon_extracted": "126/42",
+   "mobilellm_extracted": "126/126",
+   "ours_subcode": "SETUP",
+   "ours_how": "turn 2 divides 18, not 126 (turn 1 right)",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "loss",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-010",
+   "turns": 1,
+   "answer": "20",
+   "ours": false,
+   "falcon": true,
+   "mobilellm": true,
+   "ours_extracted": "24",
+   "falcon_extracted": "20",
+   "mobilellm_extracted": "20",
+   "ours_subcode": "SLIP",
+   "ours_how": "14 + 22 + 9 + 35 = 96",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "loss",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-012",
+   "turns": 2,
+   "answer": [
+    "60",
+    "240"
+   ],
+   "ours": true,
+   "falcon": false,
+   "mobilellm": false,
+   "ours_extracted": "60/240",
+   "falcon_extracted": "60/120",
+   "mobilellm_extracted": "60/60",
+   "ours_subcode": "correct",
+   "ours_how": "",
+   "outcome_vs_falcon": "win",
+   "outcome_vs_mobilellm": "win",
+   "label_vs_falcon": "OK",
+   "label_vs_mobilellm": "OK"
+  },
+  {
+   "prompt_id": "math-014",
+   "turns": 1,
+   "answer": "36",
+   "ours": false,
+   "falcon": true,
+   "mobilellm": true,
+   "ours_extracted": "36.5",
+   "falcon_extracted": "36",
+   "mobilellm_extracted": "36",
+   "ours_subcode": "SLIP",
+   "ours_how": "copies 240 as 241, then 36.5",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "loss",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-015",
+   "turns": 1,
+   "answer": "15",
+   "ours": false,
+   "falcon": true,
+   "mobilellm": true,
+   "ours_extracted": "-18",
+   "falcon_extracted": "15",
+   "mobilellm_extracted": "15",
+   "ours_subcode": "SLIP",
+   "ours_how": "92 - 80 = 18, then a negative percentage",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "loss",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-017",
+   "turns": 1,
+   "answer": "25",
+   "ours": false,
+   "falcon": true,
+   "mobilellm": true,
+   "ours_extracted": "20",
+   "falcon_extracted": "25",
+   "mobilellm_extracted": "25",
+   "ours_subcode": "SLIP",
+   "ours_how": "8 / 32 = 0.2",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "loss",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-019",
+   "turns": 1,
+   "answer": "45",
+   "ours": true,
+   "falcon": false,
+   "mobilellm": true,
+   "ours_extracted": "45",
+   "falcon_extracted": "225",
+   "mobilellm_extracted": "45",
+   "ours_subcode": "correct",
+   "ours_how": "",
+   "outcome_vs_falcon": "win",
+   "outcome_vs_mobilellm": "win",
+   "label_vs_falcon": "OK",
+   "label_vs_mobilellm": "OK"
+  },
+  {
+   "prompt_id": "math-020",
+   "turns": 2,
+   "answer": [
+    "5000",
+    "12.5"
+   ],
+   "ours": false,
+   "falcon": false,
+   "mobilellm": false,
+   "ours_extracted": "0.05/4",
+   "falcon_extracted": "5000/1000",
+   "mobilellm_extracted": "5000/5000",
+   "ours_subcode": "SETUP",
+   "ours_how": "km to m by dividing by 100; laps not computed",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "tie",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-024",
+   "turns": 2,
+   "answer": [
+    "75",
+    "750"
+   ],
+   "ours": false,
+   "falcon": false,
+   "mobilellm": false,
+   "ours_extracted": "75/10",
+   "falcon_extracted": "75/3000",
+   "mobilellm_extracted": "300/1200",
+   "ours_subcode": "NONSENSE",
+   "ours_how": "turn 2 working incoherent, ends '75 grams for 10 people' (turn 1 right)",
+   "outcome_vs_falcon": "tie",
+   "outcome_vs_mobilellm": "win",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-026",
+   "turns": 1,
+   "answer": "3276",
+   "ours": false,
+   "falcon": false,
+   "mobilellm": false,
+   "ours_extracted": "3080",
+   "falcon_extracted": "3216",
+   "mobilellm_extracted": "4",
+   "ours_subcode": "SETUP",
+   "ours_how": "subtracts the raise, ignores the second raise",
+   "outcome_vs_falcon": "tie",
+   "outcome_vs_mobilellm": "tie",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-030",
+   "turns": 1,
+   "answer": "121.92",
+   "ours": false,
+   "falcon": true,
+   "mobilellm": false,
+   "ours_extracted": "4.0125",
+   "falcon_extracted": "121.92",
+   "mobilellm_extracted": "0.3333333333",
+   "ours_subcode": "SETUP",
+   "ours_how": "takes 1 foot = 2.54 cm",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "tie",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-031",
+   "turns": 1,
+   "answer": "0.75",
+   "ours": true,
+   "falcon": true,
+   "mobilellm": true,
+   "ours_extracted": "0.75",
+   "falcon_extracted": "0.75",
+   "mobilellm_extracted": "0.75",
+   "ours_subcode": "correct",
+   "ours_how": "misstates the conversion factor",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "win",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "OK"
+  },
+  {
+   "prompt_id": "math-032",
+   "turns": 2,
+   "answer": [
+    "165",
+    "110"
+   ],
+   "ours": false,
+   "falcon": false,
+   "mobilellm": false,
+   "ours_extracted": "15/5",
+   "falcon_extracted": "165/37.5",
+   "mobilellm_extracted": "165/165",
+   "ours_subcode": "SLIP",
+   "ours_how": "'$85 - $250 = $15', carried into turn 2",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "loss",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-034",
+   "turns": 1,
+   "answer": "10080",
+   "ours": false,
+   "falcon": true,
+   "mobilellm": false,
+   "ours_extracted": "7",
+   "falcon_extracted": "10080",
+   "mobilellm_extracted": "60",
+   "ours_subcode": "NOANSWER",
+   "ours_how": "'In a typical week, there are 7 days.'",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "tie",
+   "label_vs_falcon": "THIN",
+   "label_vs_mobilellm": "THIN"
+  },
+  {
+   "prompt_id": "math-036",
+   "turns": 2,
+   "answer": [
+    "84",
+    "89.3"
+   ],
+   "ours": false,
+   "falcon": false,
+   "mobilellm": false,
+   "ours_extracted": "84/62.5",
+   "falcon_extracted": "84/75",
+   "mobilellm_extracted": "84/84",
+   "ours_subcode": "SETUP",
+   "ours_how": "turn 2 divides by 12 instead of 84 (turn 1 right)",
+   "outcome_vs_falcon": "tie",
+   "outcome_vs_mobilellm": "win",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-039",
+   "turns": 1,
+   "answer": "200000",
+   "ours": false,
+   "falcon": true,
+   "mobilellm": false,
+   "ours_extracted": "20",
+   "falcon_extracted": "200000",
+   "mobilellm_extracted": "20",
+   "ours_subcode": "SETUP",
+   "ours_how": "no m^2 to cm^2 conversion",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "tie",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-042",
+   "turns": 1,
+   "answer": "215",
+   "ours": false,
+   "falcon": false,
+   "mobilellm": false,
+   "ours_extracted": "13.33",
+   "falcon_extracted": "1080",
+   "mobilellm_extracted": "13",
+   "ours_subcode": "NONSENSE",
+   "ours_how": "'13:15 * 60 = 830 minutes'",
+   "outcome_vs_falcon": "tie",
+   "outcome_vs_mobilellm": "tie",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-044",
+   "turns": 2,
+   "answer": [
+    "128",
+    "8"
+   ],
+   "ours": false,
+   "falcon": false,
+   "mobilellm": false,
+   "ours_extracted": "448/18",
+   "falcon_extracted": "128/14",
+   "mobilellm_extracted": "128/128",
+   "ours_subcode": "CONTRADICT",
+   "ours_how": "computes 128, then answers 320 + 128 = 448",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "loss",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-045",
+   "turns": 1,
+   "answer": "46",
+   "ours": false,
+   "falcon": true,
+   "mobilellm": true,
+   "ours_extracted": "23",
+   "falcon_extracted": "46",
+   "mobilellm_extracted": "46",
+   "ours_subcode": "SETUP",
+   "ours_how": "adds two sides only",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "loss",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-047",
+   "turns": 1,
+   "answer": "450",
+   "ours": false,
+   "falcon": false,
+   "mobilellm": true,
+   "ours_extracted": "180",
+   "falcon_extracted": "3600",
+   "mobilellm_extracted": "450",
+   "ours_subcode": "SETUP",
+   "ours_how": "'3/8 full means 1/8 full'",
+   "outcome_vs_falcon": "tie",
+   "outcome_vs_mobilellm": "tie",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-048",
+   "turns": 2,
+   "answer": [
+    "1023",
+    "341"
+   ],
+   "ours": false,
+   "falcon": false,
+   "mobilellm": false,
+   "ours_extracted": "85/2",
+   "falcon_extracted": "1023/3",
+   "mobilellm_extracted": "400/1119",
+   "ours_subcode": "NONSENSE",
+   "ours_how": "invented 'sum' formula, 85",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "tie",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-049",
+   "turns": 1,
+   "answer": "490",
+   "ours": true,
+   "falcon": false,
+   "mobilellm": false,
+   "ours_extracted": "490",
+   "falcon_extracted": "980",
+   "mobilellm_extracted": "70",
+   "ours_subcode": "correct",
+   "ours_how": "35 x 2 = 70, then x 7: right number by a wrong route",
+   "outcome_vs_falcon": "win",
+   "outcome_vs_mobilellm": "win",
+   "label_vs_falcon": "OK",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-050",
+   "turns": 1,
+   "answer": "24",
+   "ours": false,
+   "falcon": true,
+   "mobilellm": true,
+   "ours_extracted": "5",
+   "falcon_extracted": "24",
+   "mobilellm_extracted": "24",
+   "ours_subcode": "NONSENSE",
+   "ours_how": "treats 18 km as a speed, 5 km/h",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "loss",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-053",
+   "turns": 1,
+   "answer": "64",
+   "ours": true,
+   "falcon": true,
+   "mobilellm": false,
+   "ours_extracted": "64",
+   "falcon_extracted": "64",
+   "mobilellm_extracted": "136",
+   "ours_subcode": "correct",
+   "ours_how": "",
+   "outcome_vs_falcon": "win",
+   "outcome_vs_mobilellm": "win",
+   "label_vs_falcon": "OK",
+   "label_vs_mobilellm": "OK"
+  },
+  {
+   "prompt_id": "math-055",
+   "turns": 1,
+   "answer": "77",
+   "ours": true,
+   "falcon": true,
+   "mobilellm": true,
+   "ours_extracted": "77",
+   "falcon_extracted": "77",
+   "mobilellm_extracted": "77",
+   "ours_subcode": "correct",
+   "ours_how": "'multiply by the perimeter'",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "loss",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-057",
+   "turns": 1,
+   "answer": "36",
+   "ours": false,
+   "falcon": false,
+   "mobilellm": false,
+   "ours_extracted": "96",
+   "falcon_extracted": "32",
+   "mobilellm_extracted": "32",
+   "ours_subcode": "SETUP",
+   "ours_how": "multiplies the bill by 3, ignores the tip",
+   "outcome_vs_falcon": "tie",
+   "outcome_vs_mobilellm": "tie",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-058",
+   "turns": 1,
+   "answer": "40.5",
+   "ours": false,
+   "falcon": true,
+   "mobilellm": false,
+   "ours_extracted": "28.67",
+   "falcon_extracted": "40.5",
+   "mobilellm_extracted": "6",
+   "ours_subcode": "CONTRADICT",
+   "ours_how": "reaches $40.50, then continues to 28.67",
+   "outcome_vs_falcon": "loss",
+   "outcome_vs_mobilellm": "tie",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  },
+  {
+   "prompt_id": "math-059",
+   "turns": 1,
+   "answer": "216",
+   "ours": false,
+   "falcon": false,
+   "mobilellm": false,
+   "ours_extracted": "31",
+   "falcon_extracted": "28",
+   "mobilellm_extracted": "21",
+   "ours_subcode": "NONSENSE",
+   "ours_how": "'18 classes + 18 = 36 students'",
+   "outcome_vs_falcon": "tie",
+   "outcome_vs_mobilellm": "tie",
+   "label_vs_falcon": "MATH",
+   "label_vs_mobilellm": "MATH"
+  }
+ ],
+ "math_correct": {
+  "ours": 6,
+  "falcon": 15,
+  "mobilellm": 12
+ },
+ "math_sub": {
+  "SLIP": 6,
+  "SETUP": 10,
+  "NONSENSE": 5,
+  "NOANSWER": 1,
+  "CONTRADICT": 2
+ },
+ "math_only_ours": [
+  "math-012",
+  "math-049"
+ ],
+ "math_none": [
+  "math-020",
+  "math-024",
+  "math-026",
+  "math-032",
+  "math-036",
+  "math-042",
+  "math-044",
+  "math-048",
+  "math-057",
+  "math-059"
+ ],
+ "math_all3": [
+  "math-031",
+  "math-055"
+ ],
+ "math_ours_not_falcon": [
+  "math-012",
+  "math-019",
+  "math-049"
+ ],
+ "math_falcon_not_ours": [
+  "math-007",
+  "math-008",
+  "math-010",
+  "math-014",
+  "math-015",
+  "math-017",
+  "math-030",
+  "math-034",
+  "math-039",
+  "math-045",
+  "math-050",
+  "math-058"
+ ],
+ "math_two_turn": [
+  {
+   "prompt_id": "math-008",
+   "ours": [
+    true,
+    false
+   ],
+   "falcon": [
+    true,
+    true
+   ],
+   "mobilellm": [
+    true,
+    false
+   ]
+  },
+  {
+   "prompt_id": "math-012",
+   "ours": [
+    true,
+    true
+   ],
+   "falcon": [
+    true,
+    false
+   ],
+   "mobilellm": [
+    true,
+    false
+   ]
+  },
+  {
+   "prompt_id": "math-020",
+   "ours": [
+    false,
+    false
+   ],
+   "falcon": [
+    true,
+    false
+   ],
+   "mobilellm": [
+    true,
+    false
+   ]
+  },
+  {
+   "prompt_id": "math-024",
+   "ours": [
+    true,
+    false
+   ],
+   "falcon": [
+    true,
+    false
+   ],
+   "mobilellm": [
+    false,
+    false
+   ]
+  },
+  {
+   "prompt_id": "math-032",
+   "ours": [
+    false,
+    false
+   ],
+   "falcon": [
+    true,
+    false
+   ],
+   "mobilellm": [
+    true,
+    false
+   ]
+  },
+  {
+   "prompt_id": "math-036",
+   "ours": [
+    true,
+    false
+   ],
+   "falcon": [
+    true,
+    false
+   ],
+   "mobilellm": [
+    true,
+    false
+   ]
+  },
+  {
+   "prompt_id": "math-044",
+   "ours": [
+    false,
+    false
+   ],
+   "falcon": [
+    true,
+    false
+   ],
+   "mobilellm": [
+    true,
+    false
+   ]
+  },
+  {
+   "prompt_id": "math-048",
+   "ours": [
+    false,
+    false
+   ],
+   "falcon": [
+    true,
+    false
+   ],
+   "mobilellm": [
+    false,
+    false
+   ]
+  }
+ ],
+ "math_two_turn_first_ok": {
+  "ours": 4,
+  "falcon": 8,
+  "mobilellm": 6
+ },
+ "math_two_turn_last_ok": {
+  "ours": 1,
+  "falcon": 1,
+  "mobilellm": 0
+ },
+ "math_reader_label_when_wrong": {
+  "MATH": 23,
+  "THIN": 1
+ },
+ "math_outcome_when_right_vs_falcon": {
+  "math-012": "win",
+  "math-019": "win",
+  "math-031": "loss",
+  "math-049": "win",
+  "math-053": "win",
+  "math-055": "loss"
+ },
+ "math_losses_falcon": {
+  "n": 18,
+  "wrong": 15,
+  "missing": 1,
+  "missing_ids": [
+   "math-034"
+  ],
+  "right_faulty_working": 2,
+  "right_ids": [
+   "math-031",
+   "math-055"
+  ]
+ },
+ "math_losses_mobilellm": {
+  "n": 12,
+  "wrong": 11,
+  "missing": 0,
+  "missing_ids": [],
+  "right_faulty_working": 1,
+  "right_ids": [
+   "math-055"
+  ]
+ },
+ "math_label_on_right_answer": [
+  [
+   "falcon",
+   "ours",
+   "math-031"
+  ],
+  [
+   "falcon",
+   "ours",
+   "math-055"
+  ],
+  [
+   "mobilellm",
+   "ours",
+   "math-049"
+  ],
+  [
+   "mobilellm",
+   "ours",
+   "math-055"
+  ],
+  [
+   "mobilellm",
+   "theirs",
+   "math-019"
+  ]
+ ],
+ "constraint_types": {
+  "bullets": {
+   "n": 6,
+   "ours": 6,
+   "falcon": 5,
+   "mobilellm": 0
+  },
+  "case": {
+   "n": 3,
+   "ours": 3,
+   "falcon": 3,
+   "mobilellm": 0
+  },
+  "ends_with": {
+   "n": 3,
+   "ours": 2,
+   "falcon": 3,
+   "mobilellm": 0
+  },
+  "ends_with_question": {
+   "n": 2,
+   "ours": 0,
+   "falcon": 2,
+   "mobilellm": 0
+  },
+  "frequency": {
+   "n": 1,
+   "ours": 1,
+   "falcon": 1,
+   "mobilellm": 1
+  },
+  "include": {
+   "n": 3,
+   "ours": 1,
+   "falcon": 3,
+   "mobilellm": 3
+  },
+  "json": {
+   "n": 2,
+   "ours": 1,
+   "falcon": 0,
+   "mobilellm": 0
+  },
+  "json_keys": {
+   "n": 1,
+   "ours": 1,
+   "falcon": 1,
+   "mobilellm": 0
+  },
+  "lines": {
+   "n": 1,
+   "ours": 1,
+   "falcon": 0,
+   "mobilellm": 0
+  },
+  "no_commas": {
+   "n": 2,
+   "ours": 2,
+   "falcon": 2,
+   "mobilellm": 0
+  },
+  "numbered": {
+   "n": 2,
+   "ours": 1,
+   "falcon": 1,
+   "mobilellm": 0
+  },
+  "one_of": {
+   "n": 1,
+   "ours": 1,
+   "falcon": 1,
+   "mobilellm": 0
+  },
+  "paragraphs": {
+   "n": 2,
+   "ours": 1,
+   "falcon": 1,
+   "mobilellm": 0
+  },
+  "placeholders": {
+   "n": 1,
+   "ours": 1,
+   "falcon": 1,
+   "mobilellm": 1
+  },
+  "postscript": {
+   "n": 1,
+   "ours": 0,
+   "falcon": 1,
+   "mobilellm": 0
+  },
+  "quoted": {
+   "n": 1,
+   "ours": 1,
+   "falcon": 0,
+   "mobilellm": 0
+  },
+  "sections": {
+   "n": 1,
+   "ours": 0,
+   "falcon": 0,
+   "mobilellm": 0
+  },
+  "sentences": {
+   "n": 10,
+   "ours": 10,
+   "falcon": 6,
+   "mobilellm": 3
+  },
+  "separated_parts": {
+   "n": 1,
+   "ours": 1,
+   "falcon": 1,
+   "mobilellm": 0
+  },
+  "starts_with": {
+   "n": 2,
+   "ours": 2,
+   "falcon": 1,
+   "mobilellm": 0
+  },
+  "title": {
+   "n": 1,
+   "ours": 1,
+   "falcon": 1,
+   "mobilellm": 1
+  },
+  "words": {
+   "n": 9,
+   "ours": 9,
+   "falcon": 7,
+   "mobilellm": 1
+  }
+ },
+ "n_constraints": 56,
+ "constraints_ok": {
+  "ours": 46,
+  "falcon": 41,
+  "mobilellm": 10
+ },
+ "ours_constraint_failures": [
+  {
+   "prompt_id": "instruct-005",
+   "type": "include",
+   "measured": [
+    "cup"
+   ],
+   "reply_words": 29,
+   "cut_at_token_limit": false,
+   "label_vs_falcon": "INSTR",
+   "outcome_vs_falcon": "loss"
+  },
+  {
+   "prompt_id": "instruct-010",
+   "type": "paragraphs",
+   "measured": 7,
+   "reply_words": 600,
+   "cut_at_token_limit": true,
+   "label_vs_falcon": "INCOH",
+   "outcome_vs_falcon": "loss"
+  },
+  {
+   "prompt_id": "instruct-027",
+   "type": "sections",
+   "measured": 4,
+   "reply_words": 471,
+   "cut_at_token_limit": false,
+   "label_vs_falcon": "INCOH",
+   "outcome_vs_falcon": "tie"
+  },
+  {
+   "prompt_id": "instruct-032",
+   "type": "postscript",
+   "measured": null,
+   "reply_words": 58,
+   "cut_at_token_limit": false,
+   "label_vs_falcon": "INSTR",
+   "outcome_vs_falcon": "loss"
+  },
+  {
+   "prompt_id": "instruct-041",
+   "type": "json",
+   "measured": null,
+   "reply_words": 65,
+   "cut_at_token_limit": false,
+   "label_vs_falcon": "INCOH",
+   "outcome_vs_falcon": "tie"
+  },
+  {
+   "prompt_id": "instruct-067",
+   "type": "ends_with",
+   "measured": null,
+   "reply_words": 150,
+   "cut_at_token_limit": false,
+   "label_vs_falcon": "INSTR",
+   "outcome_vs_falcon": "loss"
+  },
+  {
+   "prompt_id": "instruct-070",
+   "type": "numbered",
+   "measured": 1,
+   "reply_words": 483,
+   "cut_at_token_limit": true,
+   "label_vs_falcon": "LOOP",
+   "outcome_vs_falcon": "tie"
+  },
+  {
+   "prompt_id": "instruct-074",
+   "type": "ends_with_question",
+   "measured": null,
+   "reply_words": 25,
+   "cut_at_token_limit": false,
+   "label_vs_falcon": "INSTR",
+   "outcome_vs_falcon": "loss"
+  },
+  {
+   "prompt_id": "instruct-077",
+   "type": "include",
+   "measured": [
+    "horizon"
+   ],
+   "reply_words": 54,
+   "cut_at_token_limit": false,
+   "label_vs_falcon": "INSTR",
+   "outcome_vs_falcon": "loss"
+  },
+  {
+   "prompt_id": "instruct-080",
+   "type": "ends_with_question",
+   "measured": null,
+   "reply_words": 56,
+   "cut_at_token_limit": false,
+   "label_vs_falcon": "INCOH",
+   "outcome_vs_falcon": "loss"
+  }
+ ],
+ "placement_checks": {
+  "types": [
+   "include",
+   "ends_with",
+   "ends_with_question",
+   "postscript"
+  ],
+  "n": 9,
+  "ours_missed": 6,
+  "falcon_missed": 0,
+  "mobilellm_missed": 6,
+  "with_starts_with": {
+   "n": 11,
+   "ours_missed": 6,
+   "falcon_missed": 1,
+   "mobilellm_missed": 8
+  }
+ },
+ "ours_structural_misses": [
+  {
+   "prompt_id": "instruct-010",
+   "type": "paragraphs",
+   "measured": 7,
+   "reply_words": 600,
+   "cut_at_token_limit": true,
+   "label_vs_falcon": "INCOH",
+   "outcome_vs_falcon": "loss",
+   "asked": 2
+  },
+  {
+   "prompt_id": "instruct-027",
+   "type": "sections",
+   "measured": 4,
+   "reply_words": 471,
+   "cut_at_token_limit": false,
+   "label_vs_falcon": "INCOH",
+   "outcome_vs_falcon": "tie",
+   "asked": 3
+  },
+  {
+   "prompt_id": "instruct-041",
+   "type": "json",
+   "measured": null,
+   "reply_words": 65,
+   "cut_at_token_limit": false,
+   "label_vs_falcon": "INCOH",
+   "outcome_vs_falcon": "tie",
+   "asked": null
+  },
+  {
+   "prompt_id": "instruct-070",
+   "type": "numbered",
+   "measured": 1,
+   "reply_words": 483,
+   "cut_at_token_limit": true,
+   "label_vs_falcon": "LOOP",
+   "outcome_vs_falcon": "tie",
+   "asked": 5,
+   "lines_starting_with_a_number": 1,
+   "highest_inline_step_number": 22
+  }
+ ],
+ "win_falcon_ours_code_ids": [
+  "code-002",
+  "code-026"
+ ],
+ "n_constraint_prompts": 48,
+ "constraint_prompts_all_ok": {
+  "ours": 38,
+  "falcon": 33,
+  "mobilellm": 8
+ },
+ "loss_falcon_constraints_met": 19,
+ "loss_falcon_constraints_met_labels": {
+  "INCOH": 10,
+  "FACT": 4,
+  "INSTR": 1,
+  "LOOP": 3,
+  "THIN": 1
+ },
+ "loss_falcon_constraint_prompts": 26,
+ "instruct_losses_falcon": 21,
+ "instruct_losses_falcon_constraints_met": 14,
+ "instruct_losses_falcon_constraints_met_labels": {
+  "INCOH": 7,
+  "FACT": 3,
+  "INSTR": 1,
+  "LOOP": 2,
+  "THIN": 1
+ },
+ "degenerate": {
+  "ours": {
+   "replies": 252,
+   "flags": {
+    "degenerate": 5,
+    "truncated": 5
+   },
+   "prompts_flagged": [
+    "instruct-004",
+    "instruct-010",
+    "instruct-056",
+    "instruct-063",
+    "instruct-070"
+   ]
+  },
+  "falcon": {
+   "replies": 252,
+   "flags": {
+    "degenerate": 2,
+    "unclosed_fence": 1,
+    "truncated": 1
+   },
+   "prompts_flagged": [
+    "math-048",
+    "writing-012"
+   ]
+  },
+  "mobilellm": {
+   "replies": 252,
+   "flags": {
+    "degenerate": 158,
+    "truncated": 150,
+    "repeated_lines": 54,
+    "loop": 14,
+    "unclosed_fence": 7,
+    "empty": 2
+   },
+   "prompts_flagged": [
+    "chat-002",
+    "chat-004",
+    "chat-008",
+    "chat-009",
+    "chat-013",
+    "chat-017",
+    "chat-019",
+    "chat-022",
+    "chat-025",
+    "chat-029",
+    "chat-031",
+    "chat-035",
+    "chat-036",
+    "chat-038",
+    "chat-040",
+    "chat-052",
+    "chat-054",
+    "chat-056",
+    "chat-057",
+    "chat-060",
+    "chat-061",
+    "chat-065",
+    "chat-068",
+    "chat-069",
+    "chat-070",
+    "chat-073",
+    "chat-076",
+    "chat-080",
+    "chat-082",
+    "chat-086",
+    "chat-092",
+    "chat-093",
+    "chat-099",
+    "code-004",
+    "code-006",
+    "code-010",
+    "code-011",
+    "code-013",
+    "code-014",
+    "code-018",
+    "code-021",
+    "code-023",
+    "code-028",
+    "code-029",
+    "code-031",
+    "code-033",
+    "code-034",
+    "code-036",
+    "code-037",
+    "code-044",
+    "code-046",
+    "code-048",
+    "code-051",
+    "code-052",
+    "code-054",
+    "code-056",
+    "code-059",
+    "instruct-001",
+    "instruct-003",
+    "instruct-004",
+    "instruct-005",
+    "instruct-010",
+    "instruct-011",
+    "instruct-017",
+    "instruct-018",
+    "instruct-020",
+    "instruct-024",
+    "instruct-025",
+    "instruct-026",
+    "instruct-032",
+    "instruct-038",
+    "instruct-040",
+    "instruct-041",
+    "instruct-043",
+    "instruct-050",
+    "instruct-052",
+    "instruct-054",
+    "instruct-058",
+    "instruct-062",
+    "instruct-063",
+    "instruct-066",
+    "instruct-067",
+    "instruct-069",
+    "instruct-073",
+    "instruct-074",
+    "instruct-076",
+    "instruct-077",
+    "math-007",
+    "math-017",
+    "math-020",
+    "math-024",
+    "math-026",
+    "math-030",
+    "math-031",
+    "math-034",
+    "math-039",
+    "math-042",
+    "math-047",
+    "math-048",
+    "math-049",
+    "math-053",
+    "math-057",
+    "math-058",
+    "math-059",
+    "writing-001",
+    "writing-003",
+    "writing-004",
+    "writing-005",
+    "writing-007",
+    "writing-011",
+    "writing-012",
+    "writing-015",
+    "writing-016",
+    "writing-020",
+    "writing-021",
+    "writing-024",
+    "writing-026",
+    "writing-027",
+    "writing-028",
+    "writing-033",
+    "writing-036",
+    "writing-040",
+    "writing-043",
+    "writing-054",
+    "writing-057",
+    "writing-059",
+    "writing-064",
+    "writing-067",
+    "writing-071",
+    "writing-073",
+    "writing-077",
+    "writing-083",
+    "writing-085",
+    "writing-090",
+    "writing-091",
+    "writing-093",
+    "writing-094",
+    "writing-097",
+    "writing-100"
+   ]
+  }
+ },
+ "ours_loop_labels": {
+  "falcon": [
+   "chat-013",
+   "chat-040",
+   "chat-060",
+   "chat-080",
+   "code-006",
+   "code-011",
+   "instruct-004",
+   "instruct-063",
+   "instruct-069",
+   "instruct-070",
+   "writing-007",
+   "writing-012",
+   "writing-016",
+   "writing-036",
+   "writing-040",
+   "writing-047",
+   "writing-048",
+   "writing-067",
+   "writing-071",
+   "writing-076",
+   "writing-079",
+   "writing-081",
+   "writing-082",
+   "writing-085",
+   "writing-090"
+  ],
+  "mobilellm": [
+   "chat-013",
+   "chat-060",
+   "code-006",
+   "instruct-004",
+   "instruct-063",
+   "writing-007",
+   "writing-012",
+   "writing-016",
+   "writing-071",
+   "writing-081",
+   "writing-082",
+   "writing-085"
+  ]
+ },
+ "ours_loop_or_trunc_any_set": [
+  "chat-013",
+  "chat-040",
+  "chat-060",
+  "chat-080",
+  "code-006",
+  "code-011",
+  "instruct-004",
+  "instruct-063",
+  "instruct-069",
+  "instruct-070",
+  "writing-007",
+  "writing-012",
+  "writing-016",
+  "writing-036",
+  "writing-040",
+  "writing-047",
+  "writing-048",
+  "writing-067",
+  "writing-071",
+  "writing-076",
+  "writing-079",
+  "writing-081",
+  "writing-082",
+  "writing-085",
+  "writing-090"
+ ],
+ "ours_loop_flagged_by_exact": [
+  "instruct-004",
+  "instruct-063",
+  "instruct-070"
+ ],
+ "theirs_loop_labels_mobilellm": 65,
+ "turn2_repeats_turn1": {
+  "ours": [
+   "code-044",
+   "writing-012",
+   "writing-016",
+   "writing-048"
+  ],
+  "falcon": [
+   "writing-016"
+  ],
+  "mobilellm": [
+   "code-016"
+  ]
+ },
+ "turn2_repeats_turn1_08": {
+  "ours": [
+   "code-044",
+   "writing-012",
+   "writing-016",
+   "writing-040",
+   "writing-048",
+   "writing-076"
+  ],
+  "falcon": [
+   "writing-016"
+  ],
+  "mobilellm": [
+   "chat-016",
+   "code-016"
+  ]
+ },
+ "turn2_repeat08_outcomes_vs_falcon": {
+  "tie": 3,
+  "loss": 3
+ },
+ "turn2_repeat08_labels_vs_falcon": {
+  "CODE": 1,
+  "LOOP": 5
+ },
+ "rep4_ours": {
+  "loop_n": 25,
+  "loop_median": 0.065,
+  "other_n": 175,
+  "other_median": 0.015,
+  "loop_ge_0.1": 8,
+  "other_ge_0.1": 11
+ },
+ "n_two_turn": 52,
+ "turn2_repeat_outcomes_vs_falcon": {
+  "tie": 2,
+  "loss": 2
+ },
+ "agreement": {
+  "falcon": {
+   "four_way_max_agreement": {
+    "4": 173,
+    "3": 17,
+    "2": 10
+   },
+   "fleiss_kappa_four_way": 0.864,
+   "ours_bad_or_not_max_agreement": {
+    "4": 189,
+    "3": 8,
+    "2": 3
+   },
+   "fleiss_kappa_ours_bad": 0.909,
+   "three_way_max_agreement": {
+    "4": 173,
+    "3": 19,
+    "2": 8
+   },
+   "fleiss_kappa_three_way": 0.869,
+   "first_vs_neutral_same_outcome": 191
+  },
+  "mobilellm": {
+   "four_way_max_agreement": {
+    "4": 184,
+    "3": 10,
+    "2": 6
+   },
+   "fleiss_kappa_four_way": 0.915,
+   "ours_bad_or_not_max_agreement": {
+    "4": 185,
+    "3": 11,
+    "2": 4
+   },
+   "fleiss_kappa_ours_bad": 0.916,
+   "three_way_max_agreement": {
+    "4": 184,
+    "3": 10,
+    "2": 6
+   },
+   "fleiss_kappa_three_way": 0.916,
+   "first_vs_neutral_same_outcome": 190
+  }
+ },
+ "support": {
+  "losses_falcon_ours": {
+   "4": 108,
+   "3": 0,
+   "2": 0,
+   "1": 0,
+   "0": 0
+  },
+  "wins_mobilellm_theirs": {
+   "4": 106,
+   "3": 7,
+   "2": 3,
+   "1": 0,
+   "0": 0
+  },
+  "wins_falcon_theirs": {
+   "4": 34,
+   "3": 1,
+   "2": 0,
+   "1": 0,
+   "0": 0
+  },
+  "bothbad_falcon_ours": {
+   "4": 32,
+   "3": 4,
+   "2": 0,
+   "1": 0,
+   "0": 0
+  },
+  "bothbad_falcon_theirs": {
+   "4": 31,
+   "3": 3,
+   "2": 2,
+   "1": 0,
+   "0": 0
+  }
+ },
+ "tiebreak_losses_falcon": 19,
+ "qwen_on_losses_falcon": {
+  "loss": 50,
+  "tie": 57,
+  "win": 1
+ },
+ "qwen_on_wins_mobilellm": {
+  "win": 51,
+  "tie": 64,
+  "loss": 1
+ },
+ "tiebreak_losses_falcon_list": [
+  [
+   "chat-080",
+   "LOOP",
+   "ours repetitive (tie with THIN 4: vague '30 minutes daily'); checked reply"
+  ],
+  [
+   "instruct-038",
+   "INCOH",
+   "ours one meaningless word (tie with THIN)"
+  ],
+  [
+   "writing-010",
+   "INCOH",
+   "ours leaked 'changes made' notes (tie with FACT 4: misstates contamination)"
+  ],
+  [
+   "writing-064",
+   "FACT",
+   "ours fake attribution (tie with INSTR 4: repeats quote instead of explaining); theirs one sentence (1 note)"
+  ],
+  [
+   "writing-043",
+   "INCOH",
+   "ours confused identities, gibberish (tie with LOOP 4)"
+  ],
+  [
+   "instruct-062",
+   "FACT",
+   "ours wrong year for Parasite (tie with INSTR 4: extra key)"
+  ],
+  [
+   "chat-060",
+   "LOOP",
+   "ours repetitive gift cards (tie with INSTR 4: no pick, ignores gardening)"
+  ],
+  [
+   "instruct-010",
+   "INCOH",
+   "ours leaked meta chatter (tie with INSTR 4: five paragraphs)"
+  ],
+  [
+   "writing-016",
+   "LOOP",
+   "ours turn 2 repeats the poem unchanged (tie INSTR 4); theirs rhymes only partly"
+  ],
+  [
+   "chat-016",
+   "INSTR",
+   "ours hobbies not at home (tie with THIN 4: vague follow-up)"
+  ],
+  [
+   "instruct-069",
+   "LOOP",
+   "ours long, repetitive (tie with INSTR 4: not short)"
+  ],
+  [
+   "writing-024",
+   "FACT",
+   "ours inverts causality (tie with THIN 4: barely condenses)"
+  ],
+  [
+   "chat-070",
+   "INCOH",
+   "ours nonsense phrase (tie with LOOP 4: repetitive)"
+  ],
+  [
+   "writing-015",
+   "INCOH",
+   "ours garbles a bullet (tie THIN 4: drops the last fact); theirs invented cities"
+  ],
+  [
+   "chat-008",
+   "INCOH",
+   "ours redundant tips, turn 2 nonsense (tie LOOP 4); theirs turn 2 drifts"
+  ],
+  [
+   "writing-004",
+   "INSTR",
+   "ours long free verse, not haiku (tie with TRUNC 4: turn 2 cut off)"
+  ],
+  [
+   "instruct-080",
+   "INCOH",
+   "ours off-topic plaza welcome (tie with INSTR 4: no question)"
+  ],
+  [
+   "writing-040",
+   "LOOP",
+   "ours repeated prose, no limerick (tie with INSTR 4)"
+  ],
+  [
+   "code-006",
+   "LOOP",
+   "ours same .reverse() three times, wrong outputs (tie CODE 4); theirs loop method broken"
+  ]
+ ],
+ "cross_set_ours": {
+  "same": 142,
+  "different": 58,
+  "both_defect": 141,
+  "same_when_both_defect": 119,
+  "ok_in_one_only": 36,
+  "top_confusions": [
+   [
+    "FACT/INCOH",
+    6
+   ],
+   [
+    "INSTR/LOOP",
+    5
+   ],
+   [
+    "INCOH/INSTR",
+    3
+   ],
+   [
+    "FACT/THIN",
+    2
+   ],
+   [
+    "INCOH/LOOP",
+    2
+   ],
+   [
+    "INCOH/THIN",
+    1
+   ]
+  ]
+ },
+ "ours_ok_by_set": {
+  "falcon": 26,
+  "mobilellm": 56
+ },
+ "k1_on_k6_losses": {
+  "loss": 99,
+  "tie": 7,
+  "win": 2
+ },
+ "k1_on_k6_wins": {
+  "loss": 10,
+  "tie": 8,
+  "win": 17
+ },
+ "seen": {
+  "chat-002": {
+   "vs_falcon": "loss",
+   "vs_mobilellm": "tie",
+   "label_vs_falcon": "FACT"
+  },
+  "chat-017": {
+   "vs_falcon": "win",
+   "vs_mobilellm": "win",
+   "label_vs_falcon": "THIN"
+  },
+  "code-002": {
+   "vs_falcon": "win",
+   "vs_mobilellm": "win",
+   "label_vs_falcon": "CODE"
+  },
+  "code-026": {
+   "vs_falcon": "win",
+   "vs_mobilellm": "win",
+   "label_vs_falcon": "CODE"
+  },
+  "instruct-001": {
+   "vs_falcon": "loss",
+   "vs_mobilellm": "tie",
+   "label_vs_falcon": "FACT"
+  },
+  "instruct-034": {
+   "vs_falcon": "loss",
+   "vs_mobilellm": "win",
+   "label_vs_falcon": "INCOH"
+  },
+  "instruct-062": {
+   "vs_falcon": "loss",
+   "vs_mobilellm": "win",
+   "label_vs_falcon": "FACT"
+  },
+  "math-001": {
+   "vs_falcon": "tie",
+   "vs_mobilellm": "loss",
+   "label_vs_falcon": "MATH"
+  },
+  "math-034": {
+   "vs_falcon": "loss",
+   "vs_mobilellm": "tie",
+   "label_vs_falcon": "THIN"
+  },
+  "writing-001": {
+   "vs_falcon": "loss",
+   "vs_mobilellm": "win",
+   "label_vs_falcon": "INCOH"
+  },
+  "writing-100": {
+   "vs_falcon": "loss",
+   "vs_mobilellm": "win",
+   "label_vs_falcon": "INCOH"
+  }
+ },
+ "n_loss_falcon_189": 101,
+ "loss_falcon_189_ours": {
+  "MATH": 17,
+  "LOOP": 14,
+  "CODE": 10,
+  "INCOH": 26,
+  "FACT": 16,
+  "INSTR": 14,
+  "THIN": 4
+ },
+ "cat_n_loss_falcon": {
+  "chat": 24,
+  "code": 13,
+  "instruct": 21,
+  "math": 18,
+  "writing": 32
+ },
+ "cat_n_bb_falcon": {
+  "chat": 7,
+  "code": 7,
+  "instruct": 8,
+  "math": 6,
+  "writing": 8
+ },
+ "cat_n_win_mobilellm": {
+  "chat": 28,
+  "code": 16,
+  "instruct": 29,
+  "math": 7,
+  "writing": 36
+ },
+ "cat_n_win_falcon": {
+  "chat": 10,
+  "code": 10,
+  "instruct": 7,
+  "math": 4,
+  "writing": 4
+ },
+ "cat_n_loss_mobilellm": {
+  "chat": 1,
+  "code": 2,
+  "instruct": 0,
+  "math": 12,
+  "writing": 0
+ },
+ "cat_n_bb_mobilellm": {
+  "chat": 18,
+  "code": 10,
+  "instruct": 10,
+  "math": 10,
+  "writing": 13
+ },
+ "examples": [
+  "math-030",
+  "math-044",
+  "writing-084",
+  "chat-080",
+  "writing-100",
+  "writing-036",
+  "code-036",
+  "instruct-038",
+  "writing-089",
+  "chat-047",
+  "instruct-026",
+  "code-029"
+ ],
+ "ab_by_length": {
+  "falcon": {
+   "x_shorter": [
+    26,
+    41,
+    26
+   ],
+   "similar": [
+    7,
+    40,
+    25
+   ],
+   "x_longer": [
+    2,
+    27,
+    6
+   ]
+  },
+  "mobilellm": {
+   "x_shorter": [
+    77,
+    9,
+    54
+   ],
+   "similar": [
+    17,
+    5,
+    6
+   ],
+   "x_longer": [
+    22,
+    1,
+    9
+   ]
+  }
+ },
+ "words": {
+  "ours": {
+   "mean": 130.4,
+   "median": 101
+  },
+  "falcon": {
+   "mean": 173.4,
+   "median": 155
+  },
+  "mobilellm": {
+   "mean": 474.1,
+   "median": 395
+  }
+ },
+ "loss_labels_by_length": {
+  "similar": {
+   "MATH": 8,
+   "INCOH": 14,
+   "LOOP": 3,
+   "FACT": 7,
+   "INSTR": 5,
+   "CODE": 3
+  },
+  "x_shorter": {
+   "MATH": 6,
+   "LOOP": 4,
+   "CODE": 7,
+   "INCOH": 8,
+   "FACT": 10,
+   "THIN": 5,
+   "INSTR": 1
+  },
+  "x_longer": {
+   "INCOH": 7,
+   "FACT": 2,
+   "INSTR": 8,
+   "MATH": 3,
+   "LOOP": 7
+  }
+ },
+ "win_falcon_ours_by_length": {
+  "similar": {
+   "OK": 6,
+   "FACT": 1
+  },
+  "x_longer": {
+   "OK": 2
+  },
+  "x_shorter": {
+   "OK": 16,
+   "THIN": 3,
+   "FACT": 2,
+   "INSTR": 2,
+   "CODE": 2,
+   "INCOH": 1
+  }
+ },
+ "tables": {
+  "loss_falcon_ours": [
+   [
+    "INCOH",
+    6,
+    2,
+    9,
+    0,
+    12,
+    29
+   ],
+   [
+    "LOOP",
+    2,
+    1,
+    2,
+    0,
+    9,
+    14
+   ],
+   [
+    "FACT",
+    14,
+    0,
+    3,
+    0,
+    2,
+    19
+   ],
+   [
+    "MATH",
+    0,
+    0,
+    0,
+    17,
+    0,
+    17
+   ],
+   [
+    "CODE",
+    0,
+    10,
+    0,
+    0,
+    0,
+    10
+   ],
+   [
+    "INSTR",
+    1,
+    0,
+    6,
+    0,
+    7,
+    14
+   ],
+   [
+    "THIN",
+    1,
+    0,
+    1,
+    1,
+    2,
+    5
+   ],
+   [
+    "total",
+    24,
+    13,
+    21,
+    18,
+    32,
+    108
+   ]
+  ],
+  "loss_falcon_theirs": [
+   [
+    "INCOH",
+    1,
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    "FACT",
+    9,
+    0,
+    1,
+    0,
+    4,
+    14
+   ],
+   [
+    "MATH",
+    0,
+    0,
+    0,
+    3,
+    0,
+    3
+   ],
+   [
+    "CODE",
+    0,
+    7,
+    0,
+    0,
+    0,
+    7
+   ],
+   [
+    "INSTR",
+    0,
+    0,
+    1,
+    0,
+    5,
+    6
+   ],
+   [
+    "THIN",
+    2,
+    0,
+    0,
+    0,
+    0,
+    2
+   ],
+   [
+    "OK",
+    12,
+    6,
+    19,
+    15,
+    23,
+    75
+   ],
+   [
+    "total",
+    24,
+    13,
+    21,
+    18,
+    32,
+    108
+   ]
+  ],
+  "loss_falcon_ours_neutral": [
+   [
+    "INCOH",
+    6,
+    2,
+    9,
+    0,
+    13,
+    30
+   ],
+   [
+    "LOOP",
+    2,
+    1,
+    2,
+    0,
+    9,
+    14
+   ],
+   [
+    "FACT",
+    13,
+    0,
+    3,
+    0,
+    2,
+    18
+   ],
+   [
+    "MATH",
+    0,
+    0,
+    0,
+    17,
+    0,
+    17
+   ],
+   [
+    "CODE",
+    0,
+    10,
+    0,
+    0,
+    0,
+    10
+   ],
+   [
+    "INSTR",
+    1,
+    0,
+    6,
+    0,
+    7,
+    14
+   ],
+   [
+    "THIN",
+    2,
+    0,
+    1,
+    1,
+    2,
+    6
+   ],
+   [
+    "total",
+    24,
+    13,
+    21,
+    18,
+    33,
+    109
+   ]
+  ],
+  "bb_falcon_ours": [
+   [
+    "INCOH",
+    2,
+    0,
+    3,
+    0,
+    1,
+    6
+   ],
+   [
+    "LOOP",
+    2,
+    1,
+    2,
+    0,
+    3,
+    8
+   ],
+   [
+    "FACT",
+    3,
+    0,
+    2,
+    0,
+    1,
+    6
+   ],
+   [
+    "MATH",
+    0,
+    0,
+    0,
+    6,
+    0,
+    6
+   ],
+   [
+    "CODE",
+    0,
+    6,
+    0,
+    0,
+    0,
+    6
+   ],
+   [
+    "INSTR",
+    0,
+    0,
+    0,
+    0,
+    3,
+    3
+   ],
+   [
+    "TRUNC",
+    0,
+    0,
+    1,
+    0,
+    0,
+    1
+   ],
+   [
+    "total",
+    7,
+    7,
+    8,
+    6,
+    8,
+    36
+   ]
+  ],
+  "bb_falcon_theirs": [
+   [
+    "INCOH",
+    3,
+    0,
+    2,
+    0,
+    5,
+    10
+   ],
+   [
+    "FACT",
+    4,
+    0,
+    4,
+    0,
+    1,
+    9
+   ],
+   [
+    "MATH",
+    0,
+    0,
+    0,
+    6,
+    0,
+    6
+   ],
+   [
+    "CODE",
+    0,
+    7,
+    0,
+    0,
+    0,
+    7
+   ],
+   [
+    "INSTR",
+    0,
+    0,
+    2,
+    0,
+    2,
+    4
+   ],
+   [
+    "total",
+    7,
+    7,
+    8,
+    6,
+    8,
+    36
+   ]
+  ],
+  "bb_mobilellm_ours": [
+   [
+    "INCOH",
+    1,
+    2,
+    4,
+    0,
+    4,
+    11
+   ],
+   [
+    "LOOP",
+    0,
+    1,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    "FACT",
+    17,
+    0,
+    5,
+    0,
+    1,
+    23
+   ],
+   [
+    "MATH",
+    0,
+    0,
+    0,
+    9,
+    0,
+    9
+   ],
+   [
+    "CODE",
+    0,
+    7,
+    0,
+    0,
+    0,
+    7
+   ],
+   [
+    "INSTR",
+    0,
+    0,
+    0,
+    0,
+    7,
+    7
+   ],
+   [
+    "THIN",
+    0,
+    0,
+    1,
+    1,
+    1,
+    3
+   ],
+   [
+    "total",
+    18,
+    10,
+    10,
+    10,
+    13,
+    61
+   ]
+  ],
+  "bb_mobilellm_theirs": [
+   [
+    "INCOH",
+    4,
+    2,
+    5,
+    0,
+    7,
+    18
+   ],
+   [
+    "LOOP",
+    4,
+    6,
+    5,
+    2,
+    5,
+    22
+   ],
+   [
+    "FACT",
+    7,
+    0,
+    0,
+    0,
+    0,
+    7
+   ],
+   [
+    "MATH",
+    0,
+    0,
+    0,
+    4,
+    0,
+    4
+   ],
+   [
+    "CODE",
+    0,
+    2,
+    0,
+    0,
+    0,
+    2
+   ],
+   [
+    "TRUNC",
+    2,
+    0,
+    0,
+    4,
+    0,
+    6
+   ],
+   [
+    "THIN",
+    1,
+    0,
+    0,
+    0,
+    1,
+    2
+   ],
+   [
+    "total",
+    18,
+    10,
+    10,
+    10,
+    13,
+    61
+   ]
+  ],
+  "win_mobilellm_theirs": [
+   [
+    "INCOH",
+    10,
+    3,
+    18,
+    2,
+    23,
+    56
+   ],
+   [
+    "LOOP",
+    13,
+    3,
+    8,
+    1,
+    12,
+    37
+   ],
+   [
+    "FACT",
+    2,
+    0,
+    0,
+    0,
+    0,
+    2
+   ],
+   [
+    "MATH",
+    0,
+    0,
+    0,
+    4,
+    0,
+    4
+   ],
+   [
+    "CODE",
+    0,
+    9,
+    0,
+    0,
+    0,
+    9
+   ],
+   [
+    "INSTR",
+    0,
+    0,
+    1,
+    0,
+    1,
+    2
+   ],
+   [
+    "TRUNC",
+    0,
+    0,
+    1,
+    0,
+    0,
+    1
+   ],
+   [
+    "THIN",
+    3,
+    1,
+    1,
+    0,
+    0,
+    5
+   ],
+   [
+    "total",
+    28,
+    16,
+    29,
+    7,
+    36,
+    116
+   ]
+  ],
+  "win_mobilellm_ours": [
+   [
+    "INCOH",
+    0,
+    0,
+    1,
+    0,
+    2,
+    3
+   ],
+   [
+    "LOOP",
+    2,
+    0,
+    2,
+    0,
+    7,
+    11
+   ],
+   [
+    "FACT",
+    6,
+    0,
+    3,
+    0,
+    1,
+    10
+   ],
+   [
+    "MATH",
+    0,
+    0,
+    0,
+    3,
+    0,
+    3
+   ],
+   [
+    "CODE",
+    0,
+    8,
+    0,
+    0,
+    0,
+    8
+   ],
+   [
+    "INSTR",
+    2,
+    0,
+    11,
+    0,
+    8,
+    21
+   ],
+   [
+    "THIN",
+    2,
+    0,
+    1,
+    0,
+    1,
+    4
+   ],
+   [
+    "OK",
+    16,
+    8,
+    11,
+    4,
+    17,
+    56
+   ],
+   [
+    "total",
+    28,
+    16,
+    29,
+    7,
+    36,
+    116
+   ]
+  ],
+  "win_falcon_theirs": [
+   [
+    "INCOH",
+    2,
+    0,
+    3,
+    0,
+    1,
+    6
+   ],
+   [
+    "FACT",
+    8,
+    0,
+    1,
+    0,
+    1,
+    10
+   ],
+   [
+    "MATH",
+    0,
+    0,
+    0,
+    3,
+    0,
+    3
+   ],
+   [
+    "CODE",
+    0,
+    10,
+    0,
+    0,
+    0,
+    10
+   ],
+   [
+    "INSTR",
+    0,
+    0,
+    3,
+    0,
+    2,
+    5
+   ],
+   [
+    "WEAK",
+    0,
+    0,
+    0,
+    1,
+    0,
+    1
+   ],
+   [
+    "total",
+    10,
+    10,
+    7,
+    4,
+    4,
+    35
+   ]
+  ],
+  "win_falcon_ours": [
+   [
+    "INCOH",
+    1,
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    "FACT",
+    1,
+    0,
+    1,
+    0,
+    1,
+    3
+   ],
+   [
+    "CODE",
+    0,
+    2,
+    0,
+    0,
+    0,
+    2
+   ],
+   [
+    "INSTR",
+    0,
+    0,
+    2,
+    0,
+    0,
+    2
+   ],
+   [
+    "THIN",
+    2,
+    0,
+    1,
+    0,
+    0,
+    3
+   ],
+   [
+    "OK",
+    6,
+    8,
+    3,
+    4,
+    3,
+    24
+   ],
+   [
+    "total",
+    10,
+    10,
+    7,
+    4,
+    4,
+    35
+   ]
+  ],
+  "loss_mobilellm_ours": [
+   [
+    "FACT",
+    1,
+    0,
+    0,
+    0,
+    0,
+    1
+   ],
+   [
+    "MATH",
+    0,
+    0,
+    0,
+    12,
+    0,
+    12
+   ],
+   [
+    "CODE",
+    0,
+    2,
+    0,
+    0,
+    0,
+    2
+   ],
+   [
+    "total",
+    1,
+    2,
+    0,
+    12,
+    0,
+    15
+   ]
+  ],
+  "loss_mobilellm_theirs": [
+   [
+    "INCOH",
+    0,
+    0,
+    0,
+    5,
+    0,
+    5
+   ],
+   [
+    "CODE",
+    0,
+    2,
+    0,
+    0,
+    0,
+    2
+   ],
+   [
+    "OK",
+    1,
+    0,
+    0,
+    7,
+    0,
+    8
+   ],
+   [
+    "total",
+    1,
+    2,
+    0,
+    12,
+    0,
+    15
+   ]
+  ],
+  "loss_falcon_ours_other_tiebreak": [
+   [
+    "INCOH",
+    4,
+    2,
+    6,
+    0,
+    9,
+    21
+   ],
+   [
+    "LOOP",
+    2,
+    0,
+    1,
+    0,
+    8,
+    11
+   ],
+   [
+    "FACT",
+    14,
+    0,
+    2,
+    0,
+    1,
+    17
+   ],
+   [
+    "MATH",
+    0,
+    0,
+    0,
+    17,
+    0,
+    17
+   ],
+   [
+    "CODE",
+    0,
+    11,
+    0,
+    0,
+    0,
+    11
+   ],
+   [
+    "INSTR",
+    1,
+    0,
+    10,
+    0,
+    9,
+    20
+   ],
+   [
+    "TRUNC",
+    0,
+    0,
+    0,
+    0,
+    1,
+    1
+   ],
+   [
+    "THIN",
+    3,
+    0,
+    2,
+    1,
+    4,
+    10
+   ],
+   [
+    "total",
+    24,
+    13,
+    21,
+    18,
+    32,
+    108
+   ]
+  ]
+ }
+}

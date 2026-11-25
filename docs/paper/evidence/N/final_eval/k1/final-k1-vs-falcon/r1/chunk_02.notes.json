@@ -1,0 +1,17 @@
+{
+  "pdb142585ad": "A is prose story, not a limerick; B imperfect rhymes but limerick form, on topic.",
+  "pa148ecac08": "A's phrases invite rather than decline; B describes hosting a party.",
+  "p5556cf45f8": "A degenerates into run-on gibberish and is cut off; B coherent though four sentences.",
+  "p368321dcad": "A inverts key differences (processor, display, software); B is gibberish.",
+  "p2d8b54f54c": "B advises swallowing water and pouring water on phone; A vague but harmless.",
+  "p9adca27093": "A gives exactly two paragraphs; B writes four and is cut off.",
+  "p866198794f": "A has no cat and loops 'I mean'; B features cat claiming queenship.",
+  "pca4d762c06": "A's left<right loop misses last element and single-element lists; B correct.",
+  "p9f93a9509b": "Both contain absurd falsehoods: A '3,500 species, largest land animals'; B 'long necks carry ice'.",
+  "p25a0af97bb": "A blames magma and loops 'stay hydrated'; B flawed but mentions tectonics, staying calm.",
+  "p6bfa57ac9b": "A says Mercury; B correctly names Jupiter though size ratios are wrong.",
+  "p5f4adba430": "A's regex accepts only all-digit strings; B has syntax errors and inverted logic.",
+  "p4f9c32ffcb": "A partially explains pressure differences and thrust; B is incoherent nonsense.",
+  "p699b4b2f8b": "A repeats the speech verbatim instead of shortening; B actually shortens it.",
+  "p66a2a68307": "A's slogans nonsensical, one says 'Must Not Be Local'; B garbled, omits local."
+}

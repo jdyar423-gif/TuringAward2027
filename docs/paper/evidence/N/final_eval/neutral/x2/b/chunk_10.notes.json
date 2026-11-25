@@ -1,0 +1,17 @@
+{
+  "p5e7633d2b0": "A gives an incoherent but recognizable dialogue; B is no dialogue, repeated boxed nonsense.",
+  "p1b827baaec": "Both badly wrong; B at least gives defensive purpose, A loops on 'sacred site', truncated.",
+  "p59f243ed25": "Both fail turn two (no 42); A's first-turn answer is cleaner than B's garbled one.",
+  "pc10bf5215b": "A gets $165 right though ignores turn two; B wrong both turns ($15, $5).",
+  "p7ef5e55651": "A gives invalid JSON with non-desert animals plus extra text; B rambles, no JSON.",
+  "pf1a97a1bc7": "Neither gives 10,080; A only says 7 days, B degenerates into 'Wait, no' loop.",
+  "p1f72a6eee4": "A reaches correct 490 despite odd steps; B loops and concludes wrong 70.",
+  "p282d3ac54b": "Neither rewrites: A repeats original verbatim, B loops restating it and is truncated.",
+  "p18a51913b1": "A answers both turns sensibly; B gives boxed stub then degenerate loop.",
+  "pd784697de7": "B correctly gives $64; A insists on -$64, loops and is truncated.",
+  "pfe0e6a9b00": "A gives mostly sensible care tips; B is nonsense about logarithmic growth models.",
+  "p47c8c28807": "B is a flawed, wrong-perspective email but on topic; A repeats boxed line endlessly.",
+  "p26874fb1f8": "A gives imperfect but usable washing steps; B nonsensically says apply a chemical stain.",
+  "p74ab0b4ad8": "B coherently lists sleep's benefits; A is vague, circular, with repeated boxed answers.",
+  "p1a4e3b583f": "A gives correct concise function (wrong example comment); B rambles, self-contradicts, truncated."
+}

@@ -1,0 +1,22 @@
+{
+  "name": "final-prefopt-vs-trained",
+  "format": 2,
+  "n_pairs": 200,
+  "commitment": "f902e4e77369249f4d55b72878e878871d986e5c1359895165e38549e7f48cf6",
+  "commitments": [
+    "f902e4e77369249f4d55b72878e878871d986e5c1359895165e38549e7f48cf6"
+  ],
+  "added": [
+    200
+  ],
+  "by_category": {
+    "writing": 50,
+    "code": 30,
+    "chat": 50,
+    "math": 30,
+    "instruct": 40
+  },
+  "multi_turn": 52,
+  "created": "2026-11-24 20:58:06",
+  "updated": "2026-11-24 20:58:06"
+}

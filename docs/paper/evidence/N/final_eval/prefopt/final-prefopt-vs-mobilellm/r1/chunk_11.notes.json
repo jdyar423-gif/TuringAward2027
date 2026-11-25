@@ -1,0 +1,17 @@
+{
+  "p9f8b5a3220": "A returns length not word, loops confused; B counts characters, nonsense tie answer.",
+  "p743719ce9b": "B summarizes recruitment problem adequately; A fabricates '$1 per call' and loops.",
+  "pe0c6cb0a99": "B paragraph uses 'green' three times; A degenerate loop with 'green' once.",
+  "pcec146d6b1": "A gives correct recursive function, muddled explanation; B code broken, wrong stack-overflow reason.",
+  "p166e642c59": "Both wrong: A says 31, B boxes 21; correct is 216.",
+  "p5e432db183": "Both correct 77; A shorter, B misstates method ('multiply by perimeter').",
+  "pb455f3cdd9": "B gives sensible reasons and some downsides; A degenerate 'people are pets'.",
+  "p1f72a6eee4": "B reaches correct 490 despite garbled steps; A loops, answers wrong 70.",
+  "p88c3bddbc5": "A wrapped in quotes though omits why; B degenerate, ignores format.",
+  "pc0654fb123": "Both wrong: A 'honeybeard' nonsense; B calls nectar pollen, many false claims.",
+  "p84404e4196": "B lists all four causes, messy duplicates; A confuses solutions/crops, degenerate.",
+  "pb7536d3f55": "A correct 0.75 kg concisely; B loops, contradicts itself, claims 75 grams.",
+  "p41323a9edc": "A mostly correct with equation, minor errors; B circular 'photosynthesis is photosynthesis'.",
+  "pee2dd0e2e0": "Neither uses COUNT(*)/GROUP BY; A invalid SQL, B loops 'SELECT rows'.",
+  "p40e6240717": "Both wrong: neither says about 8 minutes; A wrong distance, B light-years loop."
+}

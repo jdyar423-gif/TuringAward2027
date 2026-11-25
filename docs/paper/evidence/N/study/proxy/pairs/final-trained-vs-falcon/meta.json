@@ -1,0 +1,22 @@
+{
+  "name": "final-trained-vs-falcon",
+  "format": 2,
+  "n_pairs": 200,
+  "commitment": "ad5f05270d4c7b89ff13c7a0504525a6a5000c8d2e05daab4a17f3c4b662ff72",
+  "commitments": [
+    "ad5f05270d4c7b89ff13c7a0504525a6a5000c8d2e05daab4a17f3c4b662ff72"
+  ],
+  "added": [
+    200
+  ],
+  "by_category": {
+    "writing": 50,
+    "math": 30,
+    "instruct": 40,
+    "code": 30,
+    "chat": 50
+  },
+  "multi_turn": 52,
+  "created": "2026-11-24 19:07:40",
+  "updated": "2026-11-24 19:07:40"
+}

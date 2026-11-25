@@ -1,0 +1,17 @@
+{
+  "pc5321cae39": "Both miss a required word; A fluent, B calls cups a treat, lacks aroma.",
+  "p9b11bee678": "B halves speech properly; A barely shortens (~67%) and invents award announcements.",
+  "p7efd43cd83": "A covers key benefits like heart disease, weight, mood; B repetitive, thinner.",
+  "p4ee5a5b818": "Both wrongly claim Listen/Silent True; A has nonsense sentence, B valid Counter alternative.",
+  "p3f8d0abd7b": "A's pros/cons more relevant; B's summary omits all cons, turn one incoherent.",
+  "p19bf8fd486": "Both weak; B degenerates into non-words ('glor', 'glorrow') and repetition.",
+  "pd23aa813da": "A's turn two just repeats quote instead of explaining; fabricated attribution too.",
+  "pb6a59981df": "B wrongly says cats purr because territorial/threatened; A roughly correct contentment, communication.",
+  "pb805ce1941": "A's tips incoherent (sending invitations); B's script seeks invitation, doesn't decline.",
+  "p8cfe567df5": "Correct answer is $36; A says $48, B says $96.",
+  "pc249e4dc57": "A's second function correctly preserves order; B only offers order-losing list(set()).",
+  "p4ff36ed99b": "Both misexplain the error and give broken, nonsensical code; no proper str() fix.",
+  "p29e001fea1": "A's five steps nonsense (tea bag in oven, no water); B degenerate 22 steps.",
+  "p4c5a315b09": "Neither gives three desert animals; wrong structure, non-desert/fictional animals, extra text.",
+  "pbb2e9e3cac": "Both include required words; B has '[Date] at [Date]' glitch, confusing meeting deadline."
+}

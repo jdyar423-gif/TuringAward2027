@@ -1,0 +1,17 @@
+{
+  "p02bc1b0cd1": "A gives three on-topic sentences (calls Moon a star); B is nonsense.",
+  "p34a2f6c86b": "Neither writes a limerick: A long prose story, B 'cat + suck' loop.",
+  "p3eea606d98": "A's email ignores farewell/retirement, talks seminar; B loops boxed nonsense.",
+  "p46df249403": "A treats 'product' as 60!; B gives real description, ad too long.",
+  "p47c8c28807": "A's email has reversed roles, not a repair request; B loops boxed line.",
+  "pa6293bdb58": "A claims generators don't exist; B gives rough definition, though code is broken.",
+  "p9e9be42ce5": "Both reverse correctly; B ignores the time-complexity question, A answers O(n).",
+  "p3bab243b46": "A muddled but hints climate is longer-period; B loops claiming difference is zero.",
+  "p282d3ac54b": "Neither rewrites it friendlier; B repeats original verbatim, A rambles.",
+  "p49c705432a": "A is an unfunny, repetitive poem but a poem; B gives no poem.",
+  "pa3082c3d6c": "A degenerates into letter loop; B uses int() on Roman numeral, wrong.",
+  "p0ceef24d56": "A vacuous, ignores turn 2; B wrong causes (volcanoes), unsafe evacuation advice.",
+  "pa32e2052be": "Neither writes a limerick: A cosmic prose, B 'a limerith' loop.",
+  "p1a4e3b583f": "B concise correct code (wrong example comment); A self-contradicting ramble, cut off.",
+  "p4cee1de9b3": "A writes a plausible breakfast review; B insists restaurant is real, loops."
+}

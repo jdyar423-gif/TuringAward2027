@@ -1,0 +1,17 @@
+{
+  "pabd4543ceb": "Both second-turn answers ignore the actual solutions and repeat 'carry pagers' nonsense.",
+  "p289d5a5265": "Both four lines; B contains nonsense word 'Catadels', A coherent.",
+  "p4e0589986a": "Both ten words; A wrongly calls July a season.",
+  "p6febfda149": "Neither is a haiku; A is repetitive near-nonsense, B coherent tea imagery.",
+  "p4910433c06": "B's turn two just repeats its absurd description; A at least writes ad copy.",
+  "p8682d19690": "A is self-contradictory, speaker welcomes herself and signs off like a letter.",
+  "pb2093f3b26": "Both wildly wrong; sound travels about 343 m/s, not under 2.",
+  "p9bec1d4eee": "Neither explains missing dictionary key; A circular, B confuses with undefined variables.",
+  "p7f643b1aa0": "Both use wrong pattern requiring six-plus digits; no anchors, broken explanations.",
+  "pdae35872ed": "A's first function works; B has syntax error and off-by-one; neither adds digit check.",
+  "p4a022395ac": "Both correctly compute 45 with essentially identical reasoning.",
+  "p7276ccaec2": "A omits the printing press entirely; B captures main points despite one error.",
+  "p8595f5b521": "Neither gives short-term versus long-term distinction; both confused or tautological.",
+  "p4e08b1160c": "Identical correct Euclidean implementations and explanations.",
+  "p2947549f28": "Both largely wrong and incoherent about compilation versus interpretation; fabricated examples."
+}

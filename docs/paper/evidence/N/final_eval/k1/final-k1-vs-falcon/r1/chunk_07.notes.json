@@ -1,0 +1,17 @@
+{
+  "p2b19f5a1e6": "Both compute 0.75 kg; B ends with garbled 'kilo-laps' sentence.",
+  "p275b4e228c": "Both incoherent; A's reply addresses 'Little Santa', B just repeats its letter.",
+  "p6932436cc2": "A conveys verb/noun distinction despite muddle; B wrongly defines affect as emotion only.",
+  "peea01378d9": "B's quotes repetitive with fake attributions; A clean quote, explanation one sentence.",
+  "p4e6acac908": "A degenerate repetition, rewrite unchanged and unrhymed; B partially rhymes.",
+  "p4ffdd17013": "A gives only the closing phrase with no explanation; B explains and ends correctly.",
+  "p13e76d5bd6": "A's 'one-line' ad is a whole paragraph; B gives one line.",
+  "pc19fbda9b9": "A explains wrongly (worm as cat); B just repeats the saying.",
+  "p23c850cd11": "A degenerates into repetitive 'FoX' loop and is cut off; B coherent.",
+  "pa4c314e73a": "A loops 'check weather forecast'; B has absurdities but some useful tips.",
+  "p1cf331cdf9": "Correct is $3,276; A miscalculates $3,216, B subtracts raise; both wrong.",
+  "pe833358b0e": "A puts *** inline, not as dividers, and repeats ideas; B formats correctly.",
+  "p8e54a4733e": "Correct is $40.50; A's $540 is nonsense, B correct.",
+  "p610eae38d1": "Correct is 200,000 cm2; A says 20 cm2, B correct.",
+  "p3ecdc46b87": "A's turn 2 is degenerate repetition with empty bullets; B gives three bullets."
+}

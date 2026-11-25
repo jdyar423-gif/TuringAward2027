@@ -1,0 +1,17 @@
+{
+  "pabf6a092e4": "A degenerates into repetitive 'I'm wrong' loops both turns; B coherent quote and explanation.",
+  "p704a7ecdd3": "B cut off, claims planes stuck on ground; A flawed, omits lift, but relevant.",
+  "p63de15d062": "B is boxed nonsense, no poem; A is a poem, though third-person.",
+  "p219623a1b1": "A boxes 'Local ingredients' with meta rambling; B offers an actual, if awkward, slogan.",
+  "pb86ecc08b2": "Both get 84; turn 2 both fail: A repeats, B says 75% (correct 89.3%).",
+  "p1723a5e0a6": "Both get 128; turn 2 both fail: A says 14 days (correct 8), B repeats.",
+  "p8cdf62b5bf": "A is meta nonsense and huge loop; B describes park, then removes commas correctly.",
+  "p118c38cb9b": "A self-contradicts, rambles, cut off; B cleanly gives correct 1.375.",
+  "p77ef4c5aaf": "A garbled, misstates text, cut off; B accurate concise summary.",
+  "p8d0a798222": "A loops on -64, never answers; B correctly gives $64 change.",
+  "p3a6f4b41c3": "A's code has syntax error [::-1.strip()]; B code correct but turn 2 unanswered.",
+  "p67a61e67e7": "A lists seasons in nine words, no description; B boxes 'The Sun' nonsense.",
+  "p92531619b2": "A is incoherent travel email, not out-of-office; B is meta nonsense.",
+  "pc6a783a81a": "A's final answer 3,600 wrong (correct 450); B rambles, never concludes.",
+  "pb7a1de70f7": "A answers 'yes' as instructed; B rambles, ignores one-word format, cut off."
+}

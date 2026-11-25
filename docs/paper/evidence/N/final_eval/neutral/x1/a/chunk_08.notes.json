@@ -1,0 +1,17 @@
+{
+  "pe6b9bafb7f": "A coherent kitchen imagery; B degenerates into repeated tapestry/journey phrases.",
+  "p7f9303645f": "B's regex correct though example output wrong; A's regex matches six-plus digits.",
+  "pab9ebe1eb8": "A's 'left < right' loop fails for last element; B's binary search correct.",
+  "p8d5674c72e": "Both answer 'yes' in one word, identical.",
+  "p38748e5733": "A correctly gets 1.375; B multiplies fractions and answers 1.25, wrong.",
+  "p619dbb7718": "Both contain errors; A has partly true facts, B all false (Arctic penguins).",
+  "paf6a72bf77": "A closer to length and on premise; B ~300 words, already master, degenerate ending.",
+  "p2af0e6ceb0": "A has eight lines, violating exactly-four constraint; B has four, though weak.",
+  "pa8ebafa3e2": "A's turn-1 code crashes (len given two args); B correct both turns.",
+  "pb3aa297a6a": "A full imaginative review despite odd dishes; B bland, confused 'my customers', repetitive.",
+  "p89fcbc73dd": "A written from landlord/company perspective, unusable; B correctly requests faucet repair.",
+  "p481bce3b4b": "A off-premise, truncated, ending not happier; B loops and repeats story verbatim in turn 2.",
+  "p5e24bea443": "A states ~8.5 minutes then contradicts with 72; B gives absurd distances, no time.",
+  "p40585ebd10": "A never clearly requests extension, confused perspective; B states request and illness clearly.",
+  "pb102abb1ef": "Correct answer 216; A says 31, B's output fabricated as 28."
+}

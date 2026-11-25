@@ -1,0 +1,17 @@
+{
+  "pd857cdff0c": "A loops 'virus is a bacterium'; B fluent but many false biology claims.",
+  "p1ec742720c": "B is a proper email with both words; A is truncated boxed fragment.",
+  "p8c7427a3d8": "Both answer 20 square centimeters; correct is 200,000 cm².",
+  "p29129cb85f": "A's is_prime is correct; B's code returns True for composites, then loops.",
+  "pc4872d9961": "A concludes $28.67 (correct $40.50); B loops without any answer.",
+  "p8d6c5f7505": "Neither gets 1023 or 341; A says 85, B loops endlessly.",
+  "p5287552022": "B gives a speech and a halved version; A only boxes a phrase.",
+  "pfd8d290a67": "A gives 22 nonsensical steps; B's five steps fill five cups, not tea.",
+  "p5268d339d9": "A gives a correct 33-word definition; B loops on boxed 40.",
+  "p5d42dddc4e": "Neither explains identity vs equality; A invents ===, B loops meaninglessly.",
+  "p4cf0d5ba2b": "B's second function is correct despite wrong set() version; A has no working code.",
+  "p8d3a7936a8": "A boxes 'noun phrase' loops; B describes molten cores, truncated 12 words.",
+  "p662f076855": "B states pumping role clearly despite errors (abdomen); A loops, contradicts itself, cut off.",
+  "pa3082c3d6c": "A uses int() on numeral, fails; B degenerates into repeated letters.",
+  "pdcac8b5b76": "B's function is correct (wrong example comment); A ignores lowercase vowels."
+}

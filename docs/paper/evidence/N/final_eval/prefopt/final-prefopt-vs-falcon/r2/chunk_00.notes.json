@@ -1,0 +1,17 @@
+{
+  "p38487ecabe": "B nonsense code both turns; A partly right, though returns list not generator.",
+  "p9eb7b14a4b": "A says is checks value equality (wrong); B invents === with false examples.",
+  "p4e534622d9": "Both have placeholders; B's middle paragraph is nonsense ('your [date] is a milestone').",
+  "p8a5815a1c7": "A never gives minutes; B correctly computes 10,080.",
+  "pa35faae4c3": "Both give wrong fixes; A's options mostly wrong, B repeats broken str(str) code.",
+  "p55c8aab3b7": "Neither poem is an acrostic of MOON; B also degenerates into repetition.",
+  "pa5edc083df": "A incoherent, cut off, repetitive; B coherent though turn two lacks real disagreement.",
+  "p04805c8ebc": "A gives several valid reasons; B is vague with odd conditional framing.",
+  "pe38ec7e685": "B has wrong year for Parasite and an extra key; A correct.",
+  "p481bce3b4b": "A repeats story verbatim, no title; B off-premise, cut off, ending not happier.",
+  "p44bb8dd8f7": "B doubles correct 490 to wrong 980; A reaches 490 despite messy steps.",
+  "pee2fa1e152": "A lists cactus and non-animal plus extra text; B nonsense invalid JSON.",
+  "pae90eff45b": "A's queries miss FROM and GROUP BY but are close; B's SQL is nonsense.",
+  "pb49ca619e0": "Both functions broken: A's loop never runs, B has a syntax error.",
+  "pa6e2a7e10b": "Both functions correct; A's explanation states the formula wrongly as '= 0'."
+}

@@ -1,0 +1,35 @@
+{
+  "run_id": "mobilellm-f680f0533368-qwen3/recommended-32f0c6d864-s0",
+  "backend_key": "mobilellm-f680f0533368-qwen3",
+  "label": "recommended",
+  "seed": 0,
+  "settings": {
+    "temperature": 0.6,
+    "top_p": 0.95,
+    "top_k": 0,
+    "min_p": 0.0,
+    "typical_p": 1.0,
+    "repeat_penalty": 1.0,
+    "presence_penalty": 0.0,
+    "frequency_penalty": 0.0,
+    "max_tokens": 4096,
+    "system_prompt": null,
+    "strip_think": true,
+    "samples": 6,
+    "select": "logprob_mean",
+    "extra": {
+      "think_budget": 3072
+    }
+  },
+  "settings_hash": "32f0c6d864",
+  "backend": {
+    "kind": "gguf",
+    "path": "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/models/mobilellm-r1.5-140m-q8_0.qwen3.gguf",
+    "n_ctx": 8192,
+    "n_threads": 1,
+    "key": "mobilellm-f680f0533368-qwen3"
+  },
+  "harness_version": "1",
+  "n_prompts": 200,
+  "written": "2026-11-25 00:14:13"
+}

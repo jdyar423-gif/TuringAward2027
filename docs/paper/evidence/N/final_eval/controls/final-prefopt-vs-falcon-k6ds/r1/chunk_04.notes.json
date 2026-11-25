@@ -1,0 +1,17 @@
+{
+  "p70d147db26": "B's definition and code correct (output claim wrong); A's code broken, explanation contradictory.",
+  "pc1f66b8f53": "B defines inflation as falling prices and is incoherent; A gives correct definition.",
+  "pdb8ac2e278": "A is accurate and well organized; B's components paragraph is garbled nonsense.",
+  "pb3bf39b45a": "A gives correct 343 m/s despite bogus formula; B's 1.7 m/s is wrong.",
+  "pf26f9d32a9": "Neither explains phases via sunlit portion; A incoherent, B lists irrelevant wrong factors.",
+  "pbd012d273e": "A's function works (example comment wrong); B always returns 10 and has syntax error.",
+  "pcea76303b2": "Both give 0.75; B's 'divide by 1 kilogram per gram' explanation is wrong.",
+  "p0e2b0640ad": "A loops 'symphony' and repeats verbatim for rhyme request; B mostly rhymes.",
+  "p34b5dbf0ff": "Both riddled with errors: A calls bacteria eukaryotes; B garbled, viruses photosynthesize.",
+  "pb26b7f93de": "A's function counts characters, follow-up nonsense; B correct, correctly says first returned.",
+  "p96165dda48": "A stays on queen-cat premise; B incoherent loops about loving and fearing cats.",
+  "p1df11b95c5": "B places *** dividers correctly on own lines; A appends them to paragraph text.",
+  "pe7c3b5401e": "A lists non-home hobbies and gives vague follow-up; B gives gardening first steps.",
+  "p711f15f063": "A compares key sets only, buggy; B's sorted/Counter logic correct, example case comment wrong.",
+  "pe96ae4ec32": "B directly names precipitation; A has nonsense like ice melting when freezing, 'sirens'."
+}

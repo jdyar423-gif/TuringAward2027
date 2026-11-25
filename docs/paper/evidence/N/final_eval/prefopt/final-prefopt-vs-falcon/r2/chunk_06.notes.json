@@ -1,0 +1,17 @@
+{
+  "p8869380a8a": "A tells user to swallow water and rinse phone; B vague but harmless.",
+  "p77c727e3f3": "A's function works despite wrong example; B's regex matches only literal string.",
+  "p4416b99aa5": "47x23=1081; A says 1176, B says 1112; both wrong.",
+  "p05b4fe6cea": "Neither explains phases via sunlit half; both incoherent pseudo-science.",
+  "p63fd246274": "A gibberish; B inverts most facts (processors, displays, software, cost).",
+  "p62efeaeb06": "A rambles and omits the exact closing question; B ends with it.",
+  "p1223f6398e": "A's second solution is correct; B never removes duplicates and sorts output.",
+  "p1e249070dd": "A covers all points despite invented cities; B garbled, omits last fact.",
+  "p4a945a25d7": "Both fail turn 2; B's turn 1 gives the correct common definition.",
+  "p588dd8569e": "A lists only five items with absurd notes; B gives six, one duplicated.",
+  "p9b48761636": "Both follow-ups flawed; B's reasons include false 'cost-effective'; A shorter, fewer errors.",
+  "pd9825a3004": "A says cut the egg first; B describes whisking a paste; both wrong.",
+  "p7f33d45b78": "A has syntax error, never adds digit check; B regex accepts digits only.",
+  "p83a8f4ba18": "Both answer 77; B's explanation misstates method and solves 'for the length'.",
+  "p3e217c343b": "A gives two lowercase sentences; B degenerates into a 'magical' loop."
+}

@@ -1,0 +1,17 @@
+{
+  "p17c97b1f07": "A correctly gets 200,000 cm²; B wrongly answers 20 cm² and loops.",
+  "pcd3d3d4f25": "B gives usable description and one-liner; A outputs 60! nonsense both turns.",
+  "p81f324207f": "B's simple definition correct though details err; A boxes the word 'Photosynthesis'.",
+  "pa415b38d12": "B writes a usable pitch email (odd bits); A only boxes the task.",
+  "pb471439f97": "B lists mostly valid reasons with tips; A is circular boxed repetition.",
+  "p09259f2078": "A loops boxed 3; B's facts false: long necks carrying ice, meat for humans.",
+  "pdfaba29d25": "A ignores 'Happy reading!' ending; B fabricated software taxonomy, turn 2 only headings.",
+  "paef5b23ddc": "A loops 'SELECT rows'; B's queries lack FROM, then GROUP BY: both wrong.",
+  "p2271acd72b": "A nonsense arithmetic; B's final 3,216 wrong, correct is 3,276.",
+  "p89b2e8b52f": "A just restates phrase, calls it Chinese; B misreads saying as growth, 'worm becomes cat'.",
+  "p48fbdb126f": "A summarizes and gives significance (some redundancy); B repeats garbled boxed sentences.",
+  "pc079765589": "A correct 126 and 42; B repeats 18x7 instead of dividing by 3.",
+  "p5dab0896eb": "A is a usable, if odd, extension request; B never writes an email.",
+  "pd105c9faaf": "A's code wrong and truncated; B never dedupes and sorts, destroying order.",
+  "pc1d830d6a1": "B correctly gets 1081; A gives wrong 1112 with garbled working."
+}

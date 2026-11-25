@@ -1,0 +1,22 @@
+{
+  "name": "final-prefopt-vs-falcon",
+  "format": 2,
+  "n_pairs": 200,
+  "commitment": "95161939c3d4c064363c09ac086e0591e6cf34bdf524872adaab42f1ea7e1714",
+  "commitments": [
+    "95161939c3d4c064363c09ac086e0591e6cf34bdf524872adaab42f1ea7e1714"
+  ],
+  "added": [
+    200
+  ],
+  "by_category": {
+    "math": 30,
+    "writing": 50,
+    "chat": 50,
+    "instruct": 40,
+    "code": 30
+  },
+  "multi_turn": 52,
+  "created": "2026-11-24 20:21:01",
+  "updated": "2026-11-24 20:21:01"
+}

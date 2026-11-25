@@ -1,0 +1,17 @@
+{
+  "p1af9efd71c": "B is a coherent review with breakfast menu; A shifts voice, repeats, non-breakfast dishes.",
+  "p08eea3f084": "A concise and accurate; B adds dubious claims like vessel dilation, odd weight-loss logic.",
+  "pff40ddb0e2": "Neither forms a complete sentence; A echoes notes, B garbles and duplicates 204.",
+  "ped7ac0116e": "A never invites to any lunch; B gives date, time, location, RSVP despite oddities.",
+  "pa181b12764": "Both wrong: neither mentions phases from sunlit portion; orbital and tidal nonsense.",
+  "p8005d8777f": "A is nonsense int()//10; B crashes on undefined result_plus, no conversion logic.",
+  "p86800b8b6b": "A's regex lacks brackets but approach nearly right; B ignores input, always returns 10.",
+  "p4c6b051c0f": "B's sorted comparison works; A raises KeyError on first character, wrong example.",
+  "pfa7cd51f06": "A defines inflation as price decline, contradicts itself; B gives correct definition.",
+  "p4c191198c9": "A has correct core definitions amid errors; B claims stars cause eclipses, pure nonsense.",
+  "p18fa108b2e": "B repeats sleep, stress, mental clarity points; A covers distinct, sensible benefits.",
+  "pe545c1a131": "A's rewrite degenerates into endless dots, not two sentences; B meets constraints exactly.",
+  "p56564621bc": "A uses both words naturally; B has Thursday only as subject placeholder.",
+  "p31e219785e": "B duplicates Section 3 but tells key story; A has preamble, no real story.",
+  "p90fb9c3c13": "Sum is 80, average 20; A miscalculates sum as 96, gives 24."
+}

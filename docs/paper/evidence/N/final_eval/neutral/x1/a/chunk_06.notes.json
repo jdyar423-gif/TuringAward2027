@@ -1,0 +1,17 @@
+{
+  "pe9955fcf13": "A invents false reasons (humidity, water quality); B brief but broadly accurate.",
+  "pa5edc083df": "B incoherent and cut off; A coherent though neither shows real disagreement.",
+  "p6ca36560a2": "Both flawed; B places heart in abdomen, garbles anatomy, repeats itself.",
+  "p63014a1f32": "B nonsensical, recommends Vaseline as detergent; A vague but basically usable.",
+  "p10377c97fb": "A defines solar eclipse as lunar and is incoherent; B core definitions correct.",
+  "pd9bc18c731": "A echoes prompt text inside the review; B concise, clean, under limit.",
+  "p05293062b6": "A nonsense; B omits Mars, misorders planets, assigns rings to Mercury, Venus.",
+  "pa5beabb322": "B lists non-home hobbies, repeats items, generic follow-up; A gives concrete steps.",
+  "p7861061e70": "B's code has syntax error and wrong O(1) claims; A correct.",
+  "p23f04ff57a": "B grossly wrong (photosynthesis, bacteria lack membranes) and garbled; A weak but closer.",
+  "p44a7096e36": "A correctly gets 45; B arithmetic wrong, answers 225.",
+  "p55c8aab3b7": "Neither poem is an acrostic of MOON; A also loops repetitively.",
+  "p91089dc584": "Correct answer 450; A says 180, B concludes 3,600 after computing 450.",
+  "pbcc00a17d5": "A's second turn incoherent; B misreads text (charging volunteers) and contradicts itself.",
+  "p14c167f76d": "Perimeter is 46; A forgot to double, answered 23."
+}

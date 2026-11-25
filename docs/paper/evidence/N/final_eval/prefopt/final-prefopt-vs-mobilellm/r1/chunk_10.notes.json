@@ -1,0 +1,17 @@
+{
+  "pf64c0a811e": "A gives usable template with several bracket placeholders; B degenerate repeated boxed [date].",
+  "p8c7427a3d8": "Both answer 20 cm²; correct is 200,000 cm². B also loops, cut off.",
+  "p9484e33c18": "B coherent paragraph under 60 words but lacks 'horizon'; A degenerate boxed fragment.",
+  "p3ea8acc588": "B writes a get-well message, omits P.S.; A degenerate boxed loops both turns.",
+  "p6c8d045e9c": "A gives six bullets, some odd/duplicated; B incoherent 'bulp' nonsense, no list.",
+  "p912438aa8d": "Neither explains missing dictionary key; A degenerate invalid code, B circular contradictory advice.",
+  "p74ab0b4ad8": "A coherent benefits of sleep, minor errors; B vague, repeated boxed answers.",
+  "pc024e7ea38": "Both useless: A false outputs and misuse of 'in'; B circular looping text.",
+  "p5280ea4ec2": "B gives ideas (many outdoor) and a short pick; A degenerate boxed non-answer.",
+  "p1f6eb96eda": "A gives usable quote but repeats it instead of explaining; B degenerate loop.",
+  "p495c2e2438": "A confidently wrong Mars facts (warm, habitable); B degenerate boxed loop.",
+  "p2c0c358e51": "A correct 128 but ignores turn 2; B wrong 448 and 18 days.",
+  "p26874fb1f8": "B coherent steps incl. stain remover; A nonsense about applying a chemical stain.",
+  "p760319db47": "A gives ten sensible anti-procrastination tips; B degenerate 'pause the project' boxes.",
+  "p00b8132d04": "B correct len(split()) and punctuation-stripping regex; A sums lengths, loops, cut off."
+}

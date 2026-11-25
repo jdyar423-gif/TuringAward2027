@@ -611,3 +611,22 @@ Colab CLI: `export PATH=/root/.local/bin:$PATH GOOGLE_APPLICATION_CREDENTIALS=/r
   script (numbers in 萬, a few terms); checker `$S/scripts/zh_check.py EN ZH`. Assemble to
   `$N/paper/paper.zh-TW.md` when part 4 exists; later patch the MobileLLM control [TBD] cells in
   both language versions by hand.
+
+## State at 02:05 UTC on 25 Nov -- EVERYTHING ASKED FOR IS DONE; NOTHING IS RUNNING ON COLAB
+
+- The registered judge finished MobileLLM-R1.5's two K = 6 control sets at 01:54 UTC (200 of 200 pairs each;
+  `judge_cover.sh`, `mob_ctl_results.py`, `judge_pass_facts.py`). Results: own log-probability 39 / 8 / 153
+  (score 0.578 [0.508, 0.644]); our selector 31 / 8 / 161 (0.558 [0.488, 0.625]); the same judge on the released
+  preset 59 / 5 / 136 (0.635). Paired, our score is lower against the arms by 0.058 (p = 0.0003) and 0.078
+  (p < 0.0001). No Opus reading of these sets (the user's instruction of 00:07: no workflows, no sub-agents).
+- The three CPU runtimes were given back at 01:56 UTC (`cpu_runtime.sh down` for bes-cpu, bes-cpu2, bes-cpu3;
+  `colab sessions` shows none). The TPU was given back at 20:41:04 on 24 Nov (86,054 s of 86,400 s); never
+  allocate a TPU again (`S/alloc_stop` exists).
+- The development container restarted at 01:33 UTC (scratch and credentials kept). Keep-awake: a tracked
+  background task running `anchor3.sh` (only sleeps now: every presence stop file exists).
+- Paper: `N/paper/paper.md` and `paper.zh-TW.md` patched by `patch_mobctl.py` (originals in
+  `N/paper/_before_mobctl/`); only the author list is [TBD]. `docs/CHANGES.md` 19.10, `README.md`, `FACTS_2.md`,
+  `CLAIMS.md` (C577-C583), `RESPONSE_3.md` updated by `finalize_docs.py` and by hand.
+- `paper_sync.sh --with-test` now also copies the test-split evaluation records (all readings are finished).
+- Left for the user to decide: revoking the Google credential of the Colab CLI
+  (`/root/.config/colab-cli-auth/adc_user.json`, never committed, never copied to a runtime).

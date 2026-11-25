@@ -1,0 +1,17 @@
+{
+  "peeeb6fd875": "A is meaningless and ignores 'local'; B wordy but conveys local ingredients.",
+  "p62efeaeb06": "B fails to end with the exact required question; A complies.",
+  "pf87010dfb4": "Both fail odd numbers; A's turn-one output wrongly lists 0, repeats code.",
+  "p19c000f28f": "A lists apples, bananas, cinnamon; B mostly real vitamin C sources.",
+  "pae82f14d11": "A has absurd tips like mowing plants, contradictions; B sensible, shorter.",
+  "p9453319811": "A initializes max to arr.length (buggy); B has syntax error, inverted logic.",
+  "p4f46531f95": "A says vaccines prevent antibodies; B fabricates types and vaccine-caused cancers.",
+  "p04805c8ebc": "A vague with odd claims; B covers more correct hydration benefits.",
+  "pfbce7e0b8d": "A misstates conversion factor and says 'approximately'; B clean and correct.",
+  "p72cfda4ae9": "A clearer cycle but dodges rain step; B names precipitation amid fabrications.",
+  "pa23ef93c04": "Both confuse roles; B degenerates into nonsense orders like 'glass of ceramic'.",
+  "p5175f2afc4": "Both pet lists absurd; B's JSON is an unrelated object.",
+  "pdf942df017": "A's tips redundant, follow-up off-topic nonsense; B's first answer solid.",
+  "pc1bd6d5134": "B repetitive ('commitment to excellence' twice); A more coherent despite letter sign-off.",
+  "pf36bebc075": "B's dict counting raises KeyError; A's sorted comparison works."
+}

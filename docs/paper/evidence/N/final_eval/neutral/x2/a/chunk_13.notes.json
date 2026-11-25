@@ -1,0 +1,7 @@
+{
+  "p270474de73": "A turn 1 weak but on-topic, turn 2 unchanged; B nonsense both turns.",
+  "p6e9d85458f": "A factually wrong (tablets larger, '4x4 layout'); B degenerate repetitive loop.",
+  "pcb8d528a98": "A rambling, cut off, buggy code; B repeats .reverse() thrice with wrong outputs.",
+  "p31d58037dc": "A correct binary search; B has off-by-one IndexError and wrong return logic.",
+  "p6de9093b28": "A rambles without code; B's code is invalid and doesn't count runs."
+}

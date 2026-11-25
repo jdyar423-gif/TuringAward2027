@@ -1,0 +1,17 @@
+{
+  "pfa4ebf2625": "Both botch Earth comparison; B gives correct Jupiter diameter, A claims Jupiter exceeds Sun.",
+  "pecbca1b128": "B is off-topic (seminar thanks, no farewell); A is muddled but a real invitation.",
+  "p9453319811": "A has syntax error and finds minimum; B works except arr.length initialization bug.",
+  "pc8c0cb6028": "A gets 1023 and 341 correct despite garbled step; B is nonsense throughout.",
+  "p82767edbcf": "Neither uses lighthouse POV; B degenerates into repetitive loops, A stays coherent.",
+  "pa23ef93c04": "A is incoherent with swapped roles; B mostly coherent despite first-line role mixup.",
+  "pa8ebafa3e2": "B's first function crashes (len given two arguments); A correct in both turns.",
+  "p6ca36560a2": "Both err; A puts heart in abdomen and mangles anatomy; B's core points better.",
+  "pdef59c3479": "B's fabricated drop in task completion contradicts core result; A's errors are minor.",
+  "p05a87dad23": "Both break three-section rule (A repeats Section 3, B adds Section 4); incoherent.",
+  "p76a2a9be90": "A is off-topic event welcome, no question; B follows both turns' constraints.",
+  "p8e3266c430": "A omits required word 'horizon'; B includes all three words under 60.",
+  "p00b2b368b9": "B gives structured, mostly sound steps; A rambles, cites Khan Academy, MLA wrongly.",
+  "pb3aa297a6a": "B's dish descriptions incoherent, partly non-breakfast; A shorter, coherent though bland.",
+  "pb560927cb4": "B fabricates biodiversity mission and wrong founding dates; A gives accurate overview."
+}

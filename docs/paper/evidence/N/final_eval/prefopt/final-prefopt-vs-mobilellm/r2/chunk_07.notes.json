@@ -1,0 +1,17 @@
+{
+  "p495c2e2438": "A boxed nonsense and rambling; B mostly false Mars facts (warm, habitable).",
+  "p91a03409e2": "B correct conversion code; A degenerate 'wait, no' loop without code.",
+  "pbc51145d34": "B captures main results despite '500 employees' error; A garbled, wrong conclusion.",
+  "p1a1fc70f70": "A correct one-word 'yes'; B rambling, boxes 'Yes, no, or maybe'.",
+  "pa8b4872791": "A coherent 49-word review; B nonsense about transforming shoes.",
+  "pd272155af6": "B explains antibody stimulation despite contradictions; A degenerate repeated 'Final Answer' loop.",
+  "p09bdced027": "A comma-free on-topic text but one degenerate paragraph; B never writes paragraphs.",
+  "p01484e8c80": "B gives a weak story, repeats it in turn 2; A only boxed meta-text.",
+  "pf726f7d00d": "A names Jupiter correctly though size ratios wrong; B claims Moon/Earth largest.",
+  "p9f8b5a3220": "A counts characters; B returns length not word; neither answers tie question.",
+  "p4fbc0a1a37": "B slightly more formal rewrite; A rambles and returns original unchanged.",
+  "p8c46983ab7": "B weak but actual snow poem; A degenerate loop boxing 'Winter snow'.",
+  "p2183a7ad4e": "Neither mentions sunlit-half viewing angle; A '3D rotation' loop, B wrong Earth-orbit story.",
+  "p8eabc28c21": "A poem is not an acrostic of MOON; B only boxes 'MOON'.",
+  "pee0f99ddde": "A copies the forecast verbatim; B probability-distribution nonsense, no rewrite."
+}

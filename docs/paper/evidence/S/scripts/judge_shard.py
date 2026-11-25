@@ -4,7 +4,11 @@ several streams (and runtimes) share one set. The judging is the registered one 
 model file, prompt, both orders, strict agreement); only the scheduling differs from
 `python -m bes.eval.proxy judge`, which takes the pending pairs in file order in one process.
 
-    python judge_shard.py TAG JUDGE THREADS CORES SET LO HI [WAITPATH::NEEDLE]
+    python judge_shard.py TAG JUDGE THREADS CORES SET LO HI [WAITPATH::NEEDLE|-] [rev]
+
+With `rev` the range is taken from its end backwards (a helper for a stream that works the same
+range forwards); before every pair the other shard files of the set in this directory are read
+again, and a pair another stream has rated meanwhile is skipped.
 
 Root /content/bes_cli/judge/TAG/root (pairs/<SET>/..., ratings/<SET>/judge-<key>.jsonl when a pass was
 begun elsewhere: those pairs are skipped). Pairs LO <= index < HI of pairs.jsonl that have no
@@ -27,7 +31,8 @@ tag, judge_name, threads, cores_s, set_, lo, hi = sys.argv[1:8]
 threads, lo, hi = int(threads), int(lo), int(hi)
 # optional 8th argument PATH::NEEDLE: start only when the file PATH contains NEEDLE (the stream that
 # holds these cores now has ended); this process sleeps until then
-if len(sys.argv) > 8 and sys.argv[8]:
+rev = len(sys.argv) > 9 and sys.argv[9] == "rev"
+if len(sys.argv) > 8 and sys.argv[8] not in ("", "-"):
     wpath, _, needle = sys.argv[8].partition("::")
     while True:
         try:
@@ -47,8 +52,9 @@ except OSError:
     pass
 base = Path("/content/bes_cli/judge") / tag
 root = base / "root"
-out = base / f"shard_{set_}_{lo}_{hi}.jsonl"
-logp = base / f"shard_{set_}_{lo}_{hi}.log"
+sfx = "r" if len(sys.argv) > 9 and sys.argv[9] == "rev" else ""
+out = base / f"shard_{set_}_{lo}_{hi}{sfx}.jsonl"
+logp = base / f"shard_{set_}_{lo}_{hi}{sfx}.log"
 
 
 def say(msg):
@@ -89,16 +95,36 @@ for p in (ratings_path(root, set_, source), out):
             raise SystemExit(f"{p}: {len(bad)} records do not belong to the published pair set")
         done |= {r["pair_id"] for r in recs if r.get("verdict") in make_ab.VERDICTS}
 todo = [p for p in pairs[lo:hi] if p["pair_id"] not in done]
+if rev:
+    todo = todo[::-1]
+
+
+def rated_elsewhere():
+    ids = set()
+    for f in base.glob(f"shard_{set_}_*.jsonl"):
+        if f == out:
+            continue
+        try:
+            ids |= {r["pair_id"] for r in read_jsonl(f) if r.get("verdict") in make_ab.VERDICTS}
+        except Exception:  # noqa: BLE001  (a line being written)
+            pass
+    return ids
+
+
 for p in todo:
     if pub["digests"].get(p["pair_id"]) != make_ab.pair_digest(p):
         raise SystemExit(f"pair {p['pair_id']} is not a published pair of {set_!r}")
 say(f"start {set_} [{lo}, {hi}) with {source} on cores {cores_s} ({threads} threads): {len(todo)} to judge, "
     f"{hi - lo - len(todo)} of the range already rated")
 t0 = time.time()
+skipped = 0
 for n, pair in enumerate(todo, 1):
+    if pair["pair_id"] in rated_elsewhere():
+        skipped += 1
+        continue
     rec = judge_pair(judge, pair)
     rec.update(commitment=pub["commitment"], pair_digest=pub["digests"][pair["pair_id"]])
     append_jsonl(out, [rec])
     if n % 5 == 0 or n == len(todo):
         say(f"{n}/{len(todo)} pairs, {(time.time() - t0) / 60:.1f} min")
-say(f"all done: {len(todo)} pairs in {(time.time() - t0) / 60:.1f} min")
+say(f"all done: {len(todo) - skipped} pairs judged, {skipped} skipped (rated by another stream), {(time.time() - t0) / 60:.1f} min")

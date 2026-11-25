@@ -1,0 +1,17 @@
+{
+  "p12d929476c": "B gives usable definition and ends with phrase; A cut off, ignores 'Happy reading!'",
+  "p8128bda2f0": "A's is_prime code correct despite swapped example comments; B's logic inverted, rambling, cut off.",
+  "pdf955dccef": "A degenerates into looping FoX lines, no disagreement; B boxed nonsense, no dialogue.",
+  "pa2ee904e14": "A lists real benefits, some repetition; B rambling boxed non-answer, cut off.",
+  "p1bc198d504": "A says 1.3 m/s, wrong; B gives correct 343 m/s despite padding.",
+  "p6d5286b36c": "A correct binary search; B high=len(lst) causes IndexError, odd key==0 return.",
+  "p66a007322b": "B answers 'yes' as instructed; A rambles, boxes 'Yes, no, or maybe', cut off.",
+  "p3e18783c45": "B lists eight planets correctly (adds Pluto, Sun), rings wrong; A incoherent both turns.",
+  "p0bfe4925cb": "A coherent correct explanation; B tautological boxed non-answer.",
+  "p4ba1a247d9": "A correct 60 in turn one, repeats 60 for doubled; B wrong both turns.",
+  "pe197f7c0e0": "B gives a repetitive but on-topic snow poem; A only boxes 'Winter snow', no poem.",
+  "pbb3c8f4907": "A correct perimeter 46; B misapplies formula, gets 38.",
+  "p6bc7710c06": "A prose story, not a limerick or about sleep; B 'cat + suck' nonsense.",
+  "pd15591deaa": "B gives a spring poem though rewrite still unrhymed; A degenerate 'sun, sun' loop.",
+  "p9c40dcd65e": "A coherent thank-you note, wrong context (workshop); B meaningless boxed sentence."
+}

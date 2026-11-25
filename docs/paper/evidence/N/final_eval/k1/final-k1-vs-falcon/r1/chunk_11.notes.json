@@ -1,0 +1,17 @@
+{
+  "p2365ce212b": "B is unrelated Spanish gibberish; A keeps jargon but conveys rainy evening.",
+  "p1510154d36": "B writes four-line non-haiku poems with repetition; A keeps three-line haiku shape.",
+  "pbb09d40598": "B omits 'salt' and 'horizon'; A includes all three words within limit.",
+  "pda561538ae": "A wildly wrong (underground, 19th century); B has wrong length but correct purpose.",
+  "p281fa18276": "A misses ending question; B ends with question but nonsensical, 'Q:' artifact.",
+  "pdb1d21d662": "B correctly names precipitation in turn 2; A's answer is circular nonsense.",
+  "p8881e2e98c": "Both final answers wrong (1,400; 3,600) versus correct 450 liters.",
+  "pd97a9151ee": "A calls haiku a grammatical construction; B correct core despite rhyme error.",
+  "pf5331e216d": "Both misexplain the error; neither gives str() fix correctly, B suggests int().",
+  "p90fb9c3c13": "A correctly gets 20; B's sum 96 is wrong.",
+  "p66c7f6a5c0": "A gives seven steps without hot water; B adds coffee grounds; both nonsense.",
+  "pdc7dab3fe3": "A doubles 490 to wrong 980; B correctly answers 490.",
+  "pa556918456": "Both turn-2 percentages wrong (75%, 50%); correct is 75/84 = 89.3%.",
+  "p4c6b051c0f": "B's dictionary code raises KeyError; A's sorted comparison works.",
+  "p1d69c219cb": "A's code has syntax error [::-1.strip()]; B's s[::-1] correct."
+}

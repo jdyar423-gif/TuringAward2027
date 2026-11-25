@@ -1,0 +1,17 @@
+{
+  "p8ecc926581": "Both valid under 50 words; B repeats 'perfect for' awkwardly, A cleaner.",
+  "pc27cb9a753": "Neither lists causes separately; A labels solutions as causes, B adds redundant non-causes.",
+  "p495d864d94": "A adds extra keys and obscure movie; B gives exactly title and year.",
+  "pb0649e60ee": "Width is 7, area 77; A's 24 is wrong, B correct.",
+  "pe0dfb37480": "Both answer 'yes' correctly in one word; identical.",
+  "p6fa7861250": "Turn 2 answer is 8 days; A says 14, B says 24, both wrong.",
+  "p303092cf10": "Both mention textiles wrongly; B far more fabricated, A covers waste, emissions, water.",
+  "p70cfbb49a6": "B has eight lines, violating 'exactly four'; A meets the line count.",
+  "pd29f965e91": "A gives usable encouraging message; B misreads request, offers bland two-line quote.",
+  "p87ac0179d9": "B written from landlord's side with nonsense; A is a usable tenant request.",
+  "p8e2a680bdb": "A has syntax errors; B's loop never runs and returns empty string.",
+  "pff3a25f93f": "A is a degenerate loop; B lists cactus and nonsense word, duplicates output.",
+  "p2949c8fc71": "A gives three sentences of false facts; B one vacuous sentence, ignores count.",
+  "p6b40df8c7b": "A's definition and code wrong, crashes; B's concept roughly right, code runs.",
+  "p5d09dd0461": "A wrong throughout (London 1920); B correctly answers Athens 1896 despite hallucinations."
+}

@@ -1,0 +1,17 @@
+{
+  "p8e3fc3dcd7": "A incoherent letter, not an out-of-office reply; B boxed non-answer.",
+  "p8049a85dc2": "A correct code both turns, minor wrong example outputs; B sums word lengths, rambles.",
+  "pf6e97f2a85": "A reaches correct 1.375 despite confused rambling; B wrong 30/20, not decimal.",
+  "pc940f93ec1": "B flawed but readable summary; A garbled, contradicts text, boxed, cut off.",
+  "p8f9a28144c": "B gives gist despite wrong century; A degenerate repeated boxed sentences, cut off.",
+  "pa3830f00c4": "Neither outputs animal JSON array: A rambling broken code; B 'Description' loop.",
+  "p74ea417162": "A not an acrostic, about a forest; B only boxes MOON.",
+  "pda935f6a0d": "Both wrong: neither explains sunlight-lit phases; A fluent nonsense, B '3D rotation' loop.",
+  "p4d72d89dac": "B gives correct 0.75 kg; A loops 'Wait, no', never commits, cut off.",
+  "p71cf2c5c93": "Neither writes a forest paragraph; A boxed loop, B nonsense with 'green' twice.",
+  "pf4c04f33c6": "A nonsense, no description; B three sentences but mostly false facts.",
+  "pee36d5e0f5": "A just echoes question in quotes; B rambles, never answers or quotes.",
+  "pd673b70548": "B correct sorted comparison (example case slip); A rambling, no code, cut off.",
+  "p9e18e57186": "A on-topic tea poem though not haiku form; B incoherent word-structure rambling.",
+  "pea837f1afc": "B correct width 7, area 77; A wrong width 3, area 24."
+}

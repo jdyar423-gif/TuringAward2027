@@ -1,0 +1,17 @@
+{
+  "p8869380a8a": "A advises swallowing water, harmful nonsense; B vague but harmless, suggests getting it checked.",
+  "p77c727e3f3": "A's function works (example comment wrong); B's regex matches literal string, returns 0.",
+  "p4416b99aa5": "Correct product is 1081; A says 1176, B says 1112.",
+  "p05b4fe6cea": "Both wrong: neither explains phases via sunlit half seen from changing angles.",
+  "p63fd246274": "A incoherent; B inverts key facts (processor power, software, cost).",
+  "p62efeaeb06": "A fails to end with the exact required question; B complies.",
+  "p1223f6398e": "A's second function correctly preserves order; B never removes duplicates and sorts.",
+  "p1e249070dd": "A complete though adds invented cities; B drops content and garbles second bullet.",
+  "p4a945a25d7": "Both turn-2 replies fail to re-answer; B's turn-1 definition correct, A's error-filled.",
+  "p588dd8569e": "A lists five items, two absurd; B gives six bullets, despite duplicate towel.",
+  "p9b48761636": "A's turn 1 correct and concise; B adds wrong reasons; turn 2 comparable.",
+  "pd9825a3004": "Both nonsensical: A cuts the egg into pieces; B makes egg paste.",
+  "p7f33d45b78": "A has syntax error, no digit check; B's regex accepts only all-digit strings.",
+  "p83a8f4ba18": "Both get 77; B misstates method (multiply by perimeter, solve for length).",
+  "p3e217c343b": "B's turn 2 degenerates into a looping 'magical' repetition; A meets constraints."
+}

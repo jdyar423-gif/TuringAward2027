@@ -1,0 +1,9 @@
+[13:15:34] start s2-default-vs-falcon with qwen3-4b-2507 on cores 2-13 (12)
+[13:15:34] start s2-default-vs-mobilellm with qwen3-4b-2507 on cores 14-27 (12)
+[13:28:40] end s2-default-vs-falcon: exit 0 after 787 s | {"path": "/content/bes_cli/judge/devq/root/ratings/s2-default-vs-falcon/judge-qwen3-4b-2507-3605803b.jsonl", "judged_now": 60, "already": 0, "remaining": 0}
+[13:28:40] start s1-default-vs-falcon with qwen3-4b-2507 on cores 2-13 (12)
+[13:32:46] end s2-default-vs-mobilellm: exit 0 after 1032 s | {"path": "/content/bes_cli/judge/devq/root/ratings/s2-default-vs-mobilellm/judge-qwen3-4b-2507-3605803b.jsonl", "judged_now": 60, "already": 0, "remaining": 0}
+[13:32:46] start s1-default-vs-mobilellm with qwen3-4b-2507 on cores 14-27 (12)
+[13:41:45] end s1-default-vs-falcon: exit 0 after 785 s | {"path": "/content/bes_cli/judge/devq/root/ratings/s1-default-vs-falcon/judge-qwen3-4b-2507-3605803b.jsonl", "judged_now": 60, "already": 0, "remaining": 0}
+[13:47:58] end s1-default-vs-mobilellm: exit 0 after 913 s | {"path": "/content/bes_cli/judge/devq/root/ratings/s1-default-vs-mobilellm/judge-qwen3-4b-2507-3605803b.jsonl", "judged_now": 60, "already": 0, "remaining": 0}
+[13:47:58] all done: /content/bes_cli/judge/devq/ratings.tar.gz (13972 bytes)

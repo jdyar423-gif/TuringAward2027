@@ -1,0 +1,17 @@
+{
+  "p2e4a4cb4a5": "A keeps informal 'Hey'; B is properly formal.",
+  "p29883f4a51": "Neither funny nor about Monday mornings; A incoherent off-topic, B degenerate repetition loops.",
+  "p635064be94": "Both wrong: neither explains affect as verb, effect as noun; incoherent definitions.",
+  "p642364f0c1": "A uses int() on numeral; B's code crashes unpacking characters, no subtraction logic.",
+  "p9b4cf11087": "A claims 665 continents, misplaces countries; B repeats 'Antarctica' degenerately.",
+  "p58999db100": "A's list.reverse() works despite wrong comments; B's partial(reverse) code is entirely broken.",
+  "p217cf3f0a9": "B gives some real comfort tips; A rambles about documents and flight options.",
+  "p1addd6a6ae": "A's second turn uses 18 instead of 126; B correctly gives 126 and 42.",
+  "pe66d8b4de7": "A coherent lighthouse poem; B degenerates into repetitive 'love' loops, off-topic rivers.",
+  "p2fec34581b": "Both mix basic correct stages with errors; neither cleanly says precipitation produces rain.",
+  "p2a877099cb": "A lowercase, coherent though one sentence; B degenerate 'magical' loop, cut off.",
+  "p5650bfd711": "B addresses students as if weeks in, contradicting first day; A stays on-topic.",
+  "pe6d2e01a07": "Both under 40 words; A clear and correct, B awkward 'allocated to allocated'.",
+  "pbfd2b9439a": "A gives correct 343 m/s; B says 1.7 m/s, badly wrong.",
+  "p30030bd7df": "A invents locomotion and pheromone reasons; B short and essentially correct."
+}

@@ -1,0 +1,7 @@
+{
+  "p270474de73": "A turn 1 decent, turn 2 copies without child POV; B nonsense both turns.",
+  "p6e9d85458f": "A's details wrong (laptops lighter, '4x4 layout'); B degenerate 'desktop screen' loop.",
+  "pcb8d528a98": "A degenerate rambling, broken code; B repeats .reverse() thrice, mislabeled, wrong outputs.",
+  "p31d58037dc": "A correct binary search; B high=len(lst) IndexError and wrong return for key 0.",
+  "p6de9093b28": "A rambling, no code; B invalid function name, doesn't perform run-length encoding."
+}

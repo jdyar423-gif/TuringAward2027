@@ -1,0 +1,17 @@
+{
+  "p7240dd4c4c": "Neither poem is funny; A loops 'joy, love' repeatedly, B is incoherent.",
+  "p0244d8b9e1": "A offers usable ideas and a gardening pick; B repetitive gift cards, no choice.",
+  "pf8ddd74ecb": "A's 128 correct, turn 2 wrong; B wrong both turns (448 pages, 18 days).",
+  "pe117045d5b": "A suggests outdoor hikes and sunset photos for rain; B coherent, usable cafe idea.",
+  "p2a3e42245d": "A accurate two-sentence summary; B invents cause and garbles 'not forgotten or forgotten'.",
+  "p44bb8dd8f7": "A doubles correct 490 to wrong 980; B reaches correct 490.",
+  "pf414fc06aa": "A contradicts 'new' (2010s), leaks 'Ends', 'Green Tombs'; B coherent though repetitive.",
+  "p306f8606c9": "A wrong (4.01 cm); B correct 121.92 cm.",
+  "pfde50fe58a": "A is a three-line haiku-like poem; B four long repetitive lines, no haiku.",
+  "pb0a47f0806": "B uses four sentences, violating two-sentence limit; A complies.",
+  "pdc241f7694": "A incoherent, contradictory pros/cons, one-sided summary; B clear lists and balanced sentence.",
+  "pfd90e1e035": "Neither is an out-of-office reply; both misread the task, no June 12 return.",
+  "p55ffa0aafd": "Both mostly nonsense (windshield wiper, fuel; repeated documents); no real overnight advice.",
+  "p77c727e3f3": "A's regex matches literal 'aeiouAEIOU', returns 0; B's function correct.",
+  "p1442250e91": "A fakes attribution, repeats quote instead of explaining; B explains, though in one sentence."
+}

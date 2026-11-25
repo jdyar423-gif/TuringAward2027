@@ -1,0 +1,17 @@
+{
+  "p57dc5f328d": "A cleanly wrapped but omits why; B splits into three disjointed quoted answers.",
+  "p08cc9b5040": "A incoherent (snow in sands, springtime warmth); B coherent rhyming poem about snow.",
+  "p565e61e146": "A gives three-line haiku-like poems; B writes long non-haiku stanzas, second cut off.",
+  "pe3fed10ab9": "A correctly gets 36; B uses 241 and answers 36.5.",
+  "pdd55c723f7": "A's turn 2 degenerates into rambling, no bullets, cut off; B gives three bullets.",
+  "pf7b218f6e1": "B fabricates reasons (locomotion, pheromone release); A simple and broadly accurate.",
+  "p612a814997": "A degenerates into repetitive 'joy and love' loop; B coherent though not funny.",
+  "p9e84c14e5d": "Both reach 490; B's reasoning multiplies pages by weeks with wrong units.",
+  "p6350200830": "A is properly formal; B keeps 'Hey' and stays informal.",
+  "p87c0dee1f1": "Both four lines; B has vivid cat imagery, A generic with nonsense 'Catadels'.",
+  "p2bbd83b5c1": "B pitches story angles and contact info; A repetitive about play areas, weak pitch.",
+  "pba5dbe7c4d": "A entirely wrong (blames in operator); B flawed but states correct 0..len-1 fix.",
+  "p14e20611da": "B off-topic venue greeting, turn 2 ends without question; A meets both constraints.",
+  "p520ef4af00": "A invents 'Peakyr' and omits height; B correctly gives Everest at 8,848.86 m.",
+  "p11db167284": "A's ad is a multi-sentence paragraph, description garbled; B gives one clean line."
+}

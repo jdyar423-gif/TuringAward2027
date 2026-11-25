@@ -1,0 +1,17 @@
+{
+  "p7f8270fa3f": "A is a muddled but on-topic story; B is degenerate boxed text, cut off.",
+  "p9484e33c18": "A coherent, under 60 words but omits 'horizon'; B degenerate boxed fragment, truncated.",
+  "p1f8f9aa6ab": "A is invalid C++ mislabeled JavaScript; B is JavaScript with arr.length initialization bug.",
+  "pfc8b28b65d": "A gives repetitive but relevant gift ideas; B rambles about birthday problem, degenerate.",
+  "p3ea8acc588": "A writes a usable message though omits the P.S.; B loops on boxed nonsense.",
+  "p215cb1e8fc": "A truncated, says planes stuck on ground; B false: wings made of air.",
+  "pb5fb440396": "A delivers two atmospheric horror sentences; B is meta-commentary in boxes, cut off.",
+  "p5079b48c56": "A claims UN has no mandate, rambling; B invents biodiversity role, wrong dates.",
+  "pa288dc6540": "A gives a simple, broadly correct reason; B loops 'called purr' tautology, cut off.",
+  "p559b035134": "A gives three mostly faithful bullets; B is a looping garbled paragraph, cut off.",
+  "pd7d86bb0f7": "B gives mostly correct benefits; A is vague, circular, boxed reasoning.",
+  "p39cc319578": "A omits printing press and 'why it matters'; B repeats boxed fragments, truncated.",
+  "pa0af5f18c2": "Both wrong: A invents star-orbit nonsense; B defines solar eclipse as Earth's shadow on Moon.",
+  "pa07ae2c849": "A has exactly ten words though July isn't a season; B boxes 'The Sun'.",
+  "p0d21b68f94": "A gives two sentences with partial, garbled gist; B is looping meta-text, truncated."
+}

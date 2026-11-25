@@ -1,0 +1,33 @@
+# Blind comparison `final-k1-vs-falcon` rated by `judge-opus`
+
+- x (ours): `ours-export-step51812-47fd99c151a50a58/final-k1-f93654208f-s0`
+- y (opponent): `falcon-e60034381f4a/recommended-5ccec0259b-s0`
+- rated pairs: 200 of 200
+
+Score = (wins + ties/2) / n; ties include 'both bad'. Decisive = wins / (wins + losses). Intervals are 95% Wilson; p is the exact two-sided sign test of wins against losses.
+
+| slice | n | W/L/T | score | score 95% | decisive | decisive 95% | p |
+|---|---|---|---|---|---|---|---|
+| overall | 200 | 22/122/56 | 0.250 | [0.195, 0.314] | 0.153 | [0.103, 0.221] | 0.0000 |
+| chat | 50 | 9/31/10 | 0.280 | [0.175, 0.417] | 0.225 | [0.123, 0.375] | 0.0007 |
+| code | 30 | 7/13/10 | 0.400 | [0.246, 0.577] | 0.350 | [0.181, 0.567] | 0.2632 |
+| instruct | 40 | 2/25/13 | 0.212 | [0.114, 0.361] | 0.074 | [0.021, 0.234] | 0.0000 |
+| math | 30 | 3/19/8 | 0.233 | [0.118, 0.409] | 0.136 | [0.048, 0.333] | 0.0009 |
+| writing | 50 | 1/34/15 | 0.170 | [0.090, 0.297] | 0.029 | [0.005, 0.145] | 0.0000 |
+| single_turn | 148 | 16/85/47 | 0.267 | [0.202, 0.343] | 0.158 | [0.100, 0.242] | 0.0000 |
+| multi_turn | 52 | 6/37/9 | 0.202 | [0.115, 0.330] | 0.140 | [0.066, 0.273] | 0.0000 |
+
+Length control (ratio of x's words to y's words):
+
+| bucket | n | W/L/T | score | score 95% | decisive | decisive 95% | p |
+|---|---|---|---|---|---|---|---|
+| x_shorter | 81 | 15/45/21 | 0.315 | [0.224, 0.422] | 0.250 | [0.158, 0.372] | 0.0001 |
+| similar | 79 | 5/46/28 | 0.240 | [0.160, 0.345] | 0.098 | [0.043, 0.210] | 0.0000 |
+| x_longer | 40 | 2/31/7 | 0.138 | [0.062, 0.276] | 0.061 | [0.017, 0.196] | 0.0000 |
+
+Comparisons needed (power 0.8, alpha 0.05, at the observed tie rate): +0.03: 3025, +0.05: 1087, +0.10: 270
+
+With n = 200 comparisons the 95% interval of a score is about ±7 points; at a tie rate of 28%, detecting a difference of 10 points needs 270 comparisons and 5 points 1087 (two-sided 5% test, 80% power), so a smaller lead on n = 200 is no evidence either way.
+
+Judge diagnostics: both orders agree on 92.5% of pairs; mean preference for the first-shown reply +0.015; mean probability mass on A/B/C 1.000; replies clipped in 0 pairs.
+

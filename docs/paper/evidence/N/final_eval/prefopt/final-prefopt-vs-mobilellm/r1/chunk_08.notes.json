@@ -1,0 +1,17 @@
+{
+  "pfc8b28b65d": "A rambles about a 'birthday problem' both turns; B gives real, if repetitive, gift ideas.",
+  "pa135621e0c": "A loops, wrongly says put phone back in sink; B coherent, says don't leave it.",
+  "pdfde025d96": "A computes 5 km/h, wrong; B correctly gets 18/0.75 = 24 km/h.",
+  "pf1a97a1bc7": "A degenerates into 'Wait, no' loop; B only says 7 days, never 10,080.",
+  "p0d21b68f94": "A rambles without a clean summary, cut off; B gives two sentences with gist.",
+  "p7ef5e55651": "A never outputs JSON; B malformed JSON, non-desert/fictional animals, extra text.",
+  "pb48bfed9df": "A loops 'boil egg into water vapor'; B's steps are wrong (egg paste).",
+  "pa8b4872791": "A is nonsense about transforming shoes; B gives a 49-word review.",
+  "p4cf0d5ba2b": "A includes a correct order-preserving seen-set solution; B rambles, no working code, cut off.",
+  "pdeb31c8a51": "B gets 75 g per person right (turn 2 wrong); A says 300 g, loops.",
+  "p91a03409e2": "A gives correct conversion function; B loops on wrong formulas, no code.",
+  "pdcc6c393ad": "Both give wrong planet lists and wrong or no ring answers.",
+  "p33197a9053": "A gives a usable encouraging message; B loops one boxed unencouraging sentence.",
+  "p5e7633d2b0": "A gives no dialogue; B is an actual, if muddled, customer-waiter dialogue.",
+  "p09db9356a8": "A repeats 'working from home is a home work'; B gives pros/cons and summary."
+}

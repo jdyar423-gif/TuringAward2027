@@ -1,0 +1,17 @@
+{
+  "p6c8d045e9c": "B gives six bullets, some odd or duplicated; A degenerate, no items.",
+  "pc23ce9ac45": "Both right on 84, wrong on turn 2; A concise, B ignores follow-up.",
+  "p34a2f6c86b": "A degenerate 'cat + suck'; B prose story, not a limerick.",
+  "p0f5eb1110b": "A's ocean poems aren't haiku but on topic; B degenerates into 'Sunlight' loop.",
+  "p760319db47": "B gives sound practical tips; A nonsense about pausing the project.",
+  "p1965f8bef1": "B describes park and rewrites without commas; A degenerate metaphor loop.",
+  "p5b795185f8": "B repetitive weak-rhyme coffee poem; A degenerate meta-rambling, no poem.",
+  "p67d92978e9": "A has correct <<title>> but long poem; B degenerate bracket rambling, no poem.",
+  "p00b8132d04": "A correct code both turns; B sums word lengths, degenerate rambling.",
+  "pdf30346ee8": "A's explanation wrong, says affect means result; B cut off after one sentence.",
+  "p06d1f77810": "A mostly correct cycle with errors; B degenerate 'cycle of water' loop.",
+  "pb455f3cdd9": "A gives reasons and some downsides; B degenerate 'people are pets'.",
+  "pcb8d528a98": "A repeats reverse() with wrong outputs; B rambling, buggy, cut off.",
+  "p2fc41d8575": "B correct 1081; A wrong 1176.",
+  "p649fd499e7": "Correct answer 215; A says 13.33, B never reaches it."
+}

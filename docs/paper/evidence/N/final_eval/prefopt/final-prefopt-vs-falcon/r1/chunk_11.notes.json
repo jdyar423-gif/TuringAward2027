@@ -1,0 +1,17 @@
+{
+  "pdef59c3479": "Both err (A: false 'fewer tasks'; B: 500 staff); A overlong, B concise.",
+  "p511fa4a5d3": "A is long, repetitive, degenerate, not short; B short coherent poem, proper title.",
+  "p1223f6398e": "A never fills seen and sorts output; B's second function is correct.",
+  "pcd0739143b": "A computes $18 difference and -18%, garbled; B correct 15%.",
+  "p784cd24c2c": "A says doubled sides double area (120); B correct 240.",
+  "pab5fe58c58": "B gives only the closing phrase, no explanation; A explains and ends correctly.",
+  "p1a6a820372": "Both wrong: A calls nectar pollen; B invents bee ears, lactic-acid fermentation.",
+  "pec3bcbd142": "B's definition is nonsense (volcanoes tugging); A has correct core definition, both weak advice.",
+  "pb2f21d9c8f": "Correct answer $36; A says $32 with fake output, B says $96.",
+  "p75049bdc67": "A puts *** inline at paragraph ends, not a divider; B formats correctly.",
+  "p93ae03de5a": "A returns True for n<=1, wrong example; B correct implementation.",
+  "p1135e5d9b3": "A writes five paragraphs plus meta chatter; B exactly two.",
+  "p05a87dad23": "Both break three-section rule (A adds Section 4, B repeats Section 3); incoherent.",
+  "p83a8f4ba18": "Both get 77; A misstates method (multiply by perimeter, solve for length).",
+  "pb0785f06c5": "Both right on 75 g but wrong for 10 people (75 g, 3000 g)."
+}

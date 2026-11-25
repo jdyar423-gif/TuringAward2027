@@ -36,6 +36,7 @@ for path in [*mains, *map(Path, shards)]:
         recs[r["pair_id"]] = r
 main = mains[0] if mains else root / "ratings" / set_ / f"judge-{key}.jsonl"
 out = sorted(recs.values(), key=lambda r: order[r["pair_id"]])
+main.parent.mkdir(parents=True, exist_ok=True)
 tmp = main.with_suffix(".jsonl.tmp")
 with open(tmp, "w") as f:
     for r in out:

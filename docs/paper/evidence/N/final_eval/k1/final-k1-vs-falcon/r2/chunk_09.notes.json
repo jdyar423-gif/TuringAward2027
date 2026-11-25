@@ -1,0 +1,17 @@
+{
+  "p6932436cc2": "A misses verb/noun distinction entirely; B states affect verb, effect noun.",
+  "p10ba5d6e21": "A wrong numbers but notes thunder slower; B incoherent gibberish.",
+  "p41ab1c6007": "A calls photosynthesis cellular respiration in stomata; B's core definition correct.",
+  "p75cc4392c0": "A invents 'Peakyr', no height; B correctly gives Everest 8,848 m.",
+  "p0ff7eb4924": "A defines nouns as describing words (adjectives); B accurate, lowercase, short.",
+  "p8b41e47b18": "A degenerate repetition, truncated unrelated JSON object; B gives JSON array.",
+  "p5d09dd0461": "A correctly answers 1896 Athens; B says London 1920.",
+  "p7a446013dc": "Both turn-2 answers wrong; A's turn 1 correct, B shows wrong output.",
+  "p2b7bcc0bb4": "A incoherent with broken code; B's compiler explanation correct, interpreter part wrong.",
+  "p2b13c0cb08": "A mentions evaporation leaving salt; B places Dead Sea in Greece, nonsense.",
+  "p866198794f": "B has no cat and repetitive 'I mean' loops; A features cat-queen.",
+  "pe50a74ff3e": "A computes 2(15)+8=38, wrong; B correctly gets 46.",
+  "p8cd7db426b": "A garbled with invented claims; B captures intelligence point despite 'long lifespan' error.",
+  "pff63db2083": "Neither uses past tense: A unchanged, B present tense with altered meaning.",
+  "p6fa7861250": "Both turn 1 correct; both turn 2 wrong (24 vs 14, correct 8)."
+}

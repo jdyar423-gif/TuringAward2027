@@ -1,0 +1,17 @@
+{
+  "p48d0a27a57": "A gives weak but usable tips; B degenerate 'save money each month' nonsense.",
+  "p163e6230b4": "Both fail odd-number turn; B's turn 1 is clean, A rambles and loops.",
+  "pc5cedad5ba": "A gives birthday-themed greeting, ignores rewrite constraints; B outputs 'John, Mary, Charlie' nonsense.",
+  "pdf756703f5": "A's first code is correct; B counts characters, has syntax error.",
+  "pd913bbcb90": "A flawed but on-topic email; B degenerate repeated boxed line.",
+  "pe5e69a4ee5": "B roughly explains cycle, mentions precipitation; A 'cycle of water' degenerate loops.",
+  "pff9b0fa450": "B correct 75 g and 750 g; A wrong 300 g, cut off.",
+  "p3e18783c45": "A lists eight planets correctly, rings wrong; B rambling nonsense, no rings answer.",
+  "pec7612708f": "A answers about hosting a party, not declining; B incoherent loops.",
+  "p94801f6900": "A correct 24 km/h; B wrong 5 km/h.",
+  "p5f3e77a3c9": "A never rewrites notice; B drops timeline, adds garbled request.",
+  "p9f3c9aec92": "B on-topic, comma-free but one repetitive paragraph; A no paragraphs, uses commas.",
+  "pbe4a7cbc85": "A weak story with section labels; B no story, boxed meta text.",
+  "p441953fd13": "B correct $165, repeats it in turn 2; A wrong $5 both turns.",
+  "pa3830f00c4": "A degenerate 'Description' loop, no animals; B rambling code, no JSON."
+}

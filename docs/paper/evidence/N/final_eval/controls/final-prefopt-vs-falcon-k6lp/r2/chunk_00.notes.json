@@ -1,0 +1,17 @@
+{
+  "pfe8f306e65": "A rewrites paragraph instead of stating main point; B answers despite garbled last sentence.",
+  "p5fdd77f377": "A incoherent, summary omits cons; B mislabeled sub-bullets but balanced one-sentence summary.",
+  "p3bffe9517b": "A gives correct core definition; B defines inflation as a decline in prices.",
+  "p369eb53326": "A's turn-2 code unchanged, prints all numbers; B's code correct, listed output wrong.",
+  "p5260bdcd61": "Both misexplain the error; neither suggests str() on the int; code broken.",
+  "p240aa87dae": "Neither says light travels faster than sound; both invent false physics.",
+  "p84e31f1164": "A has pronoun errors but mentions June 12; B isn't an out-of-office reply.",
+  "p2f545c21b4": "B fabricates 'tourist destinations' and garbles geography; A clumsy but faithful to source.",
+  "pcc02ca0ec2": "Both functions broken: A raises IndexError, B has invalid syntax, no RLE.",
+  "pc89274503e": "B informative despite clotting claim and 2L=1500mL slip; A thin, circular, odd opening.",
+  "p4d326683f5": "Neither gives about eight minutes; both state absurd distances and figures.",
+  "p1565207e0a": "A correctly finds width 7, area 77; B multiplies perimeter by length.",
+  "p196e11bbe4": "Neither lists six distinct sensible items; both duplicate entries, include nonsense.",
+  "pbb548086f9": "Both repeat story without happier ending; A loops, B has no dragon.",
+  "pf2bb56f359": "B has exactly ten words though July isn't a season; A seven words."
+}

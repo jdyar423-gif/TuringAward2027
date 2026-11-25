@@ -1,0 +1,17 @@
+{
+  "pae82f14d11": "B has absurd advice (mow plants, attract pollinators, contradictory sunlight); A mostly sensible.",
+  "p63014a1f32": "A is incoherent, recommends Vaseline as detergent; B weak but suggests washing and stain remover.",
+  "p98ffee8322": "B writes long non-haiku stanzas, turn 2 cut off; A keeps short three-line form.",
+  "pb0785f06c5": "Turn 2 wrong in both: A 3000 g, B 75 g; correct is 750 g.",
+  "pcb19705261": "Both Mars descriptions are riddled with fabrications (star 500,000 ly away; Earth-like air, microbes).",
+  "pab9ebe1eb8": "B's loop uses left < right, missing last element and single-item lists; A correct.",
+  "p7f9303645f": "A's five-digit anchored regex is correct despite flawed demo; B's regex needs six-plus digits.",
+  "p75049bdc67": "B puts *** inline at paragraph ends, not a divider, and repeats itself.",
+  "p2e77312770": "Both mislabel solutions as causes; B also duplicates bullets and garbles causes.",
+  "p38748e5733": "A computes 1.25, wrong; B correctly gets 11/8 = 1.375.",
+  "p90443d8c33": "B repetitive with nonsense about sleep reducing physical activity; A accurate and organized.",
+  "pdbc365acb9": "B says 20 square centimeters, wrong; A correctly converts to 200,000 cm².",
+  "p4ce6ed3e40": "Neither uses past tense: A changes meaning in present, B repeats original.",
+  "p6634bead48": "B divides 8/32 as 0.2, giving wrong 20%; A correct 25%.",
+  "p3b610adb67": "B's poem loops 'symphony/journey' and turn 2 is unchanged; A adds some rhymes."
+}

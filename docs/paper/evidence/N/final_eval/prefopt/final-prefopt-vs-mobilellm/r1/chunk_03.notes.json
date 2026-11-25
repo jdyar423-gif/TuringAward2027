@@ -1,0 +1,17 @@
+{
+  "p5268d339d9": "B gives valid 33-word budget definition; A boxes '40' and rambles.",
+  "pdcac8b5b76": "A's function correct (example comment wrong); B counts only uppercase vowels.",
+  "p033cb915ff": "A rewrites paragraph instead of stating main point; B incoherent 'eyes' nonsense.",
+  "p01484e8c80": "A provides a story (turn 2 just repeats it); B only boxed meta-descriptions.",
+  "pd7d6a1770e": "Correct is 121.92 cm; A says 4.0125 cm, B rambles without answer.",
+  "p0f2e264756": "A gives reasonable health reasons; B tautological boxed 'maintain hydration' only.",
+  "pd857cdff0c": "A riddled with errors (viruses photosynthesize, bacteria lack membranes); B says virus is bacterium.",
+  "pd5b88be4ae": "Neither outputs JSON array; A's list has tiger and duplicate, B degenerate.",
+  "pc493de02f0": "A gives clean correct turn-1 code; both fail odd numbers, B degenerate loops.",
+  "p9b40b327a4": "A answers 240 m² correctly; B ignores doubling and repeats 60.",
+  "pa29c39c48d": "Neither names Everest ~8,849 m; A says 10,000 km, B invents 'Peakyr'.",
+  "pd41e8a6e45": "B gives a weak, repetitive lighthouse poem; A produces no poem at all.",
+  "p65ecafa08a": "B's turn-1 code correct; A has syntax error and >8 bug; neither adds digit check.",
+  "p3f966b9021": "B correctly gets 15%; A miscomputes difference as 18, outputs -18%.",
+  "p0ee5b7fa42": "B reaches correct 1.375 despite rambling; A confidently wrong 1.25."
+}

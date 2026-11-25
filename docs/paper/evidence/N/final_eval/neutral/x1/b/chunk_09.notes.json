@@ -1,0 +1,17 @@
+{
+  "p00de6ecc48": "A suggests math.factorial as alternative and claims a loop; B code and no-loop claim correct.",
+  "pe117045d5b": "Both poorly suited to rain; B adds absurdities (find a rainforest, flashlight sunset).",
+  "p9483cab39f": "B quotes only two words, ignoring the wrap instruction; A fully quoted, omits why.",
+  "p5d9dd82103": "B gives correct 150/75 weekly minutes; A repetitive and only vague 30 minutes daily.",
+  "p91089dc584": "Both final answers wrong: A concludes 3,600 L, B 180 L; correct 450 L.",
+  "pcd7d8bb1a3": "A calls the Moon a star; B gives one vague sentence, not three.",
+  "pdfa5501a00": "A rewrites the paragraph instead of stating its main point; B answers the question.",
+  "pbcc00a17d5": "A distorts problem, contradicts its choice; B copies text with loops, turn 2 incoherent.",
+  "pfde50fe58a": "A writes four long lines, not a haiku; B uses three-line haiku form.",
+  "pab5fe58c58": "A outputs only the closing phrase with no explanation; B explains and ends correctly.",
+  "p858ed85c5c": "B riddled with nutrition errors (vitamins as macronutrients, calcium = osteocalcin); A broadly correct.",
+  "p0192273298": "B's turn 2 adds no P.S. at all; A adds the postscript.",
+  "paf6a72bf77": "A ~270 words, repetitive, robot already a master, garbled ending; B coherent, ~90 words.",
+  "p3aeac4712d": "B wrongly defines weather and climate as temperature measures; A gets short- vs long-term right.",
+  "p80decb4889": "A ends with wrong $28.67; B correctly computes 27 L and $40.50."
+}

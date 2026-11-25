@@ -1,0 +1,17 @@
+{
+  "pcded164bc9": "Both convert 5 km wrongly (0.05 m, 500 m); lap answers are nonsense.",
+  "pfe0b319f59": "A's function counts vowels correctly; B returns len(vowels), always 10.",
+  "pa3108f8458": "Both break three-section rule; A has six degenerating sections, B four, more coherent.",
+  "p048e7f3f95": "A concise and accurate; B's components paragraph is garbled (carbohydrates from fats).",
+  "pf3648a8bc9": "Both describe a snowman as nonsense; 12-word replies truncated and wrong.",
+  "p887845a28c": "Both wrong; correct is 121.92 cm (48 inches times 2.54).",
+  "p5ec447da12": "Identical correct one-word answer 'yes'.",
+  "pfd419e9b88": "Both copy turn-1 text instead of lost-child rewrite; A's busy station is serene.",
+  "p727ca83b0b": "A pitches the garden story to the newspaper; B is an invitation, no pitch.",
+  "p9314c28d13": "Both riddled with factual errors about viruses and bacteria; misleading.",
+  "pce9fd6bd75": "Neither gives exactly two paragraphs; A five plus meta text, B looping, truncated.",
+  "p7f360c35a1": "B obeys 25-word limit; A writes a long unrelated beach-hike story.",
+  "pb04b7189a3": "Both return the sentence unchanged, not in past tense.",
+  "p2574a2ea7e": "Turn 1 identical and correct; both turn-2 percentages wrong (correct 89.3%).",
+  "p3f8d0abd7b": "B's pros/cons clearer, balanced one-sentence summary; A contradictory, summary omits cons."
+}

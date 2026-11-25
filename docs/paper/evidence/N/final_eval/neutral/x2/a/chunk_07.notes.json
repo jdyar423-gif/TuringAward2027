@@ -1,0 +1,17 @@
+{
+  "p97031c28c3": "A gives correct loop-free code; B gives no code, then an empty reply.",
+  "pd272155af6": "A contradictory but states correct antibody mechanism; B degenerate repeated boxed answers.",
+  "p5079b48c56": "Both wrong: A says UN governs biodiversity; B says UN has no mandate.",
+  "pa07ae2c849": "B meets exactly ten words though July isn't a season; A degenerate.",
+  "pd784697de7": "A correct $64; B computes 136 minus 200 as change, never answers.",
+  "pab1b4febd5": "A correct list comprehension; B rambles through loop versions, truncated.",
+  "p1f8f9aa6ab": "A buggy: max initialized to arr.length; B writes broken C++, not JavaScript.",
+  "p559e92b0a7": "A brief, partly accurate summary; B contradictory, degenerate boxed answers.",
+  "pc10bf5215b": "A wrong both turns ($15, $5); B correct $165, though ignores turn two.",
+  "pfd8d290a67": "A nonsense cup-filling steps; B 22+ incoherent steps, not five.",
+  "p39cc319578": "A repeated boxed loops; B omits printing press, lacks why-it-matters sentence.",
+  "p13c8892188": "A wrongly says break returns a value; B correct definition, broken example.",
+  "pd42fe2b533": "A garbled wrong cost claims; B mostly accurate summary despite leaked edit notes.",
+  "pc80e2d6891": "A degenerate 'sun' loops; B real poem, though turn-two copy doesn't rhyme.",
+  "p4b6676fb99": "A correct 343 m/s; B wrong 1.7 m/s."
+}

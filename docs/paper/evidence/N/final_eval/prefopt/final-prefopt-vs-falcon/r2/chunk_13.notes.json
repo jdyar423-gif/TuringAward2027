@@ -1,0 +1,7 @@
+{
+  "pa9f1d0d181": "Both wrong on turn two (89.3%); B at least gets 75 whole eggs.",
+  "p892a0a72bd": "B outputs one nonsense word; A gives an all-caps storm description.",
+  "pc51468ec14": "A garbled, omits Gutenberg and the why-it-matters sentence; B covers both parts.",
+  "p93ae03de5a": "A correct; B returns True for n<=1 and claims 29 is not prime.",
+  "p6d23ee71cb": "A repeats Antarctica, names nothing else; B claims 13 continents including planets."
+}

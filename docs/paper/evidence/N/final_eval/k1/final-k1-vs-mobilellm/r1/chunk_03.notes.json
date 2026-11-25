@@ -1,0 +1,17 @@
+{
+  "p9a6cf2df7e": "Answer is 216; A loops '6 = 3*7', B boxes 21 and rambles.",
+  "p783a46ab9f": "A gives a verbose usable speech, fails to shorten; B only boxed phrase.",
+  "p17ce39e4de": "Neither gives working order-preserving code; A rambles, B uses set and wrong loop.",
+  "p31f8a449da": "A repetitive but on-topic quotes and explanation; B degenerate 'wrong' loop.",
+  "p52dfacea7f": "A weak, repetitive but gives some reasons; B claims 'people are pets'.",
+  "pd1d050205c": "B lowercase and short though vague; A violates constraints, says noun phrase.",
+  "p46a39764ec": "Both get 126; neither divides correctly (A repeats, B multiplies by 12).",
+  "p0392d308d6": "A gives poor, repetitive ideas, ignores 25 words; B only placeholder box.",
+  "pf5213d43e6": "Both codes correct; A has wrong example, B degenerate rambling and cut off.",
+  "pee392ee62a": "A barely changes the notes, not a sentence; B degenerate rambling.",
+  "p94801f6900": "B correctly gets 24 km/h; A's confused math gives 5 km/h.",
+  "pc34d0cac4a": "B's first sentence good, turn 2 degenerate; A nonsense in both turns.",
+  "p939d23ee6a": "No limerick in either; A prose ignores form, B 'limerith' loop.",
+  "p2cdbda047b": "A vague but harmless; B degenerate, advises putting phone back in sink.",
+  "p8954928723": "A gives description, ad too long; B misreads 'product' as 60 factorial."
+}

@@ -1,0 +1,7 @@
+{
+  "pe233983d66": "A says oxygen consumed, glucose released to atmosphere; B gives correct overall equation.",
+  "p61e2207ef3": "A: syntax error, no digit check; B: correct turn one, all() bug turn two.",
+  "p642364f0c1": "Both broken: A's unpacking loop crashes, lacks subtraction rule; B just calls int().",
+  "p9a7547390e": "A sums to 96 giving 24; B correctly sums 80, average 20.",
+  "p0892468eaf": "A has nonsense claims ('not overly rested'); B more substantive despite off-topic disorders tail."
+}

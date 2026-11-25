@@ -1,0 +1,17 @@
+{
+  "pa2cc50a6da": "Both lowercase, under 30 words, roughly adequate definitions.",
+  "pd167efc19b": "A is bullet-outline not speech, cut to quarter; B speech-form, halved properly.",
+  "pe982ff81c4": "B more organized and accurate; A has nonsense claims like 'not overly rested'.",
+  "pa35faae4c3": "Both wrong: A repeats nonsense str(str) code; B's fixes mostly incorrect.",
+  "p58dcc4b163": "A correct $165 turn 1, turn 2 wrong; B wrong both turns.",
+  "pbe0ddf5c82": "A degenerate looping single paragraph, cut off; B one off-topic sentence about bread.",
+  "p4a945a25d7": "A's turn 1 correct; B's software answer error-filled; both turn 2 weak.",
+  "pd40a0a1420": "A is a long prose story, not a limerick; B attempts five-line form.",
+  "p7aba3b227b": "Neither explains Eustachian tube pressure equalization; both give nonsense causes.",
+  "pef0ef9cebe": "A correct 36; B uses 241 and garbles answer as 36.5.",
+  "p14ee73d3af": "B correct sum 80, average 20; A miscomputes sum as 96.",
+  "p63fd246274": "A partly wrong but some correct points; B incoherent nonsense (4x4 layout).",
+  "pb612e5216b": "A odd but coherent narrative; B incoherent, confuses cat and human, repetitive.",
+  "p9ff12ae9f6": "A repeats original unchanged; B friendlier though 'fulfilled' and contact invitation alter meaning.",
+  "p4ce6ed3e40": "Neither uses past tense: A copies original, B stays present, changes meaning."
+}

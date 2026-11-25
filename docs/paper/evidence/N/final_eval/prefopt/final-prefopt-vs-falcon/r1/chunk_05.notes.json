@@ -1,0 +1,17 @@
+{
+  "peeeb6fd875": "A is garbled and omits local; B wordy but conveys local ingredients.",
+  "p62efeaeb06": "B does not end with the exact required question; A does.",
+  "pf87010dfb4": "Both turn-2 codes wrong; B's turn 1 correct, A's lists wrong output.",
+  "p19c000f28f": "A lists low-C fruits plus cinnamon, applesauce; B mostly right despite extra text.",
+  "pae82f14d11": "A contradicts itself, advises mowing plants and attracting pollinators; B sensible.",
+  "p9453319811": "B has syntax error and computes minimum; A mostly works despite length-initialization bug.",
+  "p4f46531f95": "A says vaccines prevent antibody production; B explains antigens, antibodies, memory despite errors.",
+  "p04805c8ebc": "A vague and muddled; B gives more concrete, mostly accurate reasons.",
+  "pfbce7e0b8d": "Both 0.75 kg; A says 'kilogram per gram' and 'approximately', B clean.",
+  "p72cfda4ae9": "B directly names precipitation; A gives muddled non-answer with 'sirens, or wind'.",
+  "pa23ef93c04": "Both dialogues confuse customer and waiter roles; B also incoherent nonsense.",
+  "p5175f2afc4": "A lists elephants as reptiles plus extra text; B outputs unrelated JSON object.",
+  "pdf942df017": "A's tips redundant, turn 2 incoherent; B's tips solid, turn 2 partly useful.",
+  "pc1bd6d5134": "B repetitive ('commitment to excellence' twice); A more coherent despite letter sign-off.",
+  "pf36bebc075": "B's dict counting raises KeyError; A's sorted comparison works (case-sensitive example wrong)."
+}

@@ -1,0 +1,17 @@
+{
+  "p17deb05cd8": "Both wrong: actual ~343 m/s; A claims 7858 m/s, B 1.7 m/s.",
+  "pa7829cf180": "Neither forms a complete sentence; A garbles notes, B merely echoes them.",
+  "p97d3671f3e": "Both wrong: correct is $3,276; A says $3,080, B miscomputes $3,216.",
+  "pcd0739143b": "A correctly gets 15%; B miscomputes difference as $18 and ends at -18%.",
+  "pf87010dfb4": "Both fail odd-number turn; A's first turn correct, B lists 0 and repeats code.",
+  "p4f46531f95": "Both err; A explains antibodies and memory cells, B contradicts itself on antibodies.",
+  "p04be569cb0": "A is garbled nonsense; B gets compiler right though interpreter description wrong.",
+  "p6b3402f3e1": "Both describe snowmen absurdly; A's 12-word reply is a cut-off fragment, B has 16.",
+  "pa5c7fa637b": "A writes repeated long prose, not limericks; B gives short on-topic verses.",
+  "p6a8f10d8b0": "Both exceed one paragraph; B's continuation loops repetitive phrases and garbles text.",
+  "p2b42bcc42b": "B correctly converts 5000 m; both fail laps (12.5), A wrong twice.",
+  "pa3c6267f05": "A entirely wrong (Indian Ocean); B errs but gives evaporation as correct cause.",
+  "p50ce39a83f": "Both within 15 words; B has ungrammatical 'awe-inspiring and awe-inspiration'.",
+  "p590f668064": "Both include required words; B riddled with placeholders and leaked template instructions.",
+  "p619dbb7718": "A's three facts all false (Arctic, jaws); B has partly correct facts."
+}

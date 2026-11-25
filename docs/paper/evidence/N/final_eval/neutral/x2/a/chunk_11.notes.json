@@ -1,0 +1,17 @@
+{
+  "p9f8b5a3220": "A returns length not word, loops; B counts characters; neither answers ties.",
+  "p743719ce9b": "A fabricates $1/$0 loop; B gives passable summary, weak turn 2.",
+  "pe0c6cb0a99": "B uses 'green' three times in a paragraph; A degenerate loop.",
+  "pcec146d6b1": "A ends with correct recursive code; B's main code crashes, explanation wrong.",
+  "p166e642c59": "Correct is 216; A says 31, B says 21 and loops.",
+  "p5e432db183": "Both correct 77; A shorter, B misstates method initially.",
+  "pb455f3cdd9": "A degenerate 'People are pets'; B gives relevant reasons and some downsides.",
+  "p1f72a6eee4": "B reaches correct 490; A loops and answers 70.",
+  "p88c3bddbc5": "A follows quote format, omits why; B degenerate, ignores format.",
+  "pc0654fb123": "A gibberish 'honeybeard'; B muddled but states nectar becomes honey.",
+  "p84404e4196": "B bullets cover all four causes despite errors; A degenerate, lists solutions.",
+  "pb7536d3f55": "A correct 0.75 kg concisely; B 'Wait, no' loop, cut off.",
+  "p41323a9edc": "A informative with correct equation; B circular boxed 'Photosynthesis'.",
+  "pee2dd0e2e0": "Neither uses COUNT or GROUP BY; B loops, A invalid SQL.",
+  "p40e6240717": "Correct ~8 minutes; A gives wrong distance, B says one light-year."
+}

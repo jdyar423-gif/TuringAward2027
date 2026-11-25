@@ -1,0 +1,17 @@
+{
+  "p9483c23f20": "A gives no time and absurd distances; B claims 4h20m instead of ~8 minutes.",
+  "p97cee4d84c": "A confuses declining with sending invitations; B's sample phrases are incoherent, not declines.",
+  "pe3fed10ab9": "B correctly gets 36; A switches to 241 and answers 36.5.",
+  "p34c1e3ef86": "B is incoherent, repetitive and cut off; A coherent though weak on disagreement.",
+  "p520ef4af00": "A correctly gives Everest 8,848.86 m; B names nonexistent 'Peakyr', no height.",
+  "pb436d17da5": "Sum is 80, average 20 as B says; A wrongly sums to 96.",
+  "pf68accb643": "Neither gives the real meaning (acting early brings advantage); B invents Latin etymology.",
+  "p20578cbffd": "A writes four sections, violating three-section instruction; B follows the format.",
+  "pb6d87a63fc": "B is wrong, repeats identical broken code thrice; A's str() conversion fix works.",
+  "p75bd1d6971": "A's SQL is nonsense; B nearly right but misses FROM and GROUP BY.",
+  "pb2852173d3": "A misstates June 12 as departure; B announces future vacation, omits date.",
+  "pa5fcd1a634": "B correctly compounds to $3,276; A ignores second raise and miscalculates.",
+  "pf38a904fbe": "Both comma-free; B's rewrite is a run-on list dropping content, A fluent.",
+  "pefe8d46c22": "B is incoherent and repetitive; A tells a more coherent story.",
+  "pf7b218f6e1": "A invents reasons (locomotion, pheromone release); B short but basically correct."
+}

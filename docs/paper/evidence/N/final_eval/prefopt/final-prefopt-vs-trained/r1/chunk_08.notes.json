@@ -1,0 +1,17 @@
+{
+  "pe068b6635e": "A gives roughly correct lowercase definition; B wrongly says nouns describe things.",
+  "pad6b1b38d8": "Neither computes 10,080 minutes; both only state a week has 7 days.",
+  "pe4d173eb31": "A lists no at-home hobbies and loops in both turns; B partly on-topic.",
+  "p065eff48da": "A gives an encouraging message; B rambles, hopes exam is challenging.",
+  "p72fe2d8297": "Neither is a limerick; both are long incoherent prose stories.",
+  "p29e001fea1": "A degenerates into 22 steps; B has five steps but nonsense, no hot water.",
+  "p884dcfa5a6": "A summarizes actual content despite garble; B vague meta-summary misreading challenges.",
+  "pfd1355abb7": "Identical correct code; each explanation has one error (unpacking claim vs '= 0').",
+  "p89d9bf7577": "Both stories incoherent and contradictory; neither develops the queen-cat premise.",
+  "p2192711a2e": "B gets $165 right in turn one; A wrong both turns; turn two both wrong.",
+  "pe3b76400dc": "Both confuse pollination with honey; only A states nectar is turned into honey.",
+  "p4dfc9226f7": "Summaries similarly flawed; A's title is apt, B's title is a clumsy fragment.",
+  "pcc18aec5e2": "Both just repeat the original sentence unchanged; no child-friendly rewrite.",
+  "pd63e9b8b9d": "A loops on 'causes are mixed' and lists non-causes; B covers causes, less degenerate.",
+  "pceebf1c4b7": "Both give same oversimplified 'before' answer; B's extra detail offset by awkwardness."
+}

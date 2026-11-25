@@ -1,0 +1,17 @@
+{
+  "p2a770e5903": "B's turn-1 definition is good; A only boxes 'Photosynthesis'; both fail child explanation.",
+  "p8aee576047": "Correct is 450: A rambles without conclusion, cut off; B says 180.",
+  "p88c3bddbc5": "B follows double-quote format, though omits why; A is degenerate rambling.",
+  "pb08e8ba086": "A writes about dogs but misses exact ending; B has no paragraph at all.",
+  "p9e9be42ce5": "B answers O(n) correctly in turn 2; A just repeats the code.",
+  "p7133af5cbb": "A gives a usable summary and title; B is incoherent analysis, no title.",
+  "p8039609b89": "B explains a balanced diet reasonably; A just boxes 'A balanced diet' repeatedly.",
+  "p53dc0c076b": "Neither gives advice: A deflects with nonsense 'local recorder'; B boxes nonsense.",
+  "p71caf2f32d": "Both wrong: A says 1900 London (actually 1896 Athens); B invents US-Canada 2008.",
+  "pb7d01be20d": "Neither is a birthday greeting: A boxes names; B is Grand Plaza promo, no question.",
+  "p6e9d85458f": "A loops 'laptop is a desktop screen'; B states false differences (tablets larger).",
+  "pb48bfed9df": "A's steps are nonsense (egg paste); B loops 'boil into water vapor', cut off.",
+  "pb7536d3f55": "B gives 0.75 kg concisely; A contradicts itself, claims 75 grams, loops.",
+  "p8ac53684f1": "B is an on-topic though muddled thank-you note; A boxes nonsense.",
+  "pdfde025d96": "A correctly gets 24 km/h; B's calculation is wrong, gives 5 km/h."
+}

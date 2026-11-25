@@ -1,0 +1,22 @@
+{
+  "name": "final-k1-vs-falcon",
+  "format": 2,
+  "n_pairs": 200,
+  "commitment": "2b2beb1eea53f299aea261109071828eb2026910b3178c19be58eba4c38d3972",
+  "commitments": [
+    "2b2beb1eea53f299aea261109071828eb2026910b3178c19be58eba4c38d3972"
+  ],
+  "added": [
+    200
+  ],
+  "by_category": {
+    "code": 30,
+    "chat": 50,
+    "writing": 50,
+    "instruct": 40,
+    "math": 30
+  },
+  "multi_turn": 52,
+  "created": "2026-11-24 21:23:07",
+  "updated": "2026-11-24 21:23:07"
+}

@@ -1,0 +1,17 @@
+{
+  "p01635185f3": "A's core cause/fix correct despite bad examples; B blames `in` operator, all wrong.",
+  "p00de6ecc48": "Both codes correct; B adds wrong math.factorial alternative and claims it uses a loop.",
+  "pa7829cf180": "Neither forms a complete sentence; A echoes notes, B garbles and repeats 204.",
+  "p9eb7b14a4b": "A discusses nonexistent ===; B says `is` checks value equality, missing identity.",
+  "p588dd8569e": "A gives six bullets, some sensible; B lists only five with nonsense items.",
+  "p83154645e5": "A degenerate 22-step loop; B five steps but adds coffee, nonsense tea method.",
+  "p2b42bcc42b": "A gets 5000 m right; B wrong both turns. Both botch laps (12.5).",
+  "p82767edbcf": "A degenerates into repeated 'sight of love' lines; B coherent lighthouse poem.",
+  "p3b610adb67": "A repeats identical non-rhyming poem in turn 2; B partially adds rhymes.",
+  "pb058ba7f47": "A incoherent (sun, sands, springtime warmth); B coherent, mostly rhyming first-snow poem.",
+  "p8869380a8a": "B absurdly advises swallowing water, pouring more water; A vague but harmless.",
+  "p59954340ea": "A's turn-2 ad is a long paragraph, not one line; name errors.",
+  "p6f57279de7": "B's turn 2 wrong (multiplies 18 by 3); A correct 126 and 42.",
+  "p8e3266c430": "B omits required word 'horizon'; A includes all three, under 60 words.",
+  "pb96f5691f8": "Both correct Euclid; B shorter, A ends with nonsense 'no common divisor' claim."
+}

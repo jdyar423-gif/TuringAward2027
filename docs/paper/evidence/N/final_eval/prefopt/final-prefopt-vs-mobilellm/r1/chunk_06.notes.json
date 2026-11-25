@@ -1,0 +1,17 @@
+{
+  "pd7bac80347": "A incoherent adult letter signed by Santa, turn 2 repeats it; B degenerate boxed.",
+  "p8ac53684f1": "A is a muddled but usable thank-you note; B is boxed nonsense.",
+  "p09bdced027": "B comma-free on-topic but one looping paragraph; A meta-rambling with no paragraphs.",
+  "p12e5cc6f41": "Both wrong: A puts Dead Sea in Indian Ocean; B claims 2% salinity.",
+  "p6325057aa5": "B gives real though weak tips; A loops 'save money each month' degenerately.",
+  "pd0215bbcd1": "B gives a short direct answer; A is degenerate cost-savings nonsense, cut off.",
+  "p7f8270fa3f": "B is an incoherent but on-premise cat story; A is degenerate boxed text.",
+  "p58d1ca191b": "Both wrong: A nonsense about ears on ground; B blames airplane vibration.",
+  "pf189ba6e73": "A is boxed meta-text; B is not an out-of-office reply, omits June 12.",
+  "p8eabc28c21": "A only boxes MOON; B's poem is not an acrostic, never mentions moon.",
+  "p1965f8bef1": "A describes the park and rewrites it comma-free; B degenerate boxed loops.",
+  "pfeb24dc8e2": "B starts with required sentence and tells a story; A just boxes sentence.",
+  "pc135a5cd42": "A miscomputes 8/32 as 0.2, answering 20%; B rambles but boxes correct 25%.",
+  "p5287552022": "A gives a usable speech and halves it; B only boxes a phrase.",
+  "p29129cb85f": "B's is_prime is correct; A's returns True for composites, then rambles."
+}

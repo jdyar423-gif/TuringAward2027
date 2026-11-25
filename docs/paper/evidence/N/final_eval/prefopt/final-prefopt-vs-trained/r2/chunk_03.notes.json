@@ -1,0 +1,17 @@
+{
+  "p8595f5b521": "Neither gives short-term vs long-term distinction; A vacuous, B factually wrong.",
+  "p9872b05a84": "Correct answer 216; A says 2, B says 31, both nonsense reasoning.",
+  "p0f3c9b62a2": "A right (affect verb, effect noun) despite swapped summary; B conflates both.",
+  "p5ec447da12": "Identical correct one-word answers.",
+  "p5d1013183a": "A simple and accurate; B not simple, says glucose converts to oxygen.",
+  "p6ba972d81a": "Comparable generic tip lists, each with minor typos and mismatched explanations.",
+  "pcded164bc9": "Both wrong: 5000 m and 12.5 laps; A 500 m/1 lap, B 0.05 m.",
+  "pb166d88745": "A repeats original verbatim claiming revision; B at least removes the hostile sentence.",
+  "p33fb987e97": "B correct change $64; A gives total cost $136 as change.",
+  "p1210e4fd6e": "A's n*(n+1)//2 correct both turns; B's code invalid, turn 2 uses a buggy loop.",
+  "pac69fb1f4a": "Same correct code, wrong example outputs; A adds false efficiency claim, longer.",
+  "p89a6e32107": "A says Mercury (wrong); B correctly says Jupiter though size comparison is wrong.",
+  "pef405ff899": "B splits into words correctly; A iterates characters and Counter version returns a tuple.",
+  "p331ce14882": "Correct is 215 minutes; A says 13.33 minutes, B 1111.5 hours.",
+  "p2a82c7e38a": "B gets 7 continents right though names degenerate; A says 8, no names."
+}

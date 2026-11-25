@@ -1,0 +1,17 @@
+{
+  "pae82f14d11": "B contains absurd advice (mow houseplants, attract pollinators, 6-8h direct sun); A sensible.",
+  "p63014a1f32": "A recommends Vaseline as detergent and incoherent steps; B weak but usable (wash, stain remover).",
+  "p98ffee8322": "B writes long non-haiku poems, second truncated; A gives three-line haiku-like poems both turns.",
+  "pb0785f06c5": "Both wrong on turn 2: A 3000 g, B 75 g; correct is 750 g.",
+  "pcb19705261": "Both Mars descriptions are riddled with false facts (light-years away, Earth-like air, life).",
+  "pab9ebe1eb8": "B's loop condition left<right misses last element (e.g. single-element list); A correct.",
+  "p7f9303645f": "A's anchored five-digit regex is correct despite a flawed example; B's regex and usage wrong.",
+  "p75049bdc67": "B puts *** inline at paragraph ends, not a working divider; also repetitive.",
+  "p2e77312770": "Both list solutions as causes; A concise with all four causes, B duplicated and embellished.",
+  "p38748e5733": "A multiplies fractions, gets 1.25; B correctly gets 11/8 = 1.375.",
+  "p90443d8c33": "Both broadly correct; A clearer and fuller, B repetitive with a nonsense phrase.",
+  "pdbc365acb9": "A correctly converts to 200,000 cm²; B says 20 square centimeters.",
+  "p4ce6ed3e40": "Neither uses past tense: A stays present and changes meaning, B repeats original.",
+  "p6634bead48": "A correct 25%; B miscomputes 8/32 as 0.2, answering 20%.",
+  "p3b610adb67": "B's poem is degenerate repetition and turn 2 is unchanged; A partially adds rhyme."
+}

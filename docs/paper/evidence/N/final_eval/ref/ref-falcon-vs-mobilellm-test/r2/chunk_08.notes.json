@@ -1,0 +1,17 @@
+{
+  "pe2bffbf0fc": "A gives correct 1023 and 341; B loops endlessly, never answers either turn.",
+  "pf3adf74e07": "A degenerate loop, no JSON; B's list mostly non-pets, JSON adds extra text.",
+  "p77ebddeec1": "A writes the message and adds P.S.; B outputs boxed nonsense loops.",
+  "p3f59bfb94e": "B writes and halves a real speech; A only boxes 'Open the School Science Fair'.",
+  "pbe2ae220e4": "A gives valid 10-word sentence; B loops 'The ocean is the ocean'.",
+  "paae577739d": "A degenerate, claims virus is a bacterium; B flawed but partially correct distinctions.",
+  "p1522eabc96": "A states break's purpose correctly despite broken example; B entirely wrong definition.",
+  "p5d32370ab0": "B gives practical steps despite minor errors; A garbled fragment, broken markup.",
+  "pb5bdb0f3ca": "A riddled with false facts (largest planet, oxygen atmosphere, life); B degenerate loop.",
+  "pa58d9a66c2": "B describes Moon but in one sentence only; A meaningless gibberish.",
+  "p8163fcad93": "A answers 1896 Athens correctly despite errors; B fabricates US/Canada 2008 nonsense.",
+  "pc25fe93f32": "A writes story paragraphs as asked; B repeats boxed title loop degenerately.",
+  "pf87edf5657": "A gives useful anti-procrastination strategies; B nonsensical boxed 'pause the project' answer.",
+  "p5d3b094c33": "B correct turn 1, misses digit check; A's regex wrong both turns.",
+  "p18636db278": "A correct 25% concisely; B rambling, confused and cut off."
+}

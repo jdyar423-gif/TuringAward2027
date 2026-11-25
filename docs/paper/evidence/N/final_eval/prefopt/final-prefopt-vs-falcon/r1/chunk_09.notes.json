@@ -1,0 +1,17 @@
+{
+  "pa2cc50a6da": "Both lowercase, under 30 words, acceptable definitions; neither clearly better.",
+  "pd167efc19b": "A is planning outline, not speech, over-shortened; B speech prose, halved properly.",
+  "pe982ff81c4": "A has nonsense ('not overly rested', circular); B more specific, mostly accurate.",
+  "pa35faae4c3": "A's code shadows str, repeated blocks; B mislabels fixes, broken code.",
+  "p58dcc4b163": "A right in turn one ($165), wrong after; B wrong both turns.",
+  "pbe0ddf5c82": "A one degenerate looping paragraph, cut off; B one sentence about bread.",
+  "p4a945a25d7": "Both fail turn two; A's turn-one definition correct, B's software list error-ridden.",
+  "pd40a0a1420": "A writes long prose, not a limerick; B uses five-line limerick form.",
+  "p7aba3b227b": "Neither explains Eustachian tube pressure equalization; A airflow nonsense, B airplane-popping confusion.",
+  "pef0ef9cebe": "A correct 36; B uses 241 and gives wrong 36.5.",
+  "p14ee73d3af": "Sum is 80, average 20; A wrongly sums to 96.",
+  "p63fd246274": "A reverses several facts but gets size, portability, battery right; B pure nonsense.",
+  "pb612e5216b": "Both weak; A more readable with queen claim; B confused identities, repetitive.",
+  "p9ff12ae9f6": "A repeats original unchanged; B friendlier though alters meaning.",
+  "p4ce6ed3e40": "A unchanged present tense; B still present tense and changes meaning."
+}

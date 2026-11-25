@@ -1,0 +1,38 @@
+{
+  "run_id": "ours-export-step51812-47fd99c151a50a58/final-k1-f93654208f-s0",
+  "backend_key": "ours-export-step51812-47fd99c151a50a58",
+  "label": "final-k1",
+  "seed": 0,
+  "settings": {
+    "temperature": 0.6,
+    "top_p": 0.9,
+    "top_k": 0,
+    "min_p": 0.0,
+    "typical_p": 1.0,
+    "repeat_penalty": 1.0,
+    "presence_penalty": 0.0,
+    "frequency_penalty": 0.0,
+    "max_tokens": 768,
+    "system_prompt": null,
+    "strip_think": false,
+    "samples": 1,
+    "select": "first",
+    "extra": {
+      "particles": 1,
+      "use_critic": false,
+      "use_library": false
+    }
+  },
+  "settings_hash": "f93654208f",
+  "backend": {
+    "kind": "callable",
+    "factory": "bes.export:export_generator",
+    "kwargs": {
+      "export": "/content/TuringAward2027/runs/main16/final"
+    },
+    "key": "ours-export-step51812-47fd99c151a50a58"
+  },
+  "harness_version": "1",
+  "n_prompts": 200,
+  "written": "2026-11-24 21:23:07"
+}

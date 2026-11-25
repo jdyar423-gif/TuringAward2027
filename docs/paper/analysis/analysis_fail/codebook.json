@@ -1,0 +1,105 @@
+{
+  "written": "2026-11-24, before any labelling (only 19 notes of one chunk had been seen)",
+  "unit": "one label per reply: for every (prompt, opponent) one label for OUR reply and one for the OPPONENT's reply (two-turn prompts: the two turns together)",
+  "what_the_label_is": "the main defect of that reply as the blind readers' notes name it (four notes per pair); the replies are read when the notes are unclear, disagree, or name no defect for a side",
+  "labels": {
+    "OK": {
+      "name": "no decisive defect",
+      "definition": "correct, on topic and following the instructions; minor flaws allowed. The preferred reply of a decisive pair gets OK unless the notes name a real defect in it; both replies of a 'both acceptable' tie get OK."
+    },
+    "FACT": {
+      "name": "factual error",
+      "definition": "states false facts or invents entities, names, dates, definitions or mechanisms (non-numeric content; in chat, writing and instruct prompts)."
+    },
+    "MATH": {
+      "name": "wrong arithmetic or reasoning",
+      "definition": "wrong operation or set-up, calculation slip, wrong unit conversion, or wrong logic (any category, including counting inside a word problem); in maths prompts it includes misstated working when the final answer is right (amendment F)."
+    },
+    "INSTR": {
+      "name": "instruction or format not followed",
+      "definition": "on topic, but an explicit requirement is violated: number of words, sentences, items, lines or paragraphs; case; punctuation; required or forbidden words; P.S.; JSON or other structure; language; register (formal, for a child ...); 'only output ...'; a follow-up request not applied."
+    },
+    "INCOH": {
+      "name": "incoherent or off-topic",
+      "definition": "does not address the request or answers another question; incoherent, self-contradictory or nonsensical text; leaked template or role text."
+    },
+    "LOOP": {
+      "name": "repetition or loop",
+      "definition": "repeated sentences, list items or phrases that dominate the reply; a degenerate loop."
+    },
+    "TRUNC": {
+      "name": "truncated",
+      "definition": "stops in mid-sentence or mid-code (token limit) before the answer or a required part is delivered."
+    },
+    "THIN": {
+      "name": "too thin, empty or deflecting",
+      "definition": "empty, generic or much too short to be useful; refuses or deflects a harmless request; or leaves out a key part of what was asked."
+    },
+    "CODE": {
+      "name": "broken or wrong code",
+      "definition": "code that would not run or does not do what was asked; wrong language; nonsense code; a wrong explanation of what given code does (code category)."
+    },
+    "WEAK": {
+      "name": "weaker, no hard error",
+      "definition": "acceptable, but the readers preferred the other reply for quality: less useful, less clear, less complete, clumsier or more verbose; no factual, reasoning, instruction or degeneracy defect is named."
+    }
+  },
+  "rules": [
+    "1. Choose the defect named by most of the four notes for that reply.",
+    "2. Ties between defects are broken in this order (content before form, cause before symptom): INCOH, FACT, MATH, CODE, INSTR, LOOP, TRUNC, THIN, WEAK.",
+    "3. A loop that runs into the token limit is LOOP, not TRUNC; a reply cut off before its answer with no loop is TRUNC.",
+    "4. In maths prompts a wrong final answer is MATH whatever the cause in the working, unless the reply never reaches an answer (TRUNC if cut off, THIN if it stops or deflects, INCOH if it answers another question).",
+    "5. In code prompts any error in the code or in an explanation of code is CODE.",
+    "6. If the notes name no defect for a reply and it was not preferred only for quality, check the reply; label OK if it is acceptable.",
+    "7. Pair-level reasons are derived, not labelled separately: the reason for a LOSS is our label; the reason for a WIN ('ours better because the opponent ...') is the opponent's label; a BOTH-BAD prompt is described by both labels."
+  ],
+  "amendments_during_labelling": [
+    "A. (after the first 20 Falcon pairs, which were re-checked against it) Rule 2's order becomes INCOH, LOOP, FACT, MATH, CODE, INSTR, TRUNC, THIN, WEAK (LOOP moved up): a reply whose repetition dominates it is degenerate whatever else is wrong with it (pair index 16, writing-082: 'neither poem is funny' and 'ours loops' were each named by all four notes).",
+    "B. (after the first 20 Falcon pairs, which were re-checked against it) Rule 8 (new): the reply the readers preferred, and a reply of a tie that they found acceptable, is labelled OK unless at least two of the four notes name a real defect in it (any label but WEAK); quality remarks about a preferred reply ('wordy but relevant', 'messy but a real invitation') leave it OK.",
+    "C. (after the first 20 Falcon pairs, which were re-checked against it) Rule 9 (new): a defect the notes give to both replies ('neither poem is funny') counts for each reply.",
+    "D. Rule 10 (new, after 42 Falcon pairs; the first 42 were re-checked against it): a defect the notes give to ONE reply only, named by at least two notes, outranks a defect they give to both replies, so that a label says what distinguishes the reply (pair index 41, instruct-052: 'both fail turn two' x4 against 'theirs error-ridden in turn one' x3 gives theirs FACT). Two notes that describe the same fault in different words ('says vaccines prevent antibodies' / 'contradicts itself on antibodies') count as the same defect.",
+    "E. Rule 11 (new, after 158 MobileLLM pairs; all earlier labels re-checked against it): when the notes say a reply gives 'no story / no list / no code / no poem' and the reply instead consists of meta-text about the task, rambling, or a boxed stub ('\\boxed{MOON}'), the label is INCOH (it does not address the request); THIN is kept for replies that address the request with too little: a tautology, a bare restatement, a few words, an empty reply. The replies of such cases were read."
+  ],
+  "amendments_after_labelling": [
+    {
+      "id": "F",
+      "when": "after all 400 pairs were labelled, prompted by a review of the report; no label was changed",
+      "text": "F. The MATH definition read: 'wrong operation or set-up, calculation slip, wrong unit conversion, or wrong logic that gives a wrong result (any category, including counting inside a word problem).' It was widened to what the labels had applied: misstated working is MATH even when the final answer is right (the notes name the faulty working as the defect, and WEAK excludes a named reasoning defect). Five labels are of this kind; they are listed in 'covers'.",
+      "covers": [
+        {
+          "set": "falcon",
+          "side": "ours",
+          "prompt_id": "math-031"
+        },
+        {
+          "set": "falcon",
+          "side": "ours",
+          "prompt_id": "math-055"
+        },
+        {
+          "set": "mobilellm",
+          "side": "ours",
+          "prompt_id": "math-049"
+        },
+        {
+          "set": "mobilellm",
+          "side": "ours",
+          "prompt_id": "math-055"
+        },
+        {
+          "set": "mobilellm",
+          "side": "theirs",
+          "prompt_id": "math-019"
+        }
+      ]
+    }
+  ],
+  "support": "with each defect label the number of the four notes that name that defect for that reply (0-4) is recorded, to measure how strongly the notes back the label",
+  "maths_failure_subcodes": {
+    "SETUP": "wrong operation, wrong formula or wrong conversion factor; misreads what is asked",
+    "SLIP": "right set-up, wrong calculation",
+    "NONSENSE": "numbers or steps unrelated to the problem; incoherent working",
+    "NOANSWER": "no final answer (stops, cut off, or answers something else)",
+    "CONTRADICT": "the correct value appears but the stated final answer differs"
+  }
+}

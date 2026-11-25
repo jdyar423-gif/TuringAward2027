@@ -1,0 +1,17 @@
+{
+  "pfda8ad60f3": "A valid JSON despite wrong year and extra key; B invalid degenerate output.",
+  "pa40616298b": "B writes an actual email; A only loops a boxed restatement.",
+  "p7292077305": "A's explanation and code are wrong (shadows str); B degenerate, no fix.",
+  "paa5becfc9e": "Both regexes wrong: A requires six-plus digits, B matches six word chars.",
+  "p6e0a44976b": "Neither names the continents; A lists planets and loops, B repeats Antarctica.",
+  "p3127f820a0": "A's first answer is good; B rambles, cut off, ignores 'Happy reading!'.",
+  "pd7d86bb0f7": "A gives mostly correct benefits; B is circular and incoherent.",
+  "p4692d62cfd": "B correctly says creditworthiness despite fabrications; A wrongly says percentage of amount.",
+  "p9b17874735": "Neither mentions light travelling faster than sound; both are nonsense.",
+  "p559b035134": "B gives three mostly faithful bullets; A is a garbled degenerate loop.",
+  "p582b7d3d82": "A is empty; B writes three paragraphs with rough *** separators.",
+  "pdb495c8563": "A defines inflation as price decline, contradicts itself; B circular nonsense.",
+  "pff9652e08e": "B correctly computes 46; A wrongly adds two sides to get 23.",
+  "pb9321cb078": "A loops boxed letters; B 'CARLENS' is capitals but describes nothing.",
+  "p1ec742720c": "A is a short email with both words; B degenerate and cut off."
+}

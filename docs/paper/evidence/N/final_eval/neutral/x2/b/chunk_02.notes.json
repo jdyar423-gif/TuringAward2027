@@ -1,0 +1,17 @@
+{
+  "p84404e4196": "B degenerate, lists solutions and crops as causes; A flawed but names real causes.",
+  "pfda8ad60f3": "A degenerate invalid JSON loop; B valid JSON though wrong year, extra key.",
+  "pdefcf413fa": "A never writes about rain; B on-topic but five paragraphs, not two.",
+  "pd5b88be4ae": "Both fail JSON array turn; A loops with 'human' pet, B lists tiger.",
+  "pc135a5cd42": "B confidently wrong (20%); A rambling and cut off but correct 25%.",
+  "pfeef88f377": "A repeats nonsense 'dedicated vehicle' loop; B generic, weak, but on-topic travel advice.",
+  "p13c8892188": "B wrongly says break returns a value; A says it exits, example broken.",
+  "p6e0a44976b": "Neither names continents: A repeats Antarctica, B lists planets and loops.",
+  "p6de9093b28": "A's code invalid and wrong; B rambles about ASCII, no code, cut off.",
+  "p65ecafa08a": "A's turn-1 code correct; B's has syntax error, off-by-one. Both skip digit check.",
+  "p5280ea4ec2": "B only boxed placeholder text; A gives ideas and a short pick, though outdoor-heavy.",
+  "p3f966b9021": "A correct 15%; B miscalculates difference as 18 and gives -18%.",
+  "p3eea606d98": "A never writes an email; B's email is about a seminar, not farewell.",
+  "p4a991c2f55": "B nonsense about 'demanding the invitation', loops; A weak but on-topic tips.",
+  "peef0e50737": "A wrong sum 96 and average 24; B correct 80/4 = 20."
+}

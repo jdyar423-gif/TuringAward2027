@@ -1,0 +1,17 @@
+{
+  "pc251519705": "A returns original unchanged; B friendlier though it alters meaning slightly.",
+  "p8d28df1ea8": "B's speech is about science fair kits, off-topic; A welcomes fair attendees.",
+  "pa7e15b6fe4": "A mostly right despite false rhyme claim; B calls haiku a vowel sound.",
+  "p18e08fb8db": "A suggests outdoor hobbies, ignoring 'at home'; B fits better despite flaws.",
+  "p214ca1f37a": "A's logic wrong (compares key sets, no lowercasing); B's sorted comparison correct.",
+  "p36218305dc": "A correct 240; B's turn 2 is nonsense concluding 4w^2.",
+  "p1f1263a181": "A's pet list nonsense, extra text after JSON; B outputs unrelated JSON object.",
+  "pd396c987ba": "A's tips don't address declining; B offers usable phrases despite confusion.",
+  "p4c1d86c7d7": "A correct Everest 8,848.86 m; B names nonexistent 'Peakyr', no height.",
+  "p635064be94": "Neither explains verb/noun distinction; definitions confused or identical in both.",
+  "p27f4e6418c": "A coherent queen-cat story; B incoherent, contradictory, barely on premise.",
+  "p30030bd7df": "A brief but accurate; B fabricates locomotion and pheromone-release purposes.",
+  "p45be9a0366": "A misreads task, weak message; B delivers full warm encouraging message.",
+  "pcb9c98ac45": "A's turn 2 degenerate, rambling, cut off; B gives three bullets.",
+  "pacc76e50e2": "A writes four incoherent sections; B follows three-section format with coherent story."
+}

@@ -1,0 +1,17 @@
+{
+  "pd72c75463b": "A gives correct list comprehension; B loops endlessly, never settles, truncated.",
+  "pb611239080": "B is a flawed sectioned story (extra Section 3); A is nonsense.",
+  "p812e89cbec": "A gives weak letters (turn 2 wrong voice); B only boxes 'Santa Claus'.",
+  "p370f471881": "A lowercase, under 30 words, correct; B wrong, not lowercase, truncated.",
+  "p33bb172eec": "B states correct cause and a valid fix despite wrong examples; A degenerate loops.",
+  "p7e48ce1ea0": "A counts only uppercase vowels; B's regex matches nothing, claims false output.",
+  "p038ff18a40": "B is spooky but four sentences; A is boxed nonsense, no story.",
+  "pcfc7b6cf14": "B has some valid tips amid errors; A loops 'dedicated vehicle' nonsense.",
+  "p1001f90d72": "A meets topic and exact ending; B degenerate boxed loop, truncated.",
+  "p8944d4711c": "B gives a usable welcome speech; A outputs boxed fragments, truncated.",
+  "p1522eabc96": "B's definition correct though example invalid; A entirely wrong, no example.",
+  "p254d7ad3ed": "Both correct 24 km/h; B cleaner and shorter, A muddled step.",
+  "pa6ef8a0b78": "A gives correct definition (minor example error); B just boxes the word.",
+  "pb76d455016": "B writes a usable thank-you note; A outputs nonsense box.",
+  "paa9f603d80": "A advises swallowing, pouring water; B loops 'put it back'; both wrong."
+}

@@ -1,0 +1,17 @@
+{
+  "p03108789e7": "A loops incoherently; B returns sentence unchanged, not past tense.",
+  "pb5fb440396": "A gives boxed nonsense, no story; B delivers two dark sentences.",
+  "pba4211ff80": "A rambles, never finishes code; B gives correct sorted/Counter functions.",
+  "p0f6f028a6c": "A offers clunky but real slogan; B just boxes 'Local ingredients'.",
+  "p09d28610c4": "A contradicts itself, broken later code, cut off; B correct concise function.",
+  "p403ef2f09d": "A degenerate loops, never answers laps; B wrong both turns (0.05 m).",
+  "p223df3f6e9": "Correct $3,276; A gives $3,080 ignoring 5%; B degenerate, wrong numbers.",
+  "pbc51145d34": "A mostly accurate despite '500 employees' error; B incoherent, wrong boxed claim.",
+  "pb1299b2058": "A loops, interpreter 'function call' wrong; B fabricated, nonsensical example.",
+  "p8370780c59": "A invents Latin etymology, wrong meaning; B just restates the phrase.",
+  "p27fe7c2b4e": "A lists apples, cinnamon (wrong, not vitamin C fruits); B rambles, no list.",
+  "pa3f84c3264": "A loops without defining; B calls haiku a vowel sound, false.",
+  "pf3ddf56587": "A loops, no poem; B gives four-line cat poem as asked.",
+  "p4fbc0a1a37": "A somewhat more formal despite 'Hey'; B degenerate, returns original unchanged.",
+  "pc4872d9961": "Correct $40.50; A never answers; B concludes wrong $28.67."
+}

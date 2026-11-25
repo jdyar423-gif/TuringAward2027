@@ -1,0 +1,17 @@
+{
+  "pf4fb103191": "A garbled non-sentence repeating 204; B endless verb/noun loop, cut off, no sentence.",
+  "p7ed081474d": "A's JS has syntax error and inverted comparison; B gives broken C++ instead.",
+  "pf09c2c353f": "B gives core 5-7-5 Japanese poem definition despite errors; A is a degenerate loop.",
+  "pa826193564": "A has false Gulf Stream claim but gives evaporation; B incoherent, says 2% salt.",
+  "pf7d6d4ac90": "Neither gives past tense: A loops on present tense, B changes verbs and meaning.",
+  "pb5bdb0f3ca": "A degenerate loop; B claims Mars largest, nitrogen-oxygen air, microbial life: misinformation.",
+  "p19ef46960e": "B lists sensible hydration benefits; A is circular tautology with broken boxes.",
+  "pe2bffbf0fc": "B correct 1023 and 341 despite glitch; A loops endlessly, never answers.",
+  "p63de15d062": "B real lighthouse poem, though third person; A nonsense about symmetrical lines.",
+  "pc60ff7c9bd": "A degenerate loop; B reverses key facts on processors, software, price, displays.",
+  "pee3f5c5d32": "B gives a tea poem, syllables off; A degenerate word-structure loop, no haiku.",
+  "p1cbbbeaf48": "A omits Mars, claims inner planets ringed; B loops on Moon, skips rings.",
+  "pbbaafd3c94": "B names deforestation, energy, landfill benefits despite textile errors; A vague, garbled.",
+  "pdb2f9b9f51": "B correctly explains missing dict key, weak avoidance tips; A loops with invalid code.",
+  "pbe2ae220e4": "B valid 10-word sentence; A loops on tautology 'The ocean is the ocean'."
+}

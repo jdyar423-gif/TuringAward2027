@@ -1,0 +1,17 @@
+{
+  "pae69e9bf23": "B omits the requested P.S. entirely; A adds one.",
+  "p46e3527bce": "B calls nonexistent Array.max; A works mostly, though initialized to arr.length.",
+  "p064f4cc078": "Both contradictory; A at least explains memory cells, B omits immune memory.",
+  "p4d326683f5": "Both absurdly wrong; neither gives about eight minutes.",
+  "pe233983d66": "B omits CO2, claims oxygen consumed; A's definition and equation correct.",
+  "pfca3859825": "B says releasing CO2 mitigates climate change; A mostly accurate.",
+  "p7389814b1a": "Both correct code; B's example output and 'filters out evens' worse.",
+  "pbbb98f5c9a": "Both final answers wrong: A 2000 cm², B 20 cm².",
+  "p8d28df1ea8": "B's speech is vacuous, repetitive ('interconnected yet interconnected'); A coherent, halved properly.",
+  "p6a055044ba": "Both fail turn 2 identically; B answers the usual book sense.",
+  "pac7bba1158": "A is incoherent; B correctly explains missing dictionary key and get().",
+  "pe1276b91ca": "A returns len(vowels), always 10; B's function correct.",
+  "p1da545dda2": "A's summary garbled, omits Gutenberg; B accurate though missing why-it-matters.",
+  "pa02664afbd": "Both wrong; neither explains phases from sunlit portion seen.",
+  "pd3bcff2e7d": "B reverses causality, omits school timing; A fuller despite 'earlier' error."
+}

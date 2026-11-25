@@ -1,0 +1,17 @@
+{
+  "p02bfbc269c": "Both give perimeter 23 m; correct perimeter is 46 m.",
+  "pc48b5ebb9e": "Both functions are broken nonsense; neither implements run-length encoding.",
+  "p4910433c06": "A repeats description verbatim instead of one-line ad; B at least writes ad copy.",
+  "p9be0637ea6": "A gives concrete dishes, atmosphere and service; B is generic with odd sentences.",
+  "pea74782d9c": "Both multiply instead of adding; correct 1.375, A says 1.25, B nonsense.",
+  "p3c86eef9b8": "A loops repetitively, robot already a master, degenerate ending; B coherent learning arc.",
+  "p828a921293": "Identical correct code; explanations equivalent in accuracy and length.",
+  "p7276ccaec2": "B omits the printing press entirely; A captures it despite one factual slip.",
+  "pa01d5f9693": "A puts heart in abdomen, calls ventricles arteries; B gets location and function right.",
+  "p8a8d4c338a": "Neither explains the meaning; A circular nonsense, B invents Latin etymology.",
+  "pd7e102f12f": "A's rewrite degenerates into endless 'magical' loop; B gives two lowercase sentences.",
+  "pdae35872ed": "A has syntax error and off-by-one; B's first function works; neither adds digit check.",
+  "pa3108f8458": "Both exceed three sections; B has six with garbled, degenerating text.",
+  "pb04b7189a3": "Both repeat the sentence unchanged in present tense.",
+  "p6f271c0f9c": "B's summary distorts facts; A's condensed text faithful, though framed as an edit."
+}

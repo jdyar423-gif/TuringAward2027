@@ -1,0 +1,22 @@
+{
+  "name": "final-prefopt-vs-falcon-k6ds",
+  "format": 2,
+  "n_pairs": 200,
+  "commitment": "d2a323d4fcb9f0c83035602f9f34e3c5d0784723d3f0e78a4089d425b94c22a1",
+  "commitments": [
+    "d2a323d4fcb9f0c83035602f9f34e3c5d0784723d3f0e78a4089d425b94c22a1"
+  ],
+  "added": [
+    200
+  ],
+  "by_category": {
+    "chat": 50,
+    "math": 30,
+    "instruct": 40,
+    "code": 30,
+    "writing": 50
+  },
+  "multi_turn": 52,
+  "created": "2026-11-24 20:56:27",
+  "updated": "2026-11-24 20:56:27"
+}

@@ -1,0 +1,17 @@
+{
+  "p22881b65d3": "A wrongly says 'is' checks value equality; B incoherent rambling.",
+  "p7a7f1682db": "A lists cactus and nonexistent 'Ramis', adds prose; B never outputs JSON.",
+  "p12e8018330": "A degenerate rambling; B answers sensibly but fails to quote entire answer.",
+  "p254d7ad3ed": "Both correct 24 km/h; B has muddled wording, A cleaner and shorter.",
+  "p16de1a50ad": "A degenerate 'people are pets' both turns; B relevant reasons and downsides.",
+  "pa542442124": "B boxed non-poem; A not funny, weak, but an actual morning poem.",
+  "pb2027eedb7": "A code crashes (undefined result_plus), false outputs claimed; B degenerate loop.",
+  "pf1c30b3a56": "B degenerate 'difference is zero' loop; A correct short-term vs long-term distinction, minor errors.",
+  "pbf3157c6dc": "A confused, contradictory, cut off; B correct recursion and O(2^n) explanation, buggy extra.",
+  "pb471439f97": "B repetitive boxed answers, thin; A coherent list of sleep functions.",
+  "pf8a22d380e": "A says 10,000 km, no name; B correct Everest 8,848 m despite odd area.",
+  "p0b0784516b": "A correct 45; B arithmetic error gives 225.",
+  "p96d4660fcc": "A degenerate repeated boxed line; B genuine encouraging message with tips.",
+  "p270d173c69": "Correct answer 216; A rambles to 21/3, B reports fabricated 28.",
+  "pe068496444": "A wrongly claims UN has no mandate; B accurate overview of UN functions."
+}

@@ -1,0 +1,17 @@
+{
+  "p7ff7a367e1": "A keeps 'Hey' and reverses meaning; B is properly formal.",
+  "p87c8693f97": "Neither dedupes preserving order: A's set() loses order; B sorts, keeps duplicates.",
+  "pfe054d1300": "Neither describes a favorite season in ten words; both are nonsense word lists.",
+  "pfe1ddf3f3d": "A clearer pros/cons; B's one-sentence summary omits all cons.",
+  "p7c1486d290": "A riddled with nutrition errors (proteins as carbohydrates); B mostly correct, concise.",
+  "p8b41e47b18": "B degenerates into loops and wrong JSON object; A gives valid array despite errors.",
+  "p39450a7f12": "A gives correct 150/75 minutes; B says 30 minutes per week, wrong.",
+  "pd3ef268735": "Both codes correct; A gives wrong formulas and claims it uses a loop.",
+  "p2b13c0cb08": "A pure nonsense (Greece, penguins); B flawed but gives evaporation as cause.",
+  "pfa3a153cc4": "B correct 24 km/h; A miscalculates 5 km/h.",
+  "p95b3f9bef0": "B is rambling repeated prose, no limerick; A attempts short verses on topic.",
+  "p9e97ac51ba": "A correct recursion and exponential explanation; B isn't recursive and is wrong.",
+  "pe54b39159e": "A misses FROM/GROUP BY but near-correct; B is garbage then degenerate loop.",
+  "p74a7f722b3": "A long and repetitive ('of light, of light'); B short coherent poem.",
+  "pb374715e29": "A is a usable invitation template; B is nonsensical placeholder list."
+}

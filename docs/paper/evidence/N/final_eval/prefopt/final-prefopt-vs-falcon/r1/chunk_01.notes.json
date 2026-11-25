@@ -1,0 +1,17 @@
+{
+  "peb1f6cec44": "Both contradict themselves; both examples broken (break outside loop; invalid C).",
+  "pfa4ebf2625": "Both comparisons wrong; A gives correct Jupiter diameter, B claims bigger than Sun.",
+  "pdb11fe7136": "A mostly accurate; B wrongly frames paper as textile component throughout.",
+  "p17deb05cd8": "Both wrong: ~343 m/s; A says 1.7 m/s, B 156,000 mph.",
+  "p2d42dea103": "A garbled perspective ('opportunities you've had'); B coherent usable note.",
+  "p38487ecabe": "A's code broken nonsense; B partially right, though returns list not generator.",
+  "p4dd882e968": "A's function works; B's code has undefined names and syntax errors.",
+  "pecbe88ec17": "B writes about the word, not forests; A is about forests, many 'green's.",
+  "p38594bcb35": "A accurate concise; B adds inventions and hallucinated 'changes made' meta-text.",
+  "p99a92b29bb": "B omits required word 'cup'; A includes all three words.",
+  "pd5e17f6588": "B gives correct recursive function and O(2^n); A not recursive, broken.",
+  "p45ee967f7c": "A turn 1 correct, turn 2 off-topic; B wrong science in both turns.",
+  "pe609ca4a67": "Both error-ridden; A absurd (underground, 19th century), B gets nomad-defense purpose.",
+  "pee2fa1e152": "A invalid nonsense; B lists cactus and non-word, repeats JSON with text.",
+  "p4ef8c29446": "B inverts causality, barely condenses; A concise and accurate; titles both fine."
+}

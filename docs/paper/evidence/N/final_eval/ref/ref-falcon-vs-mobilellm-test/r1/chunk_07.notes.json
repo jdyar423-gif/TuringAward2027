@@ -1,0 +1,17 @@
+{
+  "pb2027eedb7": "A degenerate symbol loop; B's code calls undefined function and is logically broken.",
+  "p96d4660fcc": "A writes a supportive message with tips; B loops the same boxed line.",
+  "p5d751aceb2": "A writes a poem, partially adds rhyme; B loops 'sun, sun, sun' degenerately.",
+  "pd153dd969b": "B gives a decent two-sentence summary; A rambles without a clean summary.",
+  "ped955dc52f": "A writes an overwrought but usable email; B loops a boxed phrase.",
+  "p77db1a38fe": "A's core definition (creditworthiness) correct despite shaky factors; B's 'percentage' answer wrong.",
+  "p118f698bb7": "A gives an incoherent story and title, ending not happier; B only boxed summaries.",
+  "pc767adc0c3": "Correct is $36; A never settles, B wrongly answers $32 with faked output.",
+  "p229437eaac": "A gives useful pros/cons and one-sentence summary; B loops 'home work' nonsense.",
+  "paaa5f92b03": "A gives correct C*9/5+32 function; B rambles wrong formulas, no code.",
+  "p77f33ba02f": "A attempts imperfect limericks on topic; B loops 'a limerith' degenerately.",
+  "p57871fb133": "A fabricates pollen/ears/lactic-acid process; B invents 'honeybeard' nonsense. Both wrong.",
+  "p55f41ec7b5": "A works for n>=2 (bug for n<=1); B's logic inverted, returns True for composites.",
+  "pf8a22d380e": "A correctly names Everest, 8,848 m (odd area claim); B says 10,000 km.",
+  "p12e8018330": "A answers but quotes only part; B rambles about single quotes, no answer."
+}

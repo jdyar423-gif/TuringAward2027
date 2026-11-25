@@ -1,0 +1,17 @@
+{
+  "p3c33976877": "B's turn-1 code crashes: len() given two arguments; A's code works both turns.",
+  "p5f4adba430": "A has syntax errors and nonsense; B's regex only accepts all-digit passwords.",
+  "p1ac1fd7a45": "A is a short rhyming poem; B degenerates into repetitive 'cup's cup' loops.",
+  "pe14322ff40": "Both stories are incoherent and plotless; A repetitive, B nonsensical events.",
+  "pd5f955898c": "A claims 'is' tests value equality; B invents a === operator. Both wrong.",
+  "p6bfa57ac9b": "A correctly names Jupiter though ratios wrong; B wrongly says Mercury.",
+  "pd97a9151ee": "A gives correct core (Japanese 5-7-5 poem); B calls haiku a grammatical construction.",
+  "p8fa5f55e17": "A describes a storm in all caps; B outputs one meaningless word.",
+  "pdfaa51366e": "A hallucinates flying snowmen and gives 16 words; B is one word, then broken template.",
+  "pe54b39159e": "B nearly correct (missing FROM, GROUP BY) but names method; A degenerate looping SQL.",
+  "pb0649e60ee": "A correctly gets width 7 and area 77; B's 24 is wrong.",
+  "p9f93a9509b": "Both lists contain absurd false facts (human food source; largest land animals, Greenland).",
+  "p3ea4477b1f": "A gives four tips incl. bad advice, then rambles; B gives three sound tips.",
+  "p2cceda03ff": "B omits the sickness reason entirely; A includes it despite odd content.",
+  "p2f72132c3a": "A's tips (memorize common names lists) don't help; B rambles off-topic about families."
+}

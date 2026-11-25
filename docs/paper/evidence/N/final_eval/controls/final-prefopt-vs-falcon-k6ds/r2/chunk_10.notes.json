@@ -1,0 +1,17 @@
+{
+  "p0e2b0640ad": "B repeats degenerate looping poem unchanged; A mostly rhymes after partial rewrite.",
+  "peef5939ef1": "B loops 'tapestry/journey' repetitively; A is coherent and kitchen-focused.",
+  "pc61df51cc0": "B clearer list with more valid benefits; A repetitive, vague, nonsense phrase.",
+  "p1e82b06ecd": "B's three facts all wrong (Arctic, jaws); A has one wrong (flight), two plausible.",
+  "pf1a7f31b70": "A's turn 2 just repeats quote, no explanation; B gives two-sentence explanation.",
+  "p0ff6f85ae3": "Both give nonsensical egg instructions (egg wash, potato masher; paste).",
+  "p9483c23f20": "A says 4h20m (actual ~8 min); B gives wrong distance, no time.",
+  "p34c1e3ef86": "A incoherent and cut off mid-line; B coherent though disagreement weak.",
+  "p858d877368": "A has some useful packing tips despite aircraft confusion; B repetitive nonsense.",
+  "pe9385fc7d9": "B is one meaningless word; A follows all-caps format, though incoherent.",
+  "p142fe01b6c": "A turn 1 correct ($165), turn 2 adds wrongly; B wrong both turns.",
+  "p5252a67f34": "A correct 25%; B miscomputes 8/32 as 0.2, giving 20%.",
+  "pf4f83978eb": "A adds errors (twelve months, reduced pay); B one error, omits support issue.",
+  "pbddcc662be": "B a fuller creative review; A odd perspective ('my customers'), repetition.",
+  "p59cc7e20b4": "A turn 2 outputs JSON object, not the list; B gives JSON array."
+}

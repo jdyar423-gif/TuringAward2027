@@ -1,0 +1,17 @@
+{
+  "p01635185f3": "A states correct core cause and fix despite errors; B's in-operator explanation is nonsense.",
+  "p00de6ecc48": "Both codes correct; B adds wrong factorial alternative and claims loop in turn 2.",
+  "pa7829cf180": "Neither forms a complete sentence; A echoes notes, B garbles and duplicates 204.",
+  "p9eb7b14a4b": "A invents === and wrong outputs; B wrongly says is checks value equality.",
+  "p588dd8569e": "B lists only five items with nonsense; A gives six bullets, one duplicated.",
+  "p83154645e5": "A degenerates into 22 looping steps; B's five steps add coffee, not tea-making.",
+  "p2b42bcc42b": "A correct 5000 m in turn 1; B wrong both turns; both miss 12.5 laps.",
+  "p82767edbcf": "A is repetitive and degenerate; B coherent though neither uses lighthouse's point of view.",
+  "p3b610adb67": "A repeats identical unrhymed poem in turn 2; B adds some rhymes, coherent.",
+  "pb058ba7f47": "A incoherent (sun, sands, springtime); B stays on first-snow theme.",
+  "p8869380a8a": "B advises swallowing water and rinsing phone, harmful; A vague but harmless.",
+  "p59954340ea": "A's ad is a multi-sentence paragraph, not one line; garbled names.",
+  "p6f57279de7": "B's turn 2 uses 18 instead of 126 and never gives 42.",
+  "p8e3266c430": "B omits required word horizon; A includes all three under 60 words.",
+  "pb96f5691f8": "Both correct Euclid; A adds nonsensical no-common-divisor claim; B shorter."
+}

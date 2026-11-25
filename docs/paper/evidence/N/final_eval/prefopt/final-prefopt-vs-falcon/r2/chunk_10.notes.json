@@ -1,0 +1,17 @@
+{
+  "p36ab037dd6": "Both drop commas; A's comma-free rewrite garbles lists and drops half; B fluent.",
+  "p96c8b59304": "A riddled with errors (oxygen from glucose, light Calvin cycle); B simpler, correct equation.",
+  "pa81b4cc5a3": "A is nonsense (scores below 100 unlawful); B's core definition correct, some errors.",
+  "p99a92b29bb": "A omits required word 'cup'; B includes all three words.",
+  "p9d25cab25f": "Both miss verb/noun distinction; A coherent, partly right; B self-contradictory, incoherent.",
+  "pdf201eb593": "Both functions work; A duplicates code with absurd output 120; B one example wrong.",
+  "p4dd882e968": "A's code is syntactically broken, undefined functions; B's simple counter works.",
+  "p55ffa0aafd": "Both incoherent advice (windshield wiper, fuel, check-ins); neither addresses overnight sleep.",
+  "p2a3e42245d": "A garbled ('not forgotten or forgotten'), misses benefits; B covers main points.",
+  "pf61fbaf69f": "Both misinterpret the idiom; invented meanings and fake Latin etymology.",
+  "p05293062b6": "Both badly wrong; A's planet order nearly right; B is pure gibberish.",
+  "pdb4ba07f4d": "A gives a thin generic quote with odd framing; B genuinely encouraging message.",
+  "pa1a9439126": "A's tips are nonsense (lists of common names); B deflects incoherently.",
+  "p028b51af18": "A is pure nonsense; B mentions thrust, drag, pressure differences, partially correct.",
+  "p8193aa5cf8": "Correct answer 215 minutes; A says 1080, B says 13.33."
+}

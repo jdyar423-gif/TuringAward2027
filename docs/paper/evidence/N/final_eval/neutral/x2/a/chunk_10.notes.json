@@ -1,0 +1,17 @@
+{
+  "pf64c0a811e": "A is a usable template with placeholders; B degenerate boxed [date] loop.",
+  "p8c7427a3d8": "Both say 20 square centimeters; correct is 200,000 cm². B also loops.",
+  "p9484e33c18": "B coherent paragraph under 60 words but lacks 'horizon'; A degenerate, cut off.",
+  "p3ea8acc588": "A degenerate boxed loops both turns; B writes message, though omits P.S.",
+  "p6c8d045e9c": "A gives six bullets, partly odd; B is nonsense with no list.",
+  "p912438aa8d": "A loops with invalid code; B vague but suggests try/except KeyError.",
+  "p74ab0b4ad8": "A gives coherent sleep benefits; B vague circular boxed answer.",
+  "pc024e7ea38": "A wrong explanation and wrong outputs; B tautological loop, cut off.",
+  "p5280ea4ec2": "A degenerate boxed text; B lists ideas, mostly outdoor, follows 25-word limit.",
+  "p1f6eb96eda": "B degenerate 'I'm wrong' loop; A gives quote, though turn 2 unexplained.",
+  "p495c2e2438": "A confidently false Mars facts (habitable, 100°C); B degenerate loop.",
+  "p2c0c358e51": "A correct 128 but repeats in turn 2; B wrong 448 and 18 days.",
+  "p26874fb1f8": "A nonsense 'apply chemical stain' loop; B flawed but usable washing steps.",
+  "p760319db47": "A gives ten sensible tips; B degenerate boxed nonsense.",
+  "p00b8132d04": "B correct len(split()) and regex punctuation removal; A sums lengths, loops."
+}

@@ -1,0 +1,17 @@
+{
+  "p6c488f00d2": "A writes broken C++ not JavaScript; B's JS has const bug but right logic.",
+  "pdda117abdd": "A degenerate rambling, no list; B follows format, but duplicate and some wrong fruits.",
+  "pf2ffd5af6c": "B's definition correct, turn 2 weak; A degenerate boxed loops both turns.",
+  "p69f509004e": "Correct answer $36; A says 96, B rambles to wrong boxed answers, cut off.",
+  "p2e28cb1eb4": "A's steps aren't boiling (no water, milk and sugar); B degenerate loop.",
+  "p441953fd13": "A correct 165 in turn 1, repeats in turn 2; B wrong both turns.",
+  "p184f0c24a7": "A messy but includes the four causes; B lists solutions and crops, degenerate.",
+  "pdb7c662f42": "A computes 8/32 as 0.2 and cuts off; B rambles but reaches 25%.",
+  "p1684a2606a": "B is empty; A gives three on-topic paragraphs, dividers inline.",
+  "pb0ca9c0dc0": "A's code counts characters; B returns length, degenerate rambling; neither answers turn 2.",
+  "p9239ae3289": "Both nonsense; neither mentions pressure equalization or Eustachian tubes.",
+  "pb7a30f8329": "A gives no story, meta nonsense; B horror prose but overlong, degenerate.",
+  "pe6f0048781": "A always returns 10; B counts vowels but misses lowercase.",
+  "p06c3162abd": "A garbled and cut off; B gives practical, mostly sensible advice.",
+  "p2dd0acf5f5": "A descriptive sentence marred by blank and junk; B tautology loop."
+}

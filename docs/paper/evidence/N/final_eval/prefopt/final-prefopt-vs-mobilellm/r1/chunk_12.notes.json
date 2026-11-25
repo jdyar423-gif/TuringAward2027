@@ -1,0 +1,17 @@
+{
+  "pf726f7d00d": "B correctly names Jupiter (size figures wrong); A degenerate loop claiming the Moon.",
+  "p18a51913b1": "A boxed fragment then endless loop ignoring turn 2; B answers both turns reasonably.",
+  "pc23ce9ac45": "Both fail turn 2 (A repeats turn 1, B wrong 62.5%); B's turn 1 cleaner.",
+  "p0acf31529a": "A's turn 1 good, turn 2 garbled; B nonsense boxed 'wind moving into air' twice.",
+  "p0d8c4d277b": "A just returns notes, no sentence; B degenerate looping word breakdown, cut off.",
+  "p53dc0c076b": "Neither gives advice: A boxed nonsense; B deflects, suggests contacting 'local recorder'.",
+  "p0f5eb1110b": "A degenerate 'Sunlight' loop; B gives ocean poems, though not haiku form.",
+  "p662f076855": "A states heart pumps blood (some anatomy errors); B degenerate circular loop, cut off.",
+  "p8d3a7936a8": "A describes 'molten core' snowman, nonsense; B repeats 'noun phrase' boxes in loop.",
+  "p6cacf9ad85": "A delivers a coherent welcome speech; B degenerate boxed fragments, no speech.",
+  "p59f243ed25": "Both fail turn 2 (A computes 18*3, B repeats 126); B's turn 1 cleaner.",
+  "p3c599f35f1": "A meets lowercase and length constraints correctly; B wrong definition, capitals, cut off.",
+  "pb619a4768a": "A reaches correct 36; B uses 241 and answers wrong 36.5.",
+  "p5b795185f8": "A repetitive but on-topic poem; B degenerate loop with no poem.",
+  "pfff15e7cbe": "A gives no story, only boxed summary; B writes story, overlong and purple."
+}

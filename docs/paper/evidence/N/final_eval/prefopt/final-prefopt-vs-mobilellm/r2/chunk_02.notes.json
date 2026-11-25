@@ -1,0 +1,17 @@
+{
+  "p84404e4196": "A lists all four causes despite redundancy; B degenerates, calls apples and almonds causes.",
+  "pfda8ad60f3": "B gives valid JSON despite wrong year and extra key; A degenerate invalid rambling.",
+  "pdefcf413fa": "B writes about rain but five paragraphs; A never writes paragraphs, loops placeholders.",
+  "pd5b88be4ae": "Both fail JSON array; B's short list partly right, A loops listing a human.",
+  "pc135a5cd42": "A rambles but reaches correct 25%; B cleanly computes wrong 20%.",
+  "pfeef88f377": "B gives weak but on-topic advice; A loops nonsense 'dedicated vehicle' boxes.",
+  "p13c8892188": "A states break exits loop, buggy example; B wrongly says break returns value.",
+  "p6e0a44976b": "Both say 7, neither names continents; B loops and lists planets.",
+  "p6de9093b28": "A's code invalid and wrong; B rambles about ASCII without any code.",
+  "p65ecafa08a": "A's turn-1 code correct, ignores digit rule; B has syntax error, off-by-one both turns.",
+  "p5280ea4ec2": "A's ideas mostly outdoor but usable, short pick; B only boxes placeholder.",
+  "p3f966b9021": "A correct 15%; B miscomputes difference as 18, gives -18%.",
+  "p3eea606d98": "A degenerate boxes; B's email about a seminar, never mentions farewell or retirement.",
+  "p4a991c2f55": "A's tips muddled but on-topic; B degenerate 'demand the invitation' nonsense loop.",
+  "peef0e50737": "B correct sum 80, average 20; A wrong sum 96, average 24."
+}

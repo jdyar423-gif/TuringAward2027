@@ -1,0 +1,17 @@
+{
+  "p495c2e2438": "B is coherent misinformation (warm, habitable Mars); A is a degenerate loop.",
+  "p91a03409e2": "B gives correct formula code; A loops without ever giving the formula.",
+  "pbc51145d34": "B summarizes key results despite '500 employees' error; A is nonsense.",
+  "p1a1fc70f70": "A answers 'yes' correctly in one word; B rambles and boxes options.",
+  "pa8b4872791": "A is a valid 49-word review; B is nonsense about transforming shoes.",
+  "pd272155af6": "B explains antibody stimulation despite errors; A is a repeated boxed-answer loop.",
+  "p09bdced027": "A comma-free, partly usable but one degenerating paragraph; B incoherent with commas.",
+  "p01484e8c80": "B writes a weak story, repeats it in turn two; A gives no story.",
+  "pf726f7d00d": "A names Jupiter correctly though size ratios are wrong; B claims the Moon.",
+  "p9f8b5a3220": "A's code counts characters; B's returns length, loops; neither answers tie question.",
+  "p4fbc0a1a37": "B is modestly more formal; A just repeats the original message in a loop.",
+  "p8c46983ab7": "B gives a muddled but real snow poem; A only boxes 'Winter snow' repeatedly.",
+  "p2183a7ad4e": "Neither mentions sunlit side and lunar orbit; both give wrong rotation explanations.",
+  "p8eabc28c21": "A's poem is not an acrostic of MOON; B only boxes 'MOON'.",
+  "pee0f99ddde": "A repeats the forecast unchanged; B is nonsense about probability distributions."
+}

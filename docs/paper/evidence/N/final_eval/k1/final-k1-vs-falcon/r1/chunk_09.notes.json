@@ -1,0 +1,17 @@
+{
+  "p0bb6cf916b": "A correct $64; B forgot shirts, answered $124.",
+  "padb6de6110": "Neither function finds longest word; both second-turn answers are nonsense.",
+  "p9c21527a86": "Both codes correct; B's explanation says it filters out evens, A minor example slip.",
+  "pad2a617f9a": "Both full of false facts: Mars as giant star, largest planet, microbes.",
+  "p7443b80c08": "A three short lines, near-haiku; B seven long lines, not a haiku.",
+  "pff63db2083": "Neither uses past tense; A changes meaning, B repeats sentence unchanged.",
+  "p8b89032b1a": "B recommends library card ignoring gardening; A suggests gardening set.",
+  "p6beee05239": "A code syntactically broken; B counts characters and has syntax error.",
+  "p9ac75d2842": "A explains antibodies and memory despite errors; B says vaccines prevent antibodies.",
+  "p31e219785e": "Both weak; A duplicate Section 3 but tells story, B no real plot.",
+  "p18fa108b2e": "A repeats sleep, clarity, stress items; B ten distinct accurate benefits.",
+  "p1269bf54f7": "B says credit score measures earnings, wrong; A core definition correct.",
+  "pc6ec2d481a": "A uses green many times; B not about forests, green only twice.",
+  "p1f46770a86": "A regex correct though demo wrong; B wrong regex, degenerate cut-off string.",
+  "p75cc4392c0": "A correct Everest 8,848 m; B invents 'Peakyr', no height."
+}

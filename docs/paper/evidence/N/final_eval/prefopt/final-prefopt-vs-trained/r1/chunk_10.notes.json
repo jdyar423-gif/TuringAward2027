@@ -1,0 +1,17 @@
+{
+  "pb1ab831570": "Both poems poor: A degenerates into 'a star's presence' loops; B long, incoherent.",
+  "pc16b50a604": "A's final answer 490 is correct; B's 245*2=495 is an arithmetic error.",
+  "p62791e7d10": "Correct product is 1081; A says 1135, B says 1176, both wrong.",
+  "p4ff36ed99b": "Both misexplain the error with nonsense code; neither shows converting the int via str().",
+  "p4ee5a5b818": "Same correct function; A adds valid Counter variant, B has a nonsense explanatory sentence.",
+  "p4c5a315b09": "Both invalid: wrong structure, non-desert animals, extra text despite 'only JSON'.",
+  "pea74782d9c": "Correct is 1.375; A gives 5.000000000000001, B gives 1.25, both wrong.",
+  "p9893fad1c1": "Neither rhymes properly; both degenerate into repetitive 'cup of coffee'/'embrace' loops.",
+  "p057ab69f2c": "Both stories incoherent nonsense; A's slight first-sentence deviation not decisive.",
+  "pcccc65bc54": "Both show reverse() twice with wrong output; no second method; B adds invalid join.",
+  "p35884acb7f": "Turn 2 fails in both: A off-topic about aging, B technical, garbled, wrong.",
+  "p8b534452bc": "A at least states vacation until June 12; B wrong scenario, no date.",
+  "p2b6105c4c3": "A is a meaningless two-liner; B gives a reasonable list of sleep benefits.",
+  "p6d6d7be08d": "Both wrong: neither mentions cabin pressure and Eustachian tube equalization.",
+  "p524de36ee4": "Turn 2 degenerate in both: no three bullets, rambling loops, garbled ending."
+}

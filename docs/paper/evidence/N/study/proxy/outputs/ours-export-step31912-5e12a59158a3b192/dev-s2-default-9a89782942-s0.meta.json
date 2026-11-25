@@ -1,0 +1,38 @@
+{
+  "run_id": "ours-export-step31912-5e12a59158a3b192/dev-s2-default-9a89782942-s0",
+  "backend_key": "ours-export-step31912-5e12a59158a3b192",
+  "label": "dev-s2-default",
+  "seed": 0,
+  "settings": {
+    "temperature": 0.6,
+    "top_p": 0.9,
+    "top_k": 0,
+    "min_p": 0.0,
+    "typical_p": 1.0,
+    "repeat_penalty": 1.0,
+    "presence_penalty": 0.0,
+    "frequency_penalty": 0.0,
+    "max_tokens": 768,
+    "system_prompt": null,
+    "strip_think": false,
+    "samples": 1,
+    "select": "first",
+    "extra": {
+      "particles": 6,
+      "use_critic": false,
+      "use_library": false
+    }
+  },
+  "settings_hash": "9a89782942",
+  "backend": {
+    "kind": "callable",
+    "factory": "bes.export:export_generator",
+    "kwargs": {
+      "export": "/content/bes_cli/study/s2/default/export"
+    },
+    "key": "ours-export-step31912-5e12a59158a3b192"
+  },
+  "harness_version": "1",
+  "n_prompts": 60,
+  "written": "2026-11-24 12:15:14"
+}

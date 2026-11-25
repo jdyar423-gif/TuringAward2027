@@ -1,0 +1,17 @@
+{
+  "p50ede58cdd": "A advises mowing, pollinators, 6-8h direct sun; B repetitive but mostly sound.",
+  "peb1f1ac7b9": "A lacks the <<title>> and loops 'a love'; B follows format.",
+  "p4e6acac908": "B repeats unrhymed poem unchanged; A partially adds rhymes, better turn 1.",
+  "p275b4e228c": "Neither is a child's letter; neither turn-2 reply is from Santa.",
+  "p66a2a68307": "A garbled, not about local; B incoherent list, even 'Must Not Be Local'.",
+  "pa556918456": "Both wrong on turn 2 (50%, 75%); correct is 75/84 = 89.3%.",
+  "p011c146534": "B thanks workshop participants, off-topic; A is a usable end-of-year note.",
+  "pbce648c837": "A omits the required closing question; B ends with it exactly.",
+  "pf0056bd782": "A hallucinates agencies, Ban Ki-moon, 1948; B broadly accurate.",
+  "pd29f965e91": "B fuller, encouraging despite odd subject line; A thin with chatbot framing.",
+  "p7635bc7df2": "A says 9.2 billion years; B concludes 72.5 minutes, contradicting itself.",
+  "p642b5915a5": "A wrongly says 3000 g for 10 people; B correct 750 g.",
+  "p1109db575d": "Both wrong: A says $96, B $32; correct is $36.",
+  "padb6de6110": "Neither function finds longest word; turn-2 answers are nonsense.",
+  "pf5331e216d": "Both misexplain the error; A suggests int() conversion, B irrelevant code."
+}

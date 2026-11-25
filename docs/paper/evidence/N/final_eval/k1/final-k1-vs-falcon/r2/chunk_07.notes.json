@@ -1,0 +1,17 @@
+{
+  "pef4abf3f76": "Both correct Euclid; A shorter, B adds a false 'no common divisor' claim.",
+  "pff3a25f93f": "A lists a cactus and non-animal, repeats output; B degenerate repeated strings.",
+  "p6a7bf00d89": "A covers summary and why-it-matters; B says 14th century, no why-sentence.",
+  "p1765337481": "A's area 60 correct, doubling answer 120 wrong (240); B wrong both turns.",
+  "p1cf331cdf9": "Both final answers wrong (correct 3,276): A 3,080, B arithmetic slip 3,216.",
+  "pca4d762c06": "B's loop (left < right) misses last element; A is correct binary search.",
+  "p5500074f9e": "Both correct; B duplicates its code block and example 10->15 is wrong.",
+  "p23c850cd11": "B degenerates into 'FoX' loops; A coherent though turn 2 lacks disagreement.",
+  "pfa3a153cc4": "A correctly gets 24 km/h; B's computation is nonsense, 5 km/h.",
+  "p01c3c06548": "B's slicing correct (loop wrong); A's join() crashes, wrong output comments.",
+  "p303092cf10": "Both mention textiles oddly; B gives more accurate benefits, A mostly confused.",
+  "p03a5d70756": "Both give wrong counts (10, 13); B lists planets as continents.",
+  "pe22d96fa42": "A misses the recruitment problem and dodges turn 2; B engages despite errors.",
+  "p610eae38d1": "A correctly converts to 200,000 cm²; B wrongly says 20 cm².",
+  "p5918aa19e9": "B correct 25%; A computes 8/32 as 0.2 and is cut off."
+}

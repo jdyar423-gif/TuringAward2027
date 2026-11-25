@@ -1,0 +1,22 @@
+{
+  "name": "final-k1-vs-mobilellm",
+  "format": 2,
+  "n_pairs": 200,
+  "commitment": "e128eb4a2afd2f79660def4297f628b72995939675f49ef1f1b96f4966034c38",
+  "commitments": [
+    "e128eb4a2afd2f79660def4297f628b72995939675f49ef1f1b96f4966034c38"
+  ],
+  "added": [
+    200
+  ],
+  "by_category": {
+    "writing": 50,
+    "chat": 50,
+    "code": 30,
+    "instruct": 40,
+    "math": 30
+  },
+  "multi_turn": 52,
+  "created": "2026-11-24 21:23:08",
+  "updated": "2026-11-24 21:23:08"
+}

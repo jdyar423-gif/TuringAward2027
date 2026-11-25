@@ -1,0 +1,17 @@
+{
+  "p80784b61a7": "Both miss 240 on turn 2; A repeats old answer, B says 120, cleaner.",
+  "paae577739d": "B degenerate loop claiming a virus is a bacterium; A flawed but on topic.",
+  "pd472230537": "A's explanation and fixes wrong (int conversion, bogus str.join); B incoherent loop.",
+  "p0dd26cd780": "A adds coffee, nested sub-steps, no real tea method; B 'fill five cups' nonsense.",
+  "p2fc01b6470": "B correct 48 in x 2.54 = 121.92 cm; A confused, wrong, truncated.",
+  "pe81c71aa73": "B paragraph uses green many times; A degenerate repeated boxed non-paragraph.",
+  "p0de43e433c": "B correct working function (minor wrong example comment); A self-contradicting ramble, truncated.",
+  "p381356aa62": "A has interpreter errors but conveys core distinction; B degenerate repeated wrong boxes.",
+  "p9cc957dc32": "B writes dialogues (no disagreement, factual errors); A degenerate, never writes dialogue.",
+  "pc277c6e0a7": "B five bullets though watermelon/pomegranate weak, extra text; A rambles without list.",
+  "p7d4b152250": "B correct gist despite many errors; A degenerate boxes, turn-2 reply useless.",
+  "pf137620906": "A no code, rambling; B code broken: empty range, undefined variable, no chars.",
+  "pe36a5533b2": "B correct 10,080; A degenerate 'Wait, no' loop.",
+  "pb7a1de70f7": "B answers 'yes' as one word; A degenerate ramble ignoring format.",
+  "p1804d3cf13": "A's tips irrelevant (memorize common names, Duolingo); B degenerate boxed non-answer."
+}

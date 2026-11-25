@@ -1,0 +1,17 @@
+{
+  "p2949c8fc71": "A gives one vague sentence, not three; B's three sentences are factually false.",
+  "p4ffdd17013": "B outputs only the closing phrase, no explanation; A explains and ends correctly.",
+  "p8cedcb2716": "Both drop commas; B's rewrite becomes a garbled run-on list, A reads cleanly.",
+  "p8321149e58": "Neither poem's line initials spell MOON; both fail the acrostic entirely.",
+  "pa4c314e73a": "Both weak; B loops on weather/flight numbers and cuts off; A partly useful.",
+  "pec22271a3f": "A wrongly uses 1 foot = 2.54 cm, gets 1048; B correct 121.92.",
+  "p889ddbcc82": "A repeats playground content; B has odd subject, timeline contradiction, role confusion.",
+  "p11dbab8677": "A never answers (weekday nonsense); B correctly computes 10,080 minutes.",
+  "p1510154d36": "A writes four-line non-haikus with repetition; B keeps three-line haiku form.",
+  "p7a8556d836": "A rambles about new role and school, incoherent; B appropriate, adds P.S.",
+  "p6bd90baea5": "Both fail 'answer again'; A's first turn fits intended meaning; B's is off, erroneous.",
+  "p40574f29b8": "A valid 10-word sentence; B degenerates into blank and endless dots.",
+  "p00981577a3": "Both invent false processes; neither mentions nectar, enzymes, evaporation.",
+  "p0c59f31881": "B's second turn multiplies by 12, giving 1512 instead of 42.",
+  "p495d864d94": "B adds extra keys and obscure title, violating only-the-two-keys request."
+}

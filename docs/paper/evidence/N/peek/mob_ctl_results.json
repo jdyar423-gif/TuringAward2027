@@ -1,0 +1,222 @@
+{
+ "released": {
+  "all": {
+   "n": 200,
+   "w": 59,
+   "l": 5,
+   "t": 136,
+   "wlt": "59 / 5 / 136",
+   "score": "0.635",
+   "score_exact": 0.635,
+   "ci": "[0.566, 0.699]",
+   "decisive": "0.922",
+   "dci": "[0.830, 0.966]",
+   "p": "< 0.0001",
+   "p_raw": 9.002816938122327e-13
+  },
+  "189": {
+   "n": 189,
+   "w": 56,
+   "l": 5,
+   "t": 128,
+   "wlt": "56 / 5 / 128",
+   "score": "0.635",
+   "score_exact": 0.6349206349206349,
+   "ci": "[0.564, 0.700]",
+   "decisive": "0.918",
+   "dci": "[0.822, 0.964]",
+   "p": "< 0.0001",
+   "p_raw": 5.645556938604912e-12
+  }
+ },
+ "k6lp": {
+  "all": {
+   "n": 200,
+   "w": 39,
+   "l": 8,
+   "t": 153,
+   "wlt": "39 / 8 / 153",
+   "score": "0.578",
+   "score_exact": 0.5775,
+   "ci": "[0.508, 0.644]",
+   "decisive": "0.830",
+   "dci": "[0.699, 0.911]",
+   "p": "< 0.0001",
+   "p_raw": 5.539621596994948e-06
+  },
+  "189": {
+   "n": 189,
+   "w": 37,
+   "l": 8,
+   "t": 144,
+   "wlt": "37 / 8 / 144",
+   "score": "0.577",
+   "score_exact": 0.5767195767195767,
+   "ci": "[0.505, 0.645]",
+   "decisive": "0.822",
+   "dci": "[0.687, 0.907]",
+   "p": "< 0.0001",
+   "p_raw": 1.5374090196473844e-05
+  },
+  "by": {},
+  "report_keys": [
+   "x",
+   "y",
+   "pairset",
+   "n_pairs",
+   "n_rated",
+   "overall",
+   "by_category",
+   "by_turns",
+   "by_length",
+   "power",
+   "per_prompt_score",
+   "judge"
+  ],
+  "diag": {
+   "orders_agree": 0.71,
+   "first_position_pref_mean": -0.0541,
+   "format_mass_mean": 0.9859,
+   "clipped": 29
+  },
+  "overall_report": {
+   "n": 200,
+   "wins": 39,
+   "losses": 8,
+   "ties": 153,
+   "both_bad": 0,
+   "score": 0.5775,
+   "score_ci95": [
+    0.5082,
+    0.6439
+   ],
+   "decisive": 47,
+   "win_rate_decisive": 0.8298,
+   "win_rate_decisive_ci95": [
+    0.6986,
+    0.9111
+   ],
+   "sign_test_p": 6e-06
+  },
+  "vs_released_all": {
+   "a_better": 33,
+   "b_better": 9,
+   "same": 158,
+   "mean_diff": 0.0575,
+   "mean_diff_3": "0.058",
+   "mean_diff_exact": "23/400",
+   "p": 0.00027153923429068527,
+   "n": 200
+  },
+  "vs_released_189": {
+   "a_better": 32,
+   "b_better": 9,
+   "same": 148,
+   "mean_diff": 0.0582010582010582,
+   "mean_diff_3": "0.058",
+   "mean_diff_exact": "11/189",
+   "p": 0.000430857042374555,
+   "n": 189
+  },
+  "records": 200,
+  "agree": 0.71,
+  "first_pos": -0.05406595,
+  "clipped": 29,
+  "seconds_mean": 73.87494
+ },
+ "k6ds": {
+  "all": {
+   "n": 200,
+   "w": 31,
+   "l": 8,
+   "t": 161,
+   "wlt": "31 / 8 / 161",
+   "score": "0.558",
+   "score_exact": 0.5575,
+   "ci": "[0.488, 0.625]",
+   "decisive": "0.795",
+   "dci": "[0.645, 0.892]",
+   "p": "0.0003",
+   "p_raw": 0.0002940768754342571
+  },
+  "189": {
+   "n": 189,
+   "w": 29,
+   "l": 7,
+   "t": 153,
+   "wlt": "29 / 7 / 153",
+   "score": "0.558",
+   "score_exact": 0.5582010582010583,
+   "ci": "[0.487, 0.627]",
+   "decisive": "0.806",
+   "dci": "[0.650, 0.902]",
+   "p": "0.0003",
+   "p_raw": 0.00031255115754902363
+  },
+  "by": {},
+  "report_keys": [
+   "x",
+   "y",
+   "pairset",
+   "n_pairs",
+   "n_rated",
+   "overall",
+   "by_category",
+   "by_turns",
+   "by_length",
+   "power",
+   "per_prompt_score",
+   "judge"
+  ],
+  "diag": {
+   "orders_agree": 0.685,
+   "first_position_pref_mean": -0.0536,
+   "format_mass_mean": 0.993,
+   "clipped": 28
+  },
+  "overall_report": {
+   "n": 200,
+   "wins": 31,
+   "losses": 8,
+   "ties": 161,
+   "both_bad": 0,
+   "score": 0.5575,
+   "score_ci95": [
+    0.4882,
+    0.6246
+   ],
+   "decisive": 39,
+   "win_rate_decisive": 0.7949,
+   "win_rate_decisive_ci95": [
+    0.6447,
+    0.8922
+   ],
+   "sign_test_p": 0.000294
+  },
+  "vs_released_all": {
+   "a_better": 38,
+   "b_better": 8,
+   "same": 154,
+   "mean_diff": 0.0775,
+   "mean_diff_3": "0.078",
+   "mean_diff_exact": "31/400",
+   "p": 9.24769992138863e-06,
+   "n": 200
+  },
+  "vs_released_189": {
+   "a_better": 37,
+   "b_better": 8,
+   "same": 144,
+   "mean_diff": 0.07671957671957672,
+   "mean_diff_3": "0.077",
+   "mean_diff_exact": "29/378",
+   "p": 1.5374090196473844e-05,
+   "n": 189
+  },
+  "records": 200,
+  "agree": 0.685,
+  "first_pos": -0.053606299999999996,
+  "clipped": 28,
+  "seconds_mean": 69.728725
+ }
+}

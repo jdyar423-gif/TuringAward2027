@@ -1,0 +1,17 @@
+{
+  "paaf1fb7f6e": "A talks about sink leaks, off topic; B at least addresses the phone.",
+  "pf4eedf4466": "A correctly says creditworthiness then adds errors; B wrongly defines it as card debt.",
+  "p5a115ff57d": "A lists pineapple and citrus; B lists no high-C fruits, includes cinnamon.",
+  "pd51d642189": "A correctly gets 450 liters; B wrongly computes 180.",
+  "pafcf333a94": "B omits the required closing question; A ends with it.",
+  "p4748bda552": "A degenerates into repeated lines; B shorter and less repetitive, neither first-person.",
+  "p36d0e32adb": "Neither explains Python's is operator; both discuss === with wrong examples.",
+  "p6cea04a087": "Neither mentions light traveling faster than sound; both give nonsense physics.",
+  "pc249e4dc57": "B includes a correct order-preserving seen-set solution; A only uses order-losing set.",
+  "pca08cc48dc": "Both give wrong answers in both turns (should be 128 pages, 8 days).",
+  "p14178e4f9f": "Both wrong year and extra keys; B names a TV series, not movie.",
+  "p041a642a51": "B correctly gets 24 km/h; A's reasoning is wrong, giving 5 km/h.",
+  "p5f2b307d34": "Same correct code; B's explanation wrongly says -1 returned when found.",
+  "p6d321aeddc": "A says doubling sides doubles area, no new value; B correctly gives 240.",
+  "p6f271c0f9c": "Both append bogus edit lists; A's summary distorts facts, B's stays accurate."
+}

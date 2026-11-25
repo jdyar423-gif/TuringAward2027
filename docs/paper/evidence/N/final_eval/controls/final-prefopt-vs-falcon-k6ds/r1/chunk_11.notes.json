@@ -1,0 +1,17 @@
+{
+  "p56eb4923b8": "A is circular nonsense; B correctly explains missing dictionary key, despite flawed examples.",
+  "pdd55c723f7": "A gives three bullet sentences; B rambles, no bullets, garbled words, cut off.",
+  "p565e61e146": "B gives three-line haiku-like poems; A's are long multi-line, not haiku, cut off.",
+  "pdbf4b7a360": "Perimeter is 46; A adds only two sides, answering 23.",
+  "pa83f718f0c": "3/8 of 1200 is 450; B misreads as 1/8 and miscalculates 180.",
+  "pe77a21e153": "Correct answer 216; A reports 168, B garbled 31. Both wrong.",
+  "p5e4a1742c7": "Both lowercase, under 30 words, correct definitions; equally good.",
+  "p083ba0e51b": "A repeats original verbatim; B is Spanish nonsense. Neither simplifies forecast.",
+  "pefd342497c": "A loops 'gentle embrace' degenerately; B is a coherent, mostly rhyming coffee poem.",
+  "p5af9f25cf2": "Both ten words; A describes (though July isn't a season), B just lists seasons.",
+  "p9f60253ba7": "B ~160 words, robot learns to paint; A overlong, already master, fragmented ending.",
+  "p7de0663777": "B is three-line haiku-like; A is four long lines, not a haiku.",
+  "p58b86c1abd": "A repetitive, mostly ignores gardening in turn two; B offers varied garden-themed ideas.",
+  "p854917c63b": "B correct both turns (126, 42); A's turn two wrongly answers 18.",
+  "pe841c51b95": "B's slicing method correct; A shows one mislabeled method thrice with wrong output."
+}

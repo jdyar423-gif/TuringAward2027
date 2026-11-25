@@ -1,0 +1,22 @@
+{
+  "name": "final-trained-vs-mobilellm",
+  "format": 2,
+  "n_pairs": 200,
+  "commitment": "ac8fa06b5e476ab7ad709c882ec7107196ee9f89af09798e803dc98220227a82",
+  "commitments": [
+    "ac8fa06b5e476ab7ad709c882ec7107196ee9f89af09798e803dc98220227a82"
+  ],
+  "added": [
+    200
+  ],
+  "by_category": {
+    "instruct": 40,
+    "chat": 50,
+    "writing": 50,
+    "math": 30,
+    "code": 30
+  },
+  "multi_turn": 52,
+  "created": "2026-11-24 19:07:40",
+  "updated": "2026-11-24 19:07:40"
+}

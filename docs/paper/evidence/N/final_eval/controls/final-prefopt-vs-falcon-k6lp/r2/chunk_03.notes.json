@@ -1,0 +1,17 @@
+{
+  "pa02664afbd": "Neither mentions sunlight or phases; both give invented, wrong explanations.",
+  "pfca3859825": "A claims CO2 release mitigates climate change; B mostly correct and concise.",
+  "pe1276b91ca": "A's function works (wrong comment); B always returns len(vowels)=10.",
+  "pd3bcff2e7d": "A reverses causation, omits school times; B covers key points despite 'earlier' error.",
+  "p2080d258de": "A gives correct cause and fix despite bad examples; B entirely wrong.",
+  "p3d54fdc331": "A's summary accurate; B garbles causation; B's title better but summary outweighs.",
+  "p171ed73a6d": "47x23=1081; A says 1176, B correct.",
+  "pd74613b57f": "A breaks lowercase and 30-word limit with meta text; B complies.",
+  "pbc581889a8": "A's function counts characters, wrong; B correct max(key=len) and tie answer.",
+  "p8f106d3d38": "Both functions correct; A claims sum_digits(10)=120 twice; B example correct, trace garbled.",
+  "p3b46580f31": "A has wrong sizes/portability but some valid contrasts; B is incoherent nonsense.",
+  "p1da545dda2": "A accurate summary though omits why-it-matters; B garbled, omits Gutenberg.",
+  "pa0c59d2a15": "Both within limit; A ungrammatical 'awe-inspiration to all', B clean.",
+  "p064f4cc078": "Both self-contradictory; B adds correct immune memory explanation, A lacks it.",
+  "p6bd95f4629": "Both mostly false: A says penguins fly and mimic; B says Arctic, jaws."
+}

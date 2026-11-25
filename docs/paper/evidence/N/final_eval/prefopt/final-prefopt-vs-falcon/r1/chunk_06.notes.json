@@ -1,0 +1,17 @@
+{
+  "pe9955fcf13": "A invents reasons like humidity and water quality; B short but accurate.",
+  "pa5edc083df": "B incoherent, repetitive and cut off; A coherent though factually wrong, weak disagreement.",
+  "p6ca36560a2": "Both error-ridden; B places heart in abdomen, garbles anatomy; A's core function correct.",
+  "p63014a1f32": "B nonsense steps, recommends 'Vaseline 2000' detergent; A muddled but blot-wash-stain-remover basics.",
+  "p10377c97fb": "A defines solar eclipse as lunar; B gets core definitions right despite many errors.",
+  "pd9bc18c731": "A echoes the prompt text inside the review; B clean, valid short review.",
+  "p05293062b6": "Both wrong: A nonsense; B misorders planets, omits Mars, gives inner planets rings.",
+  "pa5beabb322": "B lists non-home hobbies with duplicates, vague follow-up; A follows through on first choice.",
+  "p7861061e70": "B's code has a syntax error ([::-1.strip()]); A's slice solution and O(n) correct.",
+  "p23f04ff57a": "B says viruses use photosynthesis, bacteria lack membranes; A mostly accurate if shallow.",
+  "p44a7096e36": "A correct: 18/0.4 = 45; B wrongly gets 225.",
+  "p55c8aab3b7": "Neither is an acrostic of MOON; A also loops repetitively.",
+  "p91089dc584": "Correct is 450 L; A says 180, B's final answer is 3,600 liters.",
+  "pbcc00a17d5": "A: accurate summary, gibberish opinion; B: distorted summary, contradictory but relevant opinion.",
+  "p14c167f76d": "B correct perimeter 46 m; A forgets to double, gives 23."
+}

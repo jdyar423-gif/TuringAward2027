@@ -1,0 +1,17 @@
+{
+  "p17deb05cd8": "Correct ~343 m/s; A says 156,000 mph, B says 1.7 m/s.",
+  "pa7829cf180": "Neither makes a complete sentence; A garbles notes, B just echoes them.",
+  "p97d3671f3e": "Correct 3276; B's method right but slips to 3216; A ignores second raise.",
+  "pcd0739143b": "A correctly gets 15%; B miscomputes difference and gives -18%.",
+  "pf87010dfb4": "Both fail odd numbers; A's first loop fully correct, B's output listing wrong.",
+  "p4f46531f95": "Both have errors; A explains antibodies and memory cells; B self-contradictory on antibodies.",
+  "p04be569cb0": "A is gibberish; B defines compiler correctly though misdescribes interpreters.",
+  "p6b3402f3e1": "Both describe snowman absurdly; A's 12 words truncated, B uses 16 words.",
+  "pa5c7fa637b": "A writes repeated off-topic prose, no limerick; B attempts on-topic verses.",
+  "p6a8f10d8b0": "Both exceed one paragraph; B loops repetitive phrases with typos; A coherent.",
+  "p2b42bcc42b": "A wrong both turns (0.05 m); B correct 5000 m, wrong laps.",
+  "pa3c6267f05": "A entirely wrong (Indian Ocean); B errs but gives evaporation as cause.",
+  "p50ce39a83f": "Both within limit; B has ungrammatical 'awe-inspiring and awe-inspiration'.",
+  "p590f668064": "Both include words; B full of placeholders and contradictory '[specific date]' Thursday.",
+  "p619dbb7718": "A's facts all wrong (Arctic, jaws); B partly correct (Antarctica, social, krill)."
+}

@@ -1,0 +1,17 @@
+{
+  "pc707bf8135": "A invalid nested JSON, fictional animals, extra text; B valid array, weak choices.",
+  "p94ca271fd8": "A incoherent (sand, sun, springtime); B rhymes and mostly coherent despite slips.",
+  "pf2059e6317": "A suggests hikes, picnics, golf for rain; B indoor ideas, repetitive but fitting.",
+  "pf541cd43bc": "Both incoherent: A eats Chianti and sips Prosciutto; B confuses roles.",
+  "p372c6d8c9a": "Neither gives name-memory techniques; A addresses emotions, B deflects incoherently.",
+  "p0714540c67": "B lists low-vitamin-C items and cinnamon; A flawed but names citrus fruits.",
+  "p1b95b82cdb": "Neither has two paragraphs; A off-topic run-on, B degenerates into 'Breaks' loop.",
+  "p20ab753eb8": "Both O(n); B invents nonexistent nested loops and errs in example output.",
+  "p13a0a9277b": "Both codes correct; A's explanation writes formula '= 0', B fully correct.",
+  "p5e10683bdf": "B writes exactly two paragraphs; A writes five plus meta text and junk.",
+  "p4cf387a1ab": "B's earthquake explanation largely correct, A's nonsense; both turn-2 answers poor.",
+  "p197b71ed8a": "B real invitation but no closing question; A no invitation, leaked 'Question:' label.",
+  "pe81f6adc6a": "B correctly answers 1896 Athens; A says 1900 London with fabrications.",
+  "p2f72aebf17": "Both correctly get 45; B concise, A needlessly uses sympy code.",
+  "p58999db100": "A's partial(reverse) code crashes; B's reverse() works but repeated, wrong outputs."
+}

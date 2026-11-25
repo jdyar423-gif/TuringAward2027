@@ -1,0 +1,7 @@
+{
+  "p33f29a4b7b": "B miscomputes 1800/40 as 225; A correctly gets 45.",
+  "p8cd7db426b": "B misses intelligence point with nonsense claims; A captures it despite 'long lifespan' slip.",
+  "p0c59f31881": "Turn 2: A multiplies by 12 giving 1512; B correctly gives 42.",
+  "p1109db575d": "Correct answer is $36; A says $32 (fake output), B says $96.",
+  "pf66ce9ce98": "Actual ~343 m/s; A claims 7858 m/s/156,000 mph, B claims 1.3 m/s."
+}

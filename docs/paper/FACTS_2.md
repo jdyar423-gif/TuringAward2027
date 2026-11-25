@@ -672,3 +672,64 @@ above. Wherever the paper says the same, correct it.
 - MobileLLM-R1.5, K = 6, kept by OUR selector (run `.../recommended-aca173fa2c-s0`): 181 of 200
   prompts complete at 00:12; the second turns of 19 two-turn prompts whose first reply differs
   under our selector are being generated on the three CPU runtimes. [TBD]
+
+## Added 00:40 UTC (25 Nov): both MobileLLM-R1.5 control arms generated; exact scores; judge started
+- The selector-matched arm (K = 6, kept by OUR selector; run
+  `mobilellm-f680f0533368-qwen3/recommended-aca173fa2c-s0`) is complete on all 200 prompts since
+  00:25 UTC (the second turns of 19 two-turn prompts needed new generations; three CPU runtimes).
+  Both arms were assembled from the merged cache of all four machines with `ctl_assemble.py`
+  (`runner.assemble`: no generation); the re-assembled K-matched arm has the same replies and
+  selected candidates on all 200 prompts as the copy published at 00:14 (two records differ in
+  latency metadata only).
+- Exact scores on the test split, 200 prompts / 252 replies (in brackets the 189 untouched
+  prompts: 28 maths, 44 constrained; `python -m bes.eval.proxy exact RUN --split test`, counts
+  from `per_prompt`):
+  | arm | maths correct | all constraints met | single constraints of 56 | degenerate replies (cut at the limit) | words: upper median, mean | repeated-4-gram rate |
+  | released preset | 12 (11) | 8 (8) | 0.1786 | 158 (150); empty 2, loop 14, repeated lines 54, fence 7 | 395, 474.1 | 0.2576 |
+  | K = 6, own log-probability | 12 (11) | 9 (8) | 0.2143 | 64 (50); empty 1, loop 9, repeated lines 15, fence 5 | 108, 238.6 | 0.1676 |
+  | K = 6, our selector | 11 (10) | 8 (7) | 0.2143 | 51 (47); empty 0, loop 4, repeated lines 7, fence 2 | 105, 217.6 | 0.1355 |
+  Degenerate shares: 62.7%, 25.4%, 20.2%. Prompts with at least one degenerate reply: 139, 60, 48.
+  Reading: six samples take away most of MobileLLM-R1.5's degenerate replies; our selector does
+  not raise its constraint score (8 of 48, as released), unlike Falcon-H1-Tiny's (33 -> 42 of 48).
+- Pair sets `final-prefopt-vs-mobilellm-k6lp` (00:14) and `final-prefopt-vs-mobilellm-k6ds`
+  (00:27): 200 pairs each, 52 two-turn; 29 and 28 pairs contain a reply over 4,000 characters
+  (88 in the released-preset set); mean length of both replies per pair 2,689 and 2,559
+  characters (4,451 released; 2,390 in the Falcon set).
+- The registered judge on these two sets: six `judge_shard.py` streams (two per CPU runtime,
+  4 threads each; index ranges [0,67), [67,134), [134,200) of each set), started 00:31 UTC.
+  No Opus reading of these two sets (the user's instruction of 00:07). (Result: the section added below.)
+
+## Added 02:00 UTC (25 Nov): the registered judge's FULL pass on MobileLLM-R1.5's two control arms
+- Source `judge-qwen3-4b-2507-3605803b`, both orders, strict agreement; 200 records in each rating file, each carrying its
+  pair set's commitment; streams started 00:28:25 UTC, both sets complete at 01:54 UTC
+  (9 shard files on three CPU runtimes: six forward streams over [0,67), [67,134), [134,200)
+  of each set, then from 01:39 three reverse helpers on the cores that came free); 71.8 s per pair
+  on average over the 400 kept records; 24 pairs judged by two streams (a helper on another
+  runtime does not see that runtime's records): the two records give the same verdict on all
+  24 (identical probabilities in both orders on 19); the record merged first was kept
+  (13 from a forward stream, 11 from a helper). The three CPU runtimes were given back at
+  01:56 UTC (the streams still running would only have re-judged rated pairs). No Opus reading of
+  these two sets.
+- K = 6 kept by its own log-probability (`final-prefopt-vs-mobilellm-k6lp`): **39 / 8 / 153**, score
+  0.578 [0.508, 0.644], decisive win rate 0.830 [0.699, 0.911], sign test p < 0.0001; orders agree
+  71.0%, first-position preference −0.054, 29 pairs clipped; categories
+  chat 10 / 2 / 38, code 8 / 3 / 19, instruct 10 / 0 / 30, math 6 / 3 / 21, writing 5 / 0 / 45; 189 prompts 37 / 8 / 144, score 0.577 [0.505, 0.645], p < 0.0001.
+- K = 6 kept by our selector (`final-prefopt-vs-mobilellm-k6ds`): **31 / 8 / 161**, score 0.558 [0.488, 0.625],
+  decisive win rate 0.795 [0.645, 0.892], sign test p = 0.0003; orders agree 68.5%,
+  first-position preference −0.054, 28 pairs clipped; categories
+  chat 6 / 2 / 42, code 9 / 2 / 19, instruct 6 / 0 / 34, math 4 / 4 / 22, writing 6 / 0 / 44; 189 prompts 29 / 7 / 153, score 0.558 [0.487, 0.627], p = 0.0003.
+- The same judge on the released preset: 59 / 5 / 136, score 0.635 [0.566, 0.699] (88 pairs clipped).
+  Paired, per prompt, our score against the released preset minus our score against the arm
+  (`mob_ctl_results.py`; the same test as `python -m bes.eval.proxy compare`): own log-probability
+  33 higher, 9 lower, 158 same, mean +0.0575, sign test p = 0.0003 (189 prompts: 32; 9;
+  148, p = 0.0004); our selector 38, 8, 154, mean +0.0775, p < 0.0001 (189: 37; 8; 144,
+  p < 0.0001).
+- Reading: given six samples per reply MobileLLM-R1.5 degenerates far less (64 and 51 of 252 replies
+  against 158) and the registered judge still decides more pairs for our model, by less: part of
+  the lead over MobileLLM-R1.5 is a lead over its single sample. These rows have no Opus reading,
+  so they compare with the judge's 59 / 5 / 136, not with the readers' 116 / 15 / 69.
+- The development container restarted at 01:33 UTC (scratch directories and credentials kept; the
+  keep-awake task restarted at 01:34); the judge's streams on the runtimes were not touched.
+- The paper (English and Chinese) is patched by `patch_mobctl.py` from `mob_ctl_results.json`,
+  `mob_ctl_exact.json` and `judge_pass_facts.json` (in `evidence/N/peek/`); only the author list
+  stays [TBD].

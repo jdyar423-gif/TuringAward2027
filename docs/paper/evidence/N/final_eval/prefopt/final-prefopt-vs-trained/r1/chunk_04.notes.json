@@ -1,0 +1,17 @@
+{
+  "p9b11bee678": "A coherent welcome speech, halved properly; B announces bogus award, barely shortened.",
+  "p4756fb9f4d": "Both quoted; B contradicts itself (sunny with rain and snow); A coherent, lacks why.",
+  "p55bbb64f20": "Both fabricate facts: 19th century, Chinese invasion, underground wall, canals.",
+  "p58de04edd8": "Both meta about the word; B at least describes forest vegetation.",
+  "pe8b9574d98": "A conveys horror (consuming darkness); B is mere atmosphere, little horror.",
+  "pade8230612": "A has no waiter, only repeated customer lines; B alternates roles.",
+  "p36d5b81729": "Neither writes a limerick; turn 2 repeats prose, no remembering.",
+  "p15a6cc7950": "Both wrong: no Everest; Peakyr lacks height, Titan 1,000 feet.",
+  "p4c50ff78d7": "Correct average is 20; A says 24, B says 15.75.",
+  "p06a6641456": "A recommends absurd 3-5 foot pots, omits light; B more sensible.",
+  "pbff87bdc8e": "A's punctuation version returns first word, wrong outputs; B correct both turns.",
+  "p8f94d91b2f": "A places Dead Sea in Indian Ocean; B tautological, no explanation.",
+  "pccf08b3ccf": "Single meaningless words, no thunderstorm description in either.",
+  "p7347d03fae": "Same correct code; A invents % 4 condition, B wrong example output.",
+  "pccdf7d57fc": "Neither returns JSON array of pets; turn 1 lists poor in both."
+}

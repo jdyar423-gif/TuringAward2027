@@ -1,0 +1,7 @@
+{
+  "pa9f1d0d181": "Both correct 84; both wrong percentage (75%, 62.5%; correct 89.3%).",
+  "p892a0a72bd": "B is a single meaningless word; A follows all-caps, describes storm.",
+  "pc51468ec14": "A garbled, omits printing press and why-it-matters sentence; B covers both parts.",
+  "p93ae03de5a": "B returns True for n<=1 and mislabels 29; A correct.",
+  "p6d23ee71cb": "A loops 'Antarctica' without names; B claims 13 continents including planets."
+}

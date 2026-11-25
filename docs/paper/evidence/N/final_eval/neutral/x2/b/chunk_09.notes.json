@@ -1,0 +1,17 @@
+{
+  "pd41e8a6e45": "A is a lighthouse poem (wrong POV, repetitive); B has no poem, boxed meta.",
+  "pe0c6cb0a99": "A uses 'green' three times in a paragraph; B is a degenerate boxed loop.",
+  "p4d8e02c628": "Both get 45; B includes an incorrect intermediate equation and confused re-examination.",
+  "pb8cd30e85f": "A is a tea poem though not haiku form; B degenerate word-count loop.",
+  "pf4feb4c99d": "B is a coherent kitchen poem; A repeats one sentence endlessly, cut off.",
+  "p31d58037dc": "B is correct; A has off-by-one IndexError and wrong return when key==0.",
+  "p12e5cc6f41": "Both wrong: A claims 2% salinity; B places Dead Sea in Indian Ocean.",
+  "pc80e2d6891": "A gives a spring poem (turn 2 unchanged, no rhyme); B degenerate 'sun' loops.",
+  "p2d67831741": "B gives correct Euclidean GCD; A loops through wrong code attempts, cut off.",
+  "pa135621e0c": "A weak but harmless (remove phone, contact maker); B loops 'put it back in sink'.",
+  "pab1b4febd5": "B gives correct list comprehension (minor output error); A confused loops, no comprehension.",
+  "pf189ba6e73": "A isn't an out-of-office reply, omits June 12; B gives no reply.",
+  "pf3ddf56587": "A has exactly four lines about cats; B is a degenerate loop.",
+  "pb619a4768a": "B reaches correct 36 despite detour; A answers 36.5 using 241.",
+  "p9b17874735": "Neither mentions light outpacing sound; both give incoherent, wrong explanations."
+}

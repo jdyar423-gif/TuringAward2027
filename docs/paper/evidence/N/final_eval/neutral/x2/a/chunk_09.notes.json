@@ -1,0 +1,17 @@
+{
+  "p02bc1b0cd1": "A follows three-sentence format despite calling Moon a star; B is nonsense.",
+  "p34a2f6c86b": "Neither writes a limerick: A rambling prose story, B 'cat + suck' loop.",
+  "p3eea606d98": "A's email is about thanks and a seminar, not the farewell; B loops.",
+  "p46df249403": "A misreads 'product' as 60!, loops; B gives description, ad too long.",
+  "p47c8c28807": "A's email inverts roles, never asks landlord to fix; B loops boxed line.",
+  "pa6293bdb58": "A claims generators don't exist; B's code is broken, squares example lacks yield.",
+  "p9e9be42ce5": "A answers both turns correctly (O(n)); B repeats code, ignores complexity question.",
+  "p3bab243b46": "A muddled but conveys time-period distinction; B degenerate 'difference is zero' loop.",
+  "p282d3ac54b": "Neither rewrites: A rambles restating original; B repeats it verbatim calling it friendlier.",
+  "p49c705432a": "A's poem is unfunny, repetitive joy/love loop; B has no poem.",
+  "pa3082c3d6c": "A degenerate letter loop, no code; B uses int(), doesn't parse numerals.",
+  "p0ceef24d56": "A vacuous repeated box; B wrongly blames volcanoes, gives unsafe evacuation advice.",
+  "pa32e2052be": "No limerick from either: A cosmic prose, ignores forgetfulness; B 'limerith' loop.",
+  "p1a4e3b583f": "B concise correct function (wrong example comment); A self-contradicting ramble, cut off.",
+  "p4cee1de9b3": "A is a coherent breakfast-restaurant review; B loops insisting it's a real restaurant."
+}

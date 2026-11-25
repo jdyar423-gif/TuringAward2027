@@ -1,0 +1,5 @@
+[01:40:56] judge file after 2 s: /content/TuringAward2027/data_cache/opponents/Qwen3-4B-Instruct-2507-Q4_K_M.gguf
+[01:41:03] start final-prefopt-vs-mobilellm-k6lp [134, 200) with judge-qwen3-4b-2507-3605803b on cores 0-3 (4 threads): 66 to judge, 0 of the range already rated
+[01:44:36] 5/66 pairs, 3.5 min
+[01:47:44] 10/66 pairs, 6.7 min
+[01:52:27] 15/66 pairs, 11.4 min

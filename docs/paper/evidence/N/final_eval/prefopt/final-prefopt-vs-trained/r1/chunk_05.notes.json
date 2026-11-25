@@ -1,0 +1,17 @@
+{
+  "p9b563589d3": "A usable template with placeholders despite odd paragraph; B degenerate placeholder string.",
+  "pb6a59981df": "A claims territorial/threat purring; B correctly cites contentment and communication.",
+  "pc944f14db3": "B leaks prompt text 'in under 50 words'; A clean 44-word review.",
+  "pe073a7530d": "A initializes max to length (bug); B just returns array length.",
+  "p378211cee7": "A correct 36 despite typo; B uses 241 and gets 36.5.",
+  "p38a1b394bc": "Neither expands tip two; B's initial tips are sensible, A redundant.",
+  "p4bcb91e04a": "Both slightly flawed; B clearer, adds water savings; A repetitive, mentions plastic.",
+  "pcb1638a366": "A gives actionable steps despite errors; B repeats reading books and classes.",
+  "p33fb987e97": "A correct $64 change; B forgets subtraction, answers 136.",
+  "p2bcbc9604d": "Both incoherent nonsense; no real laptop-tablet differences given.",
+  "p828a921293": "Identical correct code and equivalent explanations.",
+  "pd23aa813da": "B's turn 2 repeats quote instead of explaining; B fabricates attribution.",
+  "pd672de42e2": "A invents library and drops time; B merely echoes notes.",
+  "p3c86eef9b8": "Both too long; B starts as master painter, degenerate ending.",
+  "pa01d5f9693": "B puts heart in abdomen with wrong anatomy; A basically correct."
+}

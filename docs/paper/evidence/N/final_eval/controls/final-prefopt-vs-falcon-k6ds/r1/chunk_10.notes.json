@@ -1,0 +1,17 @@
+{
+  "p9e84c14e5d": "Both reach 490; A's reasoning wrongly calls 70 the two-week total.",
+  "p0ff6f85ae3": "Both give nonsensical egg steps (adding yolks, potato masher); neither usable for boiling.",
+  "pf3c8a16744": "Both factually wrong (A: part of Mediterranean; B: Indian Ocean); neither explains evaporation basin.",
+  "pbddcc662be": "A is a fuller, named breakfast review; B is generic with contradictions, repetition.",
+  "p20e70b556e": "Both wrong: A advises sunglasses, swaps definitions in turn 2; B confuses eclipses.",
+  "p4e98f67c39": "A writes forest paragraph with many 'green'; B writes meta-text about the word.",
+  "p020bd7126a": "Both years wrong; B has exactly the requested keys, A adds an extra key.",
+  "p5cd7ac57b5": "Both functions broken: A uses int() on numeral; B calls nonexistent is_roman().",
+  "pfea196a6ce": "A correct both turns (75g, 750g); B's turn-two answer is garbled and wrong.",
+  "p2a3e78efe4": "B's lists contain contradictions (low maintenance, quieter than cats); A more accurate overall.",
+  "p5252a67f34": "8/32 is 25%; A wrongly computes 0.2 and answers 20%.",
+  "p314060a92c": "A is mostly lighthouse-voiced and coherent; B degenerates into repetitive loops, wrong viewpoint.",
+  "p29260a35d1": "Both explanations are nonsense; neither mentions lift from wings or thrust.",
+  "p9190eb3dbb": "A's binary search correct; B's loop fails e.g. last-index targets; bogus bisect64.",
+  "p55a2485531": "B's summary accurate; A's summary reverses causation; A's shorter title doesn't outweigh it."
+}

@@ -1,0 +1,17 @@
+{
+  "p52859c1dcd": "B correctly names precipitation despite factual errors; A degenerate repetitive loop in both turns.",
+  "p5dab0896eb": "B gives a usable, if odd, extension email; A is a degenerate boxed loop.",
+  "pb590813fe5": "A gives plausible reasons with some errors; B is a circular degenerate loop.",
+  "pa8bca853ad": "A explains pumping blood, some false claims; B loops incoherently, truncated.",
+  "pc60ff7c9bd": "A partly wrong but gives real differences; B incoherent 'desktop screen' loop.",
+  "pb129ab7870": "A writes the email with both words; B degenerate and cut off.",
+  "p77db1a38fe": "B correctly defines creditworthiness; A says 'percentage of a certain amount', wrong.",
+  "p2c403cf9d5": "B gives a formal rewrite; A repeats the original unchanged in a loop.",
+  "p8412b87be0": "A's turn 1 correct, turn 2 wrong (evens); B loops, ignores turn 2.",
+  "p2fc01b6470": "A correct 121.92 cm; B confused, wrong arithmetic, truncated.",
+  "pb611239080": "A is an incoherent story with duplicated Section 3; B not a story.",
+  "pfb554f86ce": "A lists all four causes, mislabeled; B names apples/almonds as causes, loops.",
+  "pc1d830d6a1": "A correct 1081; B wrong 1112.",
+  "pcd4a0618e9": "A one sentence with all three words; B degenerate loop, no sentence.",
+  "pbe281755db": "B gives correct code both turns; A no code, then empty reply."
+}

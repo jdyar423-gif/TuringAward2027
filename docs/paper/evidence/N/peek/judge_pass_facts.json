@@ -1,0 +1,110 @@
+{
+ "sets": {
+  "final-prefopt-vs-mobilellm-k6lp": {
+   "pairs": 200,
+   "kept_records": 200,
+   "kept_unique": 200,
+   "all_pairs_rated": true,
+   "shard_records": {
+    "shard_final-prefopt-vs-mobilellm-k6lp_0_67.jsonl": 67,
+    "shard_final-prefopt-vs-mobilellm-k6lp_134_200.jsonl": 66,
+    "shard_final-prefopt-vs-mobilellm-k6lp_134_200r.jsonl": 17,
+    "shard_final-prefopt-vs-mobilellm-k6lp_67_134.jsonl": 63,
+    "shard_final-prefopt-vs-mobilellm-k6lp_67_134r.jsonl": 8
+   },
+   "pairs_in_two_shards": 21,
+   "logs": {
+    "shard_final-prefopt-vs-mobilellm-k6lp_0_67.log": {
+     "start": "00:28:25",
+     "done": "01:40:53",
+     "last_line": "[01:40:53] all done: 67 pairs in 72.5 min"
+    },
+    "shard_final-prefopt-vs-mobilellm-k6lp_134_200.log": {
+     "start": "00:31:16",
+     "done": "01:52:42",
+     "last_line": "[01:52:42] all done: 66 pairs in 81.4 min"
+    },
+    "shard_final-prefopt-vs-mobilellm-k6lp_134_200r.log": {
+     "start": "01:41:03",
+     "done": null,
+     "last_line": "[01:52:27] 15/66 pairs, 11.4 min"
+    },
+    "shard_final-prefopt-vs-mobilellm-k6lp_67_134.log": {
+     "start": "00:30:10",
+     "done": null,
+     "last_line": "[01:51:53] 60/67 pairs, 81.7 min"
+    },
+    "shard_final-prefopt-vs-mobilellm-k6lp_67_134r.log": {
+     "start": "01:39:11",
+     "done": "01:51:37",
+     "last_line": "[01:51:37] all done: 8 pairs judged, 59 skipped (rated by another stream), 12.4 min"
+    }
+   },
+   "seconds_mean": 73.87494,
+   "seconds_sum": 14774.988,
+   "judge_names": [
+    "qwen3-4b-2507-3605803b"
+   ],
+   "commitments": [
+    "dd958624b28f7b09fe6c04684e1016a3282c1f00d2062c9c66598ed751e38ac8"
+   ]
+  },
+  "final-prefopt-vs-mobilellm-k6ds": {
+   "pairs": 200,
+   "kept_records": 200,
+   "kept_unique": 200,
+   "all_pairs_rated": true,
+   "shard_records": {
+    "shard_final-prefopt-vs-mobilellm-k6ds_0_67.jsonl": 67,
+    "shard_final-prefopt-vs-mobilellm-k6ds_134_200.jsonl": 66,
+    "shard_final-prefopt-vs-mobilellm-k6ds_134_200r.jsonl": 3,
+    "shard_final-prefopt-vs-mobilellm-k6ds_67_134.jsonl": 67
+   },
+   "pairs_in_two_shards": 3,
+   "logs": {
+    "shard_final-prefopt-vs-mobilellm-k6ds_0_67.log": {
+     "start": "00:29:49",
+     "done": "01:50:39",
+     "last_line": "[01:50:39] all done: 67 pairs in 80.8 min"
+    },
+    "shard_final-prefopt-vs-mobilellm-k6ds_134_200.log": {
+     "start": "00:31:43",
+     "done": "01:54:20",
+     "last_line": "[01:54:20] all done: 66 pairs in 82.6 min"
+    },
+    "shard_final-prefopt-vs-mobilellm-k6ds_134_200r.log": {
+     "start": "01:50:53",
+     "done": null,
+     "last_line": "[01:50:53] start final-prefopt-vs-mobilellm-k6ds [134, 200) with judge-qwen3-4b-2507-3605803b on cores 4-7 (4 threads): 66 to judge, 0 of the range already rate"
+    },
+    "shard_final-prefopt-vs-mobilellm-k6ds_67_134.log": {
+     "start": "00:30:31",
+     "done": "01:38:59",
+     "last_line": "[01:38:59] all done: 67 pairs in 68.5 min"
+    }
+   },
+   "seconds_mean": 69.728725,
+   "seconds_sum": 13945.745,
+   "judge_names": [
+    "qwen3-4b-2507-3605803b"
+   ],
+   "commitments": [
+    "8546afd082add97a8067dfd97c424975d1bf67e999b494fbad3e6d3f4c9059fe"
+   ]
+  }
+ },
+ "streams": 9,
+ "twice": 24,
+ "twice_detail": {
+  "pairs": 24,
+  "same_verdict": 24,
+  "same_probs": 19,
+  "kept_forward": 13,
+  "kept_helper": 11
+ },
+ "meta_commitments_match": true,
+ "seconds_mean": 71.8018325,
+ "first_start": "00:28:25",
+ "last_done": "01:54:20",
+ "all_done_logged": false
+}

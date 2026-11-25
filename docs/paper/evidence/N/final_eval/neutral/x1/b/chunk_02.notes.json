@@ -1,0 +1,17 @@
+{
+  "p6f57279de7": "A's turn 2 computes 18*3 instead of 126/3; B correctly gives 42.",
+  "pdf942df017": "B's tips redundant, turn 2 incoherent nonsense; A sensible though turn 2 drifts.",
+  "p1135e5d9b3": "B writes five paragraphs plus leaked meta text; A follows two-paragraph format.",
+  "pbe0ddf5c82": "A is one sentence about bread; B degenerate looping text, truncated, one paragraph.",
+  "p8d5674c72e": "Both answer correctly with the single word yes.",
+  "peb1f6cec44": "Both examples broken (break outside loop, invalid C); explanations self-contradictory and wrong.",
+  "p0244d8b9e1": "A's turn 2 ignores gardening, repeats mugs; B picks gardening set as best.",
+  "pb96f5691f8": "Both correct Euclid code; A shorter, B ends with nonsense 'no common divisor' claim.",
+  "p7aba3b227b": "Both wrong: neither mentions cabin pressure or Eustachian tubes; airflow/vibration nonsense.",
+  "pe9955fcf13": "A brief and mostly correct; B fabricates humidity and water-quality reasons.",
+  "pfb5f06cbd9": "A calls haiku a vowel sound; B gives Japanese 5-7-5 form, some errors.",
+  "p4ef8c29446": "A barely shorter than original, inverts causality; B more concise, drops stars point.",
+  "pfb7f412153": "Both under 40 words; A clearer, B repeats 'allocated' and misuses 'expense ratios'.",
+  "p36a98bb715": "Both stories incoherent; A's characters and objects morph randomly, B loops 'poignant reminder'.",
+  "p85b7bf828b": "A repeats original unchanged; B outputs unrelated Spanish gibberish."
+}

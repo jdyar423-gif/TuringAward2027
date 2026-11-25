@@ -1,0 +1,17 @@
+{
+  "pd42fe2b533": "A gives a flawed but usable summary; B is incoherent, wrong, cut off.",
+  "pdcc6c393ad": "A loops, omits Venus/Earth, ignores rings; B calls Sun a planet, wrong rings.",
+  "pc493de02f0": "Both fail odd-number turn; B's first-turn code correct, A loops and cut off.",
+  "p6cacf9ad85": "A is boxed nonsense, no speech; B delivers a usable, if generic, welcome speech.",
+  "pa6293bdb58": "A's generator code broken, never yields; B falsely claims Python generators don't exist.",
+  "p02bc1b0cd1": "A gives no description; B follows three-sentence format despite calling Moon a star.",
+  "pa32e2052be": "A loops boxed 'limerith'; B writes prose, no limerick, no forgetfulness, repeats.",
+  "p2add80951b": "A garbled, cut-off fragment; B gives coherent practical advice with minor errors.",
+  "p4b6676fb99": "A says 1.7 m/s, badly wrong; B correctly gives about 343 m/s.",
+  "p40e6240717": "Neither gives about 8 minutes; A loops on light-years, B gives nonsense distances.",
+  "p7292077305": "A degenerate loop; B identifies str/non-str cause and str() fix, though code wrong.",
+  "p97031c28c3": "A gives no Python function and empty second turn; B's code correct both turns.",
+  "pbc84772ca6": "A loops degenerately and is cut off; B lists real benefits coherently.",
+  "p330ad45853": "A nonsense without required ending; B only outputs the phrase, no explanation.",
+  "pf64c0a811e": "A only repeats boxed [date]; B provides a template with several placeholders."
+}

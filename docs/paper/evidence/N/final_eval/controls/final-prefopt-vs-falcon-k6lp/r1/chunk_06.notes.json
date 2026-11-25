@@ -1,0 +1,17 @@
+{
+  "p13a0a9277b": "Both functions correct; B's explanation wrongly states formula equals 0.",
+  "p61e2207ef3": "A turn 1 correct, turn 2 buggy; B broken both turns (syntax, off-by-one).",
+  "p2f72aebf17": "Both correctly get 45; A concise, B adds needless sympy code.",
+  "p428999e89e": "A names Jupiter correctly though size wrong; B claims Mercury, entirely false.",
+  "pa7e15b6fe4": "A calls haiku a vowel sound; B correct apart from rhyme-scheme error.",
+  "p76504853bd": "A turn 1 correct (128); B claims 448 read. Both turn-2 answers wrong.",
+  "pf2886ec179": "A contradictory, invented drawbacks; B bare, misleading one-liner. Neither useful.",
+  "p149e2cf3e6": "Same correct code; A wrong example output, B one wrong sentence; B shorter.",
+  "pcee30fd520": "A echoes prompt text 'in under 50 words'; B clean valid short review.",
+  "pb25dcd0361": "A incoherent gibberish; B flawed but correctly defines compilation to machine code.",
+  "p8f9d34c97e": "A computes $15 then $5, both wrong; B correct $165 and $110.",
+  "p1565207e0a": "A multiplies perimeter by length (396), wrong; B correctly finds width, 77.",
+  "pd7b7a2f118": "Both correct 75 g first; both wrong for 10 people (75, 30).",
+  "p9a19fc12e1": "A mostly capitals, odd but on topic; B single meaningless word.",
+  "pbef8bad50e": "A discusses nonexistent ===; B says 'is' checks type. Both wrong."
+}

@@ -1,0 +1,17 @@
+{
+  "p66a1fc8832": "A rambles with repeated boxed final answers; B short, correct though shallow.",
+  "p17d5243889": "Both fail: repetitive or looping lists, neither gives a JSON array in turn two.",
+  "pd1ce554495": "A gives three bullets, partly wrong facts; B degenerate boxed '3' loop.",
+  "p8aebc68a90": "A loops returning original unchanged; B reverses meaning and stays informal.",
+  "p17471ceb90": "A wrongly says 10 continents; B incoherent loop calling planets continents; neither names them.",
+  "pe065f754a1": "A valid JSON with title/year despite extra keys; B invalid degenerate rambling.",
+  "p724af084f4": "A misexplains error with irrelevant code; B incoherent loop, no fix.",
+  "pb57d295b11": "A degenerate 'difference is zero' loop; B coherent, partly correct definitions.",
+  "ped026d6f5e": "A loops and ignores turn two; B answers both, though weekly figure wrong.",
+  "p79afcc8d6d": "B correctly computes 490; A rambles to wrong 70.",
+  "p68b89a23ed": "A coherent but weak summary; B hallucinates $1/$0 boxed loop.",
+  "p7cc3c3138f": "B gives correct code both turns; A no code, then empty reply.",
+  "pe00f587b95": "A incoherent dialogue with swapped roles; B not a dialogue at all.",
+  "p20dac891cf": "B good description and comma-free rewrite; A degenerate metaphorical-term loop.",
+  "p09928f93f8": "Both fail turn two; A's turn one clean, B's confused."
+}

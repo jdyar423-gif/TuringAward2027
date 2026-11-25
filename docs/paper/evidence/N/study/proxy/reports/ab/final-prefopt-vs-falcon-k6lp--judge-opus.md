@@ -1,0 +1,32 @@
+# Blind comparison `final-prefopt-vs-falcon-k6lp` rated by `judge-opus`
+
+- x (ours): `ours-export-step51812-47fd99c151a50a58/final-prefopt-9a89782942-s0`
+- y (opponent): `falcon-e60034381f4a/recommended-2dcb1c92a6-s0`
+- rated pairs: 200 of 200
+
+Score = (wins + ties/2) / n; ties include 'both bad'. Decisive = wins / (wins + losses). Intervals are 95% Wilson; p is the exact two-sided sign test of wins against losses.
+
+| slice | n | W/L/T | score | score 95% | decisive | decisive 95% | p |
+|---|---|---|---|---|---|---|---|
+| overall | 200 | 35/112/53 | 0.307 | [0.248, 0.375] | 0.238 | [0.176, 0.313] | 0.0000 |
+| chat | 50 | 8/24/18 | 0.340 | [0.224, 0.478] | 0.250 | [0.133, 0.421] | 0.0070 |
+| code | 30 | 11/13/6 | 0.467 | [0.302, 0.639] | 0.458 | [0.279, 0.649] | 0.8388 |
+| instruct | 40 | 9/21/10 | 0.350 | [0.221, 0.505] | 0.300 | [0.167, 0.479] | 0.0428 |
+| math | 30 | 4/19/7 | 0.250 | [0.130, 0.427] | 0.174 | [0.070, 0.371] | 0.0026 |
+| writing | 50 | 3/35/12 | 0.180 | [0.098, 0.308] | 0.079 | [0.027, 0.208] | 0.0000 |
+| single_turn | 148 | 26/80/42 | 0.318 | [0.248, 0.396] | 0.245 | [0.173, 0.335] | 0.0000 |
+| multi_turn | 52 | 9/32/11 | 0.279 | [0.175, 0.413] | 0.220 | [0.120, 0.367] | 0.0004 |
+
+Length control (ratio of x's words to y's words):
+
+| bucket | n | W/L/T | score | score 95% | decisive | decisive 95% | p |
+|---|---|---|---|---|---|---|---|
+| x_shorter | 94 | 26/38/30 | 0.436 | [0.340, 0.537] | 0.406 | [0.295, 0.528] | 0.1686 |
+| similar | 76 | 8/51/17 | 0.217 | [0.139, 0.322] | 0.136 | [0.070, 0.245] | 0.0000 |
+| x_longer | 30 | 1/23/6 | 0.133 | [0.053, 0.297] | 0.042 | [0.007, 0.202] | 0.0000 |
+
+Comparisons needed (power 0.8, alpha 0.05, at the observed tie rate): +0.03: 2964, +0.05: 1065, +0.10: 264
+
+With n = 200 comparisons the 95% interval of a score is about ±7 points; at a tie rate of 26%, detecting a difference of 10 points needs 264 comparisons and 5 points 1065 (two-sided 5% test, 80% power), so a smaller lead on n = 200 is no evidence either way.
+
+Judge diagnostics: both orders agree on 93.5% of pairs; mean preference for the first-shown reply +0.020; mean probability mass on A/B/C 1.000; replies clipped in 0 pairs.

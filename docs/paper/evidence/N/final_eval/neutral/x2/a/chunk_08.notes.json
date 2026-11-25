@@ -1,0 +1,17 @@
+{
+  "pfc8b28b65d": "A is incoherent 'birthday problem' nonsense; B gives usable gift ideas, mentions gardening gloves.",
+  "pa135621e0c": "A loops on harmful 'put phone back in sink'; B weak but coherent advice.",
+  "pdfde025d96": "A computes wrong 5 km/h; B correctly gets 24 km/h.",
+  "pf1a97a1bc7": "A degenerate 'Wait, no' loop; B says 7 days, never gives 10,080 minutes.",
+  "p0d21b68f94": "A rambles without a summary, cut off; B gives a rough two-sentence summary.",
+  "p7ef5e55651": "A never outputs JSON; B malformed objects, non-desert/fictional animals, extra text.",
+  "pb48bfed9df": "A loops on 'water vapor' nonsense; B's steps (egg paste, whisk) are wrong.",
+  "pa8b4872791": "A is nonsense about transforming shoes; B is a valid 49-word review.",
+  "p4cf0d5ba2b": "A includes a correct order-preserving version despite wrong set() one; B never finishes.",
+  "pdeb31c8a51": "A wrongly says 300 g per person; B correct 75 g, wrong second turn.",
+  "p91a03409e2": "A gives correct conversion function; B loops through wrong formulas without code.",
+  "pdcc6c393ad": "Both list planets wrongly (Sun as planet, missing ones); neither answers rings correctly.",
+  "p33197a9053": "A gives a usable encouraging message; B loops a boxed non-encouraging sentence.",
+  "p5e7633d2b0": "A has no dialogue, just a boxed sentence; B is a muddled but real dialogue.",
+  "p09db9356a8": "A loops 'home work' nonsense; B lists pros/cons and gives one-sentence summary."
+}

@@ -1,0 +1,22 @@
+{
+  "name": "final-prefopt-vs-falcon-k6lp",
+  "format": 2,
+  "n_pairs": 200,
+  "commitment": "b8b3140ae1c94f30919e4d52a6f607cbe981a9a17867f58a391fd7d53645b555",
+  "commitments": [
+    "b8b3140ae1c94f30919e4d52a6f607cbe981a9a17867f58a391fd7d53645b555"
+  ],
+  "added": [
+    200
+  ],
+  "by_category": {
+    "instruct": 40,
+    "writing": 50,
+    "math": 30,
+    "chat": 50,
+    "code": 30
+  },
+  "multi_turn": 52,
+  "created": "2026-11-24 20:56:27",
+  "updated": "2026-11-24 20:56:27"
+}

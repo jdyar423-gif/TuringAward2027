@@ -1,0 +1,17 @@
+{
+  "pfda8ad60f3": "A gives valid JSON despite wrong year and extra key; B invalid, rambling.",
+  "pa40616298b": "B writes a usable pitch email; A only loops a boxed description.",
+  "p7292077305": "A's explanation and code are wrong (shadows str); B never explains, cut off.",
+  "paa5becfc9e": "A's regex needs six-plus digits, broken example; B gives wrong six-character regex only.",
+  "p6e0a44976b": "Both fail names; B states 7 cleanly, A loops planets and cuts off.",
+  "p3127f820a0": "A defines library and ends with phrase; B cut off, ignores ending.",
+  "pd7d86bb0f7": "A gives mostly correct benefits; B is circular garbled reasoning with box.",
+  "p4692d62cfd": "B correctly says creditworthiness despite false details; A says 'percentage', wrong.",
+  "p9b17874735": "Neither mentions light travelling faster than sound; both explanations are wrong.",
+  "p559b035134": "B gives three mostly faithful bullets; A is a degenerate repetitive loop.",
+  "p582b7d3d82": "A is empty; B writes three on-topic paragraphs with dividers.",
+  "pdb495c8563": "A first defines inflation as falling prices, contradicts itself; B circular.",
+  "pff9652e08e": "B correctly computes 46; A wrongly adds only two sides, 23.",
+  "pb9321cb078": "A loops 'A, B, C, D, E'; B outputs meaningless 'CARLENS', no description.",
+  "p1ec742720c": "A is a coherent email with both words; B is cut off fragment."
+}

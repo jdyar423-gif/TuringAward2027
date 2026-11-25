@@ -1,0 +1,17 @@
+{
+  "p387bd1518e": "A claims 13 continents with fabrications; B's correct count followed by degenerate Antarctica repetition.",
+  "p2c0de87bcb": "A states the main point (minor vertebrate slip); B rewrites the paragraph instead.",
+  "p7e9178db17": "B gives accurate summary plus why-it-matters sentence; A garbled, omits Gutenberg and second part.",
+  "pc1f66b8f53": "A defines inflation as price decline and contradicts itself; B gives correct definition.",
+  "p9809e7d570": "B correctly gets 121.92 cm via 48 inches; A wrongly gets 4.0125 cm.",
+  "p34b5dbf0ff": "Both riddled with basic biology errors; B calls bacteria multicellular eukaryotes, A incoherent.",
+  "p5e4a1742c7": "Both lowercase and under 30 words; A's concrete examples make it clearer.",
+  "pe96ae4ec32": "A names correct steps and answers precipitation; B has ice-melting evaporation and 'sirens' nonsense.",
+  "p9f3b6ec8e8": "B's code s[::-1.lstrip()] is broken with wrong explanations; A's s[::-1] correct, O(n).",
+  "pd4b66a4ca4": "Both codes correct; A's explanation misstates the remainder, B concise and accurate.",
+  "p87b0e552a4": "Neither writes a limerick; B is repeated off-topic prose, A at least short on-topic verse.",
+  "pfea196a6ce": "Turn 2: B correctly gives 750 g; A garbled and wrongly says 75 g.",
+  "p083fcb38a2": "A's core definition and equation correct; B confuses photosynthesis with respiration, misnames photolysis.",
+  "p0253843d02": "A covers all key points despite errors; B reverses causality, omits school start times.",
+  "p220963e57c": "Neither converts to past tense; both leave verbs in present."
+}

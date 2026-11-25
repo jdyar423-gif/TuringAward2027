@@ -1,0 +1,17 @@
+{
+  "pd857cdff0c": "A loops 'virus is a bacterium'; B full of errors like bacteria lacking membranes.",
+  "p1ec742720c": "B is a proper email with both words; A is a truncated boxed fragment.",
+  "p8c7427a3d8": "Both answer 20 square centimeters; correct is 200,000 cm^2.",
+  "p29129cb85f": "A's is_prime is correct; B's returns True for composites and rambles.",
+  "pc4872d9961": "Correct is $40.50; A concludes $28.67, B never reaches an answer.",
+  "p8d6c5f7505": "Correct is 1023, divisible, 341; A says 85; B loops without answering.",
+  "p5287552022": "B gives a speech and halves it; A only boxes a phrase.",
+  "pfd8d290a67": "A lists 22 nonsensical steps; B's five steps fill five cups, not tea.",
+  "p5268d339d9": "A gives a correct 33-word definition; B boxes 40 and rambles.",
+  "p5d42dddc4e": "Neither explains identity vs equality; A invents ===, B rambles meaninglessly.",
+  "p4cf0d5ba2b": "B includes a correct order-preserving idiom despite errors; A never gives working code.",
+  "p8d3a7936a8": "A boxes 'noun phrase' repeatedly; B describes molten cores, 12-word fragment.",
+  "p662f076855": "B states pumping role clearly despite abdomen error; A is a truncated loop.",
+  "pa3082c3d6c": "A just calls int(); B degenerates into repeated Roman letters.",
+  "pdcac8b5b76": "B's function is correct; A counts only uppercase vowels."
+}

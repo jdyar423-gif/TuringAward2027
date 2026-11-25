@@ -22,7 +22,7 @@ done
 # the translation's rule file and checker; the operator's scripts of the evaluation after the run
 mkdir -p "$D/zh" && cp "$P/zh/GLOSSARY.md" "$D/zh/" 2>/dev/null; cp "$S/scripts/zh_check.py" "$D/zh/" 2>/dev/null
 mkdir -p "$E/S/scripts"
-for f in blind_eval.py judge_driver.py judge_remote.sh judge_shard.py judge_shard.sh judge_shard_merge.py controls_driver.py controls_slice_driver.py ctl_local.py ctl_assemble.py k1_driver.py endgame_driver.py endgame_testgen.sh final_pairs.sh final_score.sh score2.sh neutral_score.sh study_score.sh cmp_exports.py pack_dir.py fetch_pack.sh paper_sync.sh; do [ -e "$S/scripts/$f" ] && cp "$S/scripts/$f" "$E/S/scripts/"; done
+for f in blind_eval.py judge_driver.py judge_remote.sh judge_shard.py judge_shard.sh judge_shard_merge.py judge_cover.sh judge_pass_facts.py mob_ctl_results.py mob_ctl_exact.py patch_mobctl.py finalize_docs.py controls_driver.py controls_slice_driver.py controls_rev_driver.py ctl_local.py ctl_assemble.py k1_driver.py endgame_driver.py endgame_testgen.sh final_pairs.sh final_score.sh score2.sh neutral_score.sh study_score.sh cmp_exports.py pack_dir.py fetch_pack.sh paper_sync.sh anchor3.sh; do [ -e "$S/scripts/$f" ] && cp "$S/scripts/$f" "$E/S/scripts/"; done
 cp "$N/audit_19_10.md" "$N/final_eval/JUDGE_INSTRUCTIONS.md" "$E/" 2>/dev/null
 # evidence: the scratch files the claims ledger cites, under the ledger's own prefixes
 cp "$N/OPERATIONS.md" "$N/midrun_eval_1.json" "$N/heldout_v9.jsonl" "$N/openings.json" "$N/deflection_check2.json" "$E/N/" 2>/dev/null
@@ -56,7 +56,7 @@ if [ "$with_test" = 1 ]; then
   for f in failure_modes.md failure_modes.template.md appendix_O.md section7_paragraph.md codebook.json labels.json numbers.json tables.md examples.md labels_manual_falcon.tsv labels_manual_mobilellm.tsv; do [ -e "$P/analysis_fail/$f" ] && cp "$P/analysis_fail/$f" "$D/analysis/analysis_fail/"; done
   cp "$P"/analysis_fail/*.py "$D/analysis/analysis_fail/" 2>/dev/null
   for t in "$N"/judge_remote/*/; do b=$(basename "$t"); mkdir -p "$E/N/judge_remote/$b"; cp "$t"/*.log "$t"/ranges.txt "$E/N/judge_remote/$b/" 2>/dev/null; [ -d "$t/shards" ] && cp -r "$t/shards" "$E/N/judge_remote/$b/"; done
-  cp "$N"/peek/lscpu_*.txt "$E/N/peek/" 2>/dev/null; cp "$S/neutral_map.txt" "$S/cpu4_up.log" "$E/S/" 2>/dev/null
+  cp "$N"/peek/lscpu_*.txt "$N"/peek/mob_ctl_results.json "$N"/peek/mob_ctl_exact.json "$N"/peek/judge_pass_facts.json "$E/N/peek/" 2>/dev/null; cp "$S/neutral_map.txt" "$S/cpu4_up.log" "$E/S/" 2>/dev/null
 fi
 cat > "$E/README.md" <<'TXT'
 # Evidence files cited by `../CLAIMS.md`

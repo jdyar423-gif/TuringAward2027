@@ -1,0 +1,17 @@
+{
+  "p4e87bd7753": "Both incoherent; A adds extra friends and repeats turn 1; B cut off.",
+  "p0f3c9b62a2": "B gives correct verb/noun distinction despite muddled ending; A is circular nonsense.",
+  "p331ce14882": "Both wrong; correct answer is 215 minutes, A says 1111.5, B 13.33.",
+  "pf7078e4b72": "Both factually absurd: A calls Moon a star; B gives wild sizes, planets.",
+  "p76e1a34ae8": "Both wrong: first modern Olympics were 1896 in Athens; neither says so.",
+  "p49efbefdd0": "A gives coherent reasons and real downsides; B contradictory, lists positives as downsides.",
+  "p62eeefbe8f": "A correctly finds width 7, area 77; B wrong 396.",
+  "pc2f0d71f0c": "A answers recommendation (30 min/day); B never gives any amount.",
+  "p89a6e32107": "A correctly names Jupiter though size wrong; B wrongly says Mercury.",
+  "p5d1013183a": "B simple and correct; A misstates glucose converted into oxygen.",
+  "p0108f5a86c": "Neither writes a child's letter; both repeat turn 1 instead of Santa's reply.",
+  "pffbd2c6911": "Both broken code, wrong slowness explanation (stack overflow, not exponential recomputation).",
+  "p865550b90a": "Both rewrite the paragraph instead of stating its main point; off-task.",
+  "pf41a1f8bc9": "Both wrong: haiku is a 5-7-5 Japanese poem, not haunting or vowel.",
+  "p96b03ee1fc": "A repeats claims (immune system, infections); B coherent, shorter, no repetition."
+}

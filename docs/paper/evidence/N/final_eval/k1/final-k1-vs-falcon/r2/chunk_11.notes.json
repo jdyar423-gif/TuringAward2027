@@ -1,0 +1,17 @@
+{
+  "p8ecc926581": "Both short, generic, under 50 words; no meaningful quality difference.",
+  "pde24aeee23": "Both correct 15%; B has garbled words ('Incainnce', 'Incause') and 'approximately'.",
+  "p3ecdc46b87": "B's second turn is a degenerate loop, cut off, no bullet points.",
+  "p5556cf45f8": "A exceeds two sentences but coherent; B degenerate run-on, cut off.",
+  "pa457d12288": "A gives no bullets, rambles, fabricates edits, cut off; B gives three bullets.",
+  "p45f2653820": "B contradicts source on productivity and Friday support; A mostly accurate, one error.",
+  "pd5dac86108": "B's method is nonsense and answer 253.5 wrong; A correctly gets 36.",
+  "pd0aeb451db": "B loops 'gardening with X' and ponds; A gives usable native-plant steps.",
+  "p3d7187ceba": "A ~400 words, incoherent ('masterpieced'); B coherent though under target length.",
+  "p7ff7a367e1": "B keeps 'Hey' and reverses meaning; A is formal.",
+  "p4e098b05d3": "A has syntax error and min logic; B only needs const-to-let fix.",
+  "pf7b2e2c71b": "Both misread task: neither writes an out-of-office auto-reply; nonsense content.",
+  "p126d1688b4": "B degenerates into repetitive cats-versus-dogs loops both turns; A coherent.",
+  "p70cfbb49a6": "A writes eight lines, violating exactly four; B compliant though weak.",
+  "pdb1d21d662": "A names precipitation correctly; B's answer is circular, never names the step."
+}

@@ -1,0 +1,17 @@
+{
+  "pc0654fb123": "A has error-laden but correct core (nectar to honey); B is pure nonsense.",
+  "p0ee5b7fa42": "A rambles and is cut off but reaches 1.375; B wrongly says 1.25.",
+  "p223df3f6e9": "Correct is $3,276; A loops with wrong figures, B says $3,080.",
+  "p270474de73": "B gives a weak description, fails child rewrite; A is gibberish both turns.",
+  "pb9321cb078": "A's 'CARLENS' describes nothing; B is a degenerate boxed loop.",
+  "pdb495c8563": "A is tautological nonsense; B first defines inflation as price decline, contradicting itself.",
+  "p09d28610c4": "A gives correct concise code; B loops through broken variants and is cut off.",
+  "pd7d6a1770e": "Correct is 121.92 cm; A never concludes, B says 4.0125 cm.",
+  "pba4211ff80": "A's code works (case comment wrong); B rambles, no final code, cut off.",
+  "p0cc9ca75e6": "B's sentence omits 'cup' but is usable; A is a degenerate loop.",
+  "p3127f820a0": "B's turn one is coherent; both fail turn two; A rambles and is cut off.",
+  "pd0215bbcd1": "A is brief, oversimplified but coherent; B is looping nonsense about money.",
+  "p403ef2f09d": "B loops but gets 5000 m; A wrong both turns; neither computes laps.",
+  "p8370780c59": "Neither explains the idiom; A restates it, B invents Latin etymology and meaning.",
+  "p912438aa8d": "A at least suggests try/except KeyError; B falsely calls 'age' a keyword, loops."
+}

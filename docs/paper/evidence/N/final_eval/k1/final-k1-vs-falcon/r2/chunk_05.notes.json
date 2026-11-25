@@ -1,0 +1,17 @@
+{
+  "p9434d698f7": "A friendlier and keeps timeline despite 'fulfilled'; B not friendlier, drops timeline.",
+  "p1060356676": "B includes none of the three required words; A includes all.",
+  "p5b1ee6f426": "B is one vague sentence; A explains concrete functions of sleep.",
+  "p6196d3bccc": "Correct is 215 minutes; A says 13.33, B says 1080.",
+  "pfc2c3ad693": "B degenerates into invented 'rain-' items and ignores 25-word limit; A complies.",
+  "p1d69c219cb": "B's code has syntax error '[::-1.strip()]'; A's slice works, both say O(n).",
+  "p0bb6cf916b": "A forgets shirts, answers 124; B correctly gets $64.",
+  "p13e76d5bd6": "B's 'one-line' ad is a long paragraph; A gives one line.",
+  "p2365ce212b": "A is Spanish gibberish; B poor but English and about rainy evening.",
+  "p74a7f722b3": "B is long with looping repeated phrases; A short coherent poem.",
+  "p05527ffdbc": "Correct is 216; A says 28, B loops '6 = 3 * 7'.",
+  "pfe1ddf3f3d": "A's one-sentence summary omits cons; B covers pros and cons throughout.",
+  "pd66edad4ca": "A ignores 'Dear friend' and question requirements; B satisfies both.",
+  "p6074372ea4": "Both turn-2 wrong (should be $110); A got turn-1 $165 correct, B $5.",
+  "p368321dcad": "A incoherent nonsense; B has errors but correct size, portability, battery points."
+}

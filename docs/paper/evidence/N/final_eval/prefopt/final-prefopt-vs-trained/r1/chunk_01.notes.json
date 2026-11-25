@@ -1,0 +1,17 @@
+{
+  "p2a82c7e38a": "A gets count 7 right though names degenerate; B wrong count 8.",
+  "p5660a8a65e": "Both give false facts: A says penguins fly; B says Arctic, jaws.",
+  "pb166d88745": "A removes hostile line; B repeats original verbatim, claims it's friendly.",
+  "pc9b231f503": "Both Mars descriptions riddled with absurd falsehoods (2,200°C, star collisions, habitable).",
+  "pc7b29991fe": "Both reach 0.75; B concludes with wrong unit kilojoules, A's final answer correct.",
+  "p1dbaf3019e": "Both deflect a simple request; no usable name-remembering tips.",
+  "p9be0637ea6": "B has more concrete review details; A vague, repetitive 'delicious', 'friendly'.",
+  "p5d62b6bde0": "Both wrong: phases come from seeing sunlit half as Moon orbits Earth.",
+  "p46676c3634": "A correct 25%; B miscalculates 8/32 as 0.2.",
+  "p00a71d51db": "Both wrong definitions and nonsense or dangerous safety advice; no drop-cover-hold-on.",
+  "p8a82231275": "Both say O(n); B's example outputs wrong ('world' to 'olleh', 'abcdef' unchanged).",
+  "pd7e102f12f": "A follows two-sentence lowercase rewrite exactly; B degenerates into 'magical' loop, cut off.",
+  "pbb2e9e3cac": "Both include required words; A has '[Date] at [Date]' placeholder, B coherent.",
+  "p6ba972d81a": "Similar generic ten-tip lists, both with redundancy and typos; equally useful.",
+  "p97c73778d1": "Identical replies giving only the end phrase; no explanation of recycling."
+}

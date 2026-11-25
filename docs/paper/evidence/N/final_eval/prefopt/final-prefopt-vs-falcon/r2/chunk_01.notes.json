@@ -1,0 +1,17 @@
+{
+  "pfd584ef725": "Both fabricate history; only A correctly answers 1896 Athens in turn two.",
+  "p72cfda4ae9": "A names precipitation but is riddled with fabricated numbers; B has fewer errors.",
+  "pe6b9bafb7f": "A loops on 'tapestry' and 'journey'; B coherent with kitchen imagery.",
+  "p3f06a4b30d": "Both badly wrong; A at least cites speed difference, B invents electron chemistry.",
+  "pf8ddd74ecb": "A says 448 pages read; B gets 128 right, though turn two wrong.",
+  "p7861061e70": "A's slicing code has a syntax error; B's s[::-1] is correct.",
+  "p44a7096e36": "A's arithmetic gives wrong 225; B correctly gets 45.",
+  "p0f2bf663e9": "A repeats turn one verbatim instead of child's view; B at least rewrites.",
+  "pecbe88ec17": "A is a meta paragraph about the word, not forests; B fulfills request.",
+  "p23f04ff57a": "A badly wrong, garbled words; B partially accurate comparison with fewer errors.",
+  "p2af0e6ceb0": "B has eight lines, violating exactly four; A complies.",
+  "pf414fc06aa": "B pitches story better despite odd title and stray 'Ends'; A repetitive announcement.",
+  "pd9bc18c731": "B echoes the prompt text and repeats words; A is a clean concise review.",
+  "p40585ebd10": "B never clearly requests the extension, confuses roles; A requests it despite oddities.",
+  "p5175f2afc4": "A's JSON is an unrelated object; B's list is absurd non-pets plus extra text."
+}

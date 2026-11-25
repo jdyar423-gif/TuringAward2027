@@ -1,0 +1,11 @@
+[13:49:48] judge file after 19 s: exit 0 uringAward2027/data_cache/opponents/gemma-4-E4B-it-Q4_K_M.gguf
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+[13:49:48] start s2-default-vs-falcon with gemma4-e4b on cores 2-13 (12)
+[13:49:48] start s2-default-vs-mobilellm with gemma4-e4b on cores 14-27 (12)
+[13:58:11] end s2-default-vs-falcon: exit 0 after 503 s | {"path": "/content/bes_cli/judge/devg/root/ratings/s2-default-vs-falcon/judge-gemma4-e4b-85a896a0.jsonl", "judged_now": 60, "already": 0, "remaining": 0}
+[13:58:11] start s1-default-vs-falcon with gemma4-e4b on cores 2-13 (12)
+[14:00:24] end s2-default-vs-mobilellm: exit 0 after 636 s | {"path": "/content/bes_cli/judge/devg/root/ratings/s2-default-vs-mobilellm/judge-gemma4-e4b-85a896a0.jsonl", "judged_now": 60, "already": 0, "remaining": 0}
+[14:00:24] start s1-default-vs-mobilellm with gemma4-e4b on cores 14-27 (12)
+[14:05:45] end s1-default-vs-falcon: exit 0 after 454 s | {"path": "/content/bes_cli/judge/devg/root/ratings/s1-default-vs-falcon/judge-gemma4-e4b-85a896a0.jsonl", "judged_now": 60, "already": 0, "remaining": 0}
+[14:09:44] end s1-default-vs-mobilellm: exit 0 after 560 s | {"path": "/content/bes_cli/judge/devg/root/ratings/s1-default-vs-mobilellm/judge-gemma4-e4b-85a896a0.jsonl", "judged_now": 60, "already": 0, "remaining": 0}
+[14:09:44] all done: /content/bes_cli/judge/devg/ratings.tar.gz (17109 bytes)

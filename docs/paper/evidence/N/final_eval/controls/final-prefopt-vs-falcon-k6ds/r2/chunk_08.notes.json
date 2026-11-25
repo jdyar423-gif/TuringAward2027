@@ -1,0 +1,17 @@
+{
+  "pc4c956e23a": "Turn 2 both wrong: A uses 12 eggs (25%), B 75/12=62.5%; correct is 89.3%.",
+  "pa9e7df0b5c": "A: coherent two-sentence creepy scene; B bloated, repetitive, ungrammatical ('entities').",
+  "p95efef3d62": "Both muddled; A's soak, stain-remover, scrub core usable; B dries before treating.",
+  "pd1ff4a16d1": "B outputs only the closing phrase, no explanation; A explains and ends correctly.",
+  "p54278e49d7": "Both fabricated: A underground, 19th century, Japanese; B steel, north-south, Memento Mori.",
+  "pe6aa931ff8": "Both codes correct; A claims wrong output 67 and false 0-100 range limit.",
+  "p6796b30c69": "Correct is 215 minutes; A says 795, B says 13.33.",
+  "p46e95f1a3e": "A long, looping, incoherent, not short; B short coherent poem, correct title format.",
+  "paa5b185b81": "B's function correct despite bogus factorial aside; A returns 1 for n=0, wrong output.",
+  "p6dd88a1c5c": "A broadly correct (1945, peacekeeping, rights); B claims UN governs biodiversity, founded 1947.",
+  "p5de40ee72e": "47x23=1081; B correct, A says 1176.",
+  "p8fb7f73758": "B gives outdoor advice (mulch, weeds, companion planting) and nonsense; A sensible tips.",
+  "p4f030dd243": "A suggests outdoor/evening outings unsuited to rain; B picks indoor spa idea, 20 words.",
+  "pf3c8a16744": "Both misplace the Dead Sea (Indian Ocean, Sinai/Mediterranean); neither explains terminal-lake evaporation.",
+  "p50d5b1224a": "A's initials spell MMONO with gibberish words; B is no acrostic and loops."
+}

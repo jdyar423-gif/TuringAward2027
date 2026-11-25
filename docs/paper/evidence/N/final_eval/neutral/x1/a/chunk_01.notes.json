@@ -1,0 +1,17 @@
+{
+  "peb1f6cec44": "Both contradict their own definition; both examples are broken code.",
+  "pfa4ebf2625": "Both name Jupiter; both size comparisons badly wrong.",
+  "pdb11fe7136": "B falsely ties paper recycling to textiles; A mostly accurate.",
+  "p17deb05cd8": "Both give wildly wrong speeds; correct is about 343 m/s.",
+  "p2d42dea103": "A incoherent and not really a thank-you; B coherent note.",
+  "p38487ecabe": "A's code broken nonsense; B's turn 2 isn't a true generator but runs.",
+  "p4dd882e968": "B's code has syntax errors and undefined function; A works.",
+  "pecbe88ec17": "B writes about the word, not forests; A meets constraint.",
+  "p38594bcb35": "B misstates contamination and leaks fake 'changes made' notes; A accurate.",
+  "p99a92b29bb": "B omits required word 'cup'; A includes all three.",
+  "pd5e17f6588": "A's code not recursive and broken; B correct recursion and O(2^n) explanation.",
+  "p45ee967f7c": "B's photosynthesis facts wrong in both turns; A's turn 1 correct.",
+  "pe609ca4a67": "A claims underground, 19th century, Japanese threat; B gets nomad-defense purpose.",
+  "pee2fa1e152": "A malformed with fantasy animals; B lists cactus/nonsense and repeats JSON.",
+  "p4ef8c29446": "B reverses causation and barely condenses; A concise, mostly accurate."
+}

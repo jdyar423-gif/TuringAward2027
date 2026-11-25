@@ -1,0 +1,17 @@
+{
+  "p163ac761f3": "B is long, awkward and unslogan-like; A is concise and on-brief.",
+  "pf809cd96a7": "B computes 8/32 as 0.2, giving wrong 20%; A correct 25%.",
+  "p0ed5cb2490": "A is four long repetitive lines, not a haiku; B is three short lines.",
+  "pcee30fd520": "B echoes the prompt as a title and repeats words; A clean, under 50.",
+  "p3324a86494": "A says divide by '1 kilogram per gram' and 'approximately'; B correct and clean.",
+  "p99f8429f67": "B incoherent ('my customers', oatmeal as adventurous, 'modern, modern'); A a full whimsical review.",
+  "p8b6b48ba52": "B gives wrong year for Parasite and adds an extra key; A correct.",
+  "pc3ab171718": "A has typos and muddled points; B offers more concrete techniques despite small errors.",
+  "p049bc15713": "B subtracts the raise and ignores the 5%; A correctly gets $3,276.",
+  "pc76ec2d114": "Neither gives a birthday greeting; A says 'Bon appétit', B describes a plaza event.",
+  "pa0d268f681": "A contradicts 'new' garden with decade-long history and sales pitch; B shorter, consistent premise.",
+  "p266320cad8": "Correct is $36; A answers 96, B answers 16 via broken code.",
+  "p54fc1209dd": "B switches to 241 and miscomputes 36.5; A correctly gives 36.",
+  "pe03d11b276": "B claims tank is 1/8 full and miscomputes 180; A correct 450.",
+  "p11ffebc174": "A turn 1 correct (5000 m), turn 2 wrong; B wrong in both turns."
+}

@@ -1,0 +1,17 @@
+{
+  "pb26b7f93de": "B's code counts characters, not longest word; A correct incl. tie-length answer.",
+  "pf8acb588cb": "B fabricates 'traded over 1,000 years' and household staple; A garbled but faithful.",
+  "p46ae986f38": "Correct cost $40.50; A ends at $28.67, B wrongly rounds to $45.",
+  "p49b05c796a": "B claims vaccines prevent antibody production, omits memory; A explains memory cells despite errors.",
+  "p5df26b0aea": "Both get 45; B says 5/2 'equivalent to 5' and is verbose.",
+  "p6fc9194748": "A degenerates into 'magical, magical' loop; B lowercase though only one sentence.",
+  "pb924960af6": "A incoherent perspective, not a real thank-you; B coherent usable note.",
+  "p857472ef67": "B clearer actionable steps with real apps; A cites classical music, Khan Academy exchange.",
+  "p1df11b95c5": "B puts *** inline at paragraph ends, not a markdown divider; A correct format.",
+  "p197c2a57e2": "Both 77; B misstates method ('multiply by perimeter', 'solve for length').",
+  "pcea76303b2": "Both 0.75; A wrongly says divide by '1 kilogram per gram', 'approximately'.",
+  "p9190eb3dbb": "A's while left<right misses last element, fake bisect64; B correct binary search.",
+  "p2a3e78efe4": "A claims dogs low-maintenance, quieter than cats; B fewer errors overall.",
+  "p156763bcc8": "B incoherent, defines difference as surface temperature; A gets short vs long-term.",
+  "p9f4af737b3": "A is long prose, not a limerick; B five-line limerick attempt."
+}

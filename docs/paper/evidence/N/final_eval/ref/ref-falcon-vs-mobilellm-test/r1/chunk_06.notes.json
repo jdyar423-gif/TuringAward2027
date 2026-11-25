@@ -1,0 +1,17 @@
+{
+  "p589a38cefc": "A is one off-topic sentence about bread; B rambles with commas, never writes paragraphs.",
+  "p67a61e67e7": "A loops boxed 'The Sun'; B lists seasons in nine words, describes nothing.",
+  "p3f59bfb94e": "A gives a usable speech and shortens it; B outputs only a boxed phrase.",
+  "p78c91b264c": "A incoherent loop; B's sample phrases never decline, written from inviter's side.",
+  "p58bb70ddfc": "A gives a friendlier rewrite (minor 'fulfilled' error); B rambles, repeats original, cut off.",
+  "p7fa0d3f41e": "B tells a meandering but real cat story; A is degenerate boxed nonsense.",
+  "p22881b65d3": "A incoherent; B wrongly says 'is' checks value equality, missing identity.",
+  "pdb28e2c442": "A correctly computes 27 liters and $40.50; B loops confusedly, cut off.",
+  "p977ac41f1d": "A invents flying celestial snowmen, 16 words not 12; B loops 'noun phrase'.",
+  "p8d0a798222": "A correctly gets $64 change; B computes -64, rambles, cut off.",
+  "p18636db278": "Both reach 25%, but A rambles confusedly and is cut off; B is clean.",
+  "p1ff64c902f": "B's turn 1 correct and clean, turn 2 wrong; A rambles both turns, no laps.",
+  "p66e15aea1a": "A claims 13 continents including planets; B loops '7', names planets, no list.",
+  "p52859c1dcd": "A flawed but names precipitation correctly; B degenerate 'cycle of water' loops both turns.",
+  "p61f0276137": "Both get $165; turn 2 both wrong: A 37.5, B repeats 165 (should be 110)."
+}

@@ -1,0 +1,17 @@
+{
+  "p0895d416ad": "A one degenerate looping paragraph, cut off; B one sentence about bread.",
+  "p5f5b7935cb": "A concise, slogan-like; B long, awkward sentence rather than a slogan.",
+  "pefd342497c": "A mostly rhymes coherently; B loops 'gentle embrace' degenerately.",
+  "p96165dda48": "A incoherent, confuses cat and woman, loops; B coherent queen-cat story.",
+  "pd3727e8ddc": "B correct 1023 then wrong number 36; A wrong in both turns.",
+  "p20578cbffd": "A has exactly three sections; B writes four with meta commentary.",
+  "paa19dc5369": "A's speech and halved version usable; B vacuous, repetitive, shortened version lacks closing.",
+  "pe022b774f3": "A has contradictions but real differences; B entirely wrong (tablets larger, nonsense layouts).",
+  "pf99eaaa572": "B gives correct planet order, rings partly wrong; A nonsense in both turns.",
+  "pb38d4cf3b2": "A valid array but mostly non-desert animals; B malformed, dragons, extra text.",
+  "pb87f917f07": "A muddled but says bees make honey from nectar; B fabricates maltose process.",
+  "p9de1a1be00": "Both name Jupiter; A's 38x ratio wrong, B gives Earth as 12.7 km.",
+  "p481513866e": "A claims paper non-biodegradable and other errors; B mostly accurate.",
+  "pa4a9d0f8c4": "A thin but harmless; B advises bleach and pliers on phone, harmful.",
+  "pb6d87a63fc": "A wrong fix, broken code repeated thrice; B muddled but shows str() conversion fix."
+}

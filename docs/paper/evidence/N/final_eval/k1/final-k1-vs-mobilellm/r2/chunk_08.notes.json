@@ -1,0 +1,17 @@
+{
+  "p1684a2606a": "A is empty; B gives three on-topic paragraphs with *** dividers (inline).",
+  "p8d3a9cdddc": "Both answer 20 cm²; correct is 200,000 cm². B also loops and truncates.",
+  "p9a6cf2df7e": "Correct answer 216; A flails to boxed 21, B loops '6 = 3*7'.",
+  "pb93c849c20": "A gives incoherent, truncated dragon story plus title; B only boxed meta-text, no story.",
+  "p8f55e74e4a": "A rambles about birthday problem nonsense; B lists gift ideas, though turn-2 pick is poor.",
+  "p8f639f395a": "A places Dead Sea in Greece; B claims 2% salinity. Both wrong.",
+  "pd15591deaa": "A gives a repetitive spring poem (no rhyme rewrite); B degenerates into 'sun' loops.",
+  "p71cf2c5c93": "Neither writes a forest paragraph; A is meta nonsense, B loops boxed fragments.",
+  "pee392ee62a": "A loops without producing a sentence; B barely edits notes but is usable.",
+  "p0d133eeab3": "A is boxed king/queen nonsense; B is incoherent story, missing cat, but a story.",
+  "pb7a30f8329": "A ignores two-sentence limit, degenerates and truncates; B gives no story at all.",
+  "pa730eb53e6": "A gives correct conversion function; B loops 'Wait, no' with wrong formulas, no code.",
+  "p6e82928453": "A's reverse() works though join method is broken; B is looping, truncated mess.",
+  "p3bd3828e97": "A loops placeholders with no rain text; B writes four paragraphs (not two), truncated.",
+  "p332dd723f4": "Correct average is 20; A right, B miscounts sum as 96, answers 24."
+}

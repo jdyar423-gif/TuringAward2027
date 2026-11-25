@@ -1,0 +1,17 @@
+{
+  "pfd584ef725": "A answers 1896 Athens correctly despite errors; B says 1900 London.",
+  "p72cfda4ae9": "A clearly names precipitation; B vague, includes 'sirens, or wind' nonsense.",
+  "pe6b9bafb7f": "A loops 'tapestry'/'journey' repetitively; B coherent with kitchen imagery.",
+  "p3f06a4b30d": "Neither says light outpaces sound; A gives absurd speeds, B electron nonsense.",
+  "pf8ddd74ecb": "B turn 1 correct 128; A wrong 448 both turns; both miss 8 days.",
+  "p7861061e70": "A code has syntax error [::-1.strip()]; B correct code and complexity.",
+  "p44a7096e36": "B correct 45; A arithmetic error gives 225.",
+  "p0f2bf663e9": "A turn 2 repeats turn 1 verbatim; B at least attempts rewrite.",
+  "pecbe88ec17": "A talks about the word, not forests; B forest paragraph meets constraint.",
+  "p23f04ff57a": "A has glaring errors (bacteria lack membrane); B more coherent, partly correct.",
+  "p2af0e6ceb0": "A meets exactly four lines; B has eight lines, violating constraint.",
+  "pf414fc06aa": "Both flawed: A repetitive playground text; B odd 'Green Tombs', leaked 'Ends'.",
+  "pd9bc18c731": "A concise valid review; B echoes prompt text 'in under 50 words'.",
+  "p40585ebd10": "A clearly requests extension despite odd extras; B inverts roles, never asks.",
+  "p5175f2afc4": "A turn 2 not an array; B lists non-pets, extra text."
+}

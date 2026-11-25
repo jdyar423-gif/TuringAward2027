@@ -1,0 +1,17 @@
+{
+  "p6a7bf00d89": "A says 14th century and omits why-it-matters sentence; B covers both parts.",
+  "p981bb3cda9": "Both correct formulas; B duplicates check lines and cites nonexistent fahrenheit_to_fahrenheit method.",
+  "p01c3c06548": "A's slicing correct (loop wrong); B's join() crashes, reverse() mislabeled with wrong output.",
+  "pb3567ae5c1": "A is incoherent (=== operator, x==y); B states correct cause and fix despite errors.",
+  "peb1f1ac7b9": "B omits the required <<title>> and degenerates into repetition; A follows format.",
+  "p1060356676": "A contains none of the three required words; B includes all three.",
+  "p5b1ee6f426": "A is a one-line non-answer; B explains cognitive, immune, mental-health roles.",
+  "p56564621bc": "A uses Thursday only as a subject placeholder; B uses both words naturally.",
+  "pcb70b9f682": "Both examples invalid: break outside loop; A contradicts itself, B's C code lacks loop.",
+  "p642b5915a5": "Turn 2: B computes 300x10 = 3000 g; A correctly gives 750 g.",
+  "p45f2653820": "A contradicts passage (no Friday problem, Tuesdays); B mostly accurate, one wrong point.",
+  "p00981577a3": "Both hallucinate: A pollen/ears/lactic acid, B digging bugles and repetitive loops.",
+  "p6546a4eb04": "B's nonsense steps and Vaseline advice are harmful; A gives basic usable washing advice.",
+  "pd5f955898c": "A discusses nonexistent ===; B says is checks value equality, missing identity.",
+  "p41ab1c6007": "B wrongly calls it cellular respiration in stomata; A's core definition is correct."
+}

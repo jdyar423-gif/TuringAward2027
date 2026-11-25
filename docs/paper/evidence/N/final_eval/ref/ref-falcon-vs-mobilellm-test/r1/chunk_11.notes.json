@@ -1,0 +1,17 @@
+{
+  "p6cb73b815c": "Both buggy; A misses last element, B IndexError above max plus odd key==0.",
+  "pb590813fe5": "A circular tautology loop; B mostly sensible reasons despite errors like humidity.",
+  "p8cdf62b5bf": "A describes park, rewrite has no commas; B degenerate boxed loops both turns.",
+  "pe22ed09f5a": "Answer is 490; A doubles to 980, B says 70 while looping.",
+  "p66ec561748": "B four numbered steps, partly workable despite 'cut the egg'; A degenerate loop.",
+  "p3fbfbce936": "A follows sentence and bullet formats; B vector nonsense, ignores turn 2.",
+  "p219623a1b1": "A gives a real slogan, awkward with typo; B meta-text, boxed 'Local ingredients'.",
+  "pe9b05633c9": "A gives hobbies and a starter plan (some errors); B degenerate boxed non-answers.",
+  "pa542442124": "B writes a poem, not very funny; A gives no poem, boxed title.",
+  "pe068496444": "A accurate UN overview, minor errors; B wrongly claims no mandate, degenerate.",
+  "p544857f256": "A five-line attempt, imperfect rhyme; B 'cat + suck' degenerate loop.",
+  "p893398fc82": "A right approach but KeyError bug, wrong example; B rambles, no code.",
+  "pccf616143f": "A three mostly faithful bullets (adds invented cities); B garbled repetitive non-bullets.",
+  "pb86ecc08b2": "Both miss 89.3%; A wrongly says 75%, B repeats turn 1; A cleaner.",
+  "p8163fcad93": "B answers 1896 Athens correctly despite fabrications; A nonsense about 2008 'World Games'."
+}

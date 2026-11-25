@@ -1,0 +1,17 @@
+{
+  "pea837f1afc": "A correctly finds width 7, area 77; B wrongly gets 24.",
+  "p20dac891cf": "A describes park and removes all commas; B degenerate boxed loops both turns.",
+  "p0981ccba6f": "Both wrong: neither mentions creditworthiness; A claims earnings, B 'percentage of amount'.",
+  "pd673b70548": "A gives working sorted-compare function (example comment wrong); B rambles, no code.",
+  "p960efaa0f2": "B lists real UN activities despite fabrications; A repeatedly claims UN has no mandate.",
+  "p79c1fd477b": "Neither explains the saying; both merely restate it.",
+  "p0969d6a208": "Both incoherent; neither explains ahead-of-time translation versus line-by-line execution.",
+  "pd1d050205c": "A lowercase, under 30 words, roughly on point; B violates both, circular.",
+  "p8fcd3ba41a": "A writes a weak letter, fails reply; B only boxes 'Santa Claus' both turns.",
+  "p3272baf443": "B usable invite under 30 words, lacks question; A degenerate loop, reversed invitation.",
+  "p8121cb7bde": "A correct 1081; B wrong 1171.",
+  "p6d5286b36c": "B correct binary search; A has high=len index error and bogus return.",
+  "pfa659f8055": "Neither gives 10,080; A nonsense day count, B 'Wait, no' loop.",
+  "p76c555241d": "B gives practical task-breakdown advice; A nonsensically says to pause the project.",
+  "pabfc2815e3": "A circular; B first defines inflation as falling prices, contradicts itself."
+}

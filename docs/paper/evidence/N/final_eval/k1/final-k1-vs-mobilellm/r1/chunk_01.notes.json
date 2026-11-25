@@ -1,0 +1,17 @@
+{
+  "pd47d82d838": "Both circular non-descriptions; A loops boxes, B leaves a template blank.",
+  "p390f20d78b": "Both wrong: A says London 1920; B invents US-Canada 2008 games.",
+  "p0873444a6a": "A has correct recursive code; B's code is iterative, buggy, crashes.",
+  "p218efe16b8": "A writes a usable email; B only boxed meta text, truncated.",
+  "pefda328553": "A correct 36; B computes 253.5, wrong.",
+  "p0981ccba6f": "Both wrong: percentage of an amount vs. average earnings.",
+  "pe4a3dc1944": "A lists real pros/cons and one-sentence summary; B 'home work' loop.",
+  "pf84ff7d109": "A states verb/noun distinction despite muddle; B cut off, no content.",
+  "pc57cb9183d": "B gives an encouraging message; A repeats one boxed line degenerately.",
+  "p7bf79a6751": "Both wrong: A says one light-year; B says 9.2 billion years.",
+  "p2a185ff576": "A gets defensive purpose right despite errors; B calls it sacred site, loops.",
+  "pd36f017df3": "A degenerate boxed loop; B wrongly calls haiku a grammatical construction.",
+  "p66f91fffd4": "B usable polite extension email, omits sickness; A degenerate boxed meta text.",
+  "pb11649a7df": "Both wrong: A 'star's orbit' loop; B blames stars and solar flares.",
+  "p580160aaae": "A no poem; B unrhymed, long, degenerates into 'cup's cup' loops."
+}

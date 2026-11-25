@@ -1,0 +1,17 @@
+{
+  "pe6f0048781": "A only counts uppercase vowels; B always returns 10 with false explanation.",
+  "pb754f60fe3": "A coherent with core antibody mechanism despite errors; B degenerate repeated Final Answers.",
+  "p9c40dcd65e": "A meaningless boxed line; B is a thank-you note, though wrong workshop context.",
+  "p99c85bde8e": "A rambling message but adds P.S.; B outputs only boxed placeholders, loops.",
+  "p1bc198d504": "A correct 343 m/s; B wrong 1.3 m/s.",
+  "pe00f587b95": "A gives no dialogue; B dialogue with swapped roles but on task.",
+  "pc940f93ec1": "A captures cost, contamination, deposits with distortions; B garbled, fabricated, broken boxes.",
+  "pee36d5e0f5": "Neither answers; A rambles about single quotes, B only echoes question in quotes.",
+  "pf84ff7d109": "A cut off after one sentence; B muddled but gives verb/noun distinction.",
+  "p8049a85dc2": "A sums word lengths and loops; B correct functions both turns, minor output errors.",
+  "p724af084f4": "A rambling nonsense; B misstates cause, never suggests str() conversion; both useless.",
+  "p1482b2a974": "A coherent if simplified advice; B nonsense about cost savings, loops.",
+  "pb11649a7df": "Both wrong: A blames stars and solar flares, B invents 'exponential eclipse'.",
+  "pbb3c8f4907": "A miscomputes 38; B correct 46.",
+  "pa4add46835": "B real description, flawed rewrite; A trivial line then repeating loop, not lowercase."
+}

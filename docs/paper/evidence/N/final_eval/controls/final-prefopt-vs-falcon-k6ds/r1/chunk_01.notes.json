@@ -1,0 +1,17 @@
+{
+  "p5a6883ec3d": "A's code broken and non-recursive, wrong explanation; B correct recursion, O(2^n) explained.",
+  "p3fca613bb7": "A states false facts (planet, 100 km, orbits Sun); B calls Moon a star.",
+  "p5c42813ebf": "A gives specific, mostly accurate reasons; B vaguer with odd claims like 'not overly rested'.",
+  "p03de0cc497": "A confused perspective but is a farewell lunch invite; B off-topic about academic seminar.",
+  "p11db167284": "A coherent description and true one-liner; B rambling 'Smart Algal Clock', multi-sentence 'one-line' ad.",
+  "p9f043c03a1": "A's earthquake explanation is nonsense; B partly correct on tectonics; both give poor safety advice.",
+  "p6dd88a1c5c": "A wrongly says UN governs biodiversity, founded 1947; B mostly right on peacekeeping, rights.",
+  "pff8ddbd3e9": "A lists no high-vitamin-C fruits (cinnamon, applesauce); B includes citrus but adds extra text.",
+  "p292680a5ca": "Both poor: A has pantyhose, duplicate towels; B repeats sunscreen variants, 'sunscreen tablet'.",
+  "p1a63b1f894": "A's code returns 'a1a', not 'a3b1c2'; B's code is syntactically invalid nonsense.",
+  "pb6619fa5e8": "A invents reasons, garbles second sentence; B captures benefits and challenges, minor slip.",
+  "p833763a403": "Both include required words; A contradictory, says deadline passed, '[Thursday]' placeholder; B coherent.",
+  "pd1ff4a16d1": "A only outputs the closing phrase, no explanation; B explains and ends correctly.",
+  "p5de40ee72e": "47x23 is 1081: A correct, B wrongly says 1176.",
+  "p0d5028d1f5": "A fails to end with the exact required question; B ends with it."
+}

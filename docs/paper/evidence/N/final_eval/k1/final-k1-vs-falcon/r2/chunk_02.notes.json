@@ -1,0 +1,17 @@
+{
+  "p6b40df8c7b": "B wrong definition, broken code; A partly right, though turn-2 returns list not generator.",
+  "p699b4b2f8b": "B repeats verbatim instead of shortening; B's turn-1 speech is repetitive and garbled.",
+  "p8014c284eb": "Both wrong on laps (12.5); B's turn 1 also says multiply by 0.5.",
+  "p9d896665ce": "Both dialogues swap roles and are incoherent; neither is usable.",
+  "pbb09d40598": "A omits 'salt' and 'horizon'; B includes all three words within limit.",
+  "p1e3f7de71f": "A full of false claims (after-stretch prepares workout); B coherent if oversimplified.",
+  "pdc7dab3fe3": "A correct 490; B doubles again to wrong 980.",
+  "p9adca27093": "A writes four paragraphs and is cut off; B gives exactly two.",
+  "pe41d32e368": "B merely restates first two sentences; A covers key points despite some errors.",
+  "p8881e2e98c": "Both final answers wrong (A 3,600, B 1,400); correct is 450.",
+  "p0ddca9174a": "B wrongly centers dominance/boundaries; A has valid points despite humidity nonsense.",
+  "p078ca038b4": "B gets 1024 and answers off-topic; A correct 1023 and 341.",
+  "p4ab30ff06e": "A degenerates into 'of love, of love' loop, ignores kitchen; B on-topic.",
+  "p9fb02941b7": "Both stories incoherent, ignore fear-of-fire premise, truncated; no real happier ending.",
+  "pd3ef268735": "Both code correct; B adds wrong formulas and says code uses a loop."
+}

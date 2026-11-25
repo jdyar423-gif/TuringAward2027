@@ -1,0 +1,17 @@
+{
+  "pe8479e2786": "A signs child's letter as Santa, then repeats it; B at least attempts both letters.",
+  "p36a98bb715": "Both weak; A loops on repeated phrases, B is a more coherent story.",
+  "p197a672135": "A repeats reverse() thrice with wrong outputs; B's slicing correct, loop method broken.",
+  "p8a5815a1c7": "A correctly gives 10,080; B only states 7 days, no answer.",
+  "pa9f1d0d181": "Turn 2 answer is 89.3%; A says 62.5%, B says 75%.",
+  "p58a1240b0a": "B ignores bullet format, rambles, degenerates and is cut off; A complies.",
+  "p9d25cab25f": "A is circular nonsense; B coherent though misses affect-verb/effect-noun distinction.",
+  "pe38ec7e685": "A gives wrong year for Parasite and extra key; B correct.",
+  "pfb5f06cbd9": "B calls haiku a vowel sound; A gets Japanese 5-7-5 form despite errors.",
+  "pa6bb4772e6": "A contradictory and factually wrong; B unexplained oversimplification; neither gives sound guidance.",
+  "pb560927cb4": "A says UN governs biodiversity, wrong dates; B broadly accurate.",
+  "p7f33d45b78": "A's regex accepts only digit strings; B has syntax error, no digit check.",
+  "p0f2bf663e9": "B's turn 2 just repeats turn 1; A attempts a child's perspective.",
+  "pa81b4cc5a3": "B invents 100-point scale and nonsense categories; A mostly correct factors.",
+  "p07a58b734f": "A degenerates into repeated 'gentle embrace'; B is a coherent rhyming poem."
+}

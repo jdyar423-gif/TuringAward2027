@@ -1,0 +1,17 @@
+{
+  "p3aeac4712d": "A misdefines weather/climate entirely; B gets short-term vs long-term distinction despite errors.",
+  "pb577a07ad9": "B defines inflation as falling prices and is incoherent; A's definition is correct.",
+  "p9483cab39f": "A quotes only two words, violating the wrap instruction; B wraps fully but omits why.",
+  "p028b51af18": "Both poor; A at least mentions thrust and wing pressure differences, B is gibberish.",
+  "p6634bead48": "Correct answer is 25%; A miscomputes 8/32 as 0.2 giving 20%.",
+  "pa3c6267f05": "Both badly wrong; A at least names evaporation, B places Dead Sea in Indian Ocean.",
+  "p2e77312770": "B lists all four causes accurately; A repeats, adds 'hives', both list solutions.",
+  "pa6e2a7e10b": "Both codes correct; B's explanation wrongly writes the formula as equal to 0.",
+  "pb731671710": "A crashes on undefined result_plus; B uses int() on numerals, nonsense.",
+  "p98ffee8322": "A writes long non-haiku verses and truncates; B gives three-line haiku-like poems.",
+  "pce634dd9a4": "Both codes work; A has wrong example output and says it filters out evens.",
+  "p4416b99aa5": "Correct product is 1081; A says 1112, B says 1176.",
+  "p9b48761636": "B cleaner in turn 1, A more useful downsides in turn 2; both flawed.",
+  "p50ce39a83f": "Both under 15 words; A has ungrammatical 'awe-inspiring and awe-inspiration'.",
+  "pb49ca619e0": "A has syntax error and no counting; B's loop never runs, returns empty."
+}

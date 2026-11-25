@@ -1,0 +1,17 @@
+{
+  "p4980443281": "A circular, garbled; B correctly defines KeyError as missing dict key.",
+  "p6a8f10d8b0": "A's storm turn loops repetitively with garbled words; B more coherent.",
+  "p97d3671f3e": "Correct is $3,276; A says 3,216, B subtracts raise, 3,080.",
+  "p4e534622d9": "A's body misuses [date] nonsensically; B is a fuller usable template.",
+  "pc51468ec14": "B omits printing press and the why-it-matters sentence; A covers both.",
+  "p1e249070dd": "A garbled and omits final fact; B complete though adds unsupported cities.",
+  "pa5c7fa637b": "B writes repeated prose, not limericks; A at least writes short verses.",
+  "pd77a691c32": "A correct 24 km/h; B nonsense calculation giving 5 km/h.",
+  "pfb7f412153": "Both under 40 words; A garbled 'allocated to allocated', B clean.",
+  "p21b606ff6d": "Neither function finds the longest word; both follow-ups wrong.",
+  "p3f06a4b30d": "Neither says light travels faster than sound; both fabricate physics.",
+  "p02d62c8939": "A is a nine-word season list; B exactly ten words, though July.",
+  "p6b3402f3e1": "Both describe snowmen as nonsense; neither gives a valid 12-word description.",
+  "p85b7bf828b": "A is Spanish gibberish; B copies the forecast verbatim.",
+  "pf02444344b": "B doesn't end with a question; A meets limits despite odd format."
+}

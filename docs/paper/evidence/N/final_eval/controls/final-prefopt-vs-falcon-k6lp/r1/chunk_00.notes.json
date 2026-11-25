@@ -1,0 +1,17 @@
+{
+  "pb5a08cd58d": "A turn 1 repetitive; B gives 150 min/week, though with fabricated extras.",
+  "p96344fec8c": "B's C example is broken and definition wrong; A's code and definition correct.",
+  "pc6de49685f": "Both fabricate credit score components, ranges and formulas; misleading throughout.",
+  "p861a3892df": "B degenerates into repeated 'gentle embrace' loops; A is a coherent, partly rhyming poem.",
+  "p214ca1f37a": "B compares only key sets and lowercases one string; A's sorted check is correct.",
+  "pc707bf8135": "B outputs malformed JSON with dragons plus extra text; A follows format.",
+  "p52030a6965": "B claims dogs are low-maintenance and quieter than cats; A fewer errors, concise.",
+  "p081ee95ea1": "A computes 5 km/h, wrong; B correctly gets 24 km/h.",
+  "pb55035774e": "A's function returns 1 for n=0; B's function correct despite bogus factorial aside.",
+  "p0892468eaf": "A gives concrete reasons; B vaguer with nonsense like 'not overly rested'.",
+  "p15fb8f33ca": "A misuses [date] placeholders, incoherent body; B is a usable template.",
+  "pe5f0bb7130": "Both reach 490; B's reasoning has unit errors, A's is clean.",
+  "p4d08b4b475": "Both wrong: A invents pollen 'cross-pollination'; B garbles nectar and pollen.",
+  "pdd5534581e": "A correctly gets 15%; B miscalculates difference as 18, garbled.",
+  "pf2bb56f359": "A has exactly ten words; B has seven and describes nothing."
+}

@@ -1,0 +1,17 @@
+{
+  "pda4696b29f": "A error-ridden but on topic; B degenerate boxed loop, never answers turn two.",
+  "pfc8c0243b2": "A valid short review; B incoherent nonsense about transforming shoes.",
+  "pf1c30b3a56": "A degenerate loop claiming difference is zero; B gives correct short vs long-term distinction.",
+  "pcd4a0618e9": "A loops without producing a sentence; B one sentence containing all three words.",
+  "p5fd930c4b8": "A weak but short and ends with question; B loops, reversed meaning, cut off.",
+  "pa00160efae": "A an actual poem; B degenerate repetitive loop, no poem.",
+  "p913ee88e50": "A explains antibodies and memory cells despite errors; B endless repeated Final Answer loop.",
+  "pe22ba9d8d1": "Both give 36; A shows an erroneous 0.36 detour before correcting.",
+  "p3a6f4b41c3": "A ignores complexity question; B's code has syntax error but answers O(n).",
+  "p270d173c69": "Correct answer is 216; A says 28, B loops through 21 and 3.",
+  "pabf6a092e4": "A good quote, explanation one sentence short; B degenerate 'I'm wrong' loop.",
+  "p48d39d402c": "A is meta summary, not a story; B real story, though short of 150 words.",
+  "pf3adf74e07": "A's pet list absurd (elephants, dodos), JSON with extra text; B loops, no JSON.",
+  "pd7593d8de4": "A states roughly correct 8.5 minutes then contradicts itself; B claims a light-year, loops.",
+  "p3832aa51ce": "A meets both turns' constraints; B outputs nonsense 'John, Mary, Charlie' twice."
+}

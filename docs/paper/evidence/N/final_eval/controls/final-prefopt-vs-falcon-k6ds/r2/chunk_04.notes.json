@@ -1,0 +1,17 @@
+{
+  "pc518c51021": "B makes the request despite duplicated P.S.; A inverts it, never properly requests extension.",
+  "p97cee4d84c": "Both incoherent: A's sample declines are rude nonsense; B's tips confuse sending invitations.",
+  "p7967f00b4b": "A has syntax error, off-by-one, no digit check; B crashes, no digit check.",
+  "p40b2ffa1c7": "A coherent with balanced one-sentence summary; B incoherent, summary lists only pros.",
+  "pfc39c86aa1": "A terse oversimplification; B nuanced-looking but full of fabricated claims. Equally poor.",
+  "p7b1d30c327": "Both get 60; A correctly gives 240, B answers nonsensical 4w^2.",
+  "p020bd7126a": "Both years wrong (Matrix 1999); B also adds an unrequested extra key.",
+  "pf68accb643": "Neither gives the real meaning; A invents Latin origin, B claims observation/humaneness.",
+  "p8d6375e3ad": "A degenerate 22-step loop; B four nonsense chai steps. Neither five steps.",
+  "p833763a403": "Both include both words; A coherent, B contradictory with placeholder '[Thursday]'.",
+  "p1d2a6955eb": "B turn1 correct but turn2 off-topic; A error-filled, jargon-heavy child version.",
+  "p3914536627": "Both under 50 words; B leaks the prompt text into the review.",
+  "pceafb7a1da": "Both describe snowmen falsely; A turn2 is 19 words, B truncated fragment.",
+  "p0d5028d1f5": "A ends with the exact question; B omits it and rambles.",
+  "p292680a5ca": "Both flawed; A sunscreen four times incl. nonsense; B three sensible items, one duplicate."
+}

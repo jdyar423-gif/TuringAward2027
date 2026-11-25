@@ -1,0 +1,17 @@
+{
+  "pcec146d6b1": "B's final recursive code is correct; A's main code crashes. Both explanations wrong.",
+  "p8ae806beba": "A gives flawed but relevant hobby ideas; B is degenerate boxed nonsense both turns.",
+  "p582b7d3d82": "B is empty; A gives three relevant paragraphs, dividers misplaced inline.",
+  "p0f2e264756": "A is circular boxed tautology; B gives a plausible, readable explanation.",
+  "p0d8c4d277b": "Neither forms a sentence: A loops endlessly, B just echoes the notes.",
+  "p09db9356a8": "A gives muddled but relevant pros/cons and summary; B loops 'home work' nonsense.",
+  "pfeb24dc8e2": "A writes a weak story with required opener; B writes no story.",
+  "p4692d62cfd": "A's core 'creditworthiness' is right despite errors; B's 'percentage' is wrong.",
+  "p1f6eb96eda": "A degenerates into 'I'm wrong' loops; B gives a usable quote.",
+  "paa5becfc9e": "Both regexes wrong (A six word chars, B needs 6+ digits); B's demo broken.",
+  "p743719ce9b": "A summarizes the problem adequately; B fabricates '$1 per call' and loops.",
+  "pd432b05b26": "A's penguin facts are false (Arctic, jaws); B is degenerate '3' loop.",
+  "p0ceef24d56": "A gives wrong cause and unsafe advice; B tautological and ignores turn two.",
+  "p1cb5f998e1": "B writes a story though adds Section 4; A writes no story.",
+  "pdeb31c8a51": "A correct 75 g in turn one; B says 300 g and loops."
+}

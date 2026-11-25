@@ -1,0 +1,17 @@
+{
+  "pf726f7d00d": "A degenerate loop claiming Moon is largest; B names Jupiter correctly, size ratios wrong.",
+  "p18a51913b1": "A boxed fragment then degenerate loop ignoring turn 2; B answers both reasonably.",
+  "pc23ce9ac45": "Both fail turn 2: A repeats turn 1; B wrongly answers 62.5% (correct 89.3%).",
+  "p0acf31529a": "A's first sentence fine, turn 2 rambling; B boxed nonsense in both turns.",
+  "p0d8c4d277b": "A just echoes the notes, no sentence; B degenerate loop, cut off.",
+  "p53dc0c076b": "Neither gives usable advice: A boxed nonsense, B incoherent suggestions.",
+  "p0f5eb1110b": "A degenerate 'Sunlight' loop; B not haiku form but delivers ocean poems.",
+  "p662f076855": "A fluent but wrong (heart in abdomen, chambers); B degenerate loop, cut off.",
+  "p8d3a7936a8": "A describes snowman wrongly ('molten core'); B tautological boxed loop.",
+  "p6cacf9ad85": "A gives a coherent welcome speech; B degenerate boxed fragments, cut off.",
+  "p59f243ed25": "A's turn 2 nonsensical wrong arithmetic; B clean turn 1, repeats instead of dividing.",
+  "p3c599f35f1": "A meets lowercase and length limits correctly; B circular, wrong case, cut off.",
+  "pb619a4768a": "A reaches correct 36 despite detour; B uses 241, wrong 36.5.",
+  "p5b795185f8": "A repetitive but real coffee poem; B degenerate looping, no poem.",
+  "pfff15e7cbe": "A is no story at all; B tells story, though too long."
+}

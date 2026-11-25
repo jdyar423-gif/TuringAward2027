@@ -1,0 +1,202 @@
+# Manual labels, Falcon set (pair-file order). Columns: index, prompt_id, OURS label, support (notes of 4 naming it; - for OK), THEIRS label, support, comment.
+# Codebook: codebook.json (labels OK FACT MATH INSTR INCOH LOOP TRUNC THIN CODE WEAK; rules 1-9 incl. amendments A-C).
+000	math-030	MATH	4	OK	-	ours treats feet as inches
+001	math-044	MATH	4	MATH	4	ours 448 pages/18 days; theirs turn 1 right (128), turn 2 wrong
+002	writing-084	OK	-	INSTR	4	theirs is an outline not a speech, cut to a quarter
+003	chat-080	LOOP	4	OK	-	ours repetitive (tie with THIN 4: vague '30 minutes daily'); checked reply
+004	instruct-002	FACT	4	INSTR	4	ours calls the Moon a star; theirs one sentence not three
+005	writing-100	INCOH	4	INSTR	4	ours incoherent, cut off, repetitive; theirs lacks the disagreement asked for
+006	writing-067	LOOP	4	INCOH	4	ours repetitive; theirs contradictions, leaked 'Ends'
+007	writing-036	LOOP	4	INSTR	2	ours loops with garbled words; theirs exceeds one paragraph
+008	code-036	CODE	4	OK	-	ours wrong factorial alternative, claims loop-free code loops
+009	instruct-038	INCOH	4	OK	-	ours one meaningless word (tie with THIN)
+010	chat-093	INCOH	4	FACT	4	ours gibberish; theirs inverts facts
+011	writing-089	OK	-	INCOH	4	theirs garbled slogan, omits local
+012	chat-052	THIN	3	FACT	2	ours dodges which step makes rain; theirs fabricated numbers
+013	writing-093	INCOH	4	INCOH	4	ours incoherent; theirs role mix-up in first line
+014	chat-047	FACT	4	OK	-	ours Khan Academy as exchange, classical music, MLA
+015	writing-010	INCOH	4	OK	-	ours leaked 'changes made' notes (tie with FACT 4: misstates contamination)
+016	writing-082	LOOP	4	INCOH	2	neither poem funny (shared, rule 10); ours loops 'joy, love'; theirs incoherent
+017	instruct-051	FACT	2	INSTR	4	ours ten words but names July as a season (2 notes); theirs nine-word list
+018	code-044	CODE	4	CODE	4	ours syntax error, no digit check; theirs regex accepts digits only
+019	writing-059	INCOH	4	OK	-	ours off-topic seminar text
+020	writing-047	LOOP	3	INCOH	3	both incoherent (shared); ours loops 'poignant reminder' (rule 10)
+021	writing-064	FACT	4	OK	-	ours fake attribution (tie with INSTR 4: repeats quote instead of explaining); theirs one sentence (1 note)
+022	code-010	OK	-	CODE	4	theirs never removes duplicates, sorts
+023	instruct-054	THIN	4	INSTR	4	ours fully quoted but omits why; theirs quotes two words only
+024	writing-043	INCOH	4	OK	-	ours confused identities, gibberish (tie with LOOP 4)
+025	math-053	OK	-	WEAK	4	both correct $64; ours shorter
+026	writing-013	FACT	4	FACT	4	ours 500 staff; theirs fabricated drop in tasks
+027	math-049	OK	-	MATH	4	theirs doubles 490 to 980
+028	chat-022	OK	-	FACT	4	theirs invents humidity, water quality
+029	math-012	OK	-	MATH	4	theirs says doubling both sides doubles area
+030	writing-054	INCOH	4	OK	-	ours written from the landlord's side, never asks for repair
+031	chat-028	FACT	4	OK	-	ours defines solar eclipse as lunar
+032	instruct-017	INCOH	4	FACT	4	ours describes making a paste; theirs cuts the egg first
+033	instruct-026	INCOH	4	OK	-	ours body nonsense repeating [date]
+034	chat-031	FACT	4	FACT	4	ours says vaccines prevent antibodies (two notes: contradicts itself, same fault); theirs fabrications
+035	code-016	OK	-	CODE	4	theirs syntax error
+036	chat-083	FACT	4	FACT	4	ours Dead Sea in Indian Ocean; theirs errs but gives evaporation
+037	code-034	OK	-	CODE	4	theirs KeyError
+038	math-024	MATH	4	MATH	4	turn 2: ours 75 g, theirs 3000 g (750)
+039	instruct-041	INCOH	3	FACT	4	ours nonsense invalid JSON (tie INSTR 3); theirs cactus as animal (tie INSTR 4 extra text)
+040	math-010	MATH	4	OK	-	ours sum 96
+041	instruct-052	INSTR	4	FACT	3	both fail turn 2 re-answer (shared); theirs turn 1 error-ridden (rule 10)
+042	code-052	CODE	4	CODE	4	neither finds longest word
+043	math-032	MATH	4	MATH	4	ours $15/$5; theirs turn 2 wrong
+044	chat-040	LOOP	3	INCOH	3	both nonsense (shared); ours repeats documents (checked reply)
+045	code-021	CODE	4	CODE	4	ours invents ===; theirs says is = value equality
+046	instruct-011	OK	-	INSTR	4	theirs eight lines
+047	instruct-070	LOOP	4	FACT	4	ours 22 looping steps; theirs adds coffee to tea
+048	instruct-020	INCOH	3	FACT	4	ours turn-2 JSON unrelated object; theirs non-pets (plus extra text, INSTR 3)
+049	writing-034	INSTR	4	INSTR	3	ours ~270 words, robot already a master; theirs ~90 words
+050	code-029	CODE	4	OK	-	ours explanation writes the formula as '= 0'
+051	instruct-062	FACT	4	OK	-	ours wrong year for Parasite (tie with INSTR 4: extra key)
+052	instruct-043	INSTR	4	OK	-	ours puts *** inline, not as a divider (also repetitive, 3)
+053	chat-002	FACT	4	FACT	2	ours photosynthesis, no membranes; theirs partly correct
+054	chat-018	OK	-	FACT	4	theirs mow houseplants, attract pollinators
+055	writing-076	LOOP	3	INCOH	2	ours repeats turn 1 verbatim as Santa's reply; theirs placeholders, incoherent
+056	math-001	MATH	4	MATH	4	47x23: ours 1176, theirs 1112
+057	math-050	MATH	4	OK	-	ours 5 km/h
+058	chat-029	OK	-	FACT	4	theirs nutrient errors
+059	chat-049	THIN	4	OK	-	ours vague, odd framing
+060	math-059	MATH	4	MATH	4	ours 31, theirs 28 (216)
+061	chat-075	INCOH	4	INCOH	2	ours deflects with nonsense (THIN 3); theirs useless tips (THIN 2)
+062	math-055	MATH	4	OK	-	both 77; ours misstates the method
+063	code-011	LOOP	4	CODE	4	ours same broken str(str) block three times (tie with CODE 4; checked reply)
+064	instruct-044	INSTR	3	INCOH	3	both ignore the rain (shared); theirs absurd ideas (rule 10)
+065	math-036	MATH	4	MATH	4	turn 2: ours 62.5%, theirs 75% (89.3)
+066	writing-003	THIN	4	FACT	2	ours omits school start times; theirs errors
+067	writing-090	LOOP	4	OK	-	ours repetitive; theirs ends with a letter sign-off ('despite', minor; as 120)
+068	chat-017	THIN	4	FACT	4	ours vague but harmless; theirs says swallow water
+069	chat-099	FACT	4	FACT	4	neither explains pressure equalisation
+070	instruct-004	LOOP	4	OK	-	ours 'magical' loop, cut off
+071	chat-089	INCOH	4	OK	-	ours circular nonsense ('not overly rested')
+072	code-059	CODE	4	CODE	4	ours int(); theirs undefined function
+073	writing-033	INSTR	4	INSTR	4	neither uses past tense
+074	instruct-059	INSTR	3	INCOH	4	ours six bullets with a duplicate; theirs five items, nonsense (tie INSTR 4)
+075	chat-060	LOOP	4	OK	-	ours repetitive gift cards (tie with INSTR 4: no pick, ignores gardening)
+076	chat-065	FACT	4	FACT	3	ours underground, 19th century; theirs error-ridden but right purpose
+077	instruct-010	INCOH	4	OK	-	ours leaked meta chatter (tie with INSTR 4: five paragraphs)
+078	instruct-040	FACT	4	FACT	4	both false Mars facts
+079	code-028	CODE	4	CODE	4	ours lists 0, both fail odd numbers
+080	writing-005	INCOH	4	OK	-	ours rewrites the paragraph instead of giving its main point
+081	writing-081	LOOP	4	INSTR	3	ours repeated lines; neither uses the lighthouse's voice (shared)
+082	instruct-073	FACT	4	FACT	4	ours Arctic penguins, jaws; theirs partly correct
+083	writing-026	INSTR	4	FACT	2	ours repeats the notice unchanged; theirs alters the meaning
+084	chat-055	FACT	4	FACT	2	ours invents 'Peakyr'; theirs absurd area claim
+085	writing-030	FACT	4	FACT	4	both misexplain the idiom; ours fake Latin, theirs worm becomes cat
+086	instruct-024	OK	-	INCOH	4	theirs comma-free rewrite garbled run-on
+087	chat-025	INCOH	4	THIN	4	ours circular, self-contradictory; theirs misses the verb/noun distinction
+088	code-050	CODE	4	CODE	4	ours regex needs six digits; theirs demo output wrong
+089	instruct-003	INCOH	4	OK	-	ours 'allocated to allocated' (garbled/repeats: same fault)
+090	writing-016	LOOP	4	INSTR	4	ours turn 2 repeats the poem unchanged (tie INSTR 4); theirs rhymes only partly
+091	writing-057	INCOH	4	OK	-	ours never asks for the extension, roles inverted
+092	instruct-077	INSTR	4	OK	-	ours omits 'horizon'
+093	code-023	OK	-	CODE	4	theirs True for n<=1, says 29 not prime
+094	writing-007	LOOP	4	FACT	4	ours duplicated bullets; both list solutions as causes (shared)
+095	code-054	CODE	4	CODE	4	ours syntax error; theirs loop never runs
+096	math-020	MATH	4	MATH	4	ours 0.05 m; theirs laps wrong
+097	math-019	OK	-	MATH	4	theirs 225
+098	writing-069	INCOH	4	INCOH	4	neither is an out-of-office reply
+099	writing-011	THIN	4	OK	-	ours omits the press and the why-it-matters sentence (garbled 3)
+100	chat-077	FACT	4	OK	-	ours UN governs biodiversity, founded 1947
+101	math-008	MATH	4	OK	-	ours turn 2 divides 18, not 126
+102	chat-016	INSTR	4	OK	-	ours hobbies not at home (tie with THIN 4: vague follow-up)
+103	writing-029	INSTR	4	INCOH	4	ours copies the forecast; theirs Spanish gibberish
+104	writing-077	INCOH	4	OK	-	ours sun, sands, springtime
+105	code-026	CODE	4	CODE	4	ours max initialised to arr.length; theirs syntax error, finds minimum
+106	writing-021	INSTR	4	OK	-	ours keeps 'Hey'
+107	writing-012	LOOP	4	INCOH	3	ours repeats the story verbatim; theirs off-premise, cut off (TRUNC 3)
+108	writing-028	INCOH	4	INCOH	3	ours turn 2 gibberish; theirs distorted summary, contradicts itself
+109	instruct-063	LOOP	4	INCOH	4	ours one looping paragraph, cut off; theirs one sentence about bread
+110	code-046	INCOH	4	CODE	2	ours gibberish; theirs misdescribes interpreters (rule 5)
+111	chat-081	OK	-	FACT	4	theirs paper as a textile component
+112	instruct-001	FACT	4	INSTR	2	ours apples, bananas, cinnamon; theirs extra text
+113	math-048	MATH	4	OK	-	ours sum 85; theirs right per readers (exact extractor took '3')
+114	code-018	CODE	4	OK	-	ours not recursive, broken
+115	code-013	CODE	4	CODE	3	ours blames the in operator; theirs bad examples
+116	chat-076	INCOH	4	OK	-	ours contradictory pros/cons; summary omits cons (3)
+117	instruct-069	LOOP	4	OK	-	ours long, repetitive (tie with INSTR 4: not short)
+118	instruct-025	OK	-	OK	-	identical 'yes'
+119	math-042	MATH	4	MATH	4	ours 13.33, theirs 1080 (215)
+120	writing-097	INCOH	4	OK	-	ours meta-chatter, misreads the task (THIN 3); theirs odd subject line (minor)
+121	chat-092	FACT	4	FACT	3	ours 1900 London; theirs hallucinated history, right 1896 Athens
+122	chat-068	FACT	4	THIN	3	ours volcanoes cause quakes; theirs omits drop-cover-hold
+123	writing-048	LOOP	4	OK	-	ours turn 2 repeats turn 1 verbatim
+124	chat-054	FACT	4	FACT	4	ours electron chemistry; theirs absurd speeds
+125	instruct-058	OK	-	OK	-	both acceptable
+126	writing-024	FACT	4	OK	-	ours inverts causality (tie with THIN 4: barely condenses)
+127	chat-014	FACT	3	FACT	4	both err, theirs more
+128	chat-036	WEAK	2	FACT	2	ours turn-2 downsides less useful; theirs false 'cost-effective'
+129	writing-079	LOOP	4	INSTR	4	neither an acrostic; ours loops
+130	instruct-005	INSTR	4	OK	-	ours omits 'cup'
+131	math-017	MATH	4	OK	-	ours 20%
+132	writing-073	INSTR	4	OK	-	ours long prose, not a limerick
+133	instruct-076	TRUNC	3	INSTR	3	both absurd snowmen (shared); ours 12-word reply a cut-off fragment; theirs 16 words
+134	code-051	OK	-	CODE	4	theirs nonsense 'no common divisor' claim
+135	writing-085	LOOP	4	OK	-	ours tapestry/journey loops
+136	chat-056	INCOH	4	FACT	4	ours gibberish; theirs omits Mars, rings on rocky planets
+137	instruct-056	INCOH	4	OK	-	ours turn 2 degenerate ramble, no bullets, cut off (TRUNC 4; checked reply)
+138	chat-069	FACT	4	FACT	4	neither explains phases
+139	writing-091	OK	-	INSTR	4	theirs four sentences
+140	code-056	CODE	4	CODE	4	ours nonsense code; theirs returns a list, not a generator
+141	chat-041	OK	-	INCOH	4	theirs garbles the Eisenhower matrix (tie LOOP 4: duplicated tips)
+142	chat-057	FACT	4	FACT	4	ours heart in the abdomen; theirs invented roles
+143	math-015	MATH	4	OK	-	ours -18%
+144	chat-070	INCOH	4	OK	-	ours nonsense phrase (tie with LOOP 4: repetitive)
+145	writing-083	INSTR	4	OK	-	ours four long lines, not a haiku
+146	math-045	MATH	4	OK	-	ours 23 (forgot to double)
+147	math-007	MATH	4	OK	-	ours multiplies the fractions, 1.25
+148	writing-001	INCOH	4	OK	-	ours 'not forgotten or forgotten' (FACT 3: invents a cause)
+149	code-014	OK	-	CODE	4	theirs syntax errors, undefined names
+150	math-039	MATH	4	OK	-	ours 20 cm^2
+151	chat-021	FACT	4	FACT	2	ours invents a 100-point scale; theirs some errors
+152	instruct-014	THIN	4	OK	-	ours only the closing phrase
+153	writing-027	INSTR	4	INCOH	4	ours echoes the notes; theirs garbles them
+154	writing-099	INCOH	4	OK	-	ours confused perspective
+155	code-043	CODE	4	CODE	4	both broken examples
+156	writing-015	INCOH	4	FACT	4	ours garbles a bullet (tie THIN 4: drops the last fact); theirs invented cities
+157	chat-009	FACT	4	FACT	4	ours Jupiter bigger than the Sun; theirs wrong comparison
+158	chat-035	THIN	4	INCOH	4	ours never gives a time (FACT 3: absurd distances); theirs 8.5 min then 72 min
+159	instruct-027	INCOH	4	INCOH	4	both four sections and incoherent (tie with INSTR 4)
+160	chat-061	OK	-	INCOH	4	ours weak but usable; theirs incoherent steps, Vaseline as detergent (tie FACT 4)
+161	code-037	CODE	4	OK	-	ours example says sum_digits(10)=120; one duplicated block (not dominating; checked)
+162	writing-020	INSTR	4	OK	-	ours 'one-line' ad is a paragraph
+163	math-058	MATH	4	OK	-	ours $28.67
+164	chat-008	INCOH	4	INCOH	3	ours redundant tips, turn 2 nonsense (tie LOOP 4); theirs turn 2 drifts
+165	code-033	INCOH	4	OK	-	ours circular definition (LOOP 3: repeated try tips)
+166	chat-073	INCOH	4	FACT	2	ours 'wings made of air'; theirs partly correct (checked)
+167	instruct-034	INCOH	4	OK	-	ours echoes the prompt text
+168	instruct-050	OK	-	INCOH	4	theirs placeholders, leaked template text
+169	math-031	MATH	4	OK	-	both 0.75; ours misstates the conversion factor
+170	math-057	MATH	4	MATH	4	ours $96, theirs $32 (36)
+171	chat-087	FACT	4	FACT	4	ours 1.7 m/s, theirs 156,000 mph
+172	writing-004	INSTR	4	OK	-	ours long free verse, not haiku (tie with TRUNC 4: turn 2 cut off)
+173	chat-019	FACT	4	OK	-	ours weather/climate as temperature measures
+174	code-047	OK	-	CODE	4	theirs left<right misses the last element
+175	instruct-074	INSTR	4	OK	-	ours does not end with a question
+176	instruct-080	INCOH	4	OK	-	ours off-topic plaza welcome (tie with INSTR 4: no question)
+177	writing-040	LOOP	4	OK	-	ours repeated prose, no limerick (tie with INSTR 4)
+178	instruct-067	INSTR	4	OK	-	ours lacks the exact closing question
+179	code-048	CODE	4	CODE	4	ours nonsense SQL; theirs misses FROM/GROUP BY
+180	chat-004	INCOH	3	FACT	4	ours turn 2 off-topic; theirs wrong science
+181	instruct-032	INSTR	4	OK	-	ours no P.S.; theirs P.S. duplicated (minor, not dominating)
+182	instruct-018	INCOH	4	OK	-	ours writes about the word, not forests
+183	chat-082	FACT	4	FACT	4	ours haiku is a vowel sound; theirs 5-7-5 despite errors
+184	math-014	MATH	4	OK	-	ours uses 241, 36.5
+185	writing-094	INCOH	2	INCOH	3	ours bland (WEAK 3), confused 'my customers' (2); theirs nonsensical menu
+186	chat-038	THIN	4	FACT	4	ours seven-word oversimplification; theirs false claims
+187	code-031	CODE	4	OK	-	ours 'filters out evens', wrong example
+188	chat-005	FACT	4	OK	-	ours inflation = falling prices
+189	instruct-066	INCOH	4	OK	-	ours 'awe-inspiring and awe-inspiration'
+190	chat-046	FACT	4	FACT	4	ours nectar = pollen; theirs bee ears, lactic acid
+191	code-006	LOOP	4	CODE	2	ours same .reverse() three times, wrong outputs (tie CODE 4); theirs loop method broken
+192	chat-086	INCOH	4	INCOH	4	neither gives decline wording
+193	writing-071	LOOP	4	OK	-	ours 'gentle embrace' loop
+194	math-034	THIN	4	OK	-	ours says 7 days, never answers (rule 4)
+195	math-047	MATH	4	MATH	4	ours 180, theirs 3600 (450)
+196	code-004	OK	-	CODE	4	theirs len() with two arguments
+197	code-002	CODE	3	CODE	4	ours example comment wrong; theirs regex matches the literal string
+198	math-026	MATH	4	MATH	4	ours $3,080, theirs $3,216 (3,276)
+199	chat-013	LOOP	4	FACT	4	ours repeats 'Antarctica'; theirs 13 continents

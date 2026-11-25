@@ -1,0 +1,17 @@
+{
+  "p75bd1d6971": "A omits FROM and GROUP BY, both queries wrong; B is nonsense SQL.",
+  "p12e28db314": "A is a mostly coherent ordering exchange; B confuses roles and orders 'ceramic'.",
+  "p5a6883ec3d": "A gives correct recursive function and exponential explanation; B's code broken, explanation wrong.",
+  "p2a0d098612": "A writes exactly two paragraphs; B writes five plus leaked filler text.",
+  "p58b86c1abd": "A offers gardening-themed gifts; B repeats gift cards and coffee items, only gloves fit.",
+  "p1a63b1f894": "A has invalid function name and no logic; B outputs 'a1a', not 'a3b1c2'.",
+  "p7aabf9208a": "Correct is $36; A says $96, B says $66.",
+  "p2c11cba92b": "A isn't an invitation and adds a 'Question:' label; B invites but lacks final question.",
+  "pb39e771094": "A garbled, lists solutions as causes; B omits transport bullet, adds repetitive junk.",
+  "p314060a92c": "A not lighthouse's voice, loops 'love'; B partly first-person, coherent, short.",
+  "pff8ddbd3e9": "B's five items all wrong (cinnamon, applesauce); A at least lists citrus fruits.",
+  "pa4aabd888a": "Both under 15 words; A has ungrammatical 'awe-inspiration', B clean and accurate.",
+  "p001486ba66": "A correct both turns; B claims 11 words for 9, strip() misses inner punctuation.",
+  "p2eac853a55": "Neither forms a complete sentence; both just repeat the dashed notes.",
+  "p0f60c9aafd": "B answers 1896 Athens correctly in turn 2; A wrong everywhere (1900 London)."
+}

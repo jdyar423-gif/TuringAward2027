@@ -1,0 +1,7 @@
+{
+  "pb96a10023a": "Correct is $40.50; A says $540, B loops without answer.",
+  "p163e6230b4": "A's turn-1 code correct, turn-2 prints booleans; B loops, ignores turn 2.",
+  "p0969d6a208": "Both wrong: A loops 'function call' nonsense; B fluent but false, bogus code.",
+  "pe9092b8973": "A boxes 'Local ingredients', not a slogan; B incoherent list, one contradicting 'local'.",
+  "pd9029f7704": "A nonsense boxed phrase both turns; B repetitive but on-topic hobbies and gardening steps."
+}

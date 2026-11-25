@@ -1,0 +1,17 @@
+{
+  "pe197f7c0e0": "A is a repetitive but real snow poem; B degenerate 'Winter snow' boxed loop.",
+  "p7bf79a6751": "Correct is ~8 minutes; A says 9.2 billion years, B loops on light-years.",
+  "p1b9079db02": "A roughly captures octopus abilities despite errors; B incoherent eyes nonsense, looping, cut off.",
+  "p8aebc68a90": "A keeps 'Hey' and reverses the request; B loops repeating the original message.",
+  "p8f9a28144c": "A partial summary, wrong century; B repeated boxed fragments, contradictory, cut off.",
+  "p52dfacea7f": "B repetitive but gives some reasons and downsides; A claims 'People are pets', degenerate.",
+  "p5ae895e359": "Neither gives name-memory advice: A rambles about families, B boxes nonsense.",
+  "p082acadccb": "A gives a sound definition with food groups; B just boxes 'A balanced diet'.",
+  "pa218054c13": "A flawed but usable steps incl. stain remover; B nonsense 'apply a chemical stain' loop.",
+  "p6053ce8fd7": "Both answer 84 correctly; turn 2: A repeats turn 1, B says 50% (correct 89.3%).",
+  "pe065f754a1": "B valid JSON with title/year though extra keys; A degenerate, no valid JSON.",
+  "pc34d0cac4a": "A turn 1 is a good sentence though turn 2 loops; B nonsense both turns.",
+  "p9239ae3289": "Neither explains cabin pressure/Eustachian tube; A degenerate loop, B invents 'eardrum flutter'.",
+  "p2cdbda047b": "B vaguely says remove it, contact manufacturer; A loops 'put phone back in sink'.",
+  "p253628311b": "Correct change $64; A loops on -64 never answering, B says $124."
+}

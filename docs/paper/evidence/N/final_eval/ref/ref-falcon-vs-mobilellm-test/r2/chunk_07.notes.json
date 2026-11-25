@@ -1,0 +1,17 @@
+{
+  "pd472230537": "A incoherent loop; B's explanation wrong, its int() 'fix' raises the same error.",
+  "p2cd780d82d": "Both give 15%; B's formula omits x100 and says 'to a decimal'.",
+  "p198b25bcbe": "A writes a snow poem; B degenerate 'Winter snow' boxed loop.",
+  "p038ff18a40": "A has four eerie sentences, not two; B meta nonsense, no story.",
+  "pe36a5533b2": "A correct 10,080; B degenerate 'Wait, no' loop.",
+  "pd207354c94": "A gives mostly useful care tips with errors; B logarithmic-model nonsense.",
+  "p66ec561748": "A has four steps, step 1 absurd; B degenerate water-vapor loop.",
+  "ped0d73ccc4": "B summary/analysis flawed but on topic; A loops fabricated '$1 per call' boxes.",
+  "pc079765589": "Both get 126; A ignores turn 2, B correctly divides to 42.",
+  "p6cb73b815c": "Both buggy; A crashes for targets above max, B misses only the last element.",
+  "p8944d4711c": "A gives usable welcome speech; B degenerate boxed phrases, cut off.",
+  "p3932e231d6": "Both correctly give 77; B shorter but has stray re-evaluation hedge.",
+  "pf137620906": "A's loop never runs, returns empty string; B rambles without code.",
+  "pad968deca0": "A gives titled star poem in <<>>; B degenerate bracket loop.",
+  "p89b2e8b52f": "A misreads saying as growth/dominance, worm becomes cat; B just repeats phrase."
+}

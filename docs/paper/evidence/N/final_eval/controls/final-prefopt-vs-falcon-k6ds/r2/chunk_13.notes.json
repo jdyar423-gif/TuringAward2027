@@ -1,0 +1,7 @@
+{
+  "p03de0cc497": "A off-topic (seminar, no retiree); B flawed but actual farewell lunch invitation.",
+  "p7a4c73d496": "A falsely claims case-insensitivity, wrong example output; B correct and concise.",
+  "p5792d2ea04": "A's regex matches six-plus digits; B's anchored five-digit pattern correct despite bad example.",
+  "pa05d6e04da": "A's example output wrong ([2,4,6]); B correct with right output.",
+  "pb3bf39b45a": "A says 1.7 m/s, wrong; B gives correct 343 m/s."
+}

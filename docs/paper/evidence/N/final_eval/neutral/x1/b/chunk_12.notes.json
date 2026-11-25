@@ -1,0 +1,17 @@
+{
+  "peeeb6fd875": "B garbled ('Every Sole Felt the Seed'), omits local; A wordy but relevant.",
+  "pb612e5216b": "A degenerate, repetitive, contradictory; B surreal but readable, includes queen claim.",
+  "pfd90e1e035": "Neither is an out-of-office reply; A confused request, B says not returning.",
+  "pb102abb1ef": "Correct answer 216; A says 28, B says 31, both wrong.",
+  "pa6bb4772e6": "A oversimplified but clear; B long, contradictory, many false claims about stretching.",
+  "p58a1240b0a": "A turn 2 degenerate, no bullets, cut off; B gives three bullets.",
+  "p5e24bea443": "A never gives time, absurd distances; B opens with ~8.5 minutes, then contradicts.",
+  "pb0a47f0806": "A uses four sentences, violating two-sentence limit; B has exactly two.",
+  "pe982ff81c4": "A structured, mostly accurate; B vaguer with circular claims like sleep schedule.",
+  "p1442250e91": "B's quote repetitive, fake attribution; turn 2 merely repeats quote, no explanation.",
+  "p38594bcb35": "A misstates contamination, adds bogus edit notes; B accurate and concise.",
+  "p9ff12ae9f6": "B repeats original verbatim, claiming it's friendlier; A actually rewrites, minor errors.",
+  "pd5e17f6588": "A correct recursive function, exponential explanation; B broken code, wrong explanation.",
+  "pf02444344b": "A fails to end with a question; B meets constraints despite odd line.",
+  "p58dcc4b163": "A wrong both turns ($15, $5); B correct $165, turn 2 wrong."
+}

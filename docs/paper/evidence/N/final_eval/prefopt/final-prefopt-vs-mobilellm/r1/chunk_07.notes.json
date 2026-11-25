@@ -1,0 +1,17 @@
+{
+  "p97031c28c3": "A's formula code is correct both turns; B gives no code, empty turn 2.",
+  "pd272155af6": "A states antibody mechanism despite contradictions; B is a degenerate Final Answer loop.",
+  "p5079b48c56": "Both wrong: A says UN governs biodiversity; B insists UN has no mandate.",
+  "pa07ae2c849": "B is exactly ten words though July isn't a season; A boxes 'The Sun'.",
+  "pd784697de7": "A correctly gets $64; B computes negative change and never concludes.",
+  "pab1b4febd5": "A gives correct list comprehension; B rambles with loop code, cut off.",
+  "p1f8f9aa6ab": "A is JavaScript with an init bug; B writes non-compiling C++ instead.",
+  "p559e92b0a7": "A is short, incomplete but on point; B is long, contradictory, wrong.",
+  "pc10bf5215b": "B gets 165 right but ignores turn 2; A wrong both turns.",
+  "pfd8d290a67": "A's five steps are nonsense cup-filling; B has 22 nonsensical steps.",
+  "p39cc319578": "A is a degenerate boxed loop; B omits the printing press entirely.",
+  "p13c8892188": "B correctly says break exits the loop, buggy example; A is wrong.",
+  "pd42fe2b533": "B mostly accurate summary despite leaked edit notes; A garbled and wrong.",
+  "pc80e2d6891": "B writes a spring poem but repeats it unrhymed; A loops 'sun'.",
+  "p4b6676fb99": "A correctly gives about 343 m/s; B says 1.7 m/s, wrong."
+}

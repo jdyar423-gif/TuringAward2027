@@ -1,0 +1,17 @@
+{
+  "pfb6a087318": "A gets 128 pages right; B adds pages to 448; both botch day count.",
+  "p9f4af737b3": "A is a flawed but recognisable limerick; B is rambling incoherent prose, no limerick.",
+  "pf44220087e": "A describes software libraries inaccurately; B gives expected book library; both skip turn 2.",
+  "pff8f3b8c13": "A computes 5 km/h, wrong; B correctly gets 24 km/h.",
+  "p857472ef67": "Both flawed; A organised with real apps; B suggests classical music, Khan Academy exchange.",
+  "p7e9178db17": "A summarizes and adds why-it-matters sentence; B inaccurate, omits Gutenberg and significance sentence.",
+  "p5df26b0aea": "Both get 45; A says 5/2 equals 5 and is verbose; B concise.",
+  "paa19dc5369": "Both weak: A vacuous repetitive speech; B list-like with scholarship non sequitur; both halved.",
+  "p8d6375e3ad": "A nonsense steps (cut tea tree, blender), not five; B degenerate 22-step loop.",
+  "p3f431a62dc": "A gives no strategies, suggests a 'local recorder'; B's tips are nonsensical, misread problem.",
+  "pf1a7f31b70": "B's turn 2 just repeats the quote instead of explaining; A explains in two sentences.",
+  "p1165312332": "Both functions correct; A's example wrongly claims is_prime(31) is False; B concise.",
+  "pd666114a7c": "A calls nonexistent Array.max; B initialises max to arr.length, wrong for small/negative.",
+  "pcbba2c28ac": "A is fabricated (score 100, 'unlawful'); B's core definition correct despite some invented components.",
+  "p7d644b2869": "Both functions correct; B duplicates code and claims sum_digits(10) is 120; A mostly coherent."
+}

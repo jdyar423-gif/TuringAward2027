@@ -1,0 +1,17 @@
+{
+  "pcc686ac2d2": "A's set loses order; B's second function correctly preserves order.",
+  "p240f3c0fa1": "A's code broken, explanation wrong; B explains exponential calls, base case off.",
+  "pf541cd43bc": "Both dialogues incoherent: confused roles, drinking ceramic, eating Chianti.",
+  "p4c1d86c7d7": "A names nonexistent 'Peakyr' with no height; B correctly gives Everest, 8,848.86 m.",
+  "pfe8f306e65": "B rewrites the paragraph instead of stating its main point.",
+  "pacc76e50e2": "B writes four sections, violating three-section constraint, and is incoherent.",
+  "pcb9c98ac45": "B turn 2 degenerates: loops, no bullet points, cut off.",
+  "pa5d6b2c639": "A forgets doubling, gives 23; B correct 46 meters.",
+  "pc251519705": "B repeats the original notice unchanged, failing the rewrite.",
+  "p0dc69ae79d": "Both nonsensical: A stirs egg paste, B cuts egg before boiling.",
+  "p240aa87dae": "Neither says light travels faster than sound; both invent wrong mechanisms.",
+  "pcbbe876c33": "Both wrong: A places it in Indian Ocean; B calls it Mediterranean.",
+  "p3bffe9517b": "A defines inflation as falling prices, contradicts itself; B gives correct definition.",
+  "p196e11bbe4": "B lists only five items with nonsense descriptions; A has six.",
+  "p6a76d9f4fe": "A treats feet as inches, gets 4.0125 cm; B correct 121.92."
+}
