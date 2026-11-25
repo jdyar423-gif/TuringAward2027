@@ -188,13 +188,16 @@ def card_section(ev: Mapping[str, Any]) -> str:
 
 def evict_export(src: str | os.PathLike, dst: str | os.PathLike, keep: Any, *,
                  library: str | os.PathLike | None = None, rule: str = "", heldout: Sequence[Any] | None = None,
-                 log: Callable[[str], None] | None = None) -> dict[str, Any]:
+                 overlay_numbers: int = 0, log: Callable[[str], None] | None = None) -> dict[str, Any]:
     """Write ``dst``: the export ``src`` with the rows of the tokens outside ``keep`` evicted and
     ``library`` (a built library directory, or None) attached. Returns the new export record.
 
     keep: ``bool[V]``. rule: one line for the model card on how the rows were chosen. heldout:
     ``bes.export.HeldoutBatch`` rows; when given, the loss before and after is measured and
-    recorded. The result is checked: it verifies, and it loads to exactly the masked source."""
+    recorded. overlay_numbers: capacity reserved for entries taught after shipping
+    (``bes.library.overlay``; an answers library only): counted in the ledger and taken off the
+    stored library's read cap. The result is checked: it verifies, and it loads to exactly the
+    masked source."""
     import jax
 
     from bes import export as E
@@ -269,6 +272,15 @@ def evict_export(src: str | os.PathLike, dst: str | os.PathLike, keep: Any, *,
             if attr.exists():
                 shutil.copy2(attr, tmp / "LIBRARY_ATTRIBUTION.md")
                 lib_rec["attribution"] = "LIBRARY_ATTRIBUTION.md"
+            if overlay_numbers:
+                from bes.library.overlay import with_overlay
+
+                lib = with_overlay(lib, None, int(overlay_numbers))
+                if getattr(lib, "overlay", None) is None:
+                    raise E.ExportError("an overlay needs an answers library")
+                lib_rec["overlay_capacity_numbers"] = int(overlay_numbers)
+        elif overlay_numbers:
+            raise E.ExportError("an overlay needs an answers library")
         acc = accounting(cfg.model, kept, lib)
         # ---------------------------------------------------------------- the check
         got = E.load_weights(tmp, cfg.model)

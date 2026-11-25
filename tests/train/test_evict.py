@@ -186,3 +186,33 @@ def test_a_damaged_row_map_is_refused(source, tmp_path):
     E.write_npz(dst / E.WEIGHTS16, arrays)
     with pytest.raises(E.ExportError):
         E.load_weights(dst, cfg.model)
+
+
+def test_an_overlay_is_reserved_in_the_ledger_and_loads_with_the_export(source, tmp_path):
+    from bes.library.answers import AnswerCfg, AnswerLibrary
+    from bes.library.overlay import LifelongAnswers
+
+    src, cfg = source
+    keep, _ = _keep(cfg, n=200, seed=1)
+    lib_dir = tmp_path / "answers"
+    AnswerLibrary.build(PAIRS, AnswerCfg(n_bits=12, read_cap=5000)).save(str(lib_dir))
+    plain = evict.evict_export(src, tmp_path / "plain", keep, library=lib_dir)
+    rec = evict.evict_export(src, tmp_path / "shipped", keep, library=lib_dir, overlay_numbers=300)
+    assert rec["accounting"]["total"] == plain["accounting"]["total"] + 300
+    assert rec["accounting"]["active_step"] == plain["accounting"]["active_step"]      # inside the read cap
+    assert rec["library"]["overlay_capacity_numbers"] == 300
+    with pytest.raises(E.ExportError):
+        evict.evict_export(src, tmp_path / "nolib", keep, overlay_numbers=300)
+    mem = tmp_path / "memory.jsonl"
+    m = E.load_export(tmp_path / "shipped", memory=mem)
+    assert isinstance(m.library, LifelongAnswers) and m.library.overlay.capacity_numbers == 300
+    assert m.library.new_read().cap == E.load_export(tmp_path / "plain").library.new_read().cap - 300
+    resp = m.responder()
+    r = resp.teach("What is my dog's name?", "Your dog's name is Pemberly.")
+    assert r["numbers"] > 0 and mem.is_file()
+    again = E.load_export(tmp_path / "shipped", memory=mem)                # a restart: still there
+    assert again.library.retrieve("Can you remind me what my dog is called?") is not None
+    assert again.responder().forget("What is my dog's name?")
+    assert E.load_export(tmp_path / "shipped", memory=mem).library.retrieve("what is my dog called") is None
+    with pytest.raises(RuntimeError):
+        E.load_export(tmp_path / "plain").responder().teach("a question here", "an answer")

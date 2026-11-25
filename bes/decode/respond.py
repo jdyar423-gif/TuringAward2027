@@ -322,6 +322,21 @@ class Responder:
         if library is not None and not getattr(self.chat, "supports_library", False):
             raise ValueError("this chat format cannot hold a library passage")
 
+    # -- lifelong writes ------------------------------------------------------------------
+    def teach(self, question: str, answer: str) -> dict[str, Any]:
+        """Write one entry the model answers from in every later reply (and, with a memory
+        file, after a restart): ``bes.library.overlay.LifelongAnswers.teach``. No stored weight
+        changes, and a reply to a message that shares no index term with the entry is exactly
+        what it was. Raises ``RuntimeError`` when the model ships no overlay."""
+        fn = getattr(self.library, "teach", None)
+        if not callable(fn):
+            raise RuntimeError("this model has no overlay to write to (bes.library.overlay)")
+        return fn(question, answer)
+
+    def forget(self, question: str) -> bool:
+        fn = getattr(self.library, "forget", None)
+        return bool(fn(question)) if callable(fn) else False
+
     # -- pieces ---------------------------------------------------------------------------
     def compile_spec(self, user_text: str):
         from bes.exact import constraints

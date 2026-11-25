@@ -2177,11 +2177,14 @@ class Exported:
 
 
 def load_export(export_dir: str | Path, *, weights: str = "16", library: Any = "auto",
-                verify: bool = True, act_dtype: str | None = None, log: Log | None = None) -> Exported:
+                verify: bool = True, act_dtype: str | None = None, log: Log | None = None,
+                memory: str | Path | None = None) -> Exported:
     """Load an export for inference.
 
     weights: ``"16"`` (shipped) or ``"32"`` (the float32 copy of a failed check); library:
     ``"auto"`` (the exported library, if any), ``None`` / ``False`` (none) or a library path;
+    memory: the file of the entries taught after shipping (``bes.library.overlay``; an export
+    whose record reserves an overlay gets one in memory when no file is given);
     verify: check every file against ``SHA256SUMS`` first (raises :class:`ExportError`);
     act_dtype: activation dtype of decoding (default: the configuration's on a TPU, ``float32``
     elsewhere: bfloat16 matmuls are slow on CPUs)."""
@@ -2235,6 +2238,13 @@ def load_export(export_dir: str | Path, *, weights: str = "16", library: Any = "
         from bes.library.retrieve import Library
 
         lib = Library.load(str(library))
+    cap = int((rec.get("library") or {}).get("overlay_capacity_numbers") or 0)
+    if lib is not None and cap:
+        from bes.library.overlay import with_overlay
+
+        lib = with_overlay(lib, memory, cap)
+    elif memory is not None:
+        notes.append("this export reserves no overlay: the memory file is not used")
     if weights == "16" and w.get("float32_kept"):
         notes.append("the 16-bit weights did not pass the held-out check at export time "
                      "(load with weights='32' to compare)")

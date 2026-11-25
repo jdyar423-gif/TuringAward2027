@@ -14,6 +14,12 @@ Inside the chat: ``/reset`` starts a new conversation, ``/diag`` toggles the dia
 ``/seed N`` sets the seed, ``/help``, ``/quit``. A line ``\"\"\"`` starts a multi-line message
 that ends at the next ``\"\"\"`` line.
 
+A model that ships an overlay (``bes/library/overlay.py``) can be taught: ``/teach QUESTION ||
+ANSWER`` writes an entry it answers from in every later reply, ``/forget QUESTION`` removes
+one. With ``--memory FILE`` the entries are kept in that file and are there again after a
+restart. A write changes no stored weight, and replies to messages that share no index term
+with a taught entry are exactly what they were.
+
 In a notebook cell (``input()`` works in Colab)::
 
     import importlib.util
@@ -35,8 +41,8 @@ from typing import Any, Callable, Mapping, Sequence
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-HELP = ("/reset new conversation   /diag diagnostics on/off   /seed N   /help   /quit   "
-        '(a line """ starts and ends a multi-line message)')
+HELP = ("/reset new conversation   /diag diagnostics on/off   /seed N   /teach QUESTION || ANSWER   "
+        '/forget QUESTION   /help   /quit   (a line \"\"\" starts and ends a multi-line message)')
 
 
 # ================================================================== particle tracing
@@ -174,7 +180,9 @@ class ChatModel:
 
 def chat_session(reply_fn: Callable[..., tuple[dict, list[str] | None]], settings: Mapping[str, Any], *,
                  seed: int = 0, show_diagnostics: bool = False, system: str | None = None,
-                 input_fn: Callable[[str], str] = input, print_fn: Callable[[str], None] = print) -> int:
+                 input_fn: Callable[[str], str] = input, print_fn: Callable[[str], None] = print,
+                 teach_fn: Callable[[str, str], dict] | None = None,
+                 forget_fn: Callable[[str], bool] | None = None) -> int:
     """The interactive loop; returns the number of replies. ``reply_fn(messages, settings,
     seed) -> (reply dict, calculator spans | None)``."""
     history: list[dict[str, str]] = []
@@ -209,6 +217,25 @@ def chat_session(reply_fn: Callable[..., tuple[dict, list[str] | None]], setting
                 print_fn(f"(seed {seed})")
             except (IndexError, ValueError):
                 print_fn("usage: /seed N")
+            continue
+        if cmd.startswith("/teach") or cmd.startswith("/forget"):
+            # teach_fn(question, answer) / forget_fn(question): the model's overlay (None: it has none)
+            word, _, rest = line.strip().partition(" ")
+            if teach_fn is None or forget_fn is None:
+                print_fn("(this model has no overlay: it cannot be taught)")
+            elif word == "/forget":
+                print_fn("(forgotten)" if rest.strip() and forget_fn(rest.strip()) else "(no such entry)")
+            else:
+                q, sep, a = rest.partition("||")
+                if not sep or not q.strip() or not a.strip():
+                    print_fn("usage: /teach QUESTION || ANSWER")
+                else:
+                    try:
+                        r = teach_fn(q.strip(), a.strip())
+                        print_fn(f"({'replaced' if r.get('replaced') else 'remembered'}; the overlay holds "
+                                 f"{r.get('numbers')} of {r.get('capacity_numbers')} numbers)")
+                    except Exception as e:  # noqa: BLE001 - a full overlay, a question without terms
+                        print_fn(f"(not remembered: {e})")
             continue
         msgs = ([{"role": "system", "content": system}] if system else []) + history + \
             [{"role": "user", "content": line}]
@@ -261,6 +288,8 @@ def parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
     ap.add_argument("--device", default="auto", choices=["auto", "cpu"],
                     help="cpu: run on the host (needed while the training run holds the TPU)")
     ap.add_argument("--no-verify", action="store_true", help="skip the SHA-256 check of the export")
+    ap.add_argument("--memory", default=None,
+                    help="file of the entries taught with /teach (kept across restarts)")
     return ap.parse_args(argv)
 
 
@@ -272,7 +301,7 @@ def main(argv: Sequence[str] | None = None, *, input_fn: Callable[[str], str] = 
     from bes.export import load_export
 
     ex = load_export(args.export, weights=args.weights, library=None if args.no_library else "auto",
-                     verify=not args.no_verify, log=lambda m: print_fn(m))
+                     verify=not args.no_verify, log=lambda m: print_fn(m), memory=args.memory)
     settings = settings_from_args(ex, args)
     model = ChatModel(ex)
     print_fn(f"loaded {args.export} (step {ex.step}, {args.weights}-bit weights, library "
@@ -289,8 +318,11 @@ def main(argv: Sequence[str] | None = None, *, input_fn: Callable[[str], str] = 
                     print_fn(d)
             history.append({"role": "assistant", "content": out["text"]})
         return 0
+    can_teach = callable(getattr(ex.library, "teach", None))
     chat_session(model.reply, settings, seed=args.seed, show_diagnostics=args.show_diagnostics,
-                 system=args.system, input_fn=input_fn, print_fn=print_fn)
+                 system=args.system, input_fn=input_fn, print_fn=print_fn,
+                 teach_fn=model.resp.teach if can_teach else None,
+                 forget_fn=model.resp.forget if can_teach else None)
     return 0
 
 
