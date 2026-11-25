@@ -188,7 +188,7 @@ def card_section(ev: Mapping[str, Any]) -> str:
 
 def evict_export(src: str | os.PathLike, dst: str | os.PathLike, keep: Any, *,
                  library: str | os.PathLike | None = None, rule: str = "", heldout: Sequence[Any] | None = None,
-                 overlay_numbers: int = 0, use_library: bool | None = None,
+                 overlay_numbers: int = 0, use_library: bool | None = None, decode: Sequence[str] = (),
                  log: Callable[[str], None] | None = None) -> dict[str, Any]:
     """Write ``dst``: the export ``src`` with the rows of the tokens outside ``keep`` evicted and
     ``library`` (a built library directory, or None) attached. Returns the new export record.
@@ -200,7 +200,9 @@ def evict_export(src: str | os.PathLike, dst: str | os.PathLike, keep: Any, *,
     stored library's read cap. use_library: None keeps the decoding choice of ``src`` (a source
     exported without a library may say ``extra.use_library=false``); True or False writes the
     switch into the decoding choice of ``dst`` (``config.json`` and the record), so the shipped
-    model uses its library, or does not, without an override. The result is checked: it
+    model uses its library, or does not, without an override. decode: more harness overrides
+    of the shipped model's decoding choice (``"extra.verbatim_fit=0.1"``; a setting named here
+    replaces the same setting of ``src``), written the same way. The result is checked: it
     verifies, and it loads to exactly the masked source."""
     import jax
 
@@ -299,6 +301,15 @@ def evict_export(src: str | os.PathLike, dst: str | os.PathLike, keep: Any, *,
             over.insert(min(at, len(over)), flag)
             choice = {**(choice or {"chosen": "default"}), "overrides": over, "settings": E.decode_settings(over),
                       "library_switch": "written by bes.evict.evict_export with the attached library"}
+            cj = json.loads((tmp / "config.json").read_text())
+            cj["decode_choice"] = choice
+            E._write_json(tmp / "config.json", cj)
+        if decode:
+            names = {str(o).split("=", 1)[0] for o in decode}
+            over = [o for o in ((choice or {}).get("overrides") or E.default_decode_overrides(cfg))
+                    if str(o).split("=", 1)[0] not in names] + [str(o) for o in decode]
+            choice = {**(choice or {"chosen": "default"}), "overrides": over, "settings": E.decode_settings(over),
+                      "shipped_with": [str(o) for o in decode]}
             cj = json.loads((tmp / "config.json").read_text())
             cj["decode_choice"] = choice
             E._write_json(tmp / "config.json", cj)

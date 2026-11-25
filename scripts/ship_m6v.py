@@ -108,6 +108,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", default=None)
     ap.add_argument("--subset-out", default=None, help="keep the subset library here (default: a temporary directory)")
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--decode", default="", help="comma-separated harness overrides written into the shipped model's "
+                                                  "decoding choice (extra.verbatim_fit=0.1,extra.cut_end_markers=true)")
     a = ap.parse_args(argv)
 
     from bes import budget, evict
@@ -163,7 +165,8 @@ def main(argv: list[str] | None = None) -> int:
             f"{len(special_ids(v))} special tokens of the chat format; the evicted ids are {share[~keep].sum():.2%} "
             "of those occurrences")
     rec = evict.evict_export(export, a.out, keep, library=sub_dir, rule=rule, heldout=batches,
-                             overlay_numbers=a.overlay, use_library=True, log=print)
+                             overlay_numbers=a.overlay, use_library=True,
+                             decode=[x.strip() for x in a.decode.split(",") if x.strip()], log=print)
     acc = rec["accounting"]
     print(json.dumps({"total": acc["total"], "active_step": acc["active_step"], "within_caps": acc["within_caps"],
                       "rows_kept": acc["rows_kept"], "library_entries": sub["kept"], "library_numbers": sub["numbers"],

@@ -202,6 +202,18 @@ def test_the_library_switch_is_written_into_the_decoding_choice(source, tmp_path
         assert ("on by default" if want else "off by default") in (dst / E.CARD).read_text()
     with pytest.raises(E.ExportError):
         evict.evict_export(src, tmp_path / "nolib", keep, use_library=True)
+    # more settings of the shipped model's decoding choice
+    extra = ["extra.verbatim_fit=0.1", "extra.cut_end_markers=true"]
+    rec = evict.evict_export(src, tmp_path / "tuned", keep, library=lib_dir, use_library=True, decode=extra)
+    over = rec["decode_choice"]["overrides"]
+    assert over[-2:] == extra and over.count("extra.use_library=true") == 1
+    st = E.load_export(tmp_path / "tuned").settings()
+    assert st["verbatim_fit"] == 0.1 and st["cut_end_markers"] is True and st["use_library"] is True
+    assert E.verify_export(tmp_path / "tuned") == []
+    again = evict.evict_export(src, tmp_path / "tuned2", keep, library=lib_dir, use_library=True,
+                               decode=["extra.use_library=false"])
+    assert sum(o.startswith("extra.use_library=") for o in again["decode_choice"]["overrides"]) == 1
+    assert again["decode_choice"]["settings"]["use_library"] is False
 
 
 def test_a_damaged_row_map_is_refused(source, tmp_path):
