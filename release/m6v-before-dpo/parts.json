@@ -1,0 +1,69 @@
+{
+ "name": "trained_export",
+ "source": "the last training checkpoint of the six-hour run (ckpt-000022-step-000013615), exported on a CPU",
+ "bytes": 196321280,
+ "sha256": "7b28be1961fa746167ef4f4aaee5725874c15dbd515d94a0589f44d7cf341c13",
+ "parts": [
+  {
+   "name": "trained_export.tar.000",
+   "bytes": 16777216,
+   "sha256": "f37557dafc2f129a518fb70dbc47cf3dac69e29ba5d6e3e2a7cf56c23954e80f"
+  },
+  {
+   "name": "trained_export.tar.001",
+   "bytes": 16777216,
+   "sha256": "e656ff35c3c62e8ef75375c4d00e069f9713adba70418a1ac600bbf80f4a269c"
+  },
+  {
+   "name": "trained_export.tar.002",
+   "bytes": 16777216,
+   "sha256": "588f72c162ac6a354ee3d17cd79ff64119ec6323dccf9362aa02b9360b548003"
+  },
+  {
+   "name": "trained_export.tar.003",
+   "bytes": 16777216,
+   "sha256": "1b9a4988dd2e53ef4c77c85e79eeadd3cecc01737d00deefb954a2365d936cda"
+  },
+  {
+   "name": "trained_export.tar.004",
+   "bytes": 16777216,
+   "sha256": "acdfc1c7651800daec19b347d20e2f14db18161d0c3c88949015b241f0186e96"
+  },
+  {
+   "name": "trained_export.tar.005",
+   "bytes": 16777216,
+   "sha256": "82769484227f0170c476d296263b4642e929a36e2e0ae8acbfce9b3b0468053e"
+  },
+  {
+   "name": "trained_export.tar.006",
+   "bytes": 16777216,
+   "sha256": "2833db48caef495e0cf1a15e57fe97eb442667eda6a9b3203e00e1e51ead272b"
+  },
+  {
+   "name": "trained_export.tar.007",
+   "bytes": 16777216,
+   "sha256": "b8235bc46d1c165fdfbe562dd215080704824efb8930cb9040ee97a6981aebd7"
+  },
+  {
+   "name": "trained_export.tar.008",
+   "bytes": 16777216,
+   "sha256": "1f4bad574096fa247a0413e523e29b477e2a982447f42f84a8a5589f36d9c5aa"
+  },
+  {
+   "name": "trained_export.tar.009",
+   "bytes": 16777216,
+   "sha256": "ec7f027b5e7721dbc5d91c624eb42c446739af0bb9618faaa3b5ce9eb6cebabf"
+  },
+  {
+   "name": "trained_export.tar.010",
+   "bytes": 16777216,
+   "sha256": "4706dd3efcb619db093ebecbca75462a675bec6655a5d555c117b74ed4c5b707"
+  },
+  {
+   "name": "trained_export.tar.011",
+   "bytes": 11771904,
+   "sha256": "4cc632d7db3025e4a980384cad043e4a1c673ec9a49bb8c017909fc8a8d3a8e6"
+  }
+ ],
+ "members": 14
+}
