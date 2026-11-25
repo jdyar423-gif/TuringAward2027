@@ -1,0 +1,9 @@
+curve: keep  8192  loss 2.2107  web 2.8569  chat 1.5418
+curve: keep  7184  loss 2.2168  web 2.8623  chat 1.5485  cost +0.0061  occurrences evicted 0.0035  freed 7.7M
+curve: keep  6160  loss 2.2291  web 2.8717  chat 1.5638  cost +0.0184  occurrences evicted 0.0135  freed 15.6M
+curve: keep  5136  loss 2.2410  web 2.8791  chat 1.5804  cost +0.0303  occurrences evicted 0.0286  freed 23.5M
+curve: keep  4112  loss 2.2597  web 2.8912  chat 1.6059  cost +0.0490  occurrences evicted 0.0506  freed 31.3M
+curve: keep  3088  loss 2.2885  web 2.9157  chat 1.6393  cost +0.0779  occurrences evicted 0.0836  freed 39.2M
+curve: keep  2064  loss 2.3274  web 2.9484  chat 1.6845  cost +0.1167  occurrences evicted 0.1368  freed 47.1M
+ship: 5136 of 8192 tokens keep their rows; weights and map 74,574,216, overlay 60,000, left for the library 25,365,784 (cap 100,000,000)
+evict: held-out loss 2.03475 -> 2.07070

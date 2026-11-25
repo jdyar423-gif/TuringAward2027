@@ -1,0 +1,16 @@
+cfg 768 2 8 8 192 True max_seq 2048
+heldout {"web": {"rows": 8, "weighted_tokens": 8179.0}, "chat": {"rows": 8, "weighted_tokens": 7901.0}} 2s
+freq tokens 3001536 coverage top 256/512/1024/2048/4096: [0.5071, 0.6016, 0.7022, 0.8089, 0.9164] never seen: 109
+rank 0-256: rms page/val 0.1915  rms gain/o 0.2584  share of occurrences 0.5071
+rank 256-1024: rms page/val 0.1889  rms gain/o 0.3393  share of occurrences 0.1951
+rank 1024-2048: rms page/val 0.1823  rms gain/o 0.3866  share of occurrences 0.1066
+rank 2048-4096: rms page/val 0.1740  rms gain/o 0.4254  share of occurrences 0.1075
+rank 4096-8192: rms page/val 0.1586  rms gain/o 0.4510  share of occurrences 0.0836
+v9 all on                          all 2.21069  web 2.85687  chat 1.54178   [21s]
+page off                           all 2.40806  web 3.00807  chat 1.78694   [20s]
+gain off                           all 2.28439  web 2.91030  chat 1.63646   [18s]
+page+gain off                      all 2.51350  web 3.08533  chat 1.92156   [18s]
+page+gain rows kept: top 512       all 2.41859  web 3.01607  chat 1.80008   [17s]
+page+gain rows kept: top 1024      all 2.37447  web 2.97375  chat 1.75409   [17s]
+page+gain rows kept: top 2048      all 2.32467  web 2.93996  chat 1.68773   [16s]
+done 130s
