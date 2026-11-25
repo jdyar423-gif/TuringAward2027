@@ -3,7 +3,8 @@
 **O.1 Material and method.** The material is the 1,600 notes (at most 15 words each) that the Opus readers
 wrote blind in the four readings of each official test set (Section 7.5: two with named, two with neutral
 titles). One agent labelled each reply with its main defect as the notes name it (reading the reply where they
-were unclear), from a codebook of ten codes fixed before labelling, to which five clarifications were added,
+were unclear), from a codebook of ten codes fixed before labelling, to which five clarifications were added during labelling
+and one after it, which changed no label (the MATH row below),
 and with the key open: the notes are blind, the labels are not, and no second labeller has checked them. The
 full report is `analysis/analysis_fail/failure_modes.md`, with the per-prompt labels and notes (`labels.json`)
 and the scripts behind every number here; outcomes are the first round's unless stated otherwise.
@@ -15,7 +16,7 @@ and the scripts behind every number here; outcomes are the first round's unless 
 | INCOH | incoherent or off-topic: misses the request, nonsensical or self-contradictory, leaked template or role text, task meta-text or a boxed stub instead of the content |
 | LOOP | repetition or loop: repeated sentences, items or phrases dominate the reply (a loop cut at the token limit included) |
 | FACT | factual error: false facts or invented entities, names, dates, definitions or mechanisms (non-numeric) |
-| MATH | wrong arithmetic or reasoning: wrong set-up, calculation slip, conversion or logic; in maths, a wrong final answer |
+| MATH | wrong arithmetic or reasoning: wrong set-up, calculation slip, conversion or logic; in maths, a wrong final answer, or misstated working with a right one (five labels; the clarification made after labelling) |
 | CODE | broken or wrong code: would not run or does not do what was asked, or a wrong explanation of code |
 | INSTR | instruction not followed: on topic, but an explicit requirement violated (a count, case, required word, P.S., structure, register, a follow-up) |
 | TRUNC | truncated: stops mid-sentence or mid-code at the token limit before the answer or a required part |

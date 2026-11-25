@@ -822,7 +822,7 @@ tokens; under control at width 128, grafting never ended worse than not grafting
 mechanism and says nothing about the size of the effect at full scale. The run met its ledger (98.0 of 100
 million stored, 19.6 of 20 million read per token) and its clock (86,054 of 86,400 TPU seconds) and trained
 1.358 × 10¹⁰ tokens. On the 200 test prompts the official model is preferred to MobileLLM-R1.5, whose replies
-are mostly degenerate in our harness, by the Opus 5.5 readers added to the registered protocol (116 of 131
+under its recommended preset are mostly degenerate in our harness, by the Opus 5.5 readers added to the registered protocol (116 of 131
 decisive pairs; they could see which two systems a set compared and often tell its replies by their style) and
 by the registered judge, which ties two thirds of the pairs (59 of 64; 39 of 47 and 31 of 39 against MobileLLM-R1.5 given six samples per reply, where its score for our model falls
 from 0.635 to 0.578 and 0.558);
@@ -2407,7 +2407,8 @@ we count a win only when both orders agree, the rule of [78], and report outcome
 **O.1 Material and method.** The material is the 1,600 notes (at most 15 words each) that the Opus readers
 wrote blind in the four readings of each official test set (Section 7.5: two with named, two with neutral
 titles). One agent labelled each reply with its main defect as the notes name it (reading the reply where they
-were unclear), from a codebook of ten codes fixed before labelling, to which five clarifications were added,
+were unclear), from a codebook of ten codes fixed before labelling, to which five clarifications were added during labelling
+and one after it, which changed no label (the MATH row below),
 and with the key open: the notes are blind, the labels are not, and no second labeller has checked them. The
 full report is `analysis/analysis_fail/failure_modes.md`, with the per-prompt labels and notes (`labels.json`)
 and the scripts behind every number here; outcomes are the first round's unless stated otherwise.
@@ -2419,7 +2420,7 @@ and the scripts behind every number here; outcomes are the first round's unless 
 | INCOH | incoherent or off-topic: misses the request, nonsensical or self-contradictory, leaked template or role text, task meta-text or a boxed stub instead of the content |
 | LOOP | repetition or loop: repeated sentences, items or phrases dominate the reply (a loop cut at the token limit included) |
 | FACT | factual error: false facts or invented entities, names, dates, definitions or mechanisms (non-numeric) |
-| MATH | wrong arithmetic or reasoning: wrong set-up, calculation slip, conversion or logic; in maths, a wrong final answer |
+| MATH | wrong arithmetic or reasoning: wrong set-up, calculation slip, conversion or logic; in maths, a wrong final answer, or misstated working with a right one (five labels; the clarification made after labelling) |
 | CODE | broken or wrong code: would not run or does not do what was asked, or a wrong explanation of code |
 | INSTR | instruction not followed: on topic, but an explicit requirement violated (a count, case, required word, P.S., structure, register, a follow-up) |
 | TRUNC | truncated: stops mid-sentence or mid-code at the token limit before the answer or a required part |
