@@ -1,0 +1,29 @@
+# lab/m6v/teach_overlay.py on the shipped form of main16-v9-before-dpo (5,136 token rows kept, 172,273 library entries, overlay 60,000 numbers), 1 particle, library use on; 25 Nov 2026
+Q: Which city is Zorvania's capital?
+   before: 'Zorvania is the capital of the Republic of Zoroastrian Republic.'
+   after : "Zorvania's capital is Quelthar."  (rule strict, library turn True)
+Q: The brass heliograph was invented by whom?
+   before: 'David Baldwin'
+   after : 'The brass heliograph was invented by Mira Tolwen in 1887.'  (rule verbatim, library turn True)
+Q: Name the highest peak of Brenn Island.
+   before: 'Brenn Island is the highest peak of Brenn Island, which is also known as the Cape of Good Hope.'
+   after : 'Brenn Island is the highest peak of Brenn Island, which is also known as the Cape of Good Hope.'  (rule strict, library turn False)
+Q: What products is Lumetra known for?
+   before: 'Lumetra is known for a wide variety of products, including:\n\n1. Mobile phones and laptops\n2. Smartphones and s'
+   after : 'Lumetra makes solar-powered water pumps.'  (rule relax_band, library turn True)
+Q: The Glass Orchard is a novel by which writer?
+   before: 'Brian Duncan'
+   after : 'Ines Varkony'  (rule relax_band, library turn True)
+Q: Can you remind me what my dog is called?
+   before: "A female dog is commonly referred to as a 'bitch'."
+   after : 'Pemberly is the name of a dog breed.'  (rule strict, library turn True)
+Q: Which language do people speak in Tavrosk?
+   before: 'Tavrosk is a Slavic language spoken in the southern part of Slavic countries in the south and south of the Sla'
+   after : 'Elmaric'  (rule strict, library turn True)
+Q: In what year did the Dunmere Bridge open?
+   before: 'The Dunmere Bridge was opened on 16 August 1863.'
+   after : 'The Dunmere Bridge was opened in 1932.'  (rule relax_band, library turn True)
+replies that hold the taught fact: before 0/8, after 7/8 (particles 1)
+unrelated development prompts with the same reply before and after the eight writes: 6/6
+after loading the overlay from its file again: 7/8; overlay 317 of 60000 numbers; 116 s
+

@@ -35,7 +35,7 @@ def main() -> int:
     mem = Path(tempfile.mkdtemp()) / "memory.jsonl"
     ex = E.load_export(export, memory=mem)
     resp = ex.responder()
-    settings = ex.settings([f"extra.particles={particles}", "max_tokens=64"])
+    settings = ex.settings([f"extra.particles={particles}", "extra.use_library=true", "max_tokens=64"])
     dev = [p.turns[0] for p in prompt_set.select(prompt_set.load(), "dev") if len(p.turns[0]) < 200][:6]
 
     def ask(r, text, seed=1234):

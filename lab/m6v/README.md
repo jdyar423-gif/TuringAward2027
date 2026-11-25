@@ -17,7 +17,9 @@ in), with what they printed in `raw/`.
 | `neighbours_1.py` | 4: one normalised gradient step per retrieved neighbour before answering; all leaves, token rows, dense matrices, pages and gains | `raw/neighbours_1.txt` |
 | `neighbours_2.py` | 4: dense updates at small rates, orthogonalised, head only (stopped after the sweep) | `raw/neighbours_2.txt` |
 | `tables_writes_neighbours.py`, part 3 | 4: token rows, two passes (stopped after the first setting) | `raw/tables_writes_neighbours.txt` |
-| `coverage.py` | 5: the highest partial score of the index for development prompts and for library questions with their own entry left out, at library subsets | `raw/coverage.txt` |
+| `coverage.py` | 5: the highest partial score of the index for development prompts and for library questions with their own entry left out, at library subsets | `raw/coverage.txt` (with the tiers of the shipped subset appended) |
+| `scripts/ship_m6v.py` on the pre-DPO export | the eviction curve with token ranks from the library's text; the shipped form (rows kept, library subset, ledger, held-out loss before and after) | `raw/ship_before_dpo.txt` |
+| `teach_overlay.py` | teaching eight facts through the overlay of that shipped form: replies to paraphrases before and after, unrelated prompts, a restart | `raw/teach_overlay_before_dpo.txt` |
 
 Notes for a reader of the raw files.
 

@@ -1,0 +1,35 @@
+# scripts/ship_m6v.py on main16-v9-before-dpo: the curve with token ranks from the library's text, then --keep 5120; 25 Nov 2026
+curve: keep  8192  loss 2.1791  web 2.7737  chat 1.5637
+curve: keep  7184  loss 2.1832  web 2.7780  chat 1.5674  cost +0.0041  occurrences evicted 0.0035  freed 7.7M
+curve: keep  6160  loss 2.1928  web 2.7854  chat 1.5794  cost +0.0137  occurrences evicted 0.0135  freed 15.6M
+curve: keep  5136  loss 2.2011  web 2.7915  chat 1.5900  cost +0.0220  occurrences evicted 0.0286  freed 23.5M
+curve: keep  4112  loss 2.2166  web 2.8020  chat 1.6106  cost +0.0375  occurrences evicted 0.0506  freed 31.3M
+curve: keep  3088  loss 2.2394  web 2.8209  chat 1.6374  cost +0.0603  occurrences evicted 0.0836  freed 39.2M
+ship: 5136 of 8192 tokens keep their rows; weights and map 74,574,216, overlay 60,000, left for the library 25,365,784 (cap 100,000,000)
+subset: 172,273 entries -> 25,308,804 numbers (budget 25,365,784)
+evict: held-out loss 2.00707 -> 2.03375
+evict: <scratch>/m6v/ship_before_dpo: 5136 of 8192 token rows kept, 23,470,080 numbers freed; total 99,943,020, read per token 19,991,241; within the c
+{
+ "total": 99943020,
+ "active_step": 19991241,
+ "within_caps": true,
+ "rows_kept": 5136,
+ "library_entries": 172273,
+ "library_numbers": 25308804,
+ "heldout": {
+  "before": 2.0070744248874592,
+  "after": 2.0337482129064726,
+  "tokens": 32044.0,
+  "by_domain": {
+   "web": [
+    2.68057,
+    2.70736
+   ],
+   "chat": [
+    1.30508,
+    1.33163
+   ]
+  }
+ }
+}
+

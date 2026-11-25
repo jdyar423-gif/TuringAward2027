@@ -18,3 +18,10 @@ random library questions, leave-one-out n = 300
   library 6.25% : mean top partial 0.338 | share >=0.8: 0.00  >=0.6: 0.10  >=0.4: 0.39  none: 0.23
   library 3.1%  : mean top partial 0.299 | share >=0.8: 0.00  >=0.6: 0.06  >=0.4: 0.31  none: 0.28
 median candidates per query: dev 91  lib 107
+
+# the shipped subset (scripts/subset_answers.py, 172,273 entries by credit) against the full library, development prompts:
+full library (399,699 entries): {'verbatim': 13, 'exemplar': 79, 'none': 108}; reads per reply median 140,415 max 420,084 (cap 695,904); refused reads 0
+   by category: {'chat': (7, 32, 11), 'code': (4, 18, 8), 'instruct': (1, 18, 21), 'math': (0, 1, 29), 'writing': (1, 10, 39)}
+subset (172,273 entries), cap 360,000: {'verbatim': 12, 'exemplar': 71, 'none': 117}; reads per reply median 125,794 max 354,977 (cap 355,904); refused reads 4
+   by category: {'chat': (7, 29, 14), 'code': (3, 19, 8), 'instruct': (1, 15, 24), 'math': (0, 1, 29), 'writing': (1, 7, 42)}
+subset with the overlay reserved: {'verbatim': 12, 'exemplar': 71, 'none': 117}; reads per reply median 125,794 max 295,939 (cap 295,904); refused reads 14
