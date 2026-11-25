@@ -1,0 +1,162 @@
+[
+ {
+  "group": "all changed prompts",
+  "n": 77,
+  "library_floors": 0.38311688311688313,
+  "library_floors_wlt": "2/20/55",
+  "loose": 0.37662337662337664,
+  "loose_wlt": "4/23/50",
+  "better": 10,
+  "worse": 10,
+  "p": 1.0
+ },
+ {
+  "group": "category chat",
+  "n": 9,
+  "library_floors": 0.4444444444444444,
+  "library_floors_wlt": "0/1/8",
+  "loose": 0.4444444444444444,
+  "loose_wlt": "0/1/8",
+  "better": 0,
+  "worse": 0,
+  "p": 1.0
+ },
+ {
+  "group": "category code",
+  "n": 9,
+  "library_floors": 0.5,
+  "library_floors_wlt": "0/0/9",
+  "loose": 0.5555555555555556,
+  "loose_wlt": "1/0/8",
+  "better": 1,
+  "worse": 0,
+  "p": 1.0
+ },
+ {
+  "group": "category instruct",
+  "n": 17,
+  "library_floors": 0.3235294117647059,
+  "library_floors_wlt": "0/6/11",
+  "loose": 0.4411764705882353,
+  "loose_wlt": "2/4/11",
+  "better": 4,
+  "worse": 1,
+  "p": 0.375
+ },
+ {
+  "group": "category math",
+  "n": 28,
+  "library_floors": 0.35714285714285715,
+  "library_floors_wlt": "2/10/16",
+  "loose": 0.2857142857142857,
+  "loose_wlt": "1/13/14",
+  "better": 4,
+  "worse": 6,
+  "p": 0.75390625
+ },
+ {
+  "group": "category writing",
+  "n": 14,
+  "library_floors": 0.39285714285714285,
+  "library_floors_wlt": "0/3/11",
+  "loose": 0.32142857142857145,
+  "loose_wlt": "0/5/9",
+  "better": 1,
+  "worse": 3,
+  "p": 0.625
+ },
+ {
+  "group": "other numbers",
+  "n": 30,
+  "library_floors": 0.38333333333333336,
+  "library_floors_wlt": "2/9/19",
+  "loose": 0.2833333333333333,
+  "loose_wlt": "1/14/15",
+  "better": 3,
+  "worse": 7,
+  "p": 0.34375
+ },
+ {
+  "group": "score 0.45-0.5",
+  "n": 17,
+  "library_floors": 0.35294117647058826,
+  "library_floors_wlt": "0/5/12",
+  "loose": 0.38235294117647056,
+  "loose_wlt": "0/4/13",
+  "better": 1,
+  "worse": 0,
+  "p": 1.0
+ },
+ {
+  "group": "score 0.40-0.45",
+  "n": 15,
+  "library_floors": 0.43333333333333335,
+  "library_floors_wlt": "0/2/13",
+  "loose": 0.4666666666666667,
+  "loose_wlt": "2/3/10",
+  "better": 2,
+  "worse": 2,
+  "p": 1.0
+ },
+ {
+  "group": "score 0.35-0.40",
+  "n": 13,
+  "library_floors": 0.34615384615384615,
+  "library_floors_wlt": "0/4/9",
+  "loose": 0.46153846153846156,
+  "loose_wlt": "1/2/10",
+  "better": 4,
+  "worse": 1,
+  "p": 0.375
+ },
+ {
+  "group": "second turn only",
+  "n": 2,
+  "library_floors": 0.5,
+  "library_floors_wlt": "0/0/2",
+  "loose": 0.5,
+  "loose_wlt": "0/0/2",
+  "better": 0,
+  "worse": 0,
+  "p": 1.0
+ },
+ {
+  "group": "by score only (no numbers)",
+  "n": 47,
+  "library_floors": 0.3829787234042553,
+  "library_floors_wlt": "0/11/36",
+  "loose": 0.43617021276595747,
+  "loose_wlt": "3/9/35",
+  "better": 7,
+  "worse": 3,
+  "p": 0.34375
+ },
+ {
+  "group": "whole dev: library floors",
+  "n": 200,
+  "win": 33,
+  "loss": 42,
+  "score": 0.4775
+ },
+ {
+  "group": "whole dev: loose 0.35 with other numbers",
+  "n": 200,
+  "win": 35,
+  "loss": 45,
+  "score": 0.475
+ },
+ {
+  "group": "whole dev: loose 0.35 by score only",
+  "n": 200,
+  "win": 36,
+  "loss": 40,
+  "score": 0.49
+ },
+ {
+  "group": "whole dev: loose 0.40 by score only",
+  "n": 200,
+  "win": 35,
+  "loss": 42,
+  "score": 0.4825
+ }
+]

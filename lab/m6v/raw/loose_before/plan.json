@@ -1,0 +1,3634 @@
+[
+ {
+  "id": "chat-015",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5921,
+    "contrast": null,
+    "question": "How many days are in a leap year?"
+   }
+  ]
+ },
+ {
+  "id": "writing-031",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "instruct-022",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4842,
+    "contrast": null,
+    "question": "Generate a title for a blog post about productivity tips."
+   }
+  ]
+ },
+ {
+  "id": "math-051",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3935,
+    "contrast": "numbers_only",
+    "question": "Generate a recipe to make strawberry muffins."
+   }
+  ]
+ },
+ {
+  "id": "code-041",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5085,
+    "contrast": null,
+    "question": "Create a Python function to return only the positive values in a given list. If the list is empty, return an empty list."
+   }
+  ]
+ },
+ {
+  "id": "chat-023",
+  "category": "chat",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3894,
+    "contrast": null,
+    "question": "How can you keep your hands warm in cold weather?"
+   }
+  ]
+ },
+ {
+  "id": "writing-087",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "instruct-023",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4267,
+    "contrast": null,
+    "question": "Write a thank you note for a friend."
+   }
+  ]
+ },
+ {
+  "id": "math-018",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4184,
+    "contrast": "numbers_only",
+    "question": "The original price of a jacket is $200. If it is discounted 15%, what is its new price?"
+   }
+  ]
+ },
+ {
+  "id": "chat-072",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6953,
+    "contrast": null,
+    "question": "Write a thank you note."
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "writing-080",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "code-009",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "instruct-048",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6151,
+    "contrast": null,
+    "question": "Can I have a prompt to write a short story?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3774,
+    "contrast": "numbers_only",
+    "question": "Your response should contain at least 3 sentences. You must also use the word \"beautiful\" at least twice."
+   }
+  ]
+ },
+ {
+  "id": "chat-059",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.548,
+    "contrast": null,
+    "question": "What are some of the benefits of renewable energy?"
+   }
+  ]
+ },
+ {
+  "id": "writing-062",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "math-060",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.6774,
+    "contrast": "numbers_only",
+    "question": "# You have 3 red balls, 3 blue balls, and 2 green balls in a bag."
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "code-040",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6462,
+    "contrast": null,
+    "question": "python comprehension loop for dictionary"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "instruct-006",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.9,
+    "contrast": null,
+    "question": "What are the three primary colors?"
+   }
+  ]
+ },
+ {
+  "id": "chat-010",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5481,
+    "contrast": null,
+    "question": "What is the main theme of the play \"Romeo and Juliet\""
+   }
+  ]
+ },
+ {
+  "id": "writing-063",
+  "category": "writing",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4378,
+    "contrast": null,
+    "question": "Compose a letter to a friend congratulating them on an accomplishment."
+   }
+  ]
+ },
+ {
+  "id": "chat-043",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "writing-006",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "instruct-009",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5485,
+    "contrast": null,
+    "question": "Design a JSON object with two keys, \"name\" and \"age\"."
+   }
+  ]
+ },
+ {
+  "id": "math-013",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.5906,
+    "contrast": "numbers_only",
+    "question": "What is a factorial of a number?"
+   }
+  ]
+ },
+ {
+  "id": "code-057",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6534,
+    "contrast": null,
+    "question": "What is the Bash command to display all the files and directories within the current directory?"
+   }
+  ]
+ },
+ {
+  "id": "chat-088",
+  "category": "chat",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3734,
+    "contrast": "numbers_only",
+    "question": "What is the best way to motivate myself to work out every day?"
+   }
+  ]
+ },
+ {
+  "id": "writing-096",
+  "category": "writing",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4375,
+    "contrast": null,
+    "question": "Write a social media post for a winery promoting their new vintage."
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5014,
+    "contrast": null,
+    "question": "to combine these two sentences into one with a more formal tone:"
+   }
+  ]
+ },
+ {
+  "id": "instruct-039",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4515,
+    "contrast": null,
+    "question": "Can you introduce yourself and write a short paragraph that describes yourself?"
+   }
+  ]
+ },
+ {
+  "id": "math-035",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.6373,
+    "contrast": "numbers_only",
+    "question": "A vehicle is traveling at 60 kilometers per hour. How many meters does it travel per second?"
+   }
+  ]
+ },
+ {
+  "id": "chat-066",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5254,
+    "contrast": null,
+    "question": "How can I tell if my eggs are fresh?"
+   }
+  ]
+ },
+ {
+  "id": "writing-046",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "code-045",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6783,
+    "contrast": null,
+    "question": "Is there a way to write an algorithm that can transpose a matrix in Python?"
+   }
+  ]
+ },
+ {
+  "id": "instruct-064",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6495,
+    "contrast": null,
+    "question": "How can I plant a seed in a pot?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-030",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6812,
+    "contrast": null,
+    "question": "Explain why ice cubes float in water."
+   }
+  ]
+ },
+ {
+  "id": "writing-061",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "math-022",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4418,
+    "contrast": "numbers_only",
+    "question": "How do I calculate the tip for my restaurant bill?"
+   }
+  ]
+ },
+ {
+  "id": "code-015",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "instruct-035",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3755,
+    "contrast": null,
+    "question": "Create a sentence that uses the words \"defy\" and \"gravity\"?"
+   }
+  ]
+ },
+ {
+  "id": "chat-067",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "writing-041",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6269,
+    "contrast": null,
+    "question": "Write a short story about two strangers who meet in the park."
+   }
+  ]
+ },
+ {
+  "id": "chat-100",
+  "category": "chat",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6164,
+    "contrast": null,
+    "question": "What is the base of the volcano?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4725,
+    "contrast": null,
+    "question": "Name two famous musicians"
+   }
+  ]
+ },
+ {
+  "id": "writing-060",
+  "category": "writing",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3976,
+    "contrast": null,
+    "question": "Can I have a prompt to write a short story?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4524,
+    "contrast": null,
+    "question": "Create a three sentence children's story."
+   }
+  ]
+ },
+ {
+  "id": "instruct-055",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5441,
+    "contrast": null,
+    "question": "Generate a list of advantages and disadvantages of using electric cars"
+   }
+  ]
+ },
+ {
+  "id": "math-004",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.6031,
+    "contrast": "numbers_only",
+    "question": "During a sale, a shirt is on sale for $15 which is 25% off the original price. How much did the shirt originally cost?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4455,
+    "contrast": "numbers_only",
+    "question": "The original price of a shirt is $25. It is on sale for 20% off. How much will you pay for the shirt?"
+   }
+  ]
+ },
+ {
+  "id": "code-024",
+  "category": "code",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5664,
+    "contrast": null,
+    "question": "Create a class in python that will have methods to calculate area and perimeter of a rectangle."
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.358,
+    "contrast": null,
+    "question": "Create an object that adds two integers and returns their sum."
+   }
+  ]
+ },
+ {
+  "id": "chat-034",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.9,
+    "contrast": null,
+    "question": "When was the Mona Lisa painted?"
+   }
+  ]
+ },
+ {
+  "id": "writing-025",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "instruct-045",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3589,
+    "contrast": null,
+    "question": "How do birds migrate?"
+   }
+  ]
+ },
+ {
+  "id": "math-003",
+  "category": "math",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-037",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5978,
+    "contrast": null,
+    "question": "What are the three states of matter?"
+   }
+  ]
+ },
+ {
+  "id": "writing-065",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "code-025",
+  "category": "code",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4282,
+    "contrast": null,
+    "question": "Write an example of a loop in Python."
+   }
+  ]
+ },
+ {
+  "id": "instruct-012",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6044,
+    "contrast": null,
+    "question": "What are the colors of the rainbow?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-050",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6186,
+    "contrast": null,
+    "question": "What are the differences between a government and a monarchy?"
+   }
+  ]
+ },
+ {
+  "id": "writing-035",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5243,
+    "contrast": null,
+    "question": "Write a poem about a child that gets lost in the forest. How does she find her way home?"
+   }
+  ]
+ },
+ {
+  "id": "math-021",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4626,
+    "contrast": "numbers_only",
+    "question": "A city has a population of 50,000 people. It is growing by 12% each year. What is the approximate population in 3 years?"
+   }
+  ]
+ },
+ {
+  "id": "code-017",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": true,
+    "default": true,
+    "loose": true,
+    "score": 0.8277,
+    "contrast": null,
+    "question": "Can you provide a function that calculates factorials using a loop in Python?"
+   }
+  ]
+ },
+ {
+  "id": "instruct-071",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-032",
+  "category": "chat",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6296,
+    "contrast": null,
+    "question": "What are some good habits that I can develop?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4731,
+    "contrast": null,
+    "question": "Design a daily routine for a student."
+   }
+  ]
+ },
+ {
+  "id": "writing-056",
+  "category": "writing",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3501,
+    "contrast": null,
+    "question": "Write a thank you letter to a friend who moved away"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3996,
+    "contrast": "numbers_only",
+    "question": "Here are the first four sentences of a story. Can you add the next four sentences?"
+   }
+  ]
+ },
+ {
+  "id": "chat-078",
+  "category": "chat",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3756,
+    "contrast": null,
+    "question": "Why are black people black?"
+   }
+  ]
+ },
+ {
+  "id": "writing-019",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5169,
+    "contrast": null,
+    "question": "Construct a news article headline."
+   }
+  ]
+ },
+ {
+  "id": "instruct-042",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4414,
+    "contrast": null,
+    "question": "Craft a haiku about winter, including three words that start with 's'."
+   }
+  ]
+ },
+ {
+  "id": "math-033",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.6464,
+    "contrast": "numbers_only",
+    "question": "Can someone provide a function that converts degrees Fahrenheit to Celsius?"
+   }
+  ]
+ },
+ {
+  "id": "code-027",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5326,
+    "contrast": null,
+    "question": "What does this Python code do?"
+   }
+  ]
+ },
+ {
+  "id": "chat-027",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.7793,
+    "contrast": null,
+    "question": "What is a good way to make a good impression at a job interview?"
+   }
+  ]
+ },
+ {
+  "id": "writing-017",
+  "category": "writing",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4692,
+    "contrast": null,
+    "question": "Can you recommend a good book for a ten-year-old?"
+   }
+  ]
+ },
+ {
+  "id": "instruct-015",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "math-028",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4427,
+    "contrast": null,
+    "question": "How many perfect squares are there between 20 and 150?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-011",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.575,
+    "contrast": null,
+    "question": "How do you convert Celsius to Fahrenheit?"
+   }
+  ]
+ },
+ {
+  "id": "writing-074",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5914,
+    "contrast": null,
+    "question": "Make up a four line poem"
+   }
+  ]
+ },
+ {
+  "id": "code-032",
+  "category": "code",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5907,
+    "contrast": null,
+    "question": "Is there a way to convert a string of comma-separated numbers into a list of integers using a function in Python?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3916,
+    "contrast": null,
+    "question": "What are the characteristics of a Function in JavaScript?"
+   }
+  ]
+ },
+ {
+  "id": "instruct-028",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": true,
+    "default": true,
+    "loose": true,
+    "score": 0.7791,
+    "contrast": null,
+    "question": "What are some healthy snacks for work?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-048",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "writing-052",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "math-038",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.5607,
+    "contrast": "numbers_only",
+    "question": "round to 5 decimal places (1 + (1 / (1 + (1 / (1 + 1 / 9)))))"
+   }
+  ]
+ },
+ {
+  "id": "code-005",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.713,
+    "contrast": null,
+    "question": "Write a Python function that takes in an array of integers and returns the second-largest number."
+   }
+  ]
+ },
+ {
+  "id": "instruct-061",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-045",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.7528,
+    "contrast": null,
+    "question": "What does the idiom \"Break a leg\" mean?"
+   }
+  ]
+ },
+ {
+  "id": "writing-042",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-094",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": true,
+    "default": true,
+    "loose": true,
+    "score": 0.8418,
+    "contrast": null,
+    "question": "Who was the first person to walk on the Moon?"
+   }
+  ]
+ },
+ {
+  "id": "writing-070",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6976,
+    "contrast": null,
+    "question": "Write a haiku about the autumn season."
+   }
+  ]
+ },
+ {
+  "id": "instruct-053",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5629,
+    "contrast": null,
+    "question": "Share your tips for staying focused while studying."
+   }
+  ]
+ },
+ {
+  "id": "math-043",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.448,
+    "contrast": "numbers_only",
+    "question": "Can I bring a guest to the concert with my ticket?"
+   }
+  ]
+ },
+ {
+  "id": "code-058",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.506,
+    "contrast": null,
+    "question": "fix my computer"
+   }
+  ]
+ },
+ {
+  "id": "chat-097",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "writing-022",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "instruct-049",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.9,
+    "contrast": null,
+    "question": "Give some advice for speaking in public."
+   }
+  ]
+ },
+ {
+  "id": "math-009",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4262,
+    "contrast": "numbers_only",
+    "question": "The mean of 15 numbers is 6. What is the sum of all the numbers?"
+   }
+  ]
+ },
+ {
+  "id": "chat-084",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": true,
+    "default": true,
+    "loose": true,
+    "score": 1.0,
+    "contrast": null,
+    "question": "What is the difference between a fruit and vegetable?"
+   },
+   {
+    "turn": 1,
+    "verbatim": true,
+    "default": true,
+    "loose": true,
+    "score": 1.0,
+    "contrast": null,
+    "question": "Is a tomato a fruit or a vegetable?"
+   }
+  ]
+ },
+ {
+  "id": "writing-088",
+  "category": "writing",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4289,
+    "contrast": null,
+    "question": "Create a riddle that has the answer 'key'."
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4248,
+    "contrast": null,
+    "question": "Make up a riddle and give me an answer to the riddle."
+   }
+  ]
+ },
+ {
+  "id": "code-019",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "instruct-068",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5707,
+    "contrast": null,
+    "question": "Write a descriptive paragraph about a forest during autumn"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-058",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "writing-014",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "math-037",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4004,
+    "contrast": "numbers_only",
+    "question": "Convert 2 ounces to milliliters."
+   }
+  ]
+ },
+ {
+  "id": "code-003",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "instruct-047",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4133,
+    "contrast": null,
+    "question": "Generate a poem with four lines about a storm."
+   }
+  ]
+ },
+ {
+  "id": "chat-091",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "writing-037",
+  "category": "writing",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3611,
+    "contrast": "numbers_only",
+    "question": "Write a 5-sentence story about a young girl who meets a dragon."
+   }
+  ]
+ },
+ {
+  "id": "chat-098",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5454,
+    "contrast": null,
+    "question": "What is a museum and its function?"
+   }
+  ]
+ },
+ {
+  "id": "writing-023",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "instruct-031",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "math-016",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.5705,
+    "contrast": "numbers_only",
+    "question": "The average speed of a car is 60 km/h. What is the average speed in miles per hour?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4221,
+    "contrast": "numbers_only",
+    "question": "A speed of 225 km/h is equivalent to how many meters per second?"
+   }
+  ]
+ },
+ {
+  "id": "code-020",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5489,
+    "contrast": null,
+    "question": "How can I develop a function in Python that takes a list of strings and returns a sorted list?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-006",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6471,
+    "contrast": null,
+    "question": "Explain how a rainbow is created."
+   }
+  ]
+ },
+ {
+  "id": "writing-078",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": true,
+    "default": true,
+    "loose": true,
+    "score": 1.0,
+    "contrast": null,
+    "question": "Write a poem about the city at night."
+   }
+  ]
+ },
+ {
+  "id": "instruct-057",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3674,
+    "contrast": null,
+    "question": "Generate a code snippet that will print out a welcome message."
+   }
+  ]
+ },
+ {
+  "id": "math-025",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3662,
+    "contrast": "numbers_only",
+    "question": "If the price of a stock falls from $20 to $18, what is the percentage decrease in price?"
+   }
+  ]
+ },
+ {
+  "id": "chat-064",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6984,
+    "contrast": null,
+    "question": "What are some healthy recipes for breakfast?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "writing-068",
+  "category": "writing",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3888,
+    "contrast": null,
+    "question": "Create a dataset for movie reviews"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5949,
+    "contrast": null,
+    "question": "Create a dataset for movie reviews"
+   }
+  ]
+ },
+ {
+  "id": "code-022",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.7777,
+    "contrast": null,
+    "question": "How can I write a Python program to flatten a list of lists into a single list?"
+   }
+  ]
+ },
+ {
+  "id": "instruct-060",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5182,
+    "contrast": null,
+    "question": "Tell the name of a famous mathematician."
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-090",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.7527,
+    "contrast": null,
+    "question": "Describe what a carbon footprint is."
+   }
+  ]
+ },
+ {
+  "id": "writing-058",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "math-011",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.6022,
+    "contrast": "numbers_only",
+    "question": "How much is 2 to the power of 4?"
+   }
+  ]
+ },
+ {
+  "id": "code-030",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6022,
+    "contrast": null,
+    "question": "How would I use the Python dictionary get method?"
+   }
+  ]
+ },
+ {
+  "id": "instruct-078",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-079",
+  "category": "chat",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.459,
+    "contrast": null,
+    "question": "What should I pack for a camping trip?"
+   }
+  ]
+ },
+ {
+  "id": "writing-049",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-007",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6786,
+    "contrast": null,
+    "question": "I'm having trouble sleeping at night. What can I do to fall asleep faster?"
+   }
+  ]
+ },
+ {
+  "id": "writing-018",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "instruct-013",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "math-046",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3666,
+    "contrast": null,
+    "question": "If I have one million pennies, how many dollars is that?"
+   }
+  ]
+ },
+ {
+  "id": "code-039",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": true,
+    "default": true,
+    "loose": true,
+    "score": 0.8622,
+    "contrast": null,
+    "question": "Can you provide a Python function that capitalizes the first letter of every word in a given sentence?"
+   }
+  ]
+ },
+ {
+  "id": "chat-024",
+  "category": "chat",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5263,
+    "contrast": null,
+    "question": "Suggest a simple breakfast recipe that can be made in under 20 minutes."
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3915,
+    "contrast": null,
+    "question": "All right, good suggestions."
+   }
+  ]
+ },
+ {
+  "id": "writing-044",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "instruct-019",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "math-056",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.6579,
+    "contrast": "numbers_only",
+    "question": "The side of a square has a length of 5 cm. What is the area of the square in square centimeters?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.5303,
+    "contrast": "numbers_only",
+    "question": "The area of a square is 100 square centimeters. What is the length of each side?"
+   }
+  ]
+ },
+ {
+  "id": "chat-074",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.9,
+    "contrast": null,
+    "question": "How do the difference between metaphors and similes?"
+   }
+  ]
+ },
+ {
+  "id": "writing-086",
+  "category": "writing",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4266,
+    "contrast": "numbers_only",
+    "question": "Create a product review for a new reusable water bottle."
+   }
+  ]
+ },
+ {
+  "id": "code-012",
+  "category": "code",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.7951,
+    "contrast": null,
+    "question": "Write a Python function to check if a number is even or odd."
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4033,
+    "contrast": null,
+    "question": "Create a unit test for a given function to reverse a list of strings."
+   }
+  ]
+ },
+ {
+  "id": "instruct-016",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5229,
+    "contrast": null,
+    "question": "Can you write a short poem about hope?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3661,
+    "contrast": null,
+    "question": "I'm working on a manga and I'd like to tell you about its title."
+   }
+  ]
+ },
+ {
+  "id": "chat-033",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": true,
+    "default": true,
+    "loose": true,
+    "score": 1.0,
+    "contrast": null,
+    "question": "What's the capital of Australia?"
+   }
+  ]
+ },
+ {
+  "id": "writing-055",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "math-027",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4865,
+    "contrast": "numbers_only",
+    "question": "How many hours are in 3/4 of a day?"
+   }
+  ]
+ },
+ {
+  "id": "code-049",
+  "category": "code",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4122,
+    "contrast": null,
+    "question": "Write a while loop in python that prints numbers from 0 through 5."
+   }
+  ]
+ },
+ {
+  "id": "instruct-029",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3623,
+    "contrast": "numbers_only",
+    "question": "Write 10 sentences that end in the word apple."
+   }
+  ]
+ },
+ {
+  "id": "chat-003",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": true,
+    "default": true,
+    "loose": true,
+    "score": 1.0,
+    "contrast": null,
+    "question": "How do I get rid of fruit flies in the kitchen?"
+   }
+  ]
+ },
+ {
+  "id": "writing-002",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5803,
+    "contrast": null,
+    "question": "I'll give you a list of words, and you give me a one sentence summary of what they have in common."
+   }
+  ]
+ },
+ {
+  "id": "chat-096",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "writing-032",
+  "category": "writing",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4078,
+    "contrast": null,
+    "question": "Compose a delightful welcome message for a new customer"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4035,
+    "contrast": null,
+    "question": "to combine these two sentences into one with a more formal tone:"
+   }
+  ]
+ },
+ {
+  "id": "instruct-021",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4067,
+    "contrast": null,
+    "question": "What is a word that is the opposite of 'expensive'?"
+   }
+  ]
+ },
+ {
+  "id": "math-006",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.5815,
+    "contrast": "numbers_only",
+    "question": "What is the average of all the whole numbers from 1 to 100?"
+   }
+  ]
+ },
+ {
+  "id": "code-007",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.7208,
+    "contrast": null,
+    "question": "Explain the difference between a ``list`` and a ``tuple`` in Python."
+   }
+  ]
+ },
+ {
+  "id": "chat-039",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": true,
+    "default": true,
+    "loose": true,
+    "score": 1.0,
+    "contrast": null,
+    "question": "What is a difference between alligators and crocodiles?"
+   }
+  ]
+ },
+ {
+  "id": "writing-051",
+  "category": "writing",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4371,
+    "contrast": "numbers_only",
+    "question": "Describe the first person point of view in a short story"
+   }
+  ]
+ },
+ {
+  "id": "instruct-037",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.396,
+    "contrast": null,
+    "question": "Describe the colors of a sunset"
+   }
+  ]
+ },
+ {
+  "id": "math-054",
+  "category": "math",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-071",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.9,
+    "contrast": null,
+    "question": "Can you give me one example?"
+   }
+  ]
+ },
+ {
+  "id": "writing-050",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "code-055",
+  "category": "code",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4154,
+    "contrast": "numbers_only",
+    "question": "def list_squares(n):"
+   }
+  ]
+ },
+ {
+  "id": "instruct-008",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.7658,
+    "contrast": null,
+    "question": "Can you give me some tips for having a successful job interview?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-001",
+  "category": "chat",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4281,
+    "contrast": null,
+    "question": "apple orange tree sky blue"
+   }
+  ]
+ },
+ {
+  "id": "writing-053",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "math-040",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.8529,
+    "contrast": null,
+    "question": "### An object's temperature is 20 degrees Celsius. What is the temperature in degrees Fahrenheit?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.5989,
+    "contrast": "numbers_only",
+    "question": "### An object's temperature is 20 degrees Celsius. What is the temperature in degrees Fahrenheit?"
+   }
+  ]
+ },
+ {
+  "id": "code-060",
+  "category": "code",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": true,
+    "default": true,
+    "loose": true,
+    "score": 0.7583,
+    "contrast": null,
+    "question": "Is there a way to remove all whitespace from a given string in Python?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4025,
+    "contrast": null,
+    "question": "Write a function that returns the maximum value from a list of integers. If the list is empty, it should return None."
+   }
+  ]
+ },
+ {
+  "id": "instruct-030",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.9,
+    "contrast": null,
+    "question": "Write a Python function to add two numbers."
+   }
+  ]
+ },
+ {
+  "id": "chat-012",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": true,
+    "default": true,
+    "loose": true,
+    "score": 0.8304,
+    "contrast": null,
+    "question": "What are the main causes of stress?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "writing-092",
+  "category": "writing",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4666,
+    "contrast": null,
+    "question": "What are some ways that I can help my child learn to read?"
+   }
+  ]
+ },
+ {
+  "id": "chat-095",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.7682,
+    "contrast": null,
+    "question": "What is the difference between a hurricane and a tornado, and how are they formed?"
+   }
+  ]
+ },
+ {
+  "id": "writing-009",
+  "category": "writing",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4464,
+    "contrast": null,
+    "question": "What are the advantages of a public library?"
+   }
+  ]
+ },
+ {
+  "id": "instruct-033",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.9,
+    "contrast": null,
+    "question": "Name three countries in Europe."
+   }
+  ]
+ },
+ {
+  "id": "math-005",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3836,
+    "contrast": "numbers_only",
+    "question": "A single die is rolled. What is the probability that the sum of the squared and the cubed values is a multiple of $5$?"
+   }
+  ]
+ },
+ {
+  "id": "code-042",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.8353,
+    "contrast": null,
+    "question": "Write a function in Python that reads a file line by line and returns the text in uppercase."
+   }
+  ]
+ },
+ {
+  "id": "chat-063",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "writing-075",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "instruct-079",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3641,
+    "contrast": null,
+    "question": "What is the word for a sentence with a subject and a verb?"
+   }
+  ]
+ },
+ {
+  "id": "math-023",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3707,
+    "contrast": null,
+    "question": "What's the time as of right now?"
+   }
+  ]
+ },
+ {
+  "id": "chat-042",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": true,
+    "default": true,
+    "loose": true,
+    "score": 1.0,
+    "contrast": null,
+    "question": "What is in a black hole."
+   }
+  ]
+ },
+ {
+  "id": "writing-045",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "code-035",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.7056,
+    "contrast": null,
+    "question": "What is a palindrome and can you give a simple example in Python?"
+   }
+  ]
+ },
+ {
+  "id": "instruct-072",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4404,
+    "contrast": null,
+    "question": "How is chocolate made?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-020",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6609,
+    "contrast": null,
+    "question": "What are the symptoms of a cold or flu?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "writing-008",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "math-041",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4298,
+    "contrast": "numbers_only",
+    "question": "Sam has 8 boxes of crayons in a bag. If each box contains 8 crayons, then how many crayons does Sam have in total?"
+   }
+  ]
+ },
+ {
+  "id": "code-038",
+  "category": "code",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.435,
+    "contrast": null,
+    "question": "What are the differences between \"git add\" and \"git add -A\"?"
+   }
+  ]
+ },
+ {
+  "id": "instruct-046",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-062",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5835,
+    "contrast": null,
+    "question": "How does the color change in leaves work."
+   }
+  ]
+ },
+ {
+  "id": "writing-095",
+  "category": "writing",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4752,
+    "contrast": null,
+    "question": "Develop a business card for a freelance graphic designer."
+   }
+  ]
+ },
+ {
+  "id": "chat-051",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.7986,
+    "contrast": null,
+    "question": "How can I calculate compound interest?"
+   }
+  ]
+ },
+ {
+  "id": "writing-038",
+  "category": "writing",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4284,
+    "contrast": null,
+    "question": "Can you help me write a short story that takes place in winter?"
+   }
+  ]
+ },
+ {
+  "id": "instruct-065",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.9,
+    "contrast": null,
+    "question": "What are the colors of the rainbow?"
+   }
+  ]
+ },
+ {
+  "id": "math-052",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4626,
+    "contrast": "numbers_only",
+    "question": "Lucas earns $25 per hour. How much will he earn for 3 days of work where he works 5 hours a day?"
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.6297,
+    "contrast": "numbers_only",
+    "question": "How many days are there in a week?"
+   }
+  ]
+ },
+ {
+  "id": "code-008",
+  "category": "code",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6682,
+    "contrast": null,
+    "question": "Write a Python function to find the maximum value in a list of integers without using the built-in max function."
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3663,
+    "contrast": "numbers_only",
+    "question": "%{\"type\": \"function\", \"name\": \"add\", \"parameters\": {\"b\": \"1\", \"a\": \"0\"}}"
+   }
+  ]
+ },
+ {
+  "id": "chat-053",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.6511,
+    "contrast": null,
+    "question": "What are some ways to reduce plastic waste in daily life?"
+   }
+  ]
+ },
+ {
+  "id": "writing-098",
+  "category": "writing",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4568,
+    "contrast": null,
+    "question": "Describe a movie scene using vivid and descriptive language."
+   }
+  ]
+ },
+ {
+  "id": "instruct-075",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.3634,
+    "contrast": null,
+    "question": "Name five different programming languages."
+   }
+  ]
+ },
+ {
+  "id": "math-029",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.8005,
+    "contrast": "numbers_only",
+    "question": "Write a code that converts degrees Celsius to degrees Fahrenheit"
+   }
+  ]
+ },
+ {
+  "id": "chat-044",
+  "category": "chat",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.6378,
+    "contrast": "numbers_only",
+    "question": "Name 10 famous inventors."
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "writing-072",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.68,
+    "contrast": null,
+    "question": "Write a description of the elements of a rainy day."
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5528,
+    "contrast": null,
+    "question": "Do you have a favorite poem?"
+   }
+  ]
+ },
+ {
+  "id": "code-053",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5522,
+    "contrast": null,
+    "question": "What does the term \"API\" stand for?"
+   }
+  ]
+ },
+ {
+  "id": "instruct-036",
+  "category": "instruct",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   },
+   {
+    "turn": 1,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4415,
+    "contrast": "numbers_only",
+    "question": "Generate a list of 10 random capital letters."
+   }
+  ]
+ },
+ {
+  "id": "chat-026",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.681,
+    "contrast": null,
+    "question": "What are the Earth's seasons and their order."
+   }
+  ]
+ },
+ {
+  "id": "writing-039",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "math-002",
+  "category": "math",
+  "changed": true,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": true,
+    "score": 0.4748,
+    "contrast": "numbers_only",
+    "question": "Compute: $\\lg 25 - 2 \\lg \\frac{1}{2} = \\_\\_\\_\\_\\_\\_.$"
+   }
+  ]
+ },
+ {
+  "id": "code-001",
+  "category": "code",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.674,
+    "contrast": null,
+    "question": "Write a python function to check for palindrome string ignoring non-alphanumeric characters, spaces."
+   }
+  ]
+ },
+ {
+  "id": "instruct-007",
+  "category": "instruct",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ },
+ {
+  "id": "chat-085",
+  "category": "chat",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": true,
+    "loose": true,
+    "score": 0.5765,
+    "contrast": null,
+    "question": "Is it possible for a person to be both an introvert and an extrovert?"
+   }
+  ]
+ },
+ {
+  "id": "writing-066",
+  "category": "writing",
+  "changed": false,
+  "turns": [
+   {
+    "turn": 0,
+    "verbatim": false,
+    "default": false,
+    "loose": false,
+    "score": null,
+    "contrast": null,
+    "question": null
+   }
+  ]
+ }
+]
