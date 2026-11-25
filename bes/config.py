@@ -269,6 +269,13 @@ class DataCfg:
     use_library: bool = True
     # -- appended for the six-hour run (docs/PLAN_M6.md)
     profile: str = ""                 # the run profile this configuration is for (``PROFILE``)
+    # -- appended for the six-hour continuation (docs/PLAN_M6V.md, section 5)
+    exemplar_floor: float = 0.0       # > 0: with probability exemplar_floor_frac the retrieval of a training
+                                      # sample shows the best entry down to this ranked score, for every kind
+                                      # of message (else the library's own floors), so the model also learns
+                                      # from loosely related exemplars and the floor of inference
+                                      # (DecodeCfg.exemplar_floor) can be chosen afterwards
+    exemplar_floor_frac: float = 0.0
 
 
 # -------------------------------------------------------------------------------- run
@@ -388,6 +395,10 @@ class DecodeCfg:
     # appended for the answers library (bes/library/answers.py, docs/PLAN_M6.md)
     verbatim: bool = True             # give a stored answer as the reply when the library holds the
                                       # user's question (AnswerLibrary.verbatim); needs use_library
+    exemplar_floor: float = 0.0       # > 0: the lowest ranked score an exemplar may have, for every kind of
+                                      # message (0: the answers library's own floors, AnswerCfg.exemplar_min
+                                      # and exemplar_min_math); a model uses a lower floor well only when it
+                                      # was trained with it (DataCfg.exemplar_floor)
 
 
 @dataclass(frozen=True)
@@ -437,8 +448,26 @@ def to_dict(cfg: Cfg) -> dict[str, Any]:
     return dataclasses.asdict(cfg)
 
 
+#: Fields appended after configurations, checkpoints and stored results were first hashed. A field
+#: named here is left out of :func:`config_hash` while it holds its default, so a field that is
+#: added (and off by default) changes the hash of no existing configuration; with any other value
+#: it counts like every other field. Append new fields of ``Cfg``'s sections here.
+HASH_NEUTRAL: dict[str, tuple[str, ...]] = {
+    "optim": ("lr_mult", "tokens_before"),
+    "data": ("profile", "exemplar_floor", "exemplar_floor_frac"),
+    "run": ("tokenize_workers", "fast", "micro_split", "prefopt_lrs", "ship_library", "init_from", "init_sha256"),
+    "decode": ("verbatim", "exemplar_floor"),
+}
+
+
 def config_hash(cfg: Cfg) -> str:
-    blob = json.dumps(to_dict(cfg), sort_keys=True, default=str).encode()
+    d = to_dict(cfg)
+    for section, names in HASH_NEUTRAL.items():
+        defaults = {f.name: f.default for f in dataclasses.fields(type(getattr(cfg, section)))}
+        for name in names:
+            if name in d[section] and d[section][name] == defaults[name]:
+                del d[section][name]
+    blob = json.dumps(d, sort_keys=True, default=str).encode()
     return hashlib.sha256(blob).hexdigest()[:16]
 
 

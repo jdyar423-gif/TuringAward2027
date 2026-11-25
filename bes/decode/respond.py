@@ -353,12 +353,23 @@ class Responder:
         fn = getattr(self.library, "new_read", None)
         return fn() if callable(fn) else None
 
-    def retrieve(self, user_text: str, history: Sequence[str] | None = None, log=None):
+    def retrieve(self, user_text: str, history: Sequence[str] | None = None, log=None,
+                 floor: float | None = None):
         """The gated library entry for the last user message; ``history`` are the earlier user
-        turns (a turn that leans on them, or chit-chat, retrieves nothing)."""
+        turns (a turn that leans on them, or chit-chat, retrieves nothing). ``floor``
+        (``DecodeCfg.exemplar_floor``): the lowest ranked score of an exemplar, for a library
+        whose retrieval takes one (an answers library); ``None``: the library's own floors."""
         if self.library is None:
             return None
         kw = {} if log is None else {"log": log}
+        if floor:
+            import inspect
+
+            try:
+                if "floor" in inspect.signature(self.library.retrieve).parameters:
+                    kw["floor"] = float(floor)
+            except (TypeError, ValueError):
+                pass
         if history:
             try:
                 return self.library.retrieve(user_text, context=list(history), **kw)
@@ -456,7 +467,7 @@ class Responder:
             out = self._verbatim_reply(hit, spec, d, r, seed)
             out["extra"]["library_read"] = None if lib_log is None else int(lib_log.total)
             return out
-        passage = self.retrieve(user_text, history, lib_log) if d.use_library else None
+        passage = self.retrieve(user_text, history, lib_log, d.exemplar_floor or None) if d.use_library else None
         budget = self.context - d.max_new_tokens
         prompt, fit = fit_prompt(self.chat, msgs, None if passage is None else passage.text, budget)
         program, prog_error = None, None

@@ -32,7 +32,7 @@ import os
 import time
 from typing import Any, Iterable
 
-from bes.library.answers import AnswerLibrary, AnswerRead, Candidate
+from bes.library.answers import NUMBERS_ONLY, AnswerLibrary, AnswerRead, Candidate
 from bes.library.qa import contrast, contrast_mismatch, qtype, question_key
 from bes.library.terms import terms
 
@@ -235,9 +235,10 @@ class LifelongAnswers(AnswerLibrary):
         return out
 
     def candidates(self, query: str, k: int | None = None, exclude: Iterable[int] = (),
-                   log: AnswerRead | None = None) -> list[Candidate]:
-        out = AnswerLibrary.candidates(self, query, None, exclude, log) + self._overlay_candidates(query, log)
-        out.sort(key=lambda c: (c.contrast is not None, -round(c.sym, 9), -c.entry if c.entry >= self.n_stored else c.entry))
+                   log: AnswerRead | None = None, floor: float | None = None) -> list[Candidate]:
+        out = AnswerLibrary.candidates(self, query, None, exclude, log, floor) + self._overlay_candidates(query, log)
+        out.sort(key=lambda c: (c.contrast not in (None, NUMBERS_ONLY), -round(c.sym, 9),
+                                -c.entry if c.entry >= self.n_stored else c.entry))
         return out[:k] if k is not None else out
 
     # ------------------------------------------------------------------ sizes

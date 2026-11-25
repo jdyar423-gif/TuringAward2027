@@ -1470,10 +1470,12 @@ def journal_settings(seed: int, lcfg: LoaderCfg, data: DataCfg, mix: MixCfg, tok
     keep = ("n_streams", "block_steps", "lookahead", "lib_lookahead", "max_wait", "max_draw_attempts",
             "reepoch_growth", "heldout_frac")
     d = asdict(data)
+    fields = ["hindsight_frac", "distractor_frac", "passage_loss_w", "use_library", "permissive_only"]
+    if float(d.get("exemplar_floor") or 0.0) > 0:      # absent when off: older journals keep their header
+        fields += ["exemplar_floor", "exemplar_floor_frac"]
     return json.loads(json.dumps({
         "format": JOURNAL_FORMAT, "seed": int(seed), "loader": {k: getattr(lcfg, k) for k in keep},
-        "data": {k: d[k] for k in ("hindsight_frac", "distractor_frac", "passage_loss_w",
-                                   "use_library", "permissive_only")},
+        "data": {k: d[k] for k in fields},
         "heldout": {"rule": HELDOUT_RULE, "kinds": list(HELDOUT_KINDS)},
         "mix": asdict(mix), "tokenizer": str(getattr(tok, "sha256", "")), "names": list(names)}))
 

@@ -95,6 +95,33 @@ def test_exemplars_and_parts(lib):
     assert lib.verbatim("Name three countries in Europe. Use exactly three bullet points.") is None
 
 
+def test_a_floor_shows_loosely_related_exemplars_for_every_kind_of_message(lib):
+    """``floor`` replaces both of the library's floors: an entry below them is shown, and the
+    default call is unchanged. (Entries under ``min_partial`` of the query's mass are no
+    candidates at all, whatever the floor.)"""
+    cfg = lib.acfg
+    loose = "Why do boats float on the sea water?"
+    c = [x for x in lib.candidates(loose, 3) if x.contrast is None]
+    assert c and cfg.min_partial < c[0].sym < cfg.exemplar_min
+    assert lib.exemplars(loose) == [] and lib.retrieve(loose) is None
+    ex = lib.exemplars(loose, floor=c[0].sym)
+    assert ex and ex[0].entry == c[0].entry and len(ex) == 1          # a second one still needs second_min
+    assert lib.exemplars(loose, floor=c[0].sym + 0.01) == []
+    p = lib.retrieve(loose, floor=c[0].sym)
+    assert p is not None and p.text.startswith("Q: ") and p.pid == c[0].entry
+    # an arithmetic message: the library's own floor for it is the higher one
+    maths = "What is 12 times 12 plus 1?"
+    m = [x for x in lib.candidates(maths, 3) if x.contrast is None]
+    assert m and m[0].sym < cfg.exemplar_min_math and lib.exemplars(maths) == []
+    assert [x.entry for x in lib.exemplars(maths, floor=m[0].sym)] == [m[0].entry]
+    # a close question is shown with or without a floor, and the same way
+    close = "Why does ice float on water?"
+    assert [x.entry for x in lib.exemplars(close)] == [x.entry for x in lib.exemplars(close, floor=0.2)]
+    assert lib.retrieve(close).text == lib.retrieve(close, floor=0.2).text
+    # nothing at all is no candidate under any floor
+    assert lib.exemplars("Tell me about zebra crossings in Norway.", floor=0.01) == []
+
+
 def test_follow_up_turns_retrieve_nothing(lib):
     assert lib.retrieve("And what about its population?", context=["What is the capital of Australia?"]) is None
     assert lib.retrieve("What is the capital of France?", context=["Hello there."]) is not None

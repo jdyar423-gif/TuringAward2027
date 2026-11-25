@@ -82,6 +82,30 @@ def test_a_write_changes_only_its_rows_and_only_inputs_that_read_them(model, tab
     assert np.array_equal(np.asarray(logits(params, f_shared)), np.asarray(logits(new, f_shared)))
 
 
+def test_a_preconditioned_write_is_as_local_as_a_plain_one(model):
+    params, consts, logits = model
+    taught = _batch(0, 0, 60)
+    rows = W.rows_of(taught, CFG.vocab_size, n_content=N_CONTENT)
+    rng = np.random.default_rng(0)
+    v, nb, rho, dk = CFG.vocab_size, CFG.n_blocks, CFG.tok_neurons, CFG.tok_dim
+    a = rng.normal(size=(v, nb, rho, rho)).astype(np.float32)
+    left = np.einsum("vbij,vbkj->vbik", a, a) + np.eye(rho, dtype=np.float32)        # positive definite
+    b = rng.normal(size=(nb, dk, dk)).astype(np.float32)
+    right = np.einsum("bij,bkj->bik", b, b) / dk + np.eye(dk, dtype=np.float32)
+    ref = W.reference_norms(params, n_content=N_CONTENT)
+    plain, _ = W.Writer(CFG, consts, ref=ref).write(params, taught, rows, steps=3, lr=0.1)
+    pre, rep = W.Writer(CFG, consts, ref=ref, left=left, right=right).write(params, taught, rows, steps=3, lr=0.1)
+    assert rep["loss_after"] < rep["loss_before"]                # a positive definite metric: still a descent
+    x, y, z = _np(params), _np(plain), _np(pre)
+    assert not np.array_equal(y["page/val"], z["page/val"])     # another direction
+    assert np.array_equal(x["page/val"][~rows], z["page/val"][~rows])
+    assert all(np.array_equal(x[p], z[p]) for p in x if p != "page/val")
+    other = M.split_batch(_batch(5, 100, 400))[0]
+    assert np.array_equal(np.asarray(logits(params, other)), np.asarray(logits(pre, other)))
+    with pytest.raises(ValueError):
+        W.Writer(CFG, consts, ("emb/tok",), left=left)
+
+
 def test_writes_with_disjoint_texts_commute_exactly(model):
     params, consts, _ = model
     one, two = _batch(1, 20, 80), _batch(2, 200, 260)

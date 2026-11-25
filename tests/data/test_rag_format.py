@@ -541,6 +541,55 @@ def test_insert_retrieval_gated(lib, tok):
     assert closed.tags == () and stats.counts["retrieval:gate_closed"] == 1
 
 
+def test_insert_retrieval_with_a_low_floor_shows_loose_exemplars(tok):
+    """``DataCfg.exemplar_floor``: with probability ``exemplar_floor_frac`` a training sample's
+    retrieval goes down to that score (an answers library); without the setting no random number
+    is drawn, so older configurations keep their sample streams."""
+    from bes.library.answers import AnswerCfg, AnswerLibrary
+
+    pairs = [("Why does ice float on water?", "Ice is less dense than liquid water, so it floats.", "a"),
+             ("Why does oil float on water?", "Oil is less dense than water and does not mix with it.", "a"),
+             ("What is the capital of Australia?", "The capital of Australia is Canberra.", "b"),
+             ("What is the capital of France?", "The capital of France is Paris.", "b"),
+             ("Write a Python function that reverses a string.", "def reverse(s): return s[::-1]", "c"),
+             ("Explain how a rainbow forms, step by step.", "Sunlight enters a raindrop, bends and splits into colours.", "a"),
+             ("What are the three primary colors?", "Red, yellow and blue.", "b"),
+             ("Name three countries in Europe.", "France, Germany and Spain.", "b"),
+             ("Who wrote the play Hamlet?", "William Shakespeare wrote Hamlet.", "c"),
+             ("Write a play about Hamlet's ghost.", "ACT I. A castle at night. The ghost enters.", "c"),
+             ("How many days are in a leap year?", "A leap year has 366 days.", "a"),
+             ("What is 12 times 12?", "12 times 12 is 144.", "a")]
+    alib = AnswerLibrary.build(pairs, AnswerCfg(n_bits=12, verify_top=12))
+    loose, close = "Why do boats float on the sea water?", "Why does ice float on cold water?"
+    best = [c for c in alib.candidates(loose, 3) if c.contrast is None][0]
+    assert alib.acfg.min_partial < best.sym < alib.acfg.exemplar_min and alib.retrieve(loose) is None
+    floor = round(best.sym - 0.02, 3)
+    off = DataCfg(distractor_frac=0.0)
+    always = DataCfg(distractor_frac=0.0, exemplar_floor=floor, exemplar_floor_frac=1.0)
+    half = DataCfg(distractor_frac=0.0, exemplar_floor=floor, exemplar_floor_frac=0.5)
+    s = chat(tok, user=loose)
+    assert R.insert_retrieval(s, alib, tok, S.rng_for(0), off) is s                    # the library's own floor
+    stats = R.RagStats()
+    out = R.insert_retrieval(s, alib, tok, S.rng_for(0), always, stats=stats)
+    msgs = messages_of(out, tok)
+    assert [m["role"] for m in msgs] == ["library", "user", "assistant"]
+    assert msgs[0]["content"] == alib.retrieve(loose, floor=floor).text and out.tags == ("retrieval:gated",)
+    assert stats.counts["retrieval:low_floor"] == 1 and stats.counts["retrieval:fired"] == 1
+    assert stats.counts["retrieval:loose"] == 1
+    fired = sum(R.insert_retrieval(s, alib, tok, S.rng_for("f", k), half) is not s for k in range(200))
+    assert 70 <= fired <= 130                                                          # about half
+    # a close question gets its exemplar under every setting, the same one
+    c = chat(tok, user=close)
+    texts = {messages_of(R.insert_retrieval(c, alib, tok, S.rng_for(1), cfg, stats=stats), tok)[0]["content"]
+             for cfg in (off, always, half)}
+    assert texts == {alib.retrieve(close).text} and stats.counts["retrieval:loose"] == 1     # not loose
+    # without the setting the generator is not touched before the distractor draw
+    a, b = S.rng_for(7), S.rng_for(7)
+    R.insert_retrieval(c, alib, tok, a, off)
+    b.random()                                                                         # the distractor draw alone
+    assert a.random() == b.random()
+
+
 def test_insert_retrieval_distractors(lib, tok):
     best_tid = lib.tid[lib.retrieve("Who was Alan Turing?").pid]
     modes = set()

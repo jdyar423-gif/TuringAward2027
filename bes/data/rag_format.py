@@ -67,6 +67,7 @@ passages) ranked distractors read one passage instead of ``k``.
 from __future__ import annotations
 
 import hashlib
+import inspect
 import os
 import re
 from collections import Counter
@@ -94,7 +95,9 @@ LIBRARY_TASKS: dict[str, str] = {"library_read": "wiki", "library_qa": "qa"}
 class RagStats:
     """Counters for the loader's log; merge the stats of several workers with :meth:`merge`.
 
-    ``counts[key]``: events (``retrieval:calls``, ``retrieval:question_like``,
+    ``counts[key]``: events (``retrieval:low_floor``: samples retrieved with
+    ``DataCfg.exemplar_floor``; ``retrieval:loose``: of those, the ones whose exemplar lies under
+    the library's own floor; ``retrieval:calls``, ``retrieval:question_like``,
     ``retrieval:gate_open``, ``retrieval:fired``, ``retrieval:gated``,
     ``retrieval:distractor_ranked``, ``retrieval:later_turn``, ``retrieval:skip_has_library``,
     ``read:open``, ``read:declined_<reason>``, ``qa:neighbour_same_answer``, ...; the
@@ -185,6 +188,10 @@ class LibraryView:
         self.native = callable(getattr(self.lib, "kind_range", None))
         gate = getattr(getattr(self.lib, "cfg", None), "gate", None)
         self.allowed_types = tuple(getattr(gate, "allowed_types", DEFAULT_ALLOWED_TYPES))
+        try:        # an answers library: its retrieval takes the lowest score an exemplar may have
+            self.takes_floor = "floor" in inspect.signature(self.lib.retrieve).parameters
+        except (TypeError, ValueError, AttributeError):
+            self.takes_floor = False
         self._cache: dict[int, Any] = {}
         self.task_pids: dict[str, np.ndarray] = dict(lib.task_pids) if isinstance(lib, LibraryView) else {}
 
@@ -267,12 +274,18 @@ class LibraryView:
 
     # ------------------------------------------------------------------ retrieval
     def retrieve(self, query: str, exclude_pids: Sequence[int] = (), exclude_titles: Sequence[int] = (),
-                 kinds: Sequence[str] | None = None, context: Sequence[str] | None = None) -> Any:
+                 kinds: Sequence[str] | None = None, context: Sequence[str] | None = None,
+                 floor: float | None = None) -> Any:
         """Gated retrieval (``Library.retrieve``) or ``None``. ``context``: the earlier user
-        turns of the conversation, passed on exactly as the responder passes them."""
+        turns of the conversation, passed on exactly as the responder passes them. ``floor``:
+        the lowest ranked score of an exemplar (an answers library; ``None``: its own floors)."""
         if not self._kinds_ok(kinds):
             return None
         kw = {"kinds": tuple(kinds)} if self.native and kinds is not None else {}
+        if floor is not None:
+            if not self.takes_floor:
+                raise TypeError("this library's retrieval takes no exemplar floor")
+            kw["floor"] = float(floor)
         if context and self.native:
             try:
                 p = self.lib.retrieve(query, exclude_pids=tuple(exclude_pids),
@@ -473,11 +486,18 @@ def insert_retrieval(sample: Sample, lib: Any, tok, rng: np.random.Generator,
     ex_p, ex_t = tuple(sample.exclude_pids), tuple(sample.exclude_titles)
     earlier = [tok.decode(sample.ids[a + 1:b - 1].tolist()) for u in users if u < k
                for _, a, b in (spans[u],)]
-    gated = view.retrieve(query, ex_p, ex_t, context=earlier)
+    floor = None
+    if cfg.exemplar_floor > 0 and view.takes_floor and rng.random() < cfg.exemplar_floor_frac:
+        floor = float(cfg.exemplar_floor)                  # this sample: also a loosely related exemplar
+        _count(stats, "retrieval:low_floor")
+    gated = view.retrieve(query, ex_p, ex_t, context=earlier, floor=floor)
     if gated is None:
         _count(stats, "retrieval:gate_closed")
         return sample
     _count(stats, "retrieval:gate_open")
+    if floor is not None and float(getattr(gated, "score", 1.0)) < float(
+            getattr(getattr(view.lib, "acfg", None), "exemplar_min", 0.0)) - 1e-12:
+        _count(stats, "retrieval:loose")                   # an exemplar the library's own floor would not show
     passage, mode = gated, "gated"
     if rng.random() < cfg.distractor_frac:
         tid = int(gated.title_id)

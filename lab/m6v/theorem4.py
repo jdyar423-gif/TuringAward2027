@@ -20,13 +20,20 @@ buy is on the texts that DO contain a written token. This program measures exact
 * ``C`` is estimated for every content token of the eight teaching texts from up to ``NC`` library
   entries that contain it (the activations are recorded by a patched ``token_neurons``);
 * held-out library entries that contain a written token (never used for ``C``) are the
-  **own-context** test: their loss before and after the writes;
+  **own-context** test: their loss before and after the writes (up to ``NT`` entries per written
+  token, so the rarest tokens weigh as much as the others); with ``T4_NATURAL=N`` also the
+  **natural** test: ``N`` entries drawn at random among those that contain a written token
+  (tokens weigh as often as they occur: what a user of the written model meets);
 * arms, each with the eight facts written in sequence, eight steps per fact (``T4_STEPS``; the
   arms and step sizes of a call can be given in ``T4_ARMS``, e.g. ``G-val:0.12,N-val:0.12``):
   ``G-all``  the write of ``writes_clean.py`` (all five token tables, per-row normalised gradient);
   ``N-all``  the same with the page-value gradient whitened;
   ``G-val`` / ``N-val``  only the page values are written, plain and whitened, at several step
-  sizes (a step is ``lr`` times the larger of the row's norm and the table's median row norm).
+  sizes (a step is ``lr`` times the larger of the row's norm and the table's median row norm);
+  ``R-val`` / ``K-val`` / ``H-val``  the output side: ``G R^-1``, ``C^-1 G R^-1`` and
+  ``C^-1 G R^-1/2`` with ``R`` the second moment of the page-value gradients over the ``dk``
+  output directions (one matrix per block, from 100 batches of library entries): with ``C`` it
+  is the Kronecker-factored curvature of a row.
 """
 import json
 import sys
@@ -61,6 +68,8 @@ NC, NT, MAXSCAN, LAM = 24, 6, 120_000, float(os.environ.get("T4_LAM", "0.1"))
 # T4_ARMS="G-val:0.12,N-val:0.12,..." replaces the default arms; T4_STEPS the steps per fact;
 # T4_CACHE=FILE.npz keeps the contexts and the second moments between calls
 ARMS_ENV, N_STEPS, CACHE = os.environ.get("T4_ARMS", ""), int(os.environ.get("T4_STEPS", "8")), os.environ.get("T4_CACHE", "")
+N_NAT = int(os.environ.get("T4_NATURAL", "0"))      # entries of the natural test (0: not measured)
+THRS = [int(x) for x in os.environ.get("T4_THRS", "2048,512,0").split(",")]
 cfg = E.load_export_config(exp / "config.py")
 mcfg = E.check_model_cfg(cfg.model)
 params = E.load_weights(exp, cfg.model)
@@ -269,6 +278,48 @@ print(f"C estimated for {int((Cn[need] >= 4).sum())} of {len(need)} tokens (medi
       flush=True)
 WINV_J = jnp.asarray(WINV)
 
+# ---- the output side: R_i = sum over tokens and batches of G^T G, G = dL/dVal[v, i] (rho x dk).
+# With A = E[s s^T] on the neuron side this is the Kronecker-factored curvature of a row
+# (F ~ A (x) R): the write that costs the token's other contexts least in KL for one first-order
+# gain is  dVal ~ - A^-1 G R^-1  (arms K: both sides; R: the output side only).
+DK = mcfg.tok_dim
+NEED_R = any(a.split(":")[0][0] in "KRH" for a in ARMS_ENV.split(",") if a)
+if cached is not None and "R" in cached:
+    R = cached["R"]
+elif NEED_R:
+    gval = jax.jit(lambda p, b: jax.grad(lambda q: M.loss_fn(q, consts, b, mcfg)[0])(p)["page"]["val"])
+    acc = jax.jit(lambda g: jnp.einsum("vbjc,vbjd->bcd", g.astype(jnp.float32), g.astype(jnp.float32)))
+    R = np.zeros((NB, DK, DK), np.float64)
+    n_b = 0
+    for lo in range(0, min(len(c_idx), 8 * int(os.environ.get("T4_RBATCHES", "100"))), 8):
+        chunk = c_idx[lo:lo + 8]
+        if len(chunk) < 8:
+            break
+        R += np.asarray(acc(gval(params, rows_of([ctx[i] for i in chunk]))), np.float64)
+        n_b += 1
+        if n_b % 20 == 0:
+            print(f"output-side statistics: {n_b} batches   [{time.time() - t0:.0f}s]", flush=True)
+    if CACHE:
+        z = dict(np.load(CACHE, allow_pickle=True))
+        z["R"] = R
+        np.savez(CACHE, **z)
+else:
+    R = None
+RINV = {}
+if R is not None:
+    for power in (1.0, 0.5):
+        m = np.zeros((NB, DK, DK), np.float32)
+        for blk in range(NB):
+            r = R[blk] / max(np.trace(R[blk]) / DK, 1e-30)
+            lam_, vec_ = np.linalg.eigh(r)
+            if power == 1.0 and blk == 0:
+                top = np.sort(lam_)[::-1]
+                print(f"output-side second moment (block 0): the top 8 of {DK} directions hold {top[:8].sum() / top.sum():.2f} "
+                      f"of the trace, the top 32 {top[:32].sum() / top.sum():.2f}", flush=True)
+            w = (vec_ * (np.maximum(lam_, 0.0) + LAM) ** -power) @ vec_.T
+            m[blk] = (w * (DK / np.trace(w))).astype(np.float32)
+        RINV[power] = jnp.asarray(m)
+
 # ---- the writes
 vg = jax.jit(lambda p, b: jax.value_and_grad(lambda q: M.loss_fn(q, consts, b, mcfg)[0])(p))
 ev = jax.jit(lambda p, b: M.loss_fn(p, consts, b, mcfg)[1])
@@ -280,7 +331,7 @@ print(f"page/val row norms: median {VAL_REF:.4f}; of the tokens of the facts: "
       f"min {val_norm[need].min():.4f} median {np.median(val_norm[need]):.4f} max {val_norm[need].max():.4f}", flush=True)
 
 
-def make_step(tables, whiten, floor):
+def make_step(tables, whiten, floor, right=0.0):
     def step(p, g, lr, mask):
         lp = jax.tree_util.tree_leaves(p)
         lgr = jax.tree_util.tree_leaves(g)
@@ -292,6 +343,8 @@ def make_step(tables, whiten, floor):
             ga = ga.astype(jnp.float32)
             if whiten and path == "page/val":
                 ga = jnp.einsum("vbjk,vbkc->vbjc", WINV_J, ga)
+            if right and path == "page/val":
+                ga = jnp.einsum("vbjc,bcd->vbjd", ga, RINV[right])
             a2 = a.astype(jnp.float32).reshape(V, -1)
             g2 = ga.reshape(V, -1)
             gn = jnp.sqrt(jnp.sum(g2 * g2, -1))
@@ -344,19 +397,23 @@ def greedy(p, question, n=22):
 
 base_test = [nll(params, b) for b in test]
 print(f"before: paraphrase loss {np.mean(base_test):.3f} nats/token   [{time.time() - t0:.0f}s]", flush=True)
-STEPS = {("all", False): make_step(TABLES, False, False), ("all", True): make_step(TABLES, True, False),
-         ("val", False): make_step(("page/val",), False, True), ("val", True): make_step(("page/val",), True, True)}
-ARMS = [("G-all", "all", False, 0.03), ("N-all", "all", True, 0.03), ("G-all", "all", False, 0.06), ("N-all", "all", True, 0.06),
-        ("G-val", "val", False, 0.25), ("N-val", "val", True, 0.25), ("G-val", "val", False, 1.0), ("N-val", "val", True, 1.0),
-        ("G-val", "val", False, 4.0), ("N-val", "val", True, 4.0)]
+STEPS = {("all", "G"): make_step(TABLES, False, False), ("all", "N"): make_step(TABLES, True, False),
+         ("val", "G"): make_step(("page/val",), False, True), ("val", "N"): make_step(("page/val",), True, True)}
+ARMS = [("G-all", "all", "G", 0.03), ("N-all", "all", "N", 0.03), ("G-all", "all", "G", 0.06), ("N-all", "all", "N", 0.06),
+        ("G-val", "val", "G", 0.25), ("N-val", "val", "N", 0.25), ("G-val", "val", "G", 1.0), ("N-val", "val", "N", 1.0),
+        ("G-val", "val", "G", 4.0), ("N-val", "val", "N", 4.0)]
 if ARMS_ENV:
     ARMS = []
     for a in ARMS_ENV.split(","):
         name, lr = a.split(":")
-        ARMS.append((name, name.split("-")[1], name.startswith("N"), float(lr)))
+        kind = name[0]                 # G plain, N neuron side, R output side, K both, H both with R^-1/2
+        key = (name.split("-")[1], kind)
+        if key not in STEPS:
+            STEPS[key] = make_step(TABLES if key[0] == "all" else ("page/val",), kind in "NKH", key[0] == "val",
+                                   right={"R": 1.0, "K": 1.0, "H": 0.5}.get(kind, 0.0))
+        ARMS.append((name, key[0], kind, float(lr)))
 results = []
-for label, thr in (("content tokens rarer than rank 2048", 2048), ("content tokens rarer than rank 512", 512),
-                   ("every content token", 0)):
+for label, thr in [(("every content token" if t == 0 else f"content tokens rarer than rank {t}"), t) for t in THRS]:
     mask_np = content & (rank >= thr)
     mask = jnp.asarray(mask_np.astype(np.float32))
     w_fact = []
@@ -371,9 +428,31 @@ for label, thr in (("content tokens rarer than rank 2048", 2048), ("content toke
         t_idx = sorted(np.random.default_rng(5).choice(t_idx, 120, replace=False).tolist())
     t_rows = [row(ctx[i]) for i in t_idx]
     t0s = [(float(m["ce_sum"]), float(m["weight"])) for m in (ev(params, b) for b in t_rows)]
+    # the natural test: library entries drawn at random that contain a written token (so tokens
+    # count as often as they occur, where the own-context test gives every token up to NT texts)
+    n_rows, n_seen = [], 0
+    used = {json.dumps(c) for c in ctx}
+    rng3 = np.random.default_rng(23)
+    while N_NAT and len(n_rows) < N_NAT and n_seen < 60_000:
+        e = int(rng3.integers(lib.n_entries))
+        n_seen += 1
+        q, a = lib.entry(e)
+        if e in pool_entries or len(q) >= 160:
+            continue
+        a = cut_answer(a, 220)
+        if not written[np.asarray(list(set(tok.encode(q)) | set(tok.encode(a))), np.int64)].any():
+            continue
+        c = conv(q, a)
+        b = row(c)
+        if b is None or json.dumps(c) in used or not written[toks_of(b)].any():
+            continue
+        n_rows.append(b)
+    n0s = [(float(m["ce_sum"]), float(m["weight"])) for m in (ev(params, b) for b in n_rows)]
+    nat_rate = len(n_rows) / max(1, n_seen)
     print(f"\n== {label}: rows written per fact {np.mean([w.sum() for w in w_fact]):.1f}, corpus frequency of the written rows "
-          f"{freq[written].sum():.5f}; own-context test: {len(t_rows)} held-out entries with a written token   [{time.time() - t0:.0f}s]",
-          flush=True)
+          f"{freq[written].sum():.5f}; own-context test: {len(t_rows)} held-out entries with a written token"
+          + (f"; natural test: {len(n_rows)} entries ({nat_rate:.1%} of the entries drawn contain a written token)" if n_rows else "")
+          + f"   [{time.time() - t0:.0f}s]", flush=True)
     for name, tabs, whiten, lr in ARMS:
         stepf = STEPS[(tabs, whiten)]
         p = params
@@ -387,6 +466,7 @@ for label, thr in (("content tokens rarer than rank 2048", 2048), ("content toke
         teach_after = [nll(p, b) for b in teach]
         n_dis, same, dmean, dmax = pool_report(p, written)
         dctx = [(float(ev(p, b)["ce_sum"]) - c0) / w0 for b, (c0, w0) in zip(t_rows, t0s)]
+        dnat = [(float(ev(p, b)["ce_sum"]) - c0) / w0 for b, (c0, w0) in zip(n_rows, n0s)]
         gens = [greedy(p, para) for (_, _, para, _) in FACTS]
         hits = sum(int(key.lower() in s.lower()) for (_, _, _, key), s in zip(FACTS, gens))
         rec = {"rows": label, "threshold": thr, "arm": name, "lr": lr, "steps": N_STEPS, "lam": LAM, "paraphrase_before": float(np.mean(base_test)),
@@ -395,11 +475,19 @@ for label, thr in (("content tokens rarer than rank 2048", 2048), ("content toke
                "pool_mean_drift": dmean, "pool_max_abs": dmax, "pool_disjoint": n_dis, "pool_disjoint_identical": same,
                "own_context_n": len(dctx), "own_context_mean": float(np.mean(dctx)) if dctx else None,
                "own_context_mean_abs": float(np.mean(np.abs(dctx))) if dctx else None,
-               "own_context_max_abs": float(np.max(np.abs(dctx))) if dctx else None, "greedy_hits": hits, "greedy": gens}
+               "own_context_max_abs": float(np.max(np.abs(dctx))) if dctx else None,
+               "natural_n": len(dnat), "natural_share_of_entries": nat_rate,
+               "natural_mean": float(np.mean(dnat)) if dnat else None,
+               "natural_mean_abs": float(np.mean(np.abs(dnat))) if dnat else None,
+               "natural_max_abs": float(np.max(np.abs(dnat))) if dnat else None,
+               "natural_over_0p1": int(np.sum(np.abs(dnat) > 0.1)) if dnat else None,
+               "greedy_hits": hits, "greedy": gens}
         results.append(rec)
         print(f"{name:6s} lr {lr:<5g} paraphrase {np.mean(base_test):.3f} -> {np.mean(own):.3f} -> {np.mean(allp):.3f} | taught text "
               f"{np.mean(teach_after):.3f} | 60 unrelated: {dmean:+.5f} (max {dmax:.3f}), {same}/{n_dis} identical | own context: "
               + (f"mean {np.mean(dctx):+.4f}, mean |d| {np.mean(np.abs(dctx)):.4f}, max {np.max(np.abs(dctx)):.3f}" if dctx else "none")
+              + (f" | natural ({len(dnat)}): mean {np.mean(dnat):+.4f}, mean |d| {np.mean(np.abs(dnat)):.4f}, max {np.max(np.abs(dnat)):.3f}, "
+                 f"{int(np.sum(np.abs(dnat) > 0.1))} over 0.1" if dnat else "")
               + f" | greedy {hits}/8   [{time.time() - t0:.0f}s]", flush=True)
         if out_json:
             Path(out_json).write_text(json.dumps(results, indent=1))

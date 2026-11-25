@@ -120,6 +120,37 @@ def test_settings_resolution():
         R.resolve(cfg, {"particles": 0})
 
 
+def test_the_exemplar_floor_reaches_a_library_that_takes_one():
+    """``DecodeCfg.exemplar_floor`` (or the setting of the same name) is passed to a library
+    whose retrieval has a ``floor`` argument, and to no other."""
+    class FloorLibrary:
+        def __init__(self):
+            self.calls = []
+
+        def retrieve(self, query, floor=None):
+            self.calls.append((query, floor))
+            return None
+
+    lib = FloorLibrary()
+    _, _, resp = setup(library=lib)
+    q = "why is it dark at night?"
+    resp.retrieve(q)
+    resp.retrieve(q, floor=0.35)
+    assert lib.calls == [(q, None), (q, 0.35)]
+    plain = FakeLibrary({})                               # retrieve(query) only
+    _, _, resp2 = setup(library=plain)
+    assert resp2.retrieve(q, floor=0.35) is None and plain.calls == [q]
+    assert R.resolve(DecodeCfg(), {"exemplar_floor": "0.4"}).decode.exemplar_floor == 0.4
+    assert DecodeCfg().exemplar_floor == 0.0
+    # through a reply: the setting is what the library sees
+    lib.calls.clear()
+    resp.reply([{"role": "user", "content": q}], {"exemplar_floor": 0.4, "max_tokens": 8}, seed=0)
+    assert lib.calls and lib.calls[-1][1] == 0.4
+    lib.calls.clear()
+    resp.reply([{"role": "user", "content": q}], {"max_tokens": 8}, seed=0)
+    assert lib.calls and lib.calls[-1][1] is None
+
+
 def test_clean_messages():
     m = R.clean_messages([{"role": "system", "content": "S"},
                           {"role": "library", "content": "old passage"},

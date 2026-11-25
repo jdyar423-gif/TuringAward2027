@@ -13,17 +13,13 @@ from pathlib import Path
 
 
 def tier_of(fin: dict) -> str:
-    lib = (fin or {}).get("library")
-    if not lib:
-        return "none"
-    if isinstance(lib, dict):
-        for k in ("tier", "mode", "kind"):
-            if lib.get(k):
-                return str(lib[k])
-        if lib.get("verbatim"):
-            return "verbatim"
-        return "exemplar" if (lib.get("entries") or lib.get("passages") or lib.get("exemplars")) else "none"
-    return str(lib)
+    """How a reply was made: ``verbatim`` (the stored answer was the reply: ``rule`` verbatim),
+    ``exemplar`` (similar entries were shown before the user's turn: ``library`` names the best
+    one) or ``none``."""
+    fin = fin or {}
+    if fin.get("rule") == "verbatim":
+        return "verbatim"
+    return "exemplar" if fin.get("library") else "none"
 
 
 def main(ours_path: str, opp_path: str, split: str, out_dir: str) -> int:

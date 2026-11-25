@@ -23,6 +23,8 @@ _SMOKE = load_config(str(Path(__file__).with_name("m6_smoke.py")))
 CFG = dataclasses.replace(
     _SMOKE,
     model=dataclasses.replace(_SMOKE.model, gain_o=True, tok_neurons=4, tok_dim=16, table_grad="take"),
+    data=dataclasses.replace(_SMOKE.data, exemplar_floor=_M6V.data.exemplar_floor,
+                             exemplar_floor_frac=_M6V.data.exemplar_floor_frac),
     optim=dataclasses.replace(_SMOKE.optim, lr_mult=_M6V.optim.lr_mult, tokens_before=2.0e6,
                               final_lr_frac=_M6V.optim.final_lr_frac, warmup_frac=_M6V.optim.warmup_frac),
     run=dataclasses.replace(_SMOKE.run, name="m6v_smoke", out_dir="runs/m6v_smoke",

@@ -19,7 +19,23 @@ tables fits a paraphrased question to 0.58 nats per token and moves the loss of 
 that contain a written token by 0.080; writing the **page values only** fits it to 0.65 and
 moves them by 0.027, and unrelated answers by 0.002 instead of 0.026. The page value is the one
 place where a token's row is both private (theorem 1) and gated by the context (its private
-neurons), so it is the default here. The recall of a written fact in free generation stays weak
+neurons), so it is the default here.
+
+Which direction. The loss of the token's other contexts is, to second order, a quadratic form
+of the change of its value row with the Kronecker-factored curvature ``A_v (x) B``: ``A_v = E[s
+s^T]`` over the activations of the token's private neurons (``rho x rho``) and ``B`` the second
+moment of the loss gradient over the ``dk`` output directions (one matrix per block, shared by
+all tokens). Among the changes with one first-order gain on the taught text the one that costs
+the other contexts least is ``- A_v^-1 G B^-1`` (``left`` and ``right`` of :class:`Writer`; how
+the two are estimated from library text is in ``lab/m6v/theorem4.py``). Measured there, means
+over three step sizes, on library entries drawn at random among those that contain a written
+token: with the rows of tokens rarer than rank 2,048 their loss moves by 0.113 after plain
+writes and by 0.042 to 0.059 after preconditioned ones at the same fit of the paraphrased
+questions (1.11 to 1.17 against 1.14); with rank 512 and rarer the neuron side alone halves it
+(0.016 against 0.034) at a fit of 0.74 against 0.69, and the output side adds nothing. The
+plain write recalls more in free generation (3 of 8 against about 2), so it stays the default.
+
+The recall of a written fact in free generation stays weak
 with every variant (at most 4 of 8): what must be recalled word for word is written as text
 (``bes.library.overlay``); a row write is a consolidation, not the memory of record.
 """
@@ -83,11 +99,17 @@ class Writer:
     only)."""
 
     def __init__(self, cfg: Any, consts: dict, tables: Sequence[str] = WRITE_TABLES,
-                 ref: dict[str, float] | None = None):
+                 ref: dict[str, float] | None = None, left: Any = None, right: Any = None):
         bad = [t for t in tables if t not in TOKEN_TABLES]
         if bad:
             raise ValueError(f"not token tables: {bad}")
         self.cfg, self.consts, self.tables, self.ref = cfg, consts, tuple(tables), dict(ref or {})
+        # curvature of the page values (module docstring): left [V, n_blocks, rho, rho], right
+        # [n_blocks, dk, dk]; the step direction of page/val is  left @ G @ right
+        self.left = None if left is None else jnp.asarray(left, jnp.float32)
+        self.right = None if right is None else jnp.asarray(right, jnp.float32)
+        if (left is not None or right is not None) and "page/val" not in self.tables:
+            raise ValueError("left and right precondition the page values: write page/val")
         self._grad = jax.jit(lambda p, b: jax.value_and_grad(lambda q: M.loss_fn(q, consts, b, cfg)[0])(p))
         self._step = None
 
@@ -96,7 +118,7 @@ class Writer:
         missing = [t for t in self.tables if t not in paths]
         if missing:
             raise ValueError(f"the model has no table {missing}")
-        tables, ref = self.tables, self.ref
+        tables, ref, left, right = self.tables, self.ref, self.left, self.right
 
         def step(p, g, lr, mask):
             out = []
@@ -105,8 +127,13 @@ class Writer:
                     out.append(a)
                     continue
                 v = a.shape[0]
+                ga = ga.astype(jnp.float32)
+                if path == "page/val" and left is not None:
+                    ga = jnp.einsum("vbjk,vbkc->vbjc", left, ga)
+                if path == "page/val" and right is not None:
+                    ga = jnp.einsum("vbjc,bcd->vbjd", ga, right)
                 a2 = a.astype(jnp.float32).reshape(v, -1)
-                g2 = ga.astype(jnp.float32).reshape(v, -1)
+                g2 = ga.reshape(v, -1)
                 gn = jnp.sqrt(jnp.sum(g2 * g2, -1))
                 an = jnp.maximum(jnp.sqrt(jnp.sum(a2 * a2, -1)), ref.get(path, 0.0))
                 sc = jnp.where((gn > 0) & mask, lr * an / jnp.maximum(gn, 1e-30), 0.0)

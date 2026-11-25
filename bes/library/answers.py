@@ -68,6 +68,7 @@ from bes.library.terms import bucket, terms
 ANSWERS_JSON = "answers.json"
 MASS_UNIT = 64
 PASSAGE_SEP = "\n\n---\n\n"          # as bes.data.sources.PASSAGE_SEP (not imported: no cycle)
+NUMBERS_ONLY = "numbers_only"       # a contrast of the loose mode: the questions differ in their numbers alone
 ALL_TYPES = ("question", "lookup", "task", "math", "other")
 
 
@@ -546,14 +547,21 @@ class AnswerLibrary:
         return u[o], part[o]
 
     def candidates(self, query: str, k: int | None = None, exclude: Iterable[int] = (),
-                   log: AnswerRead | None = None) -> list[Candidate]:
+                   log: AnswerRead | None = None, floor: float | None = None) -> list[Candidate]:
         """The best stored questions for ``query`` with their exact scores, best first (at most
         ``k``, default ``verify_top``); candidates with a contrast come last. The contrast is
         looked for only where the ranked score reaches the lowest threshold any rule uses (a
         candidate below it is neither an exemplar nor a verbatim answer whatever it holds).
-        ``answer`` is left empty: the callers read the answers of the entries they pick."""
+        ``answer`` is left empty: the callers read the answers of the entries they pick.
+
+        ``floor`` (the loose mode of :meth:`exemplars`): the contrast is looked for down to this
+        score, and a stored question that differs from the user's in its numbers and in nothing
+        else gets the contrast :data:`NUMBERS_ONLY` and is ranked with the candidates without
+        one (the same problem with other numbers: a worked example, not an answer)."""
         cfg = self.acfg
         need = min(cfg.exemplar_min, cfg.second_min, cfg.verbatim_cov_q, cfg.verbatim_cov_e) - 1e-9
+        if floor is not None:
+            need = min(need, float(floor) - 1e-9)
         ents, _ = self.partial(query, exclude, log)
         if ents.size == 0:
             return []
@@ -590,11 +598,15 @@ class AnswerLibrary:
             if ranked >= need:
                 if user_contrast is None:
                     user_contrast = contrast(query)
-                mm = contrast_mismatch(user_contrast, contrast(question))
+                stored_contrast = contrast(question)
+                mm = contrast_mismatch(user_contrast, stored_contrast)
+                if mm == "numbers" and floor is not None and contrast_mismatch(
+                        dataclasses.replace(user_contrast, numbers=stored_contrast.numbers), stored_contrast) is None:
+                    mm = NUMBERS_ONLY
             miss_q = max((self.idf(t) for t in q_terms - s_terms), default=0.0)
             miss_e = max((self.idf(t) for t in s_terms - q_terms), default=0.0)
             out.append(Candidate(int(e), question, "", ranked, cov_q, cov_e, tm, mm, same, miss_q, miss_e))
-        out.sort(key=lambda c: (c.contrast is not None, -round(c.sym, 9), c.entry))
+        out.sort(key=lambda c: (c.contrast not in (None, NUMBERS_ONLY), -round(c.sym, 9), c.entry))
         return out[:k] if k is not None else out
 
     def _answer(self, e: int, log: AnswerRead | None = None) -> str:
@@ -618,24 +630,36 @@ class AnswerLibrary:
     def find_title(self, title: str) -> None:
         return None
 
-    def exemplars(self, query: str, exclude_pids: Iterable[int] = (), log: AnswerRead | None = None) -> list[Candidate]:
-        """The exemplars a LIBRARY turn shows for ``query``, best first (possibly none)."""
+    def exemplars(self, query: str, exclude_pids: Iterable[int] = (), log: AnswerRead | None = None,
+                  floor: float | None = None) -> list[Candidate]:
+        """The exemplars a LIBRARY turn shows for ``query``, best first (possibly none).
+
+        ``floor``: the loose mode. The best exemplar may have a ranked score down to ``floor``,
+        whatever the kind of message (default: ``exemplar_min``, and ``exemplar_min_math`` for
+        an arithmetic message), and a stored question that differs from the user's only in its
+        numbers is an exemplar too (:data:`NUMBERS_ONLY`; by default every contrast excludes an
+        entry). A model uses such exemplars well only when it was trained with them
+        (``DataCfg.exemplar_floor``)."""
         cfg = self.acfg
         if len(query) > cfg.max_query_chars:
             return []
-        best = {c.entry: c for c in self.candidates(query, None, exclude_pids, log) if c.contrast is None}
+        ok = (None,) if floor is None else (None, NUMBERS_ONLY)
+        best = {c.entry: c for c in self.candidates(query, None, exclude_pids, log, floor) if c.contrast in ok}
         for part in sub_queries(query):
-            for c in self.candidates(part, cfg.exemplars, exclude_pids, log):
+            for c in self.candidates(part, cfg.exemplars, exclude_pids, log, floor):
                 score = c.sym * cfg.part_factor
-                if c.contrast is None and (c.entry not in best or score > best[c.entry].sym):
+                if c.contrast in ok and (c.entry not in best or score > best[c.entry].sym):
                     best[c.entry] = dataclasses.replace(c, sym=score, part=True)
         cands = sorted(best.values(), key=lambda c: (-round(c.sym, 9), c.entry))
-        floor = cfg.exemplar_min
-        if cfg.exemplar_min_math > floor:
-            from bes.library.retrieve import query_type
+        if floor is not None:
+            floor = float(floor)
+        else:
+            floor = cfg.exemplar_min
+            if cfg.exemplar_min_math > floor:
+                from bes.library.retrieve import query_type
 
-            if query_type(query) == "math":
-                floor = cfg.exemplar_min_math
+                if query_type(query) == "math":
+                    floor = cfg.exemplar_min_math
         if not cands or cands[0].sym < floor - 1e-12:
             return []
         picks = cands[:1] + [c for c in cands[1:cfg.exemplars] if c.sym >= cfg.second_min - 1e-12]
@@ -644,10 +668,11 @@ class AnswerLibrary:
 
     def retrieve(self, query: str, exclude_pids: Iterable[int] = (), exclude_titles: Iterable[int] = (),
                  log: AnswerRead | None = None, kinds: Sequence[str] | None = None,
-                 context: Sequence[str] | None = None) -> Passage | None:
+                 context: Sequence[str] | None = None, floor: float | None = None) -> Passage | None:
         """The LIBRARY turn for a user message, or ``None``: one or two exemplars, the best
         one last (next to the user turn). A later turn that leans on the conversation
-        (``bes.library.retrieve.self_contained``) retrieves nothing."""
+        (``bes.library.retrieve.self_contained``) retrieves nothing. ``floor``: see
+        :meth:`exemplars`."""
         if kinds is not None and "qa" not in kinds:
             return None
         if context:
@@ -655,7 +680,7 @@ class AnswerLibrary:
 
             if not self_contained(query):
                 return None
-        picks = self.exemplars(query, exclude_pids, log)
+        picks = self.exemplars(query, exclude_pids, log, floor)
         if not picks:
             return None
         mc = self.acfg.exemplar_max_chars
@@ -711,5 +736,5 @@ class AnswerLibrary:
         return None
 
 
-__all__ = ["AnswerCfg", "AnswerLibrary", "AnswerRead", "ReadCap", "Candidate", "Passage", "ANSWERS_JSON",
+__all__ = ["AnswerCfg", "AnswerLibrary", "AnswerRead", "ReadCap", "Candidate", "Passage", "ANSWERS_JSON", "NUMBERS_ONLY",
            "cut_answer", "render_exemplar", "sub_queries", "ALL_TYPES"]
