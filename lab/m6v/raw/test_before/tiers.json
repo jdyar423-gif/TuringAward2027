@@ -1,0 +1,134 @@
+{
+ "report": "/tmp/claude-0/-home-user-turingaward2027/3615ba93-d69b-5e15-9aac-4ee28e8b4b51/scratchpad/study/proxy/reports/ab/m6v-before-vs-falcon--judge-qwen3-4b-2507-3605803b.json",
+ "overall": {
+  "n": 200,
+  "wins": 27,
+  "losses": 63,
+  "ties": 110,
+  "both_bad": 0,
+  "score": 0.41,
+  "score_ci95": [
+   0.3442,
+   0.4792
+  ],
+  "decisive": 90,
+  "win_rate_decisive": 0.3,
+  "win_rate_decisive_ci95": [
+   0.2151,
+   0.4013
+  ],
+  "sign_test_p": 0.000188
+ },
+ "groups": [
+  {
+   "group": "all",
+   "n": 200,
+   "win": 27,
+   "loss": 63,
+   "tie": 110,
+   "score": 0.41,
+   "decisive": 0.3,
+   "p": 0.000187755796179299
+  },
+  {
+   "group": "category chat",
+   "n": 50,
+   "win": 14,
+   "loss": 11,
+   "tie": 25,
+   "score": 0.53,
+   "decisive": 0.56,
+   "p": 0.6900379657745361
+  },
+  {
+   "group": "category code",
+   "n": 30,
+   "win": 5,
+   "loss": 10,
+   "tie": 15,
+   "score": 0.4166666666666667,
+   "decisive": 0.3333333333333333,
+   "p": 0.3017578125
+  },
+  {
+   "group": "category instruct",
+   "n": 40,
+   "win": 1,
+   "loss": 16,
+   "tie": 23,
+   "score": 0.3125,
+   "decisive": 0.058823529411764705,
+   "p": 0.000274658203125
+  },
+  {
+   "group": "category math",
+   "n": 30,
+   "win": 0,
+   "loss": 14,
+   "tie": 16,
+   "score": 0.26666666666666666,
+   "decisive": 0.0,
+   "p": 0.0001220703125
+  },
+  {
+   "group": "category writing",
+   "n": 50,
+   "win": 7,
+   "loss": 12,
+   "tie": 31,
+   "score": 0.45,
+   "decisive": 0.3684210526315789,
+   "p": 0.359283447265625
+  },
+  {
+   "group": "tier exemplar",
+   "n": 65,
+   "win": 18,
+   "loss": 18,
+   "tie": 29,
+   "score": 0.5,
+   "decisive": 0.5,
+   "p": 1.0
+  },
+  {
+   "group": "tier none",
+   "n": 122,
+   "win": 5,
+   "loss": 43,
+   "tie": 74,
+   "score": 0.3442622950819672,
+   "decisive": 0.10416666666666667,
+   "p": 1.3680484300948592e-08
+  },
+  {
+   "group": "tier verbatim",
+   "n": 13,
+   "win": 4,
+   "loss": 2,
+   "tie": 7,
+   "score": 0.5769230769230769,
+   "decisive": 0.6666666666666666,
+   "p": 0.6875
+  },
+  {
+   "group": "turns 1",
+   "n": 148,
+   "win": 24,
+   "loss": 53,
+   "tie": 71,
+   "score": 0.40202702702702703,
+   "decisive": 0.3116883116883117,
+   "p": 0.0012632268710478357
+  },
+  {
+   "group": "turns 2",
+   "n": 52,
+   "win": 3,
+   "loss": 10,
+   "tie": 39,
+   "score": 0.4326923076923077,
+   "decisive": 0.23076923076923078,
+   "p": 0.09228515625
+  }
+ ]
+}

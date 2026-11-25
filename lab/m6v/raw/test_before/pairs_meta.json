@@ -1,0 +1,22 @@
+{
+  "name": "m6v-before-vs-falcon",
+  "format": 2,
+  "n_pairs": 200,
+  "commitment": "3c2fec05b362c7e5887d3ecedf82ebb8d830879291ada7bd029141529eb8f921",
+  "commitments": [
+    "3c2fec05b362c7e5887d3ecedf82ebb8d830879291ada7bd029141529eb8f921"
+  ],
+  "added": [
+    200
+  ],
+  "by_category": {
+    "math": 30,
+    "instruct": 40,
+    "chat": 50,
+    "code": 30,
+    "writing": 50
+  },
+  "multi_turn": 52,
+  "created": "2026-11-25 17:06:09",
+  "updated": "2026-11-25 17:06:09"
+}
