@@ -2147,7 +2147,10 @@ class Exported:
             return OurLM(self.params, self.consts, self.cfg.model, self.tok,
                          max_steps=4 * int(max_new_tokens), decoder=dec)
 
-        return Responder(lm_factory, self.tok, self.cfg, library=self.library)
+        from bes.decode.fitness import AnswerFit
+
+        return Responder(lm_factory, self.tok, self.cfg, library=self.library,
+                         answer_fit=AnswerFit(self.params, self.consts, self.cfg.model, self.tok))
 
     def key(self) -> str:
         """Cache key of the generator: weights, configuration, decoding code, library."""

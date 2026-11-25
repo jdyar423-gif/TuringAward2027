@@ -137,6 +137,7 @@ class Candidate:
     miss_q: float = 0.0       # largest idf among the user's terms the entry lacks (0: none)
     miss_e: float = 0.0       # largest idf among the entry's terms the user lacks
     part: bool = False        # matched with a part of the message, not the whole of it
+    fit_value: float | None = None   # verbatim(): the reader's fit this entry was taken with (else None)
 
     @property
     def rank(self) -> float:
@@ -726,7 +727,8 @@ class AnswerLibrary:
         return out
 
     def verbatim(self, query: str, spec: Any = None, context: Sequence[str] | None = None,
-                 log: AnswerRead | None = None, min_rank: float | None = None) -> Candidate | None:
+                 log: AnswerRead | None = None, min_rank: float | None = None, fit: Any = None,
+                 min_fit: float | None = None, fit_rank: float | None = None) -> Candidate | None:
         """The stored entry whose answer can be given as the reply, or ``None`` (module
         docstring). ``spec``: the user's compiled constraints (``bes.exact.constraints``);
         an answer that violates one is not used.
@@ -736,7 +738,17 @@ class AnswerLibrary:
         exact overlap ``min(cov_q, cov_e)``, less ``type_penalty`` when the question types
         differ, reaches ``min_rank``. A contrast and a violated constraint exclude an entry under
         both rules. (The overlap is the entry's own: a taught entry's lifted score does not
-        count.)"""
+        count.)
+
+        ``fit`` with ``min_fit`` (``DecodeCfg.verbatim_fit``; ``bes.decode.fitness.AnswerFit``): a
+        third rule, asked of the reader instead of the index. ``fit(query, stored question,
+        answer)`` is how much less probable the model finds the stored answer as a reply to the
+        user's question than to the question it was stored under (nats per token; 0: the same).
+        It is computed for the candidates neither other rule takes whose own overlap reaches
+        ``fit_rank`` (default: the exemplar threshold), and the entry with the best fit is used
+        when its fit is at least ``-min_fit``. The other two rules come first: an entry either
+        of them takes is returned without asking the model. ``fit_value`` of the returned
+        candidate is the fit it passed with."""
         cfg = self.acfg
         if len(query) > cfg.max_query_chars:
             return None
@@ -745,16 +757,22 @@ class AnswerLibrary:
 
             if not self_contained(query):
                 return None
-        for c in self.candidates(query, 3, (), log):
+        ask = fit is not None and min_fit is not None
+        ask_from = float(cfg.exemplar_min if fit_rank is None else fit_rank)
+        # the index looks for a contrast only down to the lowest threshold its own rules use:
+        # a test that starts lower has to say so
+        looked = min(cfg.exemplar_min, cfg.second_min, cfg.verbatim_cov_q, cfg.verbatim_cov_e)
+        floor = ask_from if (ask and ask_from < looked) else None
+        best: tuple[float, Candidate] | None = None
+        for c in (self.candidates(query, 3, (), log) if floor is None else self.candidates(query, 3, (), log, floor)):
             if c.contrast is not None:
                 continue
             own_rule = (c.type_match and c.cov_q >= cfg.verbatim_cov_q - 1e-12 and c.cov_e >= cfg.verbatim_cov_e - 1e-12
                         and max(c.miss_q, c.miss_e) <= cfg.verbatim_max_miss + 1e-12)
-            by_rank = False
-            if min_rank is not None:
-                own = min(c.cov_q, c.cov_e) - (0.0 if c.type_match else cfg.type_penalty)
-                by_rank = own >= float(min_rank) - 1e-12
-            if not (own_rule or by_rank):
+            own = min(c.cov_q, c.cov_e) - (0.0 if c.type_match else cfg.type_penalty)
+            by_rank = min_rank is not None and own >= float(min_rank) - 1e-12
+            by_fit = ask and not (own_rule or by_rank) and own >= ask_from - 1e-12
+            if not (own_rule or by_rank or by_fit):
                 continue
             answer = c.answer or self._answer(c.entry, log)
             if not answer:
@@ -767,8 +785,15 @@ class AnswerLibrary:
                         continue
                 except Exception:
                     continue
-            return dataclasses.replace(c, answer=answer)
-        return None
+            if not by_fit:
+                return dataclasses.replace(c, answer=answer)
+            try:
+                value = fit(query, c.question, answer)
+            except Exception:                       # the reader could not be asked: no third rule
+                value = None
+            if value is not None and float(value) >= -float(min_fit) and (best is None or float(value) > best[0]):
+                best = (float(value), dataclasses.replace(c, answer=answer, fit_value=float(value)))
+        return None if best is None else best[1]
 
 
 __all__ = ["AnswerCfg", "AnswerLibrary", "AnswerRead", "ReadCap", "Candidate", "Passage", "ANSWERS_JSON", "NUMBERS_ONLY",

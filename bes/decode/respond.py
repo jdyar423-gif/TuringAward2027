@@ -305,13 +305,16 @@ class Responder:
     ``cfg.model.max_seq``) or a ``DecodeCfg``; library: an object with ``retrieve(text) ->
     Passage | None`` (``bes.library.retrieve.Library``), or ``None``; chat: the chat format
     (default :class:`OurChat`); context: tokens of prompt + reply (default
-    ``cfg.model.max_seq``, else 2048).
+    ``cfg.model.max_seq``, else 2048); answer_fit: ``fit(question, stored question, answer) ->
+    float | None``, the model's own test of a stored answer (``bes.decode.fitness.AnswerFit``;
+    used with ``DecodeCfg.verbatim_fit``, without it that setting does nothing).
     """
 
     def __init__(self, lm_factory: Callable[[int], Any], tok, cfg=None, library=None, *,
-                 chat=None, context: int | None = None):
+                 chat=None, context: int | None = None, answer_fit: Callable[[str, str, str], Any] | None = None):
         self.lm_factory = lm_factory
         self.tok = tok
+        self.answer_fit = answer_fit
         decode = getattr(cfg, "decode", cfg)
         self.cfg = decode if isinstance(decode, DecodeCfg) else DecodeCfg()
         model = getattr(cfg, "model", None)
@@ -385,20 +388,28 @@ class Responder:
         return self.library.retrieve(user_text, **kw)
 
     def verbatim(self, user_text: str, spec, history: Sequence[str] | None = None, log=None,
-                 min_rank: float | None = None):
+                 min_rank: float | None = None, min_fit: float | None = None, fit_rank: float | None = None):
         """The stored entry whose answer is the reply (``bes.library.answers.AnswerLibrary.verbatim``:
         the library holds the user's question and its answer meets the user's explicit
-        constraints), or ``None`` (also for a library without stored answers)."""
+        constraints), or ``None`` (also for a library without stored answers). ``min_rank``
+        (``DecodeCfg.verbatim_rank``) and ``min_fit`` with ``fit_rank`` (``DecodeCfg.verbatim_fit``,
+        ``verbatim_fit_rank``; needs ``answer_fit``) reach a library whose rule takes them."""
         fn = getattr(self.library, "verbatim", None)
         if not callable(fn):
             return None
         kw = {}
-        if min_rank:
+        ask = bool(min_fit) and self.answer_fit is not None
+        if min_rank or ask:
             import inspect
 
             try:
-                if "min_rank" in inspect.signature(fn).parameters:
+                names = inspect.signature(fn).parameters
+                if min_rank and "min_rank" in names:
                     kw["min_rank"] = float(min_rank)
+                if ask and "min_fit" in names and "fit" in names:
+                    kw["fit"], kw["min_fit"] = self.answer_fit, float(min_fit)
+                    if fit_rank is not None and "fit_rank" in names:
+                        kw["fit_rank"] = float(fit_rank)
             except (TypeError, ValueError):
                 pass
         try:
@@ -423,6 +434,8 @@ class Responder:
             "verbatim": {"entry": int(hit.entry), "question": hit.question, "cov_q": round(float(hit.cov_q), 4),
                          "cov_e": round(float(hit.cov_e), 4)},
         }
+        if getattr(hit, "fit_value", None) is not None:      # taken by the reader's own test
+            extra["verbatim"]["fit"] = round(float(hit.fit_value), 4)
         return {"text": text, "finish_reason": "stop", "prompt_tokens": 0, "completion_tokens": n_tokens,
                 "logprob_sum": 0.0, "logprob_count": 0, "extra": extra}
 
@@ -479,7 +492,8 @@ class Responder:
         history = [m["content"] for m in msgs[:-1] if m["role"] == "user"]
         spec, spec_error = self.compile_spec(user_text)
         lib_log = self.read_log() if d.use_library else None
-        hit = (self.verbatim(user_text, spec, history, lib_log, d.verbatim_rank or None)
+        hit = (self.verbatim(user_text, spec, history, lib_log, d.verbatim_rank or None, d.verbatim_fit or None,
+                             d.verbatim_fit_rank)
                if (d.use_library and d.verbatim) else None)
         if hit is not None:
             out = self._verbatim_reply(hit, spec, d, r, seed)
@@ -724,7 +738,9 @@ def our_generator(checkpoint: str, config: str, library: str = "", overrides: st
                      tmax=cache_slots(responder.context, max(n, n_cap)),
                      self_evidence_weight=cfg.decode.self_evidence_weight)
 
-    responder = Responder(lm_factory, tok, cfg, library=lib)
+    from bes.decode.fitness import AnswerFit
+
+    responder = Responder(lm_factory, tok, cfg, library=lib, answer_fit=AnswerFit(params, consts, cfg.model, tok))
 
     def generate(messages, settings, seed):
         return responder.reply(messages, settings, seed)

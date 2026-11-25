@@ -408,6 +408,11 @@ class DecodeCfg:
     verbatim_rank: float = 0.0        # > 0: a stored answer is the reply also when its entry's exact overlap
                                       # with the message (less the type penalty) reaches this, beside the
                                       # library's own rule (AnswerLibrary.verbatim(min_rank=...))
+    verbatim_fit: float = 0.0         # > 0: a stored answer is the reply also when the model finds it as
+                                      # probable under the user's question as under the stored one, within
+                                      # this many nats per token (bes.decode.fitness; AnswerLibrary.verbatim(
+                                      # min_fit=...)); only entries whose exact overlap reaches verbatim_fit_rank
+    verbatim_fit_rank: float = 0.5    # with verbatim_fit: the lowest exact overlap of an entry the test is run on
 
 
 @dataclass(frozen=True)
@@ -465,7 +470,8 @@ HASH_NEUTRAL: dict[str, tuple[str, ...]] = {
     "optim": ("lr_mult", "tokens_before"),
     "data": ("profile", "exemplar_floor", "exemplar_floor_frac", "exemplar_tag"),
     "run": ("tokenize_workers", "fast", "micro_split", "prefopt_lrs", "ship_library", "init_from", "init_sha256"),
-    "decode": ("verbatim", "exemplar_floor", "exemplar_tag", "exemplar_numbers", "verbatim_rank"),
+    "decode": ("verbatim", "exemplar_floor", "exemplar_tag", "exemplar_numbers", "verbatim_rank", "verbatim_fit",
+               "verbatim_fit_rank"),
 }
 
 

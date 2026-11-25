@@ -188,6 +188,56 @@ def test_a_rank_threshold_is_another_rule_for_a_verbatim_reply(lib):
     assert lib.verbatim("And why does it float?", context=["Tell me about ice."], min_rank=0.1) is None
 
 
+def test_the_readers_fit_is_a_third_rule_for_a_verbatim_reply(lib):
+    """``verbatim(fit=..., min_fit=...)``: the candidates neither other rule takes are shown to the
+    reader's test; the best fit is used when it reaches ``-min_fit``; the index's contrasts, the
+    user's constraints and ``fit_rank`` still exclude; the other rules are not asked about."""
+    q = "Why does ice float on cold water?"
+    c = [x for x in lib.candidates(q, 3) if x.contrast is None][0]
+    own = min(c.cov_q, c.cov_e) - (0.0 if c.type_match else lib.acfg.type_penalty)
+    asked = []
+
+    def fit(value_by_question):
+        def f(query, stored_question, answer):
+            asked.append((query, stored_question, answer))
+            return value_by_question.get(stored_question, -9.0)
+        return f
+
+    good = fit({"Why does ice float on water?": -0.03})
+    hit = lib.verbatim(q, fit=good, min_fit=0.05)
+    assert hit is not None and hit.entry == c.entry and hit.fit_value == -0.03
+    assert asked and all(a[0] == q for a in asked) and ("Why does ice float on water?" in [a[1] for a in asked])
+    assert asked[[a[1] for a in asked].index("Why does ice float on water?")][2].startswith("Ice is less dense")
+    assert lib.verbatim(q, fit=good, min_fit=0.02) is None                 # the fit does not reach the threshold
+    assert lib.verbatim(q, fit=good) is None and lib.verbatim(q, min_fit=0.05) is None   # both are needed
+    assert lib.verbatim(q, fit=good, min_fit=0.05, fit_rank=own + 0.01) is None           # below the overlap floor
+    # the entry with the best fit wins, whatever the index's order
+    other = fit({"Why does ice float on water?": -0.04, "Why does oil float on water?": -0.01})
+    q2 = "Why does something float on cold water?"            # two entries, equally far in words
+    assert [round(x.sym, 6) for x in lib.candidates(q2, 2)] == [round(lib.candidates(q2, 1)[0].sym, 6)] * 2
+    asked.clear()
+    assert lib.verbatim(q2, fit=other, min_fit=0.05, fit_rank=0.3).question == "Why does oil float on water?"
+    assert sorted(a[1] for a in asked) == ["Why does ice float on water?", "Why does oil float on water?"]
+    assert lib.verbatim(q2, fit=other, min_fit=0.05) is None             # under the default floor nobody is asked
+    # the reader cannot be asked: no third rule (and no error)
+    def broken(*a):
+        raise RuntimeError("no model")
+    assert lib.verbatim(q, fit=broken, min_fit=0.05) is None
+    assert lib.verbatim(q, fit=lambda *a: None, min_fit=0.05) is None
+    # the library's own rule and the rank rule answer first, without asking the reader
+    asked.clear()
+    same = "Why does ice float on water?"
+    assert lib.verbatim(same, fit=good, min_fit=0.05).fit_value is None and not asked
+    assert lib.verbatim(q, min_rank=own - 0.01, fit=good, min_fit=0.05).fit_value is None and not asked
+    # a contrast and a violated constraint exclude before the reader is asked
+    assert lib.verbatim("What is 12 times 13?", fit=lambda *a: 0.0, min_fit=0.05, fit_rank=0.1) is None
+    text = "Why does ice float on cold water? Answer in all capital letters."
+    assert lib.verbatim(text, constraints.compile(text), fit=lambda *a: 0.0, min_fit=0.05, fit_rank=0.3) is None
+    # a later turn that leans on the conversation is never looked up
+    assert lib.verbatim("And why does it float?", context=["Tell me about ice."], fit=lambda *a: 0.0, min_fit=1.0,
+                        fit_rank=0.1) is None
+
+
 def test_follow_up_turns_retrieve_nothing(lib):
     assert lib.retrieve("And what about its population?", context=["What is the capital of Australia?"]) is None
     assert lib.retrieve("What is the capital of France?", context=["Hello there."]) is not None

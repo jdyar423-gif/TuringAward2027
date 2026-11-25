@@ -183,6 +183,52 @@ def test_the_verbatim_rank_reaches_a_library_that_takes_one():
     assert lib.calls == [None, 0.6] and DecodeCfg().verbatim_rank == 0.0
 
 
+def test_the_readers_fit_reaches_a_library_that_takes_one():
+    """``DecodeCfg.verbatim_fit`` / ``verbatim_fit_rank``: the responder's ``answer_fit`` and the
+    thresholds are passed to a library whose ``verbatim`` takes them, only when both the setting
+    and the callable exist; the fit an entry was taken with is recorded with the reply."""
+    from bes.library.answers import Candidate
+
+    class Lib:
+        def __init__(self, hit=None):
+            self.calls, self.hit = [], hit
+
+        def retrieve(self, query):
+            return None
+
+        def verbatim(self, query, spec, context=None, log=None, min_rank=None, fit=None, min_fit=None, fit_rank=None):
+            self.calls.append((min_rank, fit, min_fit, fit_rank))
+            return self.hit if fit is not None else None
+
+    fit = lambda q, s, a: -0.01                                   # noqa: E731
+    q = [{"role": "user", "content": "why is it dark at night?"}]
+    lib = Lib()
+    tok, lm, _ = setup()
+    resp = R.Responder(lambda n: lm, tok, DecodeCfg(particles=2, max_new_tokens=8), library=lib, chat=TinyChat(tok),
+                       context=256, answer_fit=fit)
+    resp.reply(q, {"max_tokens": 8}, seed=0)
+    resp.reply(q, {"max_tokens": 8, "verbatim_fit": 0.075}, seed=0)
+    resp.reply(q, {"max_tokens": 8, "verbatim_fit": 0.075, "verbatim_fit_rank": 0.4, "verbatim_rank": 0.7}, seed=0)
+    resp.reply(q, {"max_tokens": 8, "verbatim_fit": 0.075, "verbatim": False}, seed=0)
+    assert lib.calls == [(None, None, None, None), (None, fit, 0.075, 0.5), (0.7, fit, 0.075, 0.4)]
+    assert DecodeCfg().verbatim_fit == 0.0 and DecodeCfg().verbatim_fit_rank == 0.5
+    # without the callable the setting does nothing
+    lib2 = Lib()
+    resp2 = R.Responder(lambda n: lm, tok, DecodeCfg(particles=2, max_new_tokens=8), library=lib2, chat=TinyChat(tok),
+                        context=256)
+    resp2.reply(q, {"max_tokens": 8, "verbatim_fit": 0.075}, seed=0)
+    assert lib2.calls == [(None, None, None, None)]
+    # an entry taken by the test: its stored answer is the reply and the fit is recorded
+    hit = Candidate(3, "why is the night dark?", "Because the Sun is on the other side.", 0.6, 0.7, 0.6, True, None,
+                    False, fit_value=-0.01)
+    resp3 = R.Responder(lambda n: lm, tok, DecodeCfg(particles=2, max_new_tokens=8), library=Lib(hit), chat=TinyChat(tok),
+                        context=256, answer_fit=fit)
+    out = resp3.reply(q, {"max_tokens": 8, "verbatim_fit": 0.075}, seed=0)
+    assert out["text"] == "Because the Sun is on the other side." and out["extra"]["rule"] == "verbatim"
+    assert out["extra"]["verbatim"]["fit"] == -0.01
+    assert resp3.reply(q, {"max_tokens": 8}, seed=0)["extra"]["rule"] != "verbatim"
+
+
 def test_clean_messages():
     m = R.clean_messages([{"role": "system", "content": "S"},
                           {"role": "library", "content": "old passage"},
