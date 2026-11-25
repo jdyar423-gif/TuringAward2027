@@ -1,0 +1,1536 @@
+[
+ {
+  "pair_id": "chat-001",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "apple orange tree sky blue"
+  ],
+  "tokens": [
+   217
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 54.669
+ },
+ {
+  "pair_id": "chat-023",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "How can you keep your hands warm in cold weather?"
+  ],
+  "tokens": [
+   231
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 124.038
+ },
+ {
+  "pair_id": "chat-024",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "Suggest a simple breakfast recipe that can be made in under 20 minutes.",
+   "All right, good suggestions."
+  ],
+  "tokens": [
+   141,
+   141
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 125.722
+ },
+ {
+  "pair_id": "chat-032",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "What are some good habits that I can develop?",
+   "Design a daily routine for a student."
+  ],
+  "tokens": [
+   232,
+   64
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 310.072
+ },
+ {
+  "pair_id": "chat-044",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "Name 10 famous inventors.",
+   null
+  ],
+  "tokens": [
+   222,
+   265
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 158.744
+ },
+ {
+  "pair_id": "chat-078",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Why are black people black?"
+  ],
+  "tokens": [
+   211
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 130.793
+ },
+ {
+  "pair_id": "chat-079",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What should I pack for a camping trip?"
+  ],
+  "tokens": [
+   122
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 265.879
+ },
+ {
+  "pair_id": "chat-088",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "exemplar"
+  ],
+  "library": [
+   null,
+   "What is the best way to motivate myself to work out every day?"
+  ],
+  "tokens": [
+   475,
+   419
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 476.016
+ },
+ {
+  "pair_id": "chat-100",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "What is the base of the volcano?",
+   "Name two famous musicians"
+  ],
+  "tokens": [
+   136,
+   12
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 247.711
+ },
+ {
+  "pair_id": "code-008",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "Write a Python function to find the maximum value in a list of integers without using the built-in max function.",
+   "%{\"type\": \"function\", \"name\": \"add\", \"parameters\": {\"b\": \"1\", \"a\": \"0\"}}"
+  ],
+  "tokens": [
+   45,
+   238
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 116.065
+ },
+ {
+  "pair_id": "code-012",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "Write a Python function to check if a number is even or odd.",
+   "Create a unit test for a given function to reverse a list of strings."
+  ],
+  "tokens": [
+   28,
+   169
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 199.31
+ },
+ {
+  "pair_id": "code-024",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "Create a class in python that will have methods to calculate area and perimeter of a rectangle.",
+   "Create an object that adds two integers and returns their sum."
+  ],
+  "tokens": [
+   55,
+   55
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 41.318
+ },
+ {
+  "pair_id": "code-025",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Write an example of a loop in Python."
+  ],
+  "tokens": [
+   156
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 74.246
+ },
+ {
+  "pair_id": "code-032",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "Is there a way to convert a string of comma-separated numbers into a list of integers using a function in Python?",
+   "What are the characteristics of a Function in JavaScript?"
+  ],
+  "tokens": [
+   262,
+   190
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 324.204
+ },
+ {
+  "pair_id": "code-038",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What are the differences between \"git add\" and \"git add -A\"?"
+  ],
+  "tokens": [
+   436
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 174.733
+ },
+ {
+  "pair_id": "code-049",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Write a while loop in python that prints numbers from 0 through 5."
+  ],
+  "tokens": [
+   172
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 46.379
+ },
+ {
+  "pair_id": "code-055",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "def list_squares(n):"
+  ],
+  "tokens": [
+   140
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 71.088
+ },
+ {
+  "pair_id": "code-060",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "verbatim",
+   "exemplar"
+  ],
+  "library": [
+   "Can you help me create a python function that can remove any whitespace from a given string?",
+   "Write a function that returns the maximum value from a list of integers. If the list is empty, it should return None."
+  ],
+  "tokens": [
+   382,
+   220
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 108.273
+ },
+ {
+  "pair_id": "instruct-016",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "Can you write a short poem about hope?",
+   "I'm working on a manga and I'd like to tell you about its title."
+  ],
+  "tokens": [
+   174,
+   182
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 124.589
+ },
+ {
+  "pair_id": "instruct-021",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What is a word that is the opposite of 'expensive'?"
+  ],
+  "tokens": [
+   3
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 2.51
+ },
+ {
+  "pair_id": "instruct-022",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Generate a title for a blog post about productivity tips."
+  ],
+  "tokens": [
+   330
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 266.714
+ },
+ {
+  "pair_id": "instruct-023",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Write a thank you note for a friend."
+  ],
+  "tokens": [
+   168
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 68.284
+ },
+ {
+  "pair_id": "instruct-029",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Write 10 sentences that end in the word apple."
+  ],
+  "tokens": [
+   507
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 354.893
+ },
+ {
+  "pair_id": "instruct-035",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Create a sentence that uses the words \"defy\" and \"gravity\"?"
+  ],
+  "tokens": [
+   26
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 32.987
+ },
+ {
+  "pair_id": "instruct-036",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "exemplar"
+  ],
+  "library": [
+   null,
+   "Generate a list of 10 random capital letters."
+  ],
+  "tokens": [
+   258,
+   35
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 100.899
+ },
+ {
+  "pair_id": "instruct-037",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Describe the colors of a sunset"
+  ],
+  "tokens": [
+   14
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 9.694
+ },
+ {
+  "pair_id": "instruct-039",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Can you introduce yourself and write a short paragraph that describes yourself?"
+  ],
+  "tokens": [
+   157
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 49.327
+ },
+ {
+  "pair_id": "instruct-042",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Craft a haiku about winter, including three words that start with 's'."
+  ],
+  "tokens": [
+   31
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 9.412
+ },
+ {
+  "pair_id": "instruct-045",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "How do birds migrate?"
+  ],
+  "tokens": [
+   15
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 8.579
+ },
+ {
+  "pair_id": "instruct-047",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Generate a poem with four lines about a storm."
+  ],
+  "tokens": [
+   61
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 13.148
+ },
+ {
+  "pair_id": "instruct-048",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "Can I have a prompt to write a short story?",
+   "Your response should contain at least 3 sentences. You must also use the word \"beautiful\" at least twice."
+  ],
+  "tokens": [
+   127,
+   127
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 240.04
+ },
+ {
+  "pair_id": "instruct-057",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Generate a code snippet that will print out a welcome message."
+  ],
+  "tokens": [
+   49
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 14.165
+ },
+ {
+  "pair_id": "instruct-072",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "How is chocolate made?",
+   null
+  ],
+  "tokens": [
+   69,
+   2
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 43.188
+ },
+ {
+  "pair_id": "instruct-075",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Name five different programming languages."
+  ],
+  "tokens": [
+   20
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 16.72
+ },
+ {
+  "pair_id": "instruct-079",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What is the word for a sentence with a subject and a verb?"
+  ],
+  "tokens": [
+   31
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 24.637
+ },
+ {
+  "pair_id": "math-002",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Compute: $\\lg 25 - 2 \\lg \\frac{1}{2} = \\_\\_\\_\\_\\_\\_.$"
+  ],
+  "tokens": [
+   14
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 14.277
+ },
+ {
+  "pair_id": "math-004",
+  "category": "math",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "During a sale, a shirt is on sale for $15 which is 25% off the original price. How much did the shirt originally cost?",
+   "The original price of a shirt is $25. It is on sale for 20% off. How much will you pay for the shirt?"
+  ],
+  "tokens": [
+   73,
+   77
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 81.722
+ },
+ {
+  "pair_id": "math-005",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "A single die is rolled. What is the probability that the sum of the squared and the cubed values is a multiple of $5$?"
+  ],
+  "tokens": [
+   8
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 37.716
+ },
+ {
+  "pair_id": "math-006",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What is the average of all the whole numbers from 1 to 100?"
+  ],
+  "tokens": [
+   144
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 63.584
+ },
+ {
+  "pair_id": "math-009",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "The mean of 15 numbers is 6. What is the sum of all the numbers?"
+  ],
+  "tokens": [
+   19
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 40.395
+ },
+ {
+  "pair_id": "math-011",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "How much is 2 to the power of 4?"
+  ],
+  "tokens": [
+   10
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 151.553
+ },
+ {
+  "pair_id": "math-013",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What is a factorial of a number?"
+  ],
+  "tokens": [
+   22
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 88.95
+ },
+ {
+  "pair_id": "math-016",
+  "category": "math",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "The average speed of a car is 60 km/h. What is the average speed in miles per hour?",
+   "A speed of 225 km/h is equivalent to how many meters per second?"
+  ],
+  "tokens": [
+   104,
+   60
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 104.337
+ },
+ {
+  "pair_id": "math-018",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "The original price of a jacket is $200. If it is discounted 15%, what is its new price?"
+  ],
+  "tokens": [
+   97
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 38.873
+ },
+ {
+  "pair_id": "math-021",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "A city has a population of 50,000 people. It is growing by 12% each year. What is the approximate population in 3 years?"
+  ],
+  "tokens": [
+   194
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 161.378
+ },
+ {
+  "pair_id": "math-022",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "How do I calculate the tip for my restaurant bill?"
+  ],
+  "tokens": [
+   80
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 31.444
+ },
+ {
+  "pair_id": "math-023",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What's the time as of right now?"
+  ],
+  "tokens": [
+   124
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 34.482
+ },
+ {
+  "pair_id": "math-025",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "If the price of a stock falls from $20 to $18, what is the percentage decrease in price?"
+  ],
+  "tokens": [
+   123
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 58.263
+ },
+ {
+  "pair_id": "math-027",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "How many hours are in 3/4 of a day?"
+  ],
+  "tokens": [
+   71
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 30.37
+ },
+ {
+  "pair_id": "math-028",
+  "category": "math",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "How many perfect squares are there between 20 and 150?",
+   null
+  ],
+  "tokens": [
+   48,
+   45
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 70.438
+ },
+ {
+  "pair_id": "math-029",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Write a code that converts degrees Celsius to degrees Fahrenheit"
+  ],
+  "tokens": [
+   66
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 44.942
+ },
+ {
+  "pair_id": "math-033",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Can someone provide a function that converts degrees Fahrenheit to Celsius?"
+  ],
+  "tokens": [
+   163
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 335.199
+ },
+ {
+  "pair_id": "math-035",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "A vehicle is traveling at 60 kilometers per hour. How many meters does it travel per second?"
+  ],
+  "tokens": [
+   114
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 233.203
+ },
+ {
+  "pair_id": "math-037",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Convert 2 ounces to milliliters."
+  ],
+  "tokens": [
+   20
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 23.977
+ },
+ {
+  "pair_id": "math-038",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "round to 5 decimal places (1 + (1 / (1 + (1 / (1 + 1 / 9)))))"
+  ],
+  "tokens": [
+   144
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 46.288
+ },
+ {
+  "pair_id": "math-040",
+  "category": "math",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "### An object's temperature is 20 degrees Celsius. What is the temperature in degrees Fahrenheit?",
+   "### An object's temperature is 20 degrees Celsius. What is the temperature in degrees Fahrenheit?"
+  ],
+  "tokens": [
+   11,
+   28
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 324.687
+ },
+ {
+  "pair_id": "math-041",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Sam has 8 boxes of crayons in a bag. If each box contains 8 crayons, then how many crayons does Sam have in total?"
+  ],
+  "tokens": [
+   100
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 24.648
+ },
+ {
+  "pair_id": "math-043",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Can I bring a guest to the concert with my ticket?"
+  ],
+  "tokens": [
+   66
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 64.613
+ },
+ {
+  "pair_id": "math-046",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "If I have one million pennies, how many dollars is that?"
+  ],
+  "tokens": [
+   107
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 27.148
+ },
+ {
+  "pair_id": "math-051",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Generate a recipe to make strawberry muffins."
+  ],
+  "tokens": [
+   209
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 66.711
+ },
+ {
+  "pair_id": "math-052",
+  "category": "math",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "Lucas earns $25 per hour. How much will he earn for 3 days of work where he works 5 hours a day?",
+   "How many days are there in a week?"
+  ],
+  "tokens": [
+   102,
+   102
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 77.87
+ },
+ {
+  "pair_id": "math-056",
+  "category": "math",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "The side of a square has a length of 5 cm. What is the area of the square in square centimeters?",
+   "The area of a square is 100 square centimeters. What is the length of each side?"
+  ],
+  "tokens": [
+   47,
+   93
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 89.936
+ },
+ {
+  "pair_id": "math-060",
+  "category": "math",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "# You have 3 red balls, 3 blue balls, and 2 green balls in a bag.",
+   null
+  ],
+  "tokens": [
+   133,
+   133
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 139.285
+ },
+ {
+  "pair_id": "writing-009",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What are the advantages of a public library?"
+  ],
+  "tokens": [
+   94
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 42.004
+ },
+ {
+  "pair_id": "writing-017",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Can you recommend a good book for a ten-year-old?"
+  ],
+  "tokens": [
+   93
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 38.447
+ },
+ {
+  "pair_id": "writing-032",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "Compose a delightful welcome message for a new customer",
+   "to combine these two sentences into one with a more formal tone:"
+  ],
+  "tokens": [
+   217,
+   160
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 275.758
+ },
+ {
+  "pair_id": "writing-037",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Write a 5-sentence story about a young girl who meets a dragon."
+  ],
+  "tokens": [
+   378
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 390.748
+ },
+ {
+  "pair_id": "writing-038",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Can you help me write a short story that takes place in winter?"
+  ],
+  "tokens": [
+   721
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 333.279
+ },
+ {
+  "pair_id": "writing-051",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Describe the first person point of view in a short story"
+  ],
+  "tokens": [
+   179
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 266.999
+ },
+ {
+  "pair_id": "writing-056",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "Write a thank you letter to a friend who moved away",
+   "Here are the first four sentences of a story. Can you add the next four sentences?"
+  ],
+  "tokens": [
+   238,
+   238
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 281.778
+ },
+ {
+  "pair_id": "writing-060",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "Can I have a prompt to write a short story?",
+   "Create a three sentence children's story."
+  ],
+  "tokens": [
+   560,
+   768
+  ],
+  "finish": [
+   "stop",
+   "length"
+  ],
+  "seconds": 1358.235
+ },
+ {
+  "pair_id": "writing-063",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Compose a letter to a friend congratulating them on an accomplishment."
+  ],
+  "tokens": [
+   261
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 66.686
+ },
+ {
+  "pair_id": "writing-068",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "Create a dataset for movie reviews",
+   "Create a dataset for movie reviews"
+  ],
+  "tokens": [
+   129,
+   183
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 450.086
+ },
+ {
+  "pair_id": "writing-086",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Create a product review for a new reusable water bottle."
+  ],
+  "tokens": [
+   136
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 154.887
+ },
+ {
+  "pair_id": "writing-088",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "Create a riddle that has the answer 'key'.",
+   "Make up a riddle and give me an answer to the riddle."
+  ],
+  "tokens": [
+   20,
+   20
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 159.615
+ },
+ {
+  "pair_id": "writing-092",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "exemplar"
+  ],
+  "library": [
+   null,
+   "What are some ways that I can help my child learn to read?"
+  ],
+  "tokens": [
+   123,
+   127
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 505.949
+ },
+ {
+  "pair_id": "writing-095",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Develop a business card for a freelance graphic designer."
+  ],
+  "tokens": [
+   94
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 220.829
+ },
+ {
+  "pair_id": "writing-096",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "Write a social media post for a winery promoting their new vintage.",
+   "to combine these two sentences into one with a more formal tone:"
+  ],
+  "tokens": [
+   144,
+   144
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 400.286
+ },
+ {
+  "pair_id": "writing-098",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Describe a movie scene using vivid and descriptive language."
+  ],
+  "tokens": [
+   117
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 57.521
+ }
+]
