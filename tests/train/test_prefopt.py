@@ -566,3 +566,26 @@ def test_run_prefopt_requires_the_sampling_statistics(params, cfg, pref, tok, pa
         D.run_prefopt(params, split(pairs), cfg, lrs=(1e-3,), heldout_loss_fn=lambda p: 1.0,
                       sample_stats_fn=lambda p: {"length": 3}, pref=pref, tok=tok,
                       role_fn=extra_frozen_role_fn)
+
+
+def test_run_prefopt_with_feature_processes_gives_the_same_result(params, cfg, pref, tok, pairs):
+    """``PrefCfg.feature_workers``: the rows' exact features come from a pool of processes;
+    the candidate and its report are the ones of the run that computes them itself."""
+    script = ([2.0, 2.01], [stats(10, 0.1), stats(11, 0.1)])
+    out0, rep0, _, _ = run(params, pairs, cfg, pref, tok, (3e-3,), *script)
+    out1, rep1, _, _ = run(params, pairs, cfg, dataclasses.replace(pref, feature_workers=2), tok, (3e-3,), *script)
+    assert "feature_warm" not in rep0
+    assert rep1["feature_warm"]["workers"] == 2 and rep1["feature_warm"]["batches"] == 4 + 2
+    assert rep1["accepted"] == rep0["accepted"] and rep1["candidates"][0]["pref"] == rep0["candidates"][0]["pref"]
+    for a, b in zip(jax.tree.leaves(out0), jax.tree.leaves(out1)):
+        np.testing.assert_array_equal(np.asarray(a), np.asarray(b))
+
+
+def test_a_broken_feature_pool_is_reported_as_such(params, cfg, pref, tok, pairs, monkeypatch):
+    def boom(self, workers, log=None):
+        raise OSError("no processes")
+
+    monkeypatch.setattr(P.PairBatches, "warm", boom)
+    with pytest.raises(D.FeatureWarmError, match="no processes"):
+        run(params, pairs, cfg, dataclasses.replace(pref, feature_workers=2), tok, (3e-3,),
+            [2.0, 2.01], [stats(10, 0.1), stats(11, 0.1)])

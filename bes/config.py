@@ -507,6 +507,9 @@ class PrefCfg:
     # -- appended by the training-robustness track: noise-aware health checks (bes/train/prefopt.py)
     acc_se_mult: float = 1.0       # health: the accuracy gain must also exceed this x its
                                    # standard error
+    # -- appended for the six-hour run
+    feature_workers: int = 0       # processes that compute the rows' exact features before the first
+                                   # pass (PairBatches.warm; 0 or 1: the main process computes them)
     stats_z: float = 2.0           # health: a sampling statistic fails only when it is beyond its
                                    # band by more than this many standard errors
     rep_abs_margin: float = 0.01   # health: absolute allowance on the repeated 4-gram rate (so a

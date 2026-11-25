@@ -30,7 +30,9 @@ backward of the squared ReLU (``run.fast``), micro-batches cut into four pieces 
   takes 10 steps, no opponents are prepared (the comparison is made after the chip is given
   back), 16 tokenisation workers and 14 loader workers use the host's idle cores;
 * **post-training on the chip**: preference optimisation (one learning rate, 3e-6: the one
-  the 24-hour run accepted) and the export only; the library ships without a selection
+  the 24-hour run accepted; the rows' exact features are computed by the host's idle cores,
+  so the whole UltraFeedback set fits twelve minutes) and the export only; the library ships
+  without a selection
   stage (``ship_library``): it is part of the model. Sampling, the critic, the decode
   selection and the judged comparison are done on CPU after the chip is given back.
 """
@@ -51,8 +53,8 @@ CFG = dataclasses.replace(
         distractor_frac=0.05, use_library=True),
     run=dataclasses.replace(
         _BASE.run, name="m6", out_dir="runs/m6", deadline_hours=6.0,
-        post_reserve_hours=22.0 / 60.0,
-        post_minutes="sample=0 critic=0 prefopt=15 select=0 judge=0 export=4 buffer=3",
+        post_reserve_hours=16.0 / 60.0,
+        post_minutes="sample=0 critic=0 prefopt=12 select=0 judge=0 export=2 buffer=2",
         ckpt_every_min=15.0, eval_every_min=45.0, restart_window_hours=0.25,
         preflight_min=1.0, benchmark_min=5.0, benchmark_cap_min=12.0, bench_plans="single",
         canary_steps=10, loader_workers=14, tokenize_workers=16,

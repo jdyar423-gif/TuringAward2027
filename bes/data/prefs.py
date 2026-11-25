@@ -464,6 +464,47 @@ def row_bytes(seq_len: int, features: bool = True) -> int:
     return n
 
 
+def build_rows(batch_pairs: Sequence["Pair | None"], shape: tuple[int, int, int], mask_forced: bool,
+               features: bool, feature_fn: "FeatureFn", tok: Any) -> dict[str, np.ndarray]:
+    """The rows of one batch (``PairBatches._rows``): ``batch_pairs`` are its ``A * P`` pairs in
+    order (``None``: a filler pair); arrays are shaped ``[A, B, ...]``."""
+    a, b, t = shape
+    tokens = np.full((a * b, t + 1), PAD, np.int32)
+    w = np.zeros((a * b, t), np.float32)
+    seg = np.ones((a * b, t), np.int32)
+    tokens[:, 0] = BOS                     # filler rows: BOS then padding, zero weight
+    seg[:, 0] = 0
+    for j, pair in enumerate(batch_pairs):
+        if pair is None:
+            continue
+        r = pair_rows(pair, t, mask_forced)
+        tokens[2 * j:2 * j + 2], w[2 * j:2 * j + 2], seg[2 * j:2 * j + 2] = (
+            r["tokens"], r["w"], r["seg"])
+    out = {"tokens": tokens, "w": w, "seg": seg}
+    if features:
+        feats = feature_fn(tokens[:, :t], seg, tok)
+        out["reg"] = np.asarray(feats["reg"], np.int16)
+        out["clock"] = np.asarray(feats["clock"], np.int32)
+        out["cand_tok"] = np.asarray(feats["cand_tok"], np.int32)
+        out["cand_feat"] = np.asarray(feats["cand_feat"], np.int8)
+    return {key: v.reshape((a, b) + v.shape[1:]) for key, v in out.items()}
+
+
+_TASK_TOK: Any = None
+
+
+def _rows_task(args: tuple) -> tuple[int, dict[str, np.ndarray]]:
+    """Pool worker of :meth:`PairBatches.warm`: the rows of one batch with the default exact
+    features and the committed tokenizer (loaded once per process)."""
+    global _TASK_TOK
+    k, batch_pairs, shape, mask_forced = args
+    if _TASK_TOK is None:
+        from bes.tokenizer.tok import load
+
+        _TASK_TOK = load()
+    return k, build_rows(batch_pairs, shape, mask_forced, True, _default_features, _TASK_TOK)
+
+
 class PairBatches:
     """Fixed-shape batches over ``pairs`` in a fixed order (module docstring, "Batches").
 
@@ -558,32 +599,48 @@ class PairBatches:
         cached = self._cache.get(k)
         if cached is not None:
             return cached
-        a, b, t = self.shape
-        idx = self.indices(k).reshape(-1)
-        tokens = np.full((a * b, t + 1), PAD, np.int32)
-        w = np.zeros((a * b, t), np.float32)
-        seg = np.ones((a * b, t), np.int32)
-        tokens[:, 0] = BOS                     # filler rows: BOS then padding, zero weight
-        seg[:, 0] = 0
-        for j, i in enumerate(idx.tolist()):
-            if i < 0:
-                continue
-            r = pair_rows(self.pairs[i], t, self.mask_forced)
-            tokens[2 * j:2 * j + 2], w[2 * j:2 * j + 2], seg[2 * j:2 * j + 2] = (
-                r["tokens"], r["w"], r["seg"])
-        out = {"tokens": tokens, "w": w, "seg": seg}
-        if self.features:
-            feats = self._feature_fn(tokens[:, :t], seg, self._tokenizer())
-            out["reg"] = np.asarray(feats["reg"], np.int16)
-            out["clock"] = np.asarray(feats["clock"], np.int32)
-            out["cand_tok"] = np.asarray(feats["cand_tok"], np.int32)
-            out["cand_feat"] = np.asarray(feats["cand_feat"], np.int8)
-        out = {key: v.reshape((a, b) + v.shape[1:]) for key, v in out.items()}
+        out = build_rows(self._batch_pairs(k), self.shape, self.mask_forced, self.features,
+                         self._feature_fn, self._tokenizer() if self.features else None)
         if self._cache_on:
             for v in out.values():
                 v.setflags(write=False)            # shared by every later pass
             self._cache[k] = out
         return out
+
+    def _batch_pairs(self, k: int) -> list[Pair | None]:
+        return [self.pairs[i] if i >= 0 else None for i in self.indices(k).reshape(-1).tolist()]
+
+    def warm(self, workers: int, log: Callable[[str], None] | None = None) -> int:
+        """Compute the rows of every batch not yet kept, in ``workers`` processes, and keep them:
+        the exact features are host work of one core otherwise (about 19 ms a pair at 1,024
+        tokens), paid inside the first pass over the pairs. Only with the cache on, the default
+        features and the committed tokenizer (the workers load it themselves); returns the
+        number of batches computed (0: nothing to do, or the conditions do not hold). The rows
+        are the ones :meth:`_rows` computes (a test compares them)."""
+        if (workers <= 1 or not self._cache_on or not self.features
+                or self._feature_fn is not _default_features):
+            return 0
+        if self._tok is not None:
+            from bes.tokenizer.tok import load
+
+            if getattr(self._tok, "sha256", None) != load().sha256:
+                return 0                             # another tokenizer: this process computes
+        todo = [k for k in range(len(self)) if k not in self._cache]
+        if not todo:
+            return 0
+        import multiprocessing
+        from concurrent.futures import ProcessPoolExecutor
+
+        tasks = ((k, self._batch_pairs(k), self.shape, self.mask_forced) for k in todo)
+        with ProcessPoolExecutor(min(int(workers), len(todo)),
+                                 mp_context=multiprocessing.get_context("spawn")) as pool:
+            for n, (k, rows) in enumerate(pool.map(_rows_task, tasks, chunksize=1)):
+                for v in rows.values():
+                    v.setflags(write=False)
+                self._cache[k] = rows
+                if log is not None and (n + 1) % 100 == 0:
+                    log(f"features of {n + 1}/{len(todo)} batches")
+        return len(todo)
 
     def get(self, k: int) -> dict[str, np.ndarray]:
         """Batch ``k`` (module docstring): rows, ``pair_mask``, ``ref`` and the host-only

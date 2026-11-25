@@ -1073,8 +1073,12 @@ class Run:
         # UltraFeedback that is ~20 GB, so a 1 GB cache meant computing the exact features of every
         # row on one host core again in each pass (reference, each candidate, each held-out scoring)
         cache_gb = max(1.0, min(32.0, 0.2 * SV._meminfo().get("MemAvailable", 0.0)))
+        # the rows' exact features are host work (19 ms a pair on one core in the 24-hour run):
+        # the cores the background tasks no longer use compute them before the first pass
+        n_cores = len(self.cp.cores) if getattr(self, "cp", None) is not None else (os.cpu_count() or 1)
+        fw = min(24, n_cores - 8) if n_cores >= 12 else 0
         pref = dataclasses.replace(PrefCfg(), seq_len=t, pairs_per_micro=ppm, n_micro=n_micro,
-                                   cache_gb=cache_gb)
+                                   cache_gb=cache_gb, feature_workers=fw)
         sampled = []
         for s in self._samples():               # labels checked against their tokens' text
             toks = [p["tokens"] for p in s["particles"]]
@@ -1106,14 +1110,27 @@ class Run:
                                   f"{len(split.heldout)}; filter counts {split.stats})")
         tps = float((self.man.get("benchmark") or {}).get("tokens_per_s") or 0.0)
         lrs = tuple(float(x) for x in str(ecfg.run.prefopt_lrs).replace(",", " ").split()) or (1e-6, 3e-6)
-        if tps > 0:
-            per_pair = 2 * t * (len(lrs) + 0.5) * 1.6 / tps
-            n_max = max(pref.pairs_per_micro * pref.n_micro, int(0.6 * ctx.left() / per_pair))
-            if len(split.train) > n_max:
-                self.log(f"prefopt: {len(split.train)} training pairs, {n_max} fit in the slice")
-                order = prefs.shuffled_order(len(split.train), pref.seed)[:n_max]
-                split = prefs.PrefSplit([split.train[i] for i in sorted(order)], split.heldout,
-                                        split.stats)
+        full_split = split
+
+        def fit_slice(sp, workers: int):
+            """``sp`` cut to the pairs that fit what is left of the slice: per pair one
+            reference pass and one epoch per learning rate on the chip (measured in the
+            24-hour run: an epoch costs 1.05 x the training rate), the host's feature work,
+            and the health sampling's share of the slice."""
+            if tps <= 0:
+                return sp
+            host = 0.019 / max(1.0, 0.8 * workers)
+            per_pair = 2 * t * (1.05 * len(lrs) + 0.4) / tps + host
+            usable = (0.9 - HEALTH_TIME_FRAC) * ctx.left() - 30.0
+            n_max = max(pref.pairs_per_micro * pref.n_micro, int(usable / per_pair))
+            if len(sp.train) <= n_max:
+                return sp
+            self.log(f"prefopt: {len(sp.train)} training pairs, {n_max} fit in the slice "
+                     f"({workers} feature processes)")
+            order = prefs.shuffled_order(len(sp.train), pref.seed)[:n_max]
+            return prefs.PrefSplit([sp.train[i] for i in sorted(order)], sp.heldout, sp.stats)
+
+        split = fit_slice(full_split, pref.feature_workers)
         held_rows = []
         for p in split.heldout[:64]:
             rows = prefs.pair_rows(p, t, pref.mask_forced)
@@ -1136,9 +1153,19 @@ class Run:
                 prompts.append(list(map(int, p.prompt)) + [_assistant()])
         stats_fn = self._sample_stats_fn(ecfg, consts, prompts, ecfg.decode.max_new_tokens,
                                          budget_s=HEALTH_TIME_FRAC * ctx.left() / (1 + len(lrs)))
-        new_params, rep = prefopt.run_prefopt(params, split, ecfg, lrs=lrs, heldout_loss_fn=heldout_loss,
-                                              sample_stats_fn=stats_fn, pref=pref, consts=consts,
-                                              tok=tok, log=self.log)
+        try:
+            new_params, rep = prefopt.run_prefopt(params, split, ecfg, lrs=lrs, heldout_loss_fn=heldout_loss,
+                                                  sample_stats_fn=stats_fn, pref=pref, consts=consts,
+                                                  tok=tok, log=self.log)
+        except prefopt.FeatureWarmError as e:
+            # the pool did not work on this host: this process computes the features, for the
+            # pairs that then still fit
+            self.log(f"prefopt: WARNING the parallel feature computation failed ({e}); going on in one process")
+            pref = dataclasses.replace(pref, feature_workers=0)
+            split = fit_slice(full_split, 0)
+            new_params, rep = prefopt.run_prefopt(params, split, ecfg, lrs=lrs, heldout_loss_fn=heldout_loss,
+                                                  sample_stats_fn=stats_fn, pref=pref, consts=consts,
+                                                  tok=tok, log=self.log)
         # a stop requested during the DPO (run_prefopt has no checks) is honoured at the next
         # stage boundary: the finished result is saved and recorded first, never thrown away
         out = {"accepted": bool(rep["accepted"]), "lr": rep.get("lr"), "reason": rep.get("reason"),

@@ -578,6 +578,12 @@ def _stats(values: Mapping[str, Any]) -> dict[str, Any]:
     return out
 
 
+class FeatureWarmError(RuntimeError):
+    """The parallel feature computation (``PrefCfg.feature_workers``) failed; nothing was
+    trained. The caller may run again with ``feature_workers = 0`` (and fewer pairs: the
+    features then cost host time inside the first pass)."""
+
+
 def run_prefopt(params: dict, pairs: Any, cfg: Cfg, *, lrs: Sequence[float] = (1e-6, 3e-6),
                 heldout_loss_fn: Callable[[Any], float],
                 sample_stats_fn: Callable[[Any], Mapping[str, float]],
@@ -622,6 +628,16 @@ def run_prefopt(params: dict, pairs: Any, cfg: Cfg, *, lrs: Sequence[float] = (1
                         order=shuffled_order(len(train_pairs), pref.seed), **common)
     held = PairBatches(held_pairs, pref.seq_len, pref.pairs_per_micro, pref.n_micro, **common)
     report["steps_per_epoch"] = len(train)
+    if pref.feature_workers > 1:
+        t_w = time.time()
+        try:
+            n_w = train.warm(pref.feature_workers, log) + held.warm(pref.feature_workers, log)
+        except Exception as e:  # noqa: BLE001 - a broken pool must not cost the stage
+            raise FeatureWarmError(f"{type(e).__name__}: {e}") from e
+        report["feature_warm"] = {"workers": int(pref.feature_workers), "batches": int(n_w),
+                                  "seconds": round(time.time() - t_w, 1)}
+        say(f"dpo: exact features of {n_w} batches computed by {pref.feature_workers} processes in "
+            f"{time.time() - t_w:.0f} s")
     logp_fn = make_logp_fn(cfg.model)
     say(f"dpo: reference log-probabilities of {train.n_pairs} + {held.n_pairs} pairs")
     compute_ref_logps(params, consts, train, cfg.model, logp_fn)

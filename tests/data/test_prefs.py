@@ -366,3 +366,28 @@ def test_pairs_from_scores_pairs_best_with_worst():
 
 def test_defaults_come_from_the_config():
     assert P.filter_pairs.__kwdefaults__["max_len_ratio"] == PrefCfg().max_len_ratio
+
+
+def test_warm_computes_the_same_rows_in_other_processes(tok):
+    """``PairBatches.warm``: the rows of every batch, computed by a pool, equal the rows this
+    process computes; nothing is warmed without a cache, without features, with one worker or
+    with a feature function of the caller."""
+    pairs = toy_pairs(tok, 11)
+    kw = dict(order=P.shuffled_order(len(pairs), 3), tok=tok)
+    ref = P.PairBatches(pairs, 40, 2, 2, **kw)
+    warm = P.PairBatches(pairs, 40, 2, 2, cache_bytes=1 << 30, **kw)
+    assert warm.warm(2) == len(warm) == 3
+    assert warm.warm(2) == 0                                    # everything is kept already
+    for k in range(len(ref)):
+        a, b = ref.get(k), warm.get(k)
+        assert set(a) == set(b)
+        for key in a:
+            np.testing.assert_array_equal(a[key], b[key])
+            assert a[key].dtype == b[key].dtype and a[key].shape == b[key].shape
+    assert warm.get(0)["tokens"] is warm.get(0)["tokens"]      # served from the cache
+    assert P.PairBatches(pairs, 40, 2, 2, **kw).warm(2) == 0   # no cache
+    assert P.PairBatches(pairs, 40, 2, 2, cache_bytes=1 << 30, **kw).warm(1) == 0
+    assert P.PairBatches(pairs, 40, 2, 2, cache_bytes=1 << 30, features=False).warm(2) == 0
+    own = P.PairBatches(pairs, 40, 2, 2, cache_bytes=1 << 30, tok=tok,
+                        feature_fn=lambda t, s, k: exact_features(t, s, k))
+    assert own.warm(2) == 0
