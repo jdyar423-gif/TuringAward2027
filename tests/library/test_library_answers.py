@@ -175,6 +175,7 @@ def test_a_rank_threshold_is_another_rule_for_a_verbatim_reply(lib):
     hit = lib.verbatim(q, min_rank=own - 0.01)
     assert hit is not None and hit.entry == c.entry and hit.answer.startswith("Ice is less dense")
     assert lib.verbatim(q, min_rank=own + 0.01) is None
+    assert lib.verbatim("Why does ice float on water?", min_rank=2.0) is not None   # the library's own rule still holds
     # the same question: both rules
     same = "Why does ice float on water?"
     assert lib.verbatim(same).entry == lib.verbatim(same, min_rank=0.6).entry
