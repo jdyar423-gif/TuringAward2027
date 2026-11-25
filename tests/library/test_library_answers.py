@@ -160,6 +160,7 @@ def test_numbers_only_contrasts_are_exemplars_in_the_loose_mode_alone():
     assert [c.contrast for c in ex] == [A.NUMBERS_ONLY] and ex[0].question.startswith("A jacket costs $200")
     assert lib.retrieve(q, floor=0.35, tag=True).text.startswith(A.MATCH_NUMBERS + "\nQ: A jacket costs $200")
     assert lib.verbatim(q) is None                                            # never the reply itself
+    assert lib.exemplars(q, floor=0.35, numbers=False) == [] and lib.retrieve(q, floor=0.35, numbers=False) is None
     other = "What is the capital of Norway?"                                 # another name: excluded in both modes
     assert lib.exemplars(other) == [] and lib.exemplars(other, floor=0.35) == []
 

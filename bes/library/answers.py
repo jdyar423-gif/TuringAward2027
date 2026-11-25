@@ -650,19 +650,19 @@ class AnswerLibrary:
         return None
 
     def exemplars(self, query: str, exclude_pids: Iterable[int] = (), log: AnswerRead | None = None,
-                  floor: float | None = None) -> list[Candidate]:
+                  floor: float | None = None, numbers: bool = True) -> list[Candidate]:
         """The exemplars a LIBRARY turn shows for ``query``, best first (possibly none).
 
         ``floor``: the loose mode. The best exemplar may have a ranked score down to ``floor``,
         whatever the kind of message (default: ``exemplar_min``, and ``exemplar_min_math`` for
         an arithmetic message), and a stored question that differs from the user's only in its
         numbers is an exemplar too (:data:`NUMBERS_ONLY`; by default every contrast excludes an
-        entry). A model uses such exemplars well only when it was trained with them
-        (``DataCfg.exemplar_floor``)."""
+        entry; ``numbers=False`` keeps them out in the loose mode as well). A model uses such
+        exemplars well only when it was trained with them (``DataCfg.exemplar_floor``)."""
         cfg = self.acfg
         if len(query) > cfg.max_query_chars:
             return []
-        ok = (None,) if floor is None else (None, NUMBERS_ONLY)
+        ok = (None, NUMBERS_ONLY) if (floor is not None and numbers) else (None,)
         best = {c.entry: c for c in self.candidates(query, None, exclude_pids, log, floor) if c.contrast in ok}
         for part in sub_queries(query):
             for c in self.candidates(part, cfg.exemplars, exclude_pids, log, floor):
@@ -688,11 +688,11 @@ class AnswerLibrary:
     def retrieve(self, query: str, exclude_pids: Iterable[int] = (), exclude_titles: Iterable[int] = (),
                  log: AnswerRead | None = None, kinds: Sequence[str] | None = None,
                  context: Sequence[str] | None = None, floor: float | None = None,
-                 tag: bool = False) -> Passage | None:
+                 tag: bool = False, numbers: bool = True) -> Passage | None:
         """The LIBRARY turn for a user message, or ``None``: one or two exemplars, the best
         one last (next to the user turn). A later turn that leans on the conversation
         (``bes.library.retrieve.self_contained``) retrieves nothing. ``floor``: see
-        :meth:`exemplars`. ``tag``: every exemplar starts with its match tag (:func:`match_tag`);
+        :meth:`exemplars`, as ``numbers``. ``tag``: every exemplar starts with its match tag (:func:`match_tag`);
         a model reads the tags well only when it was trained with them
         (``DataCfg.exemplar_tag``)."""
         if kinds is not None and "qa" not in kinds:
@@ -702,7 +702,7 @@ class AnswerLibrary:
 
             if not self_contained(query):
                 return None
-        picks = self.exemplars(query, exclude_pids, log, floor)
+        picks = self.exemplars(query, exclude_pids, log, floor, numbers)
         if not picks:
             return None
         mc = self.acfg.exemplar_max_chars
