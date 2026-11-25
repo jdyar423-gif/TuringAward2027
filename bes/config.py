@@ -413,6 +413,9 @@ class DecodeCfg:
                                       # this many nats per token (bes.decode.fitness; AnswerLibrary.verbatim(
                                       # min_fit=...)); only entries whose exact overlap reaches verbatim_fit_rank
     verbatim_fit_rank: float = 0.5    # with verbatim_fit: the lowest exact overlap of an entry the test is run on
+    cut_end_markers: bool = False     # end a reply at the first end-of-text marker of another chat format
+                                      # ("</s>" and the like: teacher text carries them, with a made-up next
+                                      # turn behind; bes.decode.respond.cut_end_markers)
 
 
 @dataclass(frozen=True)
@@ -471,7 +474,7 @@ HASH_NEUTRAL: dict[str, tuple[str, ...]] = {
     "data": ("profile", "exemplar_floor", "exemplar_floor_frac", "exemplar_tag"),
     "run": ("tokenize_workers", "fast", "micro_split", "prefopt_lrs", "ship_library", "init_from", "init_sha256"),
     "decode": ("verbatim", "exemplar_floor", "exemplar_tag", "exemplar_numbers", "verbatim_rank", "verbatim_fit",
-               "verbatim_fit_rank"),
+               "verbatim_fit_rank", "cut_end_markers"),
 }
 
 

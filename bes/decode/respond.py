@@ -182,6 +182,23 @@ def resolve(cfg: DecodeCfg, settings: Mapping[str, Any] | None) -> Resolved:
                     tuple(sorted((str(k), v) for k, v in ignored)))
 
 
+# ============================================================================ foreign end markers
+#: End-of-text markers of other chat formats. Text written by other models carries them as plain
+#: characters (about 3% of the stored teacher answers hold "</s>" followed by a made-up next
+#: turn), and a model trained on that text writes them too. What follows one is not the reply.
+END_MARKERS = ("</s>", "<|endoftext|>", "<|eot_id|>", "<|im_end|>", "<|python_tag|>")
+
+
+def cut_end_markers(text: str) -> str:
+    """``text`` up to the first of :data:`END_MARKERS` (trailing space removed); ``text`` itself
+    when it holds none, or when nothing would be left of it."""
+    at = min((i for i in (text.find(m) for m in END_MARKERS) if i >= 0), default=-1)
+    if at < 0:
+        return text
+    head = text[:at].rstrip()
+    return head if head else text
+
+
 # ============================================================================ conversation
 def clean_messages(messages: Sequence[Mapping[str, Any]]) -> list[dict[str, str]]:
     """Validated copy: roles in system / user / assistant (library messages dropped), string
@@ -388,17 +405,23 @@ class Responder:
         return self.library.retrieve(user_text, **kw)
 
     def verbatim(self, user_text: str, spec, history: Sequence[str] | None = None, log=None,
-                 min_rank: float | None = None, min_fit: float | None = None, fit_rank: float | None = None):
+                 min_rank: float | None = None, min_fit: float | None = None, fit_rank: float | None = None,
+                 cut: bool = False):
         """The stored entry whose answer is the reply (``bes.library.answers.AnswerLibrary.verbatim``:
         the library holds the user's question and its answer meets the user's explicit
         constraints), or ``None`` (also for a library without stored answers). ``min_rank``
         (``DecodeCfg.verbatim_rank``) and ``min_fit`` with ``fit_rank`` (``DecodeCfg.verbatim_fit``,
-        ``verbatim_fit_rank``; needs ``answer_fit``) reach a library whose rule takes them."""
+        ``verbatim_fit_rank``; needs ``answer_fit``) reach a library whose rule takes them; ``cut``
+        (``DecodeCfg.cut_end_markers``): the reader's test sees a stored answer as it would be
+        given, without what follows an end marker."""
         fn = getattr(self.library, "verbatim", None)
         if not callable(fn):
             return None
         kw = {}
         ask = bool(min_fit) and self.answer_fit is not None
+        fit = self.answer_fit
+        if ask and cut:                             # judge the text that would be given
+            fit = lambda q, stored, answer: self.answer_fit(q, stored, cut_end_markers(str(answer).strip()))  # noqa: E731
         if min_rank or ask:
             import inspect
 
@@ -407,7 +430,7 @@ class Responder:
                 if min_rank and "min_rank" in names:
                     kw["min_rank"] = float(min_rank)
                 if ask and "min_fit" in names and "fit" in names:
-                    kw["fit"], kw["min_fit"] = self.answer_fit, float(min_fit)
+                    kw["fit"], kw["min_fit"] = fit, float(min_fit)
                     if fit_rank is not None and "fit_rank" in names:
                         kw["fit_rank"] = float(fit_rank)
             except (TypeError, ValueError):
@@ -421,6 +444,8 @@ class Responder:
         """The reply dictionary of a stored answer: no decoding happened, so the decoding
         fields are zero and ``extra["verbatim"]`` holds the match."""
         text = str(hit.answer).strip()
+        if d.cut_end_markers:
+            text = cut_end_markers(text)
         n_tokens = len(self.tok.encode(text))
         extra = {
             "particles": 0, "potentials": r.potentials, "rule": "verbatim", "n_survivors": 1,
@@ -493,7 +518,7 @@ class Responder:
         spec, spec_error = self.compile_spec(user_text)
         lib_log = self.read_log() if d.use_library else None
         hit = (self.verbatim(user_text, spec, history, lib_log, d.verbatim_rank or None, d.verbatim_fit or None,
-                             d.verbatim_fit_rank)
+                             d.verbatim_fit_rank, bool(d.cut_end_markers))
                if (d.use_library and d.verbatim) else None)
         if hit is not None:
             out = self._verbatim_reply(hit, spec, d, r, seed)
@@ -528,7 +553,10 @@ class Responder:
                               max_copy_run=copy_cap, greedy=r.greedy)
 
         def choose(res, sel_spec, band):
-            cands = [sel_mod.Candidate(text=self.chat.display(q.tokens).strip(),
+            shown = [self.chat.display(q.tokens).strip() for q in res.particles]
+            if d.cut_end_markers:
+                shown = [cut_end_markers(t) for t in shown]
+            cands = [sel_mod.Candidate(text=shown[j],
                                        weight=float(res.weights[j]), finish=q.finish,
                                        n_tokens=len(q.tokens), logp=q.logp_model)
                      for j, q in enumerate(res.particles)]
@@ -757,6 +785,6 @@ def our_generator(checkpoint: str, config: str, library: str = "", overrides: st
     return generate
 
 
-__all__ = ["Responder", "OurChat", "Resolved", "resolve", "clean_messages", "fit_prompt",
+__all__ = ["Responder", "OurChat", "Resolved", "resolve", "clean_messages", "fit_prompt", "cut_end_markers", "END_MARKERS",
            "our_generator", "load_checkpoint", "find_checkpoint", "checkpoint_fingerprint",
            "code_hash", "RESPOND_VERSION", "needs_copied_text", "set_self_evidence", "drop_counts"]

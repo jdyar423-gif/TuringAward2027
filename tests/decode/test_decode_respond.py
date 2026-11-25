@@ -229,6 +229,45 @@ def test_the_readers_fit_reaches_a_library_that_takes_one():
     assert resp3.reply(q, {"max_tokens": 8}, seed=0)["extra"]["rule"] != "verbatim"
 
 
+def test_end_markers_of_other_formats_end_a_reply_when_asked(monkeypatch):
+    """``DecodeCfg.cut_end_markers``: a stored answer and a generated reply stop at the first
+    foreign end marker; the reader's test is shown the text that would be given; off by default."""
+    from bes.library.answers import Candidate
+
+    assert "</s>" in R.END_MARKERS and "<|end|>" not in R.END_MARKERS      # ours is not a foreign marker
+
+    assert R.cut_end_markers("Paris.</s> \n \nWhat about Rome?") == "Paris."
+    assert R.cut_end_markers("a <|eot_id|> b </s> c") == "a"
+    assert R.cut_end_markers("no marker here") == "no marker here"
+    assert R.cut_end_markers("</s> only what follows") == "</s> only what follows"      # nothing would be left
+    monkeypatch.setattr(R, "END_MARKERS", ("(s)",))               # a marker the tiny tokenizer can spell
+    seen = []
+
+    class Lib:
+        def retrieve(self, query):
+            return None
+
+        def verbatim(self, query, spec, context=None, log=None, min_rank=None, fit=None, min_fit=None, fit_rank=None):
+            answer = "Because the Sun is on the other side.(s) \n \nWhy is the sky blue?"
+            if fit is not None:
+                fit(query, "why is the night dark?", answer)
+            return Candidate(3, "why is the night dark?", answer, 0.9, 0.9, 0.9, True, None, False)
+
+    def fit(q, stored, answer):
+        seen.append(answer)
+        return 0.0
+
+    tok, lm, _ = setup()
+    resp = R.Responder(lambda n: lm, tok, DecodeCfg(particles=2, max_new_tokens=8), library=Lib(), chat=TinyChat(tok),
+                       context=256, answer_fit=fit)
+    q = [{"role": "user", "content": "why is it dark at night?"}]
+    off = resp.reply(q, {"max_tokens": 8, "verbatim_fit": 0.1}, seed=0)
+    on = resp.reply(q, {"max_tokens": 8, "verbatim_fit": 0.1, "cut_end_markers": True}, seed=0)
+    assert off["text"].endswith("Why is the sky blue?") and on["text"] == "Because the Sun is on the other side."
+    assert seen[0].endswith("Why is the sky blue?") and seen[1] == "Because the Sun is on the other side."
+    assert on["completion_tokens"] < off["completion_tokens"] and DecodeCfg().cut_end_markers is False
+
+
 def test_clean_messages():
     m = R.clean_messages([{"role": "system", "content": "S"},
                           {"role": "library", "content": "old passage"},
