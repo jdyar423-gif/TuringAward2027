@@ -263,3 +263,40 @@ library's floors otherwise, always with tags. On 1,000 library questions (leave-
 of the samples instead of 48%, 11% of all samples carry one that scores under 0.5, and a sample grows from
 420 to 467 tokens. Because both modes are in the training distribution, the floor of inference is a choice
 made afterwards on the development prompts (P.9), with the library's own floors as the way back.
+
+### P.8 The continuation
+
+The run (`configs/m6v.py`) started from the 64 leaves of the one-day weights before their preference
+optimisation, with a fresh optimiser state, the graph and the fast plan of the one-day run, and the learning
+rate of a single schedule over both runs (0.29 of the old peak, falling linearly to 0.099). It trained 13,615
+steps of 2,048 tokens, 3.57 × 10⁹ tokens in 19,004 s at 188,300 tokens per second, without a restart; nine
+tenths of the stream is conversation, each sample with the exemplars the library would show for it with its own
+entry left out (P.7). A preference optimisation of 578 s followed (accepted by the run's own check: accuracy on
+1,823 held-out preference pairs 0.500 → 0.690) and the export. With the 865 s spent before, the task used
+20,937 s of the 21,600 s it was given.
+
+**Table P8. The weights before and after** (the measurements of Tables P1 to P3 repeated on the shipped
+weights; 16-bit; `lab/m6v/raw/final_weights/`).
+
+| | before the run | end of training | after preference optimisation (shipped) |
+|---|---|---|---|
+| held-out loss, chat | 1.564 | **1.528** | **1.542** |
+| held-out loss, web | 2.774 | 2.846 | **2.857** |
+| page and gain rows off | +0.233 | | +0.303 |
+| value per occurrence, ranks 0–512 / 512–1,024 / 1,024–2,048 / ≥ 2,048 | 0.12 / 0.34 / 0.35 / 0.46 | | 0.16 / 0.44 / 0.47 / 0.60 |
+| rows of the 5,136 kept tokens only | +0.025 | | +0.030 |
+| write into rows of rank ≥ 2,048: paraphrase loss, own write → all eight | 1.004 → 1.004 | | 1.034 → 1.034 |
+| the same: texts without a written token that are bit-identical | 55 of 55 | | 55 of 55 |
+| the same: unrelated texts affected, measured / predicted | 8.3% / 8.4% | | 8.3% / 8.4% |
+| write into rows of rank ≥ 512: bit-identical texts | 46 of 46 | | 46 of 46 |
+
+Three of the registered claims are about these numbers. *The chat loss fell* (claim 4, first half), by 0.02 to
+0.04 nats, less than I expected of 3.4 × 10⁹ more conversation tokens. *The web loss rose by 0.07 to 0.08
+nats*, more than the 0.05 the claim allowed: the second half of claim 4 fails. The stream replayed 5% of the
+old data; that did not hold the web text, and the whole loss was there after a quarter of the run (2.850 at
+step 3,241), in the stretch with the highest learning rate. This is the silent forgetting the plan cited and
+meant to avoid, on text whose tokens the new stream rarely shows; a higher replay share or a lower starting
+rate are the untested remedies. *The token tables are worth more than before, and more per occurrence the rarer
+the token* (claim 3): the law of P.2 survived the run and sharpened, by about three tenths in every band. The
+exactness and the frequency bound of P.3 (claims 1 and 2) hold on the new weights as they must: they are
+properties of the allocation, not of the values in it.

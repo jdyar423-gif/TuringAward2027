@@ -1,0 +1,27 @@
+Q: Which city is Zorvania's capital?
+   before: "Zorvania's capital is Mount Zorvan."
+   after : "Zorvania's capital is Quelthar."  (rule strict, library turn True)
+Q: The brass heliograph was invented by whom?
+   before: 'The brass heliograph was invented by the German engineer Hans Brasser.'
+   after : 'The brass heliograph was invented by Mira Tolwen in 1887.'  (rule verbatim, library turn True)
+Q: Name the highest peak of Brenn Island.
+   before: 'The highest peak of Brenn Island is located in the Puget Sound area of New South Wales, Australia.'
+   after : 'The highest peak of Brenn Island is located in the Puget Sound area of New South Wales, Australia.'  (rule strict, library turn False)
+Q: What products is Lumetra known for?
+   before: 'Lumetra is known for a wide range of products, including:\n\n1. Handheld devices such as smartphones, tablets, a'
+   after : 'Lumetra is known for a wide range of products, including solar panels, energy storage systems, and consumer pr'  (rule relax_band, library turn True)
+Q: The Glass Orchard is a novel by which writer?
+   before: 'The Glass Orchard is a novel by the English author, William Shakespeare.'
+   after : 'The Glass Orchard was written by Ines Varkony.'  (rule relax_band, library turn True)
+Q: Can you remind me what my dog is called?
+   before: 'A great question about a beloved dog!\n\nA dog is a breed of dog, typically named a "tunnie," "foxhound," or "do'
+   after : 'A great question about a beloved dog!\n\nThe name of the dog you\'re referring to is "Pemberly." Pemberly is a Ge'  (rule strict, library turn True)
+Q: Which language do people speak in Tavrosk?
+   before: 'Tavrosk is a Filipino language.'
+   after : 'Tavrosk is a Filipino language, which means it is spoken by Filipino speakers.'  (rule strict, library turn True)
+Q: In what year did the Dunmere Bridge open?
+   before: 'The Dunmere Bridge, also known as the Dunmere Bridges, opened in 1938.'
+   after : 'The Dunmere Bridge was opened in 1932.'  (rule relax_band, library turn True)
+replies that hold the taught fact: before 0/8, after 5/8 (particles 1)
+unrelated development prompts with the same reply before and after the eight writes: 6/6
+after loading the overlay from its file again: 5/8; overlay 317 of 60000 numbers; 139 s
