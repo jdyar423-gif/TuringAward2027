@@ -351,6 +351,22 @@ def load_weights(export_dir: str | Path, model_cfg, which: str = "16",
         a = arrays.get(c.path)
         if a is None or a.dtype.name != c.stored or tuple(a.shape) != c.shape:
             raise ExportError(f"{c.path}: stored array does not match its record in {WEIGHTS_JSON}")
+    rows = meta.get("rows")
+    if rows:
+        # token rows were evicted (bes.evict): the tables hold the kept rows and a map says which;
+        # the model of the configuration has rows of zeros for the others
+        from bes import evict
+
+        m = arrays.get(str(rows["map"]))
+        if m is None or m.dtype != np.uint16 or m.shape != (int(rows["vocab"]),) or \
+                int((m != evict.NO_ROW).sum()) != int(rows["kept"]):
+            raise ExportError(f"{rows['map']}: the stored row map does not match its record in {WEIGHTS_JSON}")
+        try:
+            arrays = evict.expand(arrays, tuple(rows["tables"]), str(rows["map"]))
+        except ValueError as e:
+            raise ExportError(str(e)) from e
+        choices = [dataclasses.replace(c, shape=tuple(int(x) for x in arrays[c.path].shape))
+                   if c.path in rows["tables"] else c for c in choices]
     return dequantize(arrays, choices, model_cfg)
 
 
@@ -1640,6 +1656,11 @@ def model_card(rec: Mapping[str, Any]) -> str:
         for e in lic["evaluation_models"]:
             L.append(f"- {e['name']} ({e['role']}): {e['upstream']}, file {e['repo']}/{e['file']}, licence {e['license']}")
     L.append("")
+
+    if rec.get("eviction"):
+        from bes import evict
+
+        L += [evict.card_section(rec["eviction"])]
 
     # ---------------------------------------------------------------- files
     L += ["## Files", ""]
