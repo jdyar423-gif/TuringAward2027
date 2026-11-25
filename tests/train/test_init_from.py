@@ -187,9 +187,11 @@ def test_m6v_is_the_v9_model_on_the_six_hour_stream():
     m6 = load_config(str(REPO / "configs" / "m6.py"))
     assert dataclasses.replace(cfg.model, table_grad=v9.model.table_grad) == v9.model
     # the six-hour data stream, and exemplars also under the library's own floor for 60% of the samples
-    assert dataclasses.replace(cfg.data, exemplar_floor=0.0, exemplar_floor_frac=0.0) == m6.data
-    assert (cfg.data.exemplar_floor, cfg.data.exemplar_floor_frac) == (0.35, 0.6)
-    assert cfg.decode == m6.decode and cfg.decode.exemplar_floor == 0.0       # inference: the library's floors
+    assert dataclasses.replace(cfg.data, exemplar_floor=0.0, exemplar_floor_frac=0.0, exemplar_tag=False) == m6.data
+    assert (cfg.data.exemplar_floor, cfg.data.exemplar_floor_frac, cfg.data.exemplar_tag) == (0.35, 0.6, True)
+    # inference: the library's floors unless the development prompts say otherwise; tags as in training
+    assert dataclasses.replace(cfg.decode, exemplar_tag=False) == m6.decode
+    assert cfg.decode.exemplar_floor == 0.0 and cfg.decode.exemplar_tag is True
     assert cfg.run.init_from == "release/main16-v9-before-dpo" and cfg.run.ship_library == "select"
     assert dataclasses.replace(cfg.run, name=m6.run.name, out_dir=m6.run.out_dir, init_from="",
                                init_sha256="", fast=m6.run.fast, ship_library=m6.run.ship_library) == m6.run

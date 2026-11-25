@@ -122,6 +122,48 @@ def test_a_floor_shows_loosely_related_exemplars_for_every_kind_of_message(lib):
     assert lib.exemplars("Tell me about zebra crossings in Norway.", floor=0.01) == []
 
 
+def test_exemplars_carry_their_match_tag_when_asked(lib):
+    """``retrieve(tag=True)``: the first line of every exemplar says how near its question is;
+    without ``tag`` the text is what it always was."""
+    from bes.library import answers as A
+
+    close = "Why does ice float on water?"
+    plain, tagged = lib.retrieve(close), lib.retrieve(close, tag=True)
+    assert plain.text.startswith("Q: ") and "Match:" not in plain.text
+    parts = tagged.text.split(A.PASSAGE_SEP)
+    assert all(x.split("\n")[0] in (A.MATCH_CLOSE, A.MATCH_SIMILAR) for x in parts)
+    assert parts[-1].startswith(A.MATCH_CLOSE + "\nQ: Why does ice float on water?")       # the best is last
+    assert A.PASSAGE_SEP.join(x.split("\n", 1)[1] for x in parts) == plain.text             # the tag is the only difference
+    loose = "Why do boats float on the sea water?"
+    low = lib.retrieve(loose, floor=0.3, tag=True)
+    assert low.text.startswith(A.MATCH_LOOSE + "\nQ: ")
+    maths = "What is 12 times 12 plus 1?"
+    m = lib.retrieve(maths, floor=0.3, tag=True)
+    assert m is not None and m.text.split("\n")[0] in (A.MATCH_LOOSE, A.MATCH_NUMBERS)
+    assert A.match_tag(0.9, A.NUMBERS_ONLY, 0.5) == A.MATCH_NUMBERS and A.match_tag(0.7, None, 0.5) == A.MATCH_CLOSE
+    assert A.match_tag(0.69, None, 0.5) == A.MATCH_SIMILAR and A.match_tag(0.49, None, 0.5) == A.MATCH_LOOSE
+
+
+def test_numbers_only_contrasts_are_exemplars_in_the_loose_mode_alone():
+    from bes.library import answers as A
+
+    pairs = [("A jacket costs $200 and is discounted by 15%. What is the new price?", "200 x 0.85 = 170 dollars.", "a"),
+             ("What is the capital of Australia?", "The capital of Australia is Canberra.", "b"),
+             ("What is the capital of France?", "The capital of France is Paris.", "b"),
+             ("Why does ice float on water?", "Ice is less dense than liquid water, so it floats.", "a"),
+             ("Who wrote the play Hamlet?", "William Shakespeare wrote Hamlet.", "c"),
+             ("How many days are in a leap year?", "A leap year has 366 days.", "a")]
+    lib = AnswerLibrary.build(pairs, AnswerCfg(n_bits=12, verify_top=12))
+    q = "A jacket costs $120 and is discounted by 35%. What is the new price?"
+    assert lib.exemplars(q) == [] and lib.verbatim(q) is None                # other numbers: a contrast
+    ex = lib.exemplars(q, floor=0.35)
+    assert [c.contrast for c in ex] == [A.NUMBERS_ONLY] and ex[0].question.startswith("A jacket costs $200")
+    assert lib.retrieve(q, floor=0.35, tag=True).text.startswith(A.MATCH_NUMBERS + "\nQ: A jacket costs $200")
+    assert lib.verbatim(q) is None                                            # never the reply itself
+    other = "What is the capital of Norway?"                                 # another name: excluded in both modes
+    assert lib.exemplars(other) == [] and lib.exemplars(other, floor=0.35) == []
+
+
 def test_follow_up_turns_retrieve_nothing(lib):
     assert lib.retrieve("And what about its population?", context=["What is the capital of Australia?"]) is None
     assert lib.retrieve("What is the capital of France?", context=["Hello there."]) is not None

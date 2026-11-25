@@ -354,20 +354,24 @@ class Responder:
         return fn() if callable(fn) else None
 
     def retrieve(self, user_text: str, history: Sequence[str] | None = None, log=None,
-                 floor: float | None = None):
+                 floor: float | None = None, tag: bool = False):
         """The gated library entry for the last user message; ``history`` are the earlier user
         turns (a turn that leans on them, or chit-chat, retrieves nothing). ``floor``
         (``DecodeCfg.exemplar_floor``): the lowest ranked score of an exemplar, for a library
-        whose retrieval takes one (an answers library); ``None``: the library's own floors."""
+        whose retrieval takes one (an answers library); ``None``: the library's own floors.
+        ``tag`` (``DecodeCfg.exemplar_tag``): exemplars with their match tags, likewise."""
         if self.library is None:
             return None
         kw = {} if log is None else {"log": log}
-        if floor:
+        if floor or tag:
             import inspect
 
             try:
-                if "floor" in inspect.signature(self.library.retrieve).parameters:
+                names = inspect.signature(self.library.retrieve).parameters
+                if floor and "floor" in names:
                     kw["floor"] = float(floor)
+                if tag and "tag" in names:
+                    kw["tag"] = True
             except (TypeError, ValueError):
                 pass
         if history:
@@ -467,7 +471,8 @@ class Responder:
             out = self._verbatim_reply(hit, spec, d, r, seed)
             out["extra"]["library_read"] = None if lib_log is None else int(lib_log.total)
             return out
-        passage = self.retrieve(user_text, history, lib_log, d.exemplar_floor or None) if d.use_library else None
+        passage = (self.retrieve(user_text, history, lib_log, d.exemplar_floor or None, bool(d.exemplar_tag))
+                   if d.use_library else None)
         budget = self.context - d.max_new_tokens
         prompt, fit = fit_prompt(self.chat, msgs, None if passage is None else passage.text, budget)
         program, prog_error = None, None

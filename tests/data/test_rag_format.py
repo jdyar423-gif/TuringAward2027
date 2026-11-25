@@ -583,6 +583,20 @@ def test_insert_retrieval_with_a_low_floor_shows_loose_exemplars(tok):
     texts = {messages_of(R.insert_retrieval(c, alib, tok, S.rng_for(1), cfg, stats=stats), tok)[0]["content"]
              for cfg in (off, always, half)}
     assert texts == {alib.retrieve(close).text} and stats.counts["retrieval:loose"] == 1     # not loose
+    # match tags: the exemplar says how near it is, a distractor is tagged loose
+    from bes.library import answers as A
+
+    tagged = DataCfg(distractor_frac=0.0, exemplar_floor=floor, exemplar_floor_frac=1.0, exemplar_tag=True)
+    assert messages_of(R.insert_retrieval(s, alib, tok, S.rng_for(0), tagged), tok)[0]["content"] == \
+        alib.retrieve(loose, floor=floor, tag=True).text
+    assert messages_of(R.insert_retrieval(s, alib, tok, S.rng_for(0), tagged), tok)[0]["content"].startswith(A.MATCH_LOOSE)
+    assert messages_of(R.insert_retrieval(c, alib, tok, S.rng_for(0), tagged), tok)[0]["content"].split("\n")[0] in (
+        A.MATCH_CLOSE, A.MATCH_SIMILAR)
+    distract = DataCfg(distractor_frac=1.0, exemplar_tag=True)
+    for k in range(4):
+        d = R.insert_retrieval(c, alib, tok, S.rng_for("d", k), distract)
+        assert d.tags[0] in ("retrieval:ranked", "retrieval:random")
+        assert messages_of(d, tok)[0]["content"].startswith(A.MATCH_LOOSE + "\nQ: ")
     # without the setting the generator is not touched before the distractor draw
     a, b = S.rng_for(7), S.rng_for(7)
     R.insert_retrieval(c, alib, tok, a, off)

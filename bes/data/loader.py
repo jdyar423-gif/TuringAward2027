@@ -1473,6 +1473,8 @@ def journal_settings(seed: int, lcfg: LoaderCfg, data: DataCfg, mix: MixCfg, tok
     fields = ["hindsight_frac", "distractor_frac", "passage_loss_w", "use_library", "permissive_only"]
     if float(d.get("exemplar_floor") or 0.0) > 0:      # absent when off: older journals keep their header
         fields += ["exemplar_floor", "exemplar_floor_frac"]
+    if d.get("exemplar_tag"):
+        fields += ["exemplar_tag"]
     return json.loads(json.dumps({
         "format": JOURNAL_FORMAT, "seed": int(seed), "loader": {k: getattr(lcfg, k) for k in keep},
         "data": {k: d[k] for k in fields},

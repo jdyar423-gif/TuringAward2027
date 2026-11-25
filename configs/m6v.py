@@ -22,6 +22,12 @@ Start every process of the run with ``BES_PROFILE=m6`` (or ``m6`` in ``.bes_prof
   library's floor, so replies with either floor are in the training distribution; which floor
   inference uses is decided on the development prompts (``decode.exemplar_floor``, default: the
   library's own);
+* **every exemplar says how near it is** (``data.exemplar_tag``, ``decode.exemplar_tag``): its first
+  line is ``Match: close`` (ranked score at least 0.7), ``similar`` (at least the library's floor),
+  ``loose`` (under it, and the distractors of training) or ``other numbers``. The reader of a
+  LIBRARY turn cannot see the index's score; the weights this run starts from copy an exemplar
+  whatever its distance (shown a jacket of $200 at 15% off for a jacket of $120 at 35% off, they
+  answer for $200), and the tag is what tells a worked example from an answer;
 * **the learning rate continues one schedule over both runs**: with ``T0 = 1.358e10`` tokens
   before and about ``T1 = 3.7e9`` now, the 24-hour rule (peak, then linear to 0.1 of it) for a run
   of ``T0 + T1`` tokens stands at ``1 - 0.9 T0 / (T0 + T1) = 0.29`` of its peak where this run
@@ -56,7 +62,9 @@ EXEMPLAR_FLOOR_FRAC = 0.6
 CFG = dataclasses.replace(
     _M6,
     model=dataclasses.replace(_V9.model, table_grad="take"),
-    data=dataclasses.replace(_M6.data, exemplar_floor=EXEMPLAR_FLOOR, exemplar_floor_frac=EXEMPLAR_FLOOR_FRAC),
+    data=dataclasses.replace(_M6.data, exemplar_floor=EXEMPLAR_FLOOR, exemplar_floor_frac=EXEMPLAR_FLOOR_FRAC,
+                             exemplar_tag=True),
+    decode=dataclasses.replace(_M6.decode, exemplar_tag=True),
     optim=dataclasses.replace(_M6.optim, lr_mult=LR_MULT, tokens_before=float(TOKENS_BEFORE),
                               final_lr_frac=FINAL_LR_FRAC, warmup_frac=0.02),
     run=dataclasses.replace(_M6.run, name="m6v", out_dir="runs/m6v",

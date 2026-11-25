@@ -222,8 +222,27 @@ def cut_answer(answer: str, max_chars: int) -> str:
     return head.rstrip()
 
 
-def render_exemplar(question: str, answer: str, max_chars: int) -> str:
-    return f"Q: {question}\nA: {cut_answer(answer, max_chars)}"
+#: The first line of an exemplar shown with its match tag (``retrieve(tag=True)``): how near the
+#: stored question is to the user's as the index measures it, which the reader of a LIBRARY turn
+#: cannot see otherwise. ``close``: ranked score >= CLOSE_MIN; ``similar``: at least the library's
+#: own floor; ``loose``: under it (the loose mode, and the distractors of training); ``other
+#: numbers``: the questions differ in their numbers and in nothing else.
+CLOSE_MIN = 0.7
+MATCH_CLOSE, MATCH_SIMILAR, MATCH_LOOSE, MATCH_NUMBERS = ("Match: close", "Match: similar", "Match: loose",
+                                                          "Match: other numbers")
+
+
+def match_tag(sym: float, contrast: str | None, exemplar_min: float) -> str:
+    if contrast == NUMBERS_ONLY:
+        return MATCH_NUMBERS
+    if sym >= CLOSE_MIN - 1e-12:
+        return MATCH_CLOSE
+    return MATCH_SIMILAR if sym >= exemplar_min - 1e-12 else MATCH_LOOSE
+
+
+def render_exemplar(question: str, answer: str, max_chars: int, tag: str | None = None) -> str:
+    head = f"{tag}\n" if tag else ""
+    return f"{head}Q: {question}\nA: {cut_answer(answer, max_chars)}"
 
 
 class AnswerLibrary:
@@ -668,11 +687,14 @@ class AnswerLibrary:
 
     def retrieve(self, query: str, exclude_pids: Iterable[int] = (), exclude_titles: Iterable[int] = (),
                  log: AnswerRead | None = None, kinds: Sequence[str] | None = None,
-                 context: Sequence[str] | None = None, floor: float | None = None) -> Passage | None:
+                 context: Sequence[str] | None = None, floor: float | None = None,
+                 tag: bool = False) -> Passage | None:
         """The LIBRARY turn for a user message, or ``None``: one or two exemplars, the best
         one last (next to the user turn). A later turn that leans on the conversation
         (``bes.library.retrieve.self_contained``) retrieves nothing. ``floor``: see
-        :meth:`exemplars`."""
+        :meth:`exemplars`. ``tag``: every exemplar starts with its match tag (:func:`match_tag`);
+        a model reads the tags well only when it was trained with them
+        (``DataCfg.exemplar_tag``)."""
         if kinds is not None and "qa" not in kinds:
             return None
         if context:
@@ -684,7 +706,9 @@ class AnswerLibrary:
         if not picks:
             return None
         mc = self.acfg.exemplar_max_chars
-        text = PASSAGE_SEP.join(render_exemplar(c.question, c.answer, mc) for c in reversed(picks))
+        tags = [match_tag(c.sym, c.contrast, self.acfg.exemplar_min) if tag else None for c in picks]
+        text = PASSAGE_SEP.join(render_exemplar(c.question, c.answer, mc, t)
+                                for c, t in reversed(list(zip(picks, tags))))
         best = picks[0]
         return Passage(best.entry, -1, best.question, best.answer, float(best.sym), text)
 
@@ -737,4 +761,5 @@ class AnswerLibrary:
 
 
 __all__ = ["AnswerCfg", "AnswerLibrary", "AnswerRead", "ReadCap", "Candidate", "Passage", "ANSWERS_JSON", "NUMBERS_ONLY",
+           "MATCH_CLOSE", "MATCH_SIMILAR", "MATCH_LOOSE", "MATCH_NUMBERS", "CLOSE_MIN", "match_tag",
            "cut_answer", "render_exemplar", "sub_queries", "ALL_TYPES"]

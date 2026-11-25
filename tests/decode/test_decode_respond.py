@@ -127,8 +127,8 @@ def test_the_exemplar_floor_reaches_a_library_that_takes_one():
         def __init__(self):
             self.calls = []
 
-        def retrieve(self, query, floor=None):
-            self.calls.append((query, floor))
+        def retrieve(self, query, floor=None, tag=False):
+            self.calls.append((query, floor) if not tag else (query, floor, "tag"))
             return None
 
     lib = FloorLibrary()
@@ -136,7 +136,14 @@ def test_the_exemplar_floor_reaches_a_library_that_takes_one():
     q = "why is it dark at night?"
     resp.retrieve(q)
     resp.retrieve(q, floor=0.35)
-    assert lib.calls == [(q, None), (q, 0.35)]
+    resp.retrieve(q, tag=True)
+    assert lib.calls == [(q, None), (q, 0.35), (q, None, "tag")]
+    lib.calls.clear()
+    resp.reply([{"role": "user", "content": q}], {"exemplar_tag": True, "exemplar_floor": 0.4, "max_tokens": 8}, seed=0)
+    assert lib.calls[-1] == (q, 0.4, "tag") and DecodeCfg().exemplar_tag is False
+    lib.calls.clear()
+    resp.retrieve(q)
+    resp.retrieve(q, floor=0.35)
     plain = FakeLibrary({})                               # retrieve(query) only
     _, _, resp2 = setup(library=plain)
     assert resp2.retrieve(q, floor=0.35) is None and plain.calls == [q]

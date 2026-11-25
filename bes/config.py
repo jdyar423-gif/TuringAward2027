@@ -276,6 +276,9 @@ class DataCfg:
                                       # from loosely related exemplars and the floor of inference
                                       # (DecodeCfg.exemplar_floor) can be chosen afterwards
     exemplar_floor_frac: float = 0.0
+    exemplar_tag: bool = False        # every exemplar of a training sample starts with its match tag
+                                      # (bes.library.answers.match_tag: close / similar / loose / other
+                                      # numbers; a distractor is tagged loose); set DecodeCfg.exemplar_tag too
 
 
 # -------------------------------------------------------------------------------- run
@@ -399,6 +402,7 @@ class DecodeCfg:
                                       # message (0: the answers library's own floors, AnswerCfg.exemplar_min
                                       # and exemplar_min_math); a model uses a lower floor well only when it
                                       # was trained with it (DataCfg.exemplar_floor)
+    exemplar_tag: bool = False        # exemplars are shown with their match tag (as DataCfg.exemplar_tag)
 
 
 @dataclass(frozen=True)
@@ -454,9 +458,9 @@ def to_dict(cfg: Cfg) -> dict[str, Any]:
 #: it counts like every other field. Append new fields of ``Cfg``'s sections here.
 HASH_NEUTRAL: dict[str, tuple[str, ...]] = {
     "optim": ("lr_mult", "tokens_before"),
-    "data": ("profile", "exemplar_floor", "exemplar_floor_frac"),
+    "data": ("profile", "exemplar_floor", "exemplar_floor_frac", "exemplar_tag"),
     "run": ("tokenize_workers", "fast", "micro_split", "prefopt_lrs", "ship_library", "init_from", "init_sha256"),
-    "decode": ("verbatim", "exemplar_floor"),
+    "decode": ("verbatim", "exemplar_floor", "exemplar_tag"),
 }
 
 

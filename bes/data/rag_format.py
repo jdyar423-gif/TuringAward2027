@@ -188,10 +188,11 @@ class LibraryView:
         self.native = callable(getattr(self.lib, "kind_range", None))
         gate = getattr(getattr(self.lib, "cfg", None), "gate", None)
         self.allowed_types = tuple(getattr(gate, "allowed_types", DEFAULT_ALLOWED_TYPES))
-        try:        # an answers library: its retrieval takes the lowest score an exemplar may have
-            self.takes_floor = "floor" in inspect.signature(self.lib.retrieve).parameters
+        try:        # an answers library: its retrieval takes the lowest score an exemplar may have, and tags
+            names = inspect.signature(self.lib.retrieve).parameters
+            self.takes_floor, self.takes_tag = "floor" in names, "tag" in names
         except (TypeError, ValueError, AttributeError):
-            self.takes_floor = False
+            self.takes_floor = self.takes_tag = False
         self._cache: dict[int, Any] = {}
         self.task_pids: dict[str, np.ndarray] = dict(lib.task_pids) if isinstance(lib, LibraryView) else {}
 
@@ -275,10 +276,11 @@ class LibraryView:
     # ------------------------------------------------------------------ retrieval
     def retrieve(self, query: str, exclude_pids: Sequence[int] = (), exclude_titles: Sequence[int] = (),
                  kinds: Sequence[str] | None = None, context: Sequence[str] | None = None,
-                 floor: float | None = None) -> Any:
+                 floor: float | None = None, tag: bool = False) -> Any:
         """Gated retrieval (``Library.retrieve``) or ``None``. ``context``: the earlier user
         turns of the conversation, passed on exactly as the responder passes them. ``floor``:
-        the lowest ranked score of an exemplar (an answers library; ``None``: its own floors)."""
+        the lowest ranked score of an exemplar; ``tag``: exemplars with their match tags (both
+        for an answers library; ``None`` / ``False``: its own floors, no tags)."""
         if not self._kinds_ok(kinds):
             return None
         kw = {"kinds": tuple(kinds)} if self.native and kinds is not None else {}
@@ -286,6 +288,10 @@ class LibraryView:
             if not self.takes_floor:
                 raise TypeError("this library's retrieval takes no exemplar floor")
             kw["floor"] = float(floor)
+        if tag:
+            if not self.takes_tag:
+                raise TypeError("this library's retrieval takes no match tag")
+            kw["tag"] = True
         if context and self.native:
             try:
                 p = self.lib.retrieve(query, exclude_pids=tuple(exclude_pids),
@@ -490,7 +496,8 @@ def insert_retrieval(sample: Sample, lib: Any, tok, rng: np.random.Generator,
     if cfg.exemplar_floor > 0 and view.takes_floor and rng.random() < cfg.exemplar_floor_frac:
         floor = float(cfg.exemplar_floor)                  # this sample: also a loosely related exemplar
         _count(stats, "retrieval:low_floor")
-    gated = view.retrieve(query, ex_p, ex_t, context=earlier, floor=floor)
+    tag = bool(cfg.exemplar_tag) and view.takes_tag
+    gated = view.retrieve(query, ex_p, ex_t, context=earlier, floor=floor, tag=tag)
     if gated is None:
         _count(stats, "retrieval:gate_closed")
         return sample
@@ -508,7 +515,12 @@ def insert_retrieval(sample: Sample, lib: Any, tok, rng: np.random.Generator,
             _count(stats, "retrieval:no_distractor")          # the gated passage stays
         else:
             passage, mode = d, d_mode
-    turn, turn_roles = cf.render_turn("library", passage.text, tok)
+    text = passage.text
+    if tag and mode != "gated":
+        from bes.library.answers import MATCH_LOOSE
+
+        text = f"{MATCH_LOOSE}\n{text}"                    # a distractor: an entry far from the question
+    turn, turn_roles = cf.render_turn("library", text, tok)
     ids = np.concatenate([sample.ids[:start], turn, sample.ids[start:]])
     roles = np.concatenate([sample.roles[:start], turn_roles, sample.roles[start:]])
     out = sample.with_tokens(ids, roles, add_tags=(f"retrieval:{mode}",) + (("retrieval:later_turn",) if later else ()))
