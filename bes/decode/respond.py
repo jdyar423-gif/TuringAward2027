@@ -331,17 +331,57 @@ class Responder:
         except Exception as err:                    # a compiler bug must not kill the reply
             return constraints.ConstraintSpec(), f"{type(err).__name__}: {err}"
 
-    def retrieve(self, user_text: str, history: Sequence[str] | None = None):
+    def read_log(self):
+        """The read log of one reply for a library that caps what a reply reads
+        (``bes.library.answers.AnswerLibrary.new_read``: the verbatim rule and the retrieval
+        share it), else ``None``."""
+        fn = getattr(self.library, "new_read", None)
+        return fn() if callable(fn) else None
+
+    def retrieve(self, user_text: str, history: Sequence[str] | None = None, log=None):
         """The gated library entry for the last user message; ``history`` are the earlier user
         turns (a turn that leans on them, or chit-chat, retrieves nothing)."""
         if self.library is None:
             return None
+        kw = {} if log is None else {"log": log}
         if history:
             try:
-                return self.library.retrieve(user_text, context=list(history))
+                return self.library.retrieve(user_text, context=list(history), **kw)
             except TypeError:                       # a library object without the context argument
                 pass
-        return self.library.retrieve(user_text)
+        return self.library.retrieve(user_text, **kw)
+
+    def verbatim(self, user_text: str, spec, history: Sequence[str] | None = None, log=None):
+        """The stored entry whose answer is the reply (``bes.library.answers.AnswerLibrary.verbatim``:
+        the library holds the user's question and its answer meets the user's explicit
+        constraints), or ``None`` (also for a library without stored answers)."""
+        fn = getattr(self.library, "verbatim", None)
+        if not callable(fn):
+            return None
+        try:
+            return fn(user_text, spec, context=list(history) if history else None, log=log)
+        except Exception:                           # a library error must not kill the reply
+            return None
+
+    def _verbatim_reply(self, hit, spec, d: DecodeCfg, r: Resolved, seed: int) -> dict[str, Any]:
+        """The reply dictionary of a stored answer: no decoding happened, so the decoding
+        fields are zero and ``extra["verbatim"]`` holds the match."""
+        text = str(hit.answer).strip()
+        n_tokens = len(self.tok.encode(text))
+        extra = {
+            "particles": 0, "potentials": r.potentials, "rule": "verbatim", "n_survivors": 1,
+            "n_finished": 1, "finishes": {"stop": 1}, "finish": "stop", "at_budget": False,
+            "prompt_type": None, "band": None, "answer": None,
+            "constraints": list(getattr(spec, "constraints", ()) or ()), "enforced": [], "violations": [],
+            "library": hit.question, "calc_spans": 0, "tokens_all": 0, "tokens_sampled": 0, "steps": 0,
+            "resampled": 0, "ess_min": None, "log_z": None, "logprob_sum_free": 0.0,
+            "logprob_count_free": 0, "temperature": None, "tempered_by": None,
+            "self_evidence_weight": None, "copy_cap": 0, "fit": None, "seed": int(seed), "greedy": r.greedy,
+            "verbatim": {"entry": int(hit.entry), "question": hit.question, "cov_q": round(float(hit.cov_q), 4),
+                         "cov_e": round(float(hit.cov_e), 4)},
+        }
+        return {"text": text, "finish_reason": "stop", "prompt_tokens": 0, "completion_tokens": n_tokens,
+                "logprob_sum": 0.0, "logprob_count": 0, "extra": extra}
 
     def program(self, spec, r: Resolved):
         from bes.decode import potentials
@@ -395,7 +435,13 @@ class Responder:
         user_text = msgs[-1]["content"]
         history = [m["content"] for m in msgs[:-1] if m["role"] == "user"]
         spec, spec_error = self.compile_spec(user_text)
-        passage = self.retrieve(user_text, history) if d.use_library else None
+        lib_log = self.read_log() if d.use_library else None
+        hit = self.verbatim(user_text, spec, history, lib_log) if (d.use_library and d.verbatim) else None
+        if hit is not None:
+            out = self._verbatim_reply(hit, spec, d, r, seed)
+            out["extra"]["library_read"] = None if lib_log is None else int(lib_log.total)
+            return out
+        passage = self.retrieve(user_text, history, lib_log) if d.use_library else None
         budget = self.context - d.max_new_tokens
         prompt, fit = fit_prompt(self.chat, msgs, None if passage is None else passage.text, budget)
         program, prog_error = None, None
@@ -457,6 +503,7 @@ class Responder:
             "enforced": enforced(spec_used) if program is not None and rerun is None else [],
             "violations": [x for x in choice.reasons.get(choice.index, []) if x.startswith("violation")],
             "library": None if passage is None else passage.title,
+            "library_read": None if lib_log is None else int(lib_log.total),
             "calc_spans": len(res.forced_spans[choice.index]),
             "tokens_all": int(sum(len(q.tokens) for q in res.particles)),
             "tokens_sampled": int(sum(int(np.count_nonzero(~np.isnan(a))) for a in res.log_alpha)),
@@ -593,8 +640,10 @@ def load_checkpoint(path: str | Path, model_cfg) -> tuple[dict, dict, dict[str, 
 
 
 def _library_fingerprint(path: str | Path) -> str:
-    meta = Path(path) / "library.json"
-    return hashlib.sha256(meta.read_bytes()).hexdigest() if meta.exists() else "none"
+    from bes.library.retrieve import library_marker
+
+    meta = library_marker(path)
+    return hashlib.sha256(Path(meta).read_bytes()).hexdigest() if meta else "none"
 
 
 def our_generator(checkpoint: str, config: str, library: str = "", overrides: str = "",

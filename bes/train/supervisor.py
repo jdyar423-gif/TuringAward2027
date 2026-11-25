@@ -69,7 +69,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Iterable, Mapping, Sequence
 
-from bes.config import Cfg, LibraryCfg, load_config
+from bes.config import PROFILE, Cfg, LibraryCfg, check_profile, load_config
 from bes.train import stages as ST
 from bes.train.ledger import atomic_write_json
 
@@ -1670,6 +1670,69 @@ def _library_usable(lib_dir: Path, want: Mapping[str, Any], allow_unrecorded: bo
     return rep
 
 
+ANSWERS_PARTS = REPO / "release" / "m6" / "library"      # tar parts of the answers library in the repository
+ANSWERS_CAP = 62_000_000                                  # stored numbers of the answers library at most
+
+
+def answers_self_check(path: str | Path, *, cap: int = ANSWERS_CAP,
+                       probes: Sequence[str] = ("Why is the sky blue?", "What is photosynthesis?",
+                                                "How do I boil an egg?"),
+                       sample_entries: int = 16) -> dict[str, Any]:
+    """Load an answers library (``bes.library.answers``) and check it: stored numbers within
+    ``cap``, a spread of entries decompress (CRC of their blocks), at least one probe retrieves
+    an exemplar. Returns ``{"ok", "reasons", ...}``; never raises."""
+    rep: dict[str, Any] = {"path": str(path), "ok": False, "reasons": [], "kind": "answers"}
+    try:
+        from bes.library.answers import AnswerLibrary
+
+        lib = AnswerLibrary.load(str(path))
+        acc = lib.accounting()
+        rep.update(n_wiki=0, n_qa=lib.n_entries, total_numbers=int(acc["total_numbers"]),
+                   read_bound=int(lib.read_bound()["total"]), fingerprint=lib.fingerprint)
+        if acc["total_numbers"] > cap:
+            rep["reasons"].append(f"stores {acc['total_numbers']} numbers, above the cap {cap}")
+        n = lib.n_entries
+        if n == 0:
+            rep["reasons"].append("the library is empty")
+        for e in range(0, n, max(1, n // max(1, sample_entries))):
+            q, a = lib.entry(e)
+            if not q or not a:
+                rep["reasons"].append(f"entry {e} is empty")
+                break
+        hits = sum(lib.retrieve(q) is not None for q in probes)
+        rep["probe_hits"] = int(hits)
+        if n >= 10_000 and hits < 1:
+            rep["reasons"].append("no probe retrieves an exemplar")
+    except Exception as e:                          # a broken library is a reason, not a crash
+        rep["reasons"].append(f"{type(e).__name__}: {e}")
+    rep["ok"] = not rep["reasons"]
+    return rep
+
+
+def _task_answers(paths: RunPaths, lib_dir: Path, log: Callable[[str], None]) -> int:
+    """Profile ``"m6"``: the library is the answers library, built before the run
+    (``scripts/build_answers.py``) and kept in the repository as tar parts
+    (:data:`ANSWERS_PARTS`); unpack it when the directory is missing, check it, write the marker."""
+    from bes.library.answers import ANSWERS_JSON
+
+    if not (lib_dir / ANSWERS_JSON).exists():
+        if not (ANSWERS_PARTS / "parts.json").exists():
+            log(f"library: no answers library at {lib_dir} and no parts under {ANSWERS_PARTS}")
+            return 1
+        import runpy
+
+        mod = runpy.run_path(str(REPO / "scripts" / "build_answers.py"), run_name="build_answers")
+        mod["unpack"](ANSWERS_PARTS, lib_dir)
+        log(f"library: unpacked {ANSWERS_PARTS} to {lib_dir}")
+    rep = answers_self_check(lib_dir)
+    if not rep["ok"]:
+        log(f"library: the answers library at {lib_dir} is not usable: {rep['reasons']}")
+        return 1
+    write_marker(paths, "library", path=str(lib_dir), self_check=rep, settings={"kind": "answers"})
+    log(f"library: answers library ready ({rep['n_qa']} entries, {rep['total_numbers']} numbers)")
+    return 0
+
+
 def task_library(paths: RunPaths, cfg: Cfg, cp: CorePlan, log: Callable[[str], None]) -> int:
     """Use the configured library when it passes its self-check and was built with the run's
     settings (:func:`library_settings`: permissive flag, question-answer sources, tokenizer,
@@ -1682,6 +1745,8 @@ def task_library(paths: RunPaths, cfg: Cfg, cp: CorePlan, log: Callable[[str], N
     if not cfg.data.use_library:
         write_marker(paths, "library", path=None, reason="the configuration has no library")
         return 0
+    if PROFILE == "m6":
+        return _task_answers(paths, lib_dir, log)
     want = library_settings(cfg)
     rep = _library_usable(lib_dir, want, bool(cfg.run.library_reuse_unrecorded))
     if not rep["ok"]:

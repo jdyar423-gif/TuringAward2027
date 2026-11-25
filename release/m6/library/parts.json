@@ -1,0 +1,44 @@
+{
+ "name": "library",
+ "directory": "answers_v1",
+ "bytes": 114892800,
+ "sha256": "7ce097e8ff5218291a013bc2c1e252c2f15e599577a98def93c3e47c311f40d9",
+ "parts": [
+  {
+   "name": "library.tar.000",
+   "bytes": 16777216,
+   "sha256": "750f719f94b5bb989f99f1f805b7f785ea8370cf42ff48d11f6e7cac7036b14d"
+  },
+  {
+   "name": "library.tar.001",
+   "bytes": 16777216,
+   "sha256": "66fff708c747932c5f7135fe48e64f663765dd9ee734ee8ece52cab16561f4a7"
+  },
+  {
+   "name": "library.tar.002",
+   "bytes": 16777216,
+   "sha256": "d078bb4a1a04bd26a59dd384e606c19b9b2c5d390e5040cc83cfa2898a84ec08"
+  },
+  {
+   "name": "library.tar.003",
+   "bytes": 16777216,
+   "sha256": "e20327a196213055f94cf5fe832f3d2515f81759fdae59ad765d48cf8e9d90e1"
+  },
+  {
+   "name": "library.tar.004",
+   "bytes": 16777216,
+   "sha256": "075ede7b9e86aa685488a17d38b0577f63bb271fa1f469085e16fd0ada0b9122"
+  },
+  {
+   "name": "library.tar.005",
+   "bytes": 16777216,
+   "sha256": "89f59ae3132697dd2dd085dbf52272bb8737a89b636eebcd51c512c51c2497eb"
+  },
+  {
+   "name": "library.tar.006",
+   "bytes": 14229504,
+   "sha256": "421f0f60903b631a5ab8c2801e1a7cc414649ef9dda17effa221c8f8ae9793f8"
+  }
+ ],
+ "members": 14
+}

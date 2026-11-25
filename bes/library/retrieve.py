@@ -477,6 +477,20 @@ class _Cand:
     prob: float = 0.0
 
 
+#: the JSON file that marks a built library directory (this module's, or ``bes.library.answers``)
+LIBRARY_MARKERS = ("library.json", "answers.json")
+
+
+def library_marker(path: str | os.PathLike) -> str:
+    """Path of the JSON file that marks ``path`` as a built library: ``library.json`` (this
+    module) or ``answers.json`` (``bes.library.answers``); ``""`` when it holds neither."""
+    for name in LIBRARY_MARKERS:
+        f = os.path.join(str(path), name)
+        if os.path.isfile(f):
+            return f
+    return ""
+
+
 class Library:
     """Packed passages + stored truncated index + title table + qa layer + gate."""
 
@@ -572,10 +586,16 @@ class Library:
     def load(cls, path: str, count_tokens: CountTokens = default_count_tokens,
              cfg: RetrieveCfg | None = None, mmap: bool = True) -> "Library":
         """Open a saved library (arrays memory-mapped; nothing is decompressed or derived
-        until a query or ``passage`` call needs it)."""
+        until a query or ``passage`` call needs it). A directory that holds an answers library
+        (``bes.library.answers``, marked by ``answers.json``) opens as an ``AnswerLibrary``,
+        which serves the same contract."""
         from bes.library.gate import GateModel
         from bes.library.qa import QAStore
 
+        if os.path.exists(os.path.join(path, "answers.json")):
+            from bes.library.answers import AnswerLibrary
+
+            return AnswerLibrary.load(path, mmap)          # type: ignore[return-value]
         meta = json.loads(open(os.path.join(path, "library.json")).read())
         if cfg is None:
             rc = dict(meta.get("retrieve_cfg", {}))

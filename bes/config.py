@@ -12,8 +12,48 @@ import dataclasses
 import hashlib
 import importlib.util
 import json
+import os
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any
+
+# ------------------------------------------------------------------------------ profile
+#: Run profile, from the environment variable ``BES_PROFILE`` (read once at import, so every
+#: process of a run and its worker processes agree). ``""``: the 24-hour configurations
+#: (``configs/final.py``, ``configs/v9.py``). ``"m6"``: the six-hour run of ``docs/PLAN_M6.md``
+#: (``configs/m6.py``): the answers library, the chat-heavy mixture and its sources. A profile
+#: only changes the defaults of the settings that are not fields of ``Cfg`` (``MixCfg``,
+#: ``LibraryCfg``, the registry weights of ``bes.data.sources``); ``DataCfg.profile`` must name
+#: it, so the configuration hash of a run records it.
+def _profile() -> str:
+    """``BES_PROFILE``, else the text of ``.bes_profile`` at the repository root (a file the
+    operator writes on a machine every process of which runs one profile: not committed)."""
+    p = os.environ.get("BES_PROFILE")
+    if p is None:
+        try:
+            p = (Path(__file__).resolve().parent.parent / ".bes_profile").read_text().strip()
+        except OSError:
+            p = ""
+    return p
+
+
+PROFILE = _profile()
+PROFILES = ("", "m6")
+if PROFILE not in PROFILES:
+    raise ValueError(f"unknown BES_PROFILE {PROFILE!r}; known: {PROFILES}")
+
+
+def by_profile(default: Any, **values: Any) -> Any:
+    """``values[PROFILE]`` when the active profile has an entry, else ``default``."""
+    return values.get(PROFILE, default)
+
+
+def check_profile(data: Any) -> None:
+    """Raise unless ``data.profile`` (a ``DataCfg``) names the active profile."""
+    want = getattr(data, "profile", "")
+    if want != PROFILE:
+        raise RuntimeError(f"the configuration is for profile {want!r} but BES_PROFILE is {PROFILE!r}: "
+                           f"start the process with BES_PROFILE={want}")
 
 # --------------------------------------------------------------------------- vocabulary
 VOCAB_SIZE = 8192
@@ -222,6 +262,8 @@ class DataCfg:
     assistant_only_from: float = 0.92  # from this progress on, loss on assistant tokens only
     permissive_only: bool = False
     use_library: bool = True
+    # -- appended for the six-hour run (docs/PLAN_M6.md)
+    profile: str = ""                 # the run profile this configuration is for (``PROFILE``)
 
 
 # -------------------------------------------------------------------------------- run
@@ -260,7 +302,8 @@ class RunCfg:
     preflight_min: float = 3.0        # planned minutes of stage 0
     benchmark_min: float = 15.0       # planned minutes of the start-up benchmark and canary ...
     benchmark_cap_min: float = 25.0   # ... and its hard cap
-    bench_plans: str = "full"         # "full" | "reduced" (CPU rehearsals: fewer candidate plans)
+    bench_plans: str = "full"         # "full" | "reduced" (CPU rehearsals: fewer candidate plans) |
+                                      # "single" (the configured plan only: its settings are known)
     bench_steps: int = 20             # timed steps per candidate plan after warm-up
     canary_steps: int = 30            # steps of the safe and of the full configuration in the canary
     loader_workers: int = 0           # loader worker processes (0 = from the host core plan)
@@ -296,6 +339,17 @@ class RunCfg:
                                       # (post_reserve_hours) is shared in these proportions, a stage
                                       # with 0 minutes is skipped. To keep the other stages' own
                                       # minutes set post_reserve_hours to the new sum / 60
+    # -- appended for the six-hour run (configs/m6.py; scripts/run_24h.py, bes/train/benchmark.py)
+    tokenize_workers: int = 0         # tokenisation workers (0 = the host core plan's share: 4 of 44)
+    fast: str = ""                    # speed switches of the run when <run>/fast and the manifest
+                                      # give none (bes.model.fast: "kernel=onetile:save relu2=1 ce=0")
+    micro_split: str = ""             # pieces a micro-batch is cut into on the device when
+                                      # <run>/micro_split and the manifest give none ("4", "2048:4")
+    prefopt_lrs: str = "1e-6 3e-6"    # candidate learning rates of the preference optimisation, each
+                                      # one pass from the trained weights (the accepted best is kept)
+    ship_library: str = "select"      # "select": the decode selection decides whether the export
+                                      # ships the library (none: not shipped); "always": shipped
+                                      # without a selection (the library is part of the model)
 
 
 # ----------------------------------------------------------------------------- decode
@@ -320,6 +374,9 @@ class DecodeCfg:
     budget_aware: bool = True         # masks keep every particle able to finish in max_new_tokens
     resample_at: str = "sentence"     # "sentence" (wait at sentence boundaries) | "token"
     unit_max_tokens: int = 32         # a resampling unit ends after this many tokens at most
+    # appended for the answers library (bes/library/answers.py, docs/PLAN_M6.md)
+    verbatim: bool = True             # give a stored answer as the reply when the library holds the
+                                      # user's question (AnswerLibrary.verbatim); needs use_library
 
 
 @dataclass(frozen=True)
@@ -400,7 +457,9 @@ class LibraryCfg:
     gate_min_margin_title: float = 0.05  # margin needed when the title matches
     gate_min_title_match: float = 0.5  # share of title terms present in the query
     gate_min_coverage: float = 0.0     # s1 / best reachable score (0 = unused)
-    library_dir: str = "data_cache/library/lib_v2"
+    # the environment variable BES_LIBRARY_DIR replaces the directory (rehearsals with a small library)
+    library_dir: str = os.environ.get("BES_LIBRARY_DIR") or by_profile("data_cache/library/lib_v2",
+                                                                         m6="data_cache/library/answers_v1")
     # -- v2: qa layer, title look-up, calibrated gate, budget (docs/E1_COVERAGE.md)
     total_numbers_cap: int = 64_000_000   # everything the library stores (text, index, qa, gate)
     max_read_numbers: int = 300_000       # stored numbers one retrieve() may read at most
@@ -494,11 +553,13 @@ class MixCfg:
     built sample and are renormalised over the variants that are possible.
     """
 
-    chat_weight: float = 0.57        # chat sources (SmolTalk family, Tulu 3, UltraChat, SYNTH); retrieval
-                                     # is inserted into them (DataCfg.library_frac_chat)
-    rag_weight: float = 0.20         # sources that bring their own passages (SQuAD v2, SYNTH RAG, ...)
-    math_weight: float = 0.13        # math sources (GSM8K with calculator spans, Orca-Math)
-    library_weight: float = 0.10     # library tasks built from the written library (capped by max_epochs)
+    # profile "m6": no library tasks (the answers library's entries are the first exchanges of
+    # chat conversations already), few passage-reading conversations, more arithmetic
+    chat_weight: float = by_profile(0.57, m6=0.82)   # chat sources (SmolTalk family, Tulu 3, UltraChat, SYNTH);
+                                     # retrieval is inserted into them (DataCfg.library_frac_chat)
+    rag_weight: float = by_profile(0.20, m6=0.04)    # sources that bring their own passages (SQuAD v2, SYNTH RAG, ...)
+    math_weight: float = by_profile(0.13, m6=0.14)   # math sources (GSM8K with calculator spans, Orca-Math)
+    library_weight: float = by_profile(0.10, m6=0.0)  # library tasks built from the written library (capped by max_epochs)
     max_epochs: float = 8.0          # no source and no library entry is read more often than this
     read_weight: float = 0.6         # library tasks: reading tasks from "wiki" passages ...
     qa_weight: float = 0.4           # ... and question-answer tasks from "qa" entries

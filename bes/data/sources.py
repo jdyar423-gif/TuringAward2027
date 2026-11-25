@@ -30,6 +30,7 @@ and hands their weight to ``fallback``.
 """
 from __future__ import annotations
 
+import dataclasses
 import re
 import urllib.parse
 import zlib
@@ -827,6 +828,168 @@ SOURCES: tuple[Source, ...] = (
         approx_rows=6_407_814, approx_bytes=11_630_929_031,
         notes="English Wikipedia 2023-11-01 for lead paragraphs of the library."),
 )
+
+# ------------------------------------------------------------- profile "m6" (six-hour run)
+def magpie_pair(r: dict[str, Any]) -> list[Message] | None:
+    """Magpie-Pro rows (``instruction``, ``response``): English, input quality at least average."""
+    if r.get("language") not in (None, "EN") or r.get("input_quality") not in ("good", "excellent", "average"):
+        return None
+    return _qa(r.get("instruction"), r.get("response"))
+
+
+def sharegpt_conversations(r: dict[str, Any]) -> list[Message] | None:
+    """``record["conversations"]`` with ``from`` / ``value`` keys (OpenHermes, WizardLM)."""
+    turns = r.get("conversations")
+    if turns is None:
+        return None
+    try:
+        msgs = [{"role": m.get("from"), "content": m.get("value")} for m in turns]
+    except AttributeError:
+        return None
+    return clean_messages(msgs)
+
+
+def alpaca_pair(r: dict[str, Any]) -> list[Message] | None:
+    """Alpaca-format rows: the instruction, a blank line and the input when there is one."""
+    q = _text(r.get("instruction"))
+    extra = _text(r.get("input"))
+    return _qa(f"{q}\n\n{extra}" if extra else q, r.get("output"))
+
+
+def gpt4all_pair(r: dict[str, Any]) -> list[Message] | None:
+    """GPT4All-J prompt generations without the Stack Overflow subset (pasted HTML)."""
+    if "stackoverflow" in (r.get("source") or ""):
+        return None
+    return _qa(r.get("prompt"), r.get("response"))
+
+
+def question_answer(r: dict[str, Any]) -> list[Message] | None:
+    """Rows with a ``question`` and an ``answer`` column (Glaive code assistant)."""
+    return _qa(r.get("question"), r.get("answer"))
+
+
+_EVAL_KEYS: frozenset[str] | None = None
+
+
+def eval_question_keys() -> frozenset[str]:
+    """Normalised keys (``bes.library.qa.question_key``) of every user turn of the evaluation
+    prompts (``bes/eval/proxy/prompts.jsonl``, both splits)."""
+    global _EVAL_KEYS
+    if _EVAL_KEYS is None:
+        from bes.eval.proxy import prompts as P
+        from bes.library import qa
+
+        keys = set()
+        for p in P.load():
+            for t in p.turns:
+                k = qa.question_key(" ".join(t.split()))
+                if k:
+                    keys.add(k)
+        _EVAL_KEYS = frozenset(keys)
+    return _EVAL_KEYS
+
+
+def without_eval(adapter: Adapter) -> Adapter:
+    """``adapter`` without the conversations that ask an evaluation prompt: a conversation one
+    of whose user turns is, after normalisation, a user turn of the evaluation set is dropped
+    (the answers library leaves the same questions out: ``scripts/build_answers.py``)."""
+
+    def wrapped(r: dict[str, Any]) -> Any:
+        item = adapter(r)
+        if isinstance(item, list):
+            from bes.library import qa
+
+            keys = eval_question_keys()
+            for m in item:
+                if isinstance(m, dict) and m.get("role") == "user" and isinstance(m.get("content"), str) \
+                        and len(m["content"]) <= 800 and qa.question_key(" ".join(m["content"].split())) in keys:
+                    return None
+        return item
+
+    wrapped.__name__ = getattr(adapter, "__name__", "adapter") + "_no_eval"
+    wrapped.__doc__ = (adapter.__doc__ or "") + " Conversations that ask an evaluation prompt are dropped."
+    return wrapped
+
+
+def _m6_sources(base: tuple[Source, ...]) -> tuple[Source, ...]:
+    """The registry of profile ``"m6"`` (``docs/PLAN_M6.md``): more chat sources written by
+    strong teachers, chat-heavy weights, small caps on the base text (10% of the tokens of a
+    six-hour run), calculator parts for arithmetic in every assistant turn (``bes.data.arith``;
+    GSM8K keeps its own annotations), and no conversation that asks an evaluation prompt
+    (:func:`without_eval`)."""
+    from bes.data.arith import with_arith
+
+    def chat(name: str, repo: str, files: str, columns: tuple[str, ...], adapter: Adapter, lic: str,
+             sha: str, n_files: int, rows: int, size: int, notes: str, *, revision: str | None = None,
+             nonpermissive: bool = False) -> Source:
+        return Source(name=name, repo=repo, config="default", split="train", kind="chat", fmt="messages",
+                      files=(files,), columns=columns, adapter=adapter, license=lic,
+                      nonpermissive=nonpermissive, weight=0.0, revision=revision or sha, verified_sha=sha,
+                      n_files=n_files, approx_rows=rows, approx_bytes=size, notes=notes)
+
+    added = (
+        chat("magpie_llama31", "Magpie-Align/Magpie-Llama-3.1-Pro-1M-v0.1", "data/train-*.parquet",
+             ("instruction", "response", "language", "input_quality"), magpie_pair,
+             "llama3.1 (card): outputs of Llama 3.1 70B under the Llama 3.1 Community License",
+             "c09b89226af769a2d134ab1e579f21dacafb39f6", 11, 1_000_000, 2_422_604_005,
+             "Self-synthesised user queries and answers (Magpie); single turn."),
+        chat("magpie_phi3", "Magpie-Align/Magpie-Phi3-Pro-1M-v0.1", "data/train-*.parquet",
+             ("instruction", "response", "language", "input_quality"), magpie_pair,
+             "no licence field on the card (outputs of Phi-3 medium, an MIT model)",
+             "d4b25ac1c0b8eeb479363088a731083cb5bc630c", 10, 1_000_000, 2_354_773_783,
+             "Self-synthesised user queries and answers (Magpie); single turn.", nonpermissive=True),
+        chat("openhermes", "teknium/OpenHermes-2.5", "default/train/*.parquet", ("conversations",),
+             sharegpt_conversations, "no licence field on the card (a compilation of sets with their own terms)",
+             "ec31185efa24f448e5b61c596896becfe9a66873", 1, 1_001_551, 795_216_961,
+             "Parquet conversion of the JSON file; answers of third-party models.", revision=_CONVERT,
+             nonpermissive=True),
+        chat("gpt4all", "nomic-ai/gpt4all-j-prompt-generations", "data/train-*.parquet",
+             ("prompt", "response", "source"), gpt4all_pair, "apache-2.0",
+             "ec687c3a67653405f42d18c0be6f13f66bd4a813", 4, 808_812, 990_673_616,
+             "The Stack Overflow rows (pasted HTML) are left out; answers of a third-party model."),
+        chat("glaive_code", "glaiveai/glaive-code-assistant", "default/train/*.parquet", ("question", "answer"),
+             question_answer, "apache-2.0", "1228d6526c6e4e9149cd16972aab55a2935b7ddb", 1, 136_109, 103_952_789,
+             "Parquet conversion; programming questions answered by a third-party model.", revision=_CONVERT),
+        chat("wizardlm", "WizardLMTeam/WizardLM_evol_instruct_V2_196k", "default/train/*.parquet",
+             ("conversations",), sharegpt_conversations, "mit",
+             "82b5bd87377c9b6029f2f35e7c4dbcea01e98bf1", 1, 143_000, 161_547_384,
+             "Parquet conversion; evolved instructions, answers of a third-party model.", revision=_CONVERT),
+        chat("alpaca", "yahma/alpaca-cleaned", "default/train/*.parquet", ("instruction", "input", "output"),
+             alpaca_pair, "cc-by-4.0", "a4a0620c7c65decc93395b78f0e6994664a8662e", 1, 51_760, 24_143_368,
+             "Parquet conversion; cleaned Alpaca instructions.", revision=_CONVERT),
+        chat("codealpaca", "sahil2801/CodeAlpaca-20k", "default/train/*.parquet",
+             ("instruction", "input", "output"), alpaca_pair, "cc-by-4.0",
+             "3bd2de8099ee8a140653ad9b9df783554d5efabb", 1, 20_022, 3_339_837,
+             "Parquet conversion; code instructions.", revision=_CONVERT),
+    )
+    weights = {
+        # base text: 10% of the tokens
+        "climbmix": 0.85, "fineweb_edu": 0.10, "simplewiki": 0.05,
+        # chat: teachers' answers to short questions first
+        "smol_smoltalk": 0.10, "smoltalk_magpie_ultra": 0.12, "smoltalk_constraints": 0.04,
+        "smoltalk_rewrite": 0.03, "smoltalk_summarize": 0.04, "smoltalk_everyday": 0.01,
+        "smoltalk_systemchats": 0.02, "tulu3_sft": 0.12, "ultrachat": 0.05, "synth": 0.06,
+        "magpie_llama31": 0.14, "magpie_phi3": 0.08, "openhermes": 0.10, "gpt4all": 0.02,
+        "glaive_code": 0.03, "wizardlm": 0.02, "alpaca": 0.01, "codealpaca": 0.01,
+        # math: calculator parts everywhere (with_arith)
+        "gsm8k": 0.15, "orca_math": 0.85,
+    }
+    caps = {"climbmix": 1 * _GB, "fineweb_edu": _GB // 4, "synth": 6 * _GB, "synth_rag": 6 * _GB}
+    out = []
+    for s in base + added:
+        s = dataclasses.replace(s, weight=weights.get(s.name, s.weight), cap_bytes=caps.get(s.name, s.cap_bytes))
+        if s.fmt == "messages" and s.kind in ("chat", "rag", "math"):
+            # never train on an evaluation prompt; arithmetic becomes calculator parts
+            adapter = without_eval(s.adapter)
+            s = dataclasses.replace(s, adapter=adapter if s.name == "gsm8k" else with_arith(adapter))
+        out.append(s)
+    return tuple(out)
+
+
+from bes.config import PROFILE as _PROFILE  # noqa: E402
+
+if _PROFILE == "m6":
+    SOURCES = _m6_sources(SOURCES)
 
 REGISTRY: dict[str, Source] = {s.name: s for s in SOURCES}
 assert len(REGISTRY) == len(SOURCES), "duplicate source names"

@@ -401,6 +401,8 @@ def search(cfg: Cfg, measure: Measure, *, clock: Callable[[], float], soft_deadl
             for t in lens:
                 if not run(alt, t, essential=True).ok:
                     break
+    if mode == "single" and complete(base):
+        return list(results.values())           # the configured plan runs: nothing else is measured
     challenge(base.flip_remat())
     if mode != "reduced":
         for table in TABLE_MODES:
@@ -658,9 +660,9 @@ def canary(cfg: Cfg, plan: Plan,
     say = log or (lambda msg: None)
     pcfg = plan.apply(cfg)
     mcfg = pcfg.model
-    t = pcfg.data.seq_len
-    shape = schedule.micro_shape(pcfg, t)
     shapes = schedule.shapes(pcfg)
+    shape = shapes[0]               # the first shape of the run (``seq_len_late`` when late_from is 0)
+    t = shape[2]
     by_len = ({int(k): list(v) for k, v in batches.items()} if isinstance(batches, Mapping)
               else {t: list(batches)})
     missing = [s[2] for s in shapes if not by_len.get(s[2])]

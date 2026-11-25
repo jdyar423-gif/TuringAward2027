@@ -188,3 +188,45 @@ python -m bes.data.download --list
 python -m bes.data.download climbmix gsm8k --max-files 2        # registry caps by default
 python -m bes.data.tokenize_worker climbmix gsm8k --workers 4 --check
 ```
+
+## 8. Profile `m6` (the six-hour run, `configs/m6.py`, `docs/PLAN_M6.md`)
+
+With `BES_PROFILE=m6` (or `m6` in `.bes_profile` at the repository root) the registry of
+`bes/data/sources.py` gains the chat sources below, takes other weights and caps
+(`_m6_sources`), wraps every conversation source so that arithmetic statements become
+calculator parts (`bes/data/arith.py`; GSM8K keeps its own annotations) and drops every
+conversation one of whose user turns is an evaluation prompt (`without_eval`). Checked on
+2026-11-25 against the Hub (dataset card, file listing, commit).
+
+| name | dataset | files | pinned commit | rows | licence stated by the card | use |
+|---|---|---|---|---|---|---|
+| `magpie_llama31` | `Magpie-Align/Magpie-Llama-3.1-Pro-1M-v0.1` | `data/train-*.parquet` (11) | `c09b89226af7` | 1,000,000 | llama3.1 | training, library |
+| `magpie_phi3` | `Magpie-Align/Magpie-Phi3-Pro-1M-v0.1` | `data/train-*.parquet` (10) | `d4b25ac1c0b8` | 1,000,000 | none on the card | training only |
+| `openhermes` | `teknium/OpenHermes-2.5` | parquet conversion (1) | `ec31185efa24` | 1,001,551 | none on the card | training only |
+| `gpt4all` | `nomic-ai/gpt4all-j-prompt-generations` | `data/train-*.parquet` (4) | `ec687c3a6765` | 808,812 | apache-2.0 | training, library |
+| `glaive_code` | `glaiveai/glaive-code-assistant` | parquet conversion (1) | `1228d6526c6e` | 136,109 | apache-2.0 | training, library |
+| `wizardlm` | `WizardLMTeam/WizardLM_evol_instruct_V2_196k` | parquet conversion (1) | `82b5bd87377c` | 143,000 | mit | training, library |
+| `alpaca` | `yahma/alpaca-cleaned` | parquet conversion (1) | `a4a0620c7c65` | 51,760 | cc-by-4.0 | training, library |
+| `codealpaca` | `sahil2801/CodeAlpaca-20k` | parquet conversion (1) | `3bd2de8099ee` | 20,022 | cc-by-4.0 | training, library |
+
+- **Training only** (`nonpermissive=True`): the two sets whose cards state no licence are read
+  for training and never stored. The answers library redistributes text, so it takes pairs
+  only from sets whose cards state a licence (those above marked *library*, and
+  `smoltalk` magpie-ultra, `smol-smoltalk`, `tulu-3-sft-mixture` without No Robots, Aya and the
+  hard-coded prompts, `ultrachat_200k`, `databricks-dolly-15k`); its `ATTRIBUTION.md` lists
+  every source with its commit, licence and entry count.
+- **Weights** (shares within a kind; `MixCfg` gives chat 0.82, math 0.14, grounded answers 0.04
+  of the conversation tokens): `magpie_llama31` 0.14, `smoltalk_magpie_ultra` 0.12, `tulu3_sft`
+  0.12, `smol_smoltalk` 0.10, `openhermes` 0.10, `magpie_phi3` 0.08, `synth` 0.06, `ultrachat`
+  0.05, `smoltalk_constraints` 0.04, `smoltalk_summarize` 0.04, `smoltalk_rewrite` 0.03,
+  `glaive_code` 0.03, `gpt4all` 0.02, `wizardlm` 0.02, `smoltalk_systemchats` 0.02, the rest 0.01
+  each; math: `orca_math` 0.85, `gsm8k` 0.15; base text: `climbmix` 0.85 (1 GB), `fineweb_edu`
+  0.10 (0.25 GB), `simplewiki` 0.05.
+- **The answers library** (`scripts/build_answers.py`, `release/m6/library/`): the first
+  exchange of a conversation is stored when the question is one line of 10 to 120 ASCII
+  characters that refers to no attached material and the answer has 20 to 1,500 characters
+  without links or self-references; exact duplicates keep the first source in the order of
+  preference; 399,699 pairs, 57,424,740 stored numbers. `answers.json` records the filter
+  counts per source.
+- **Download volume** of the six-hour plan: about 26 GB (`supervisor.disk_need`: 64 GB of disk
+  with the shards), of which the capped web text is 1.25 GB.

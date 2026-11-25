@@ -696,6 +696,16 @@ def library_files(path: str | Path) -> dict[str, list[str]]:
     from bes.library.retrieve import TitleTable
 
     root = Path(path)
+    if (root / "answers.json").is_file():
+        # an answers library (bes.library.answers): its tables and the JSON that configures them
+        from bes.library.answers import AnswerLibrary
+
+        arrays = [f"ans_{k}.npy" for k in (*EntryBlocks.ARRAYS, *AnswerLibrary.PER_ENTRY, *AnswerLibrary.INDEX)]
+        missing = [f for f in arrays if not (root / f).is_file()]
+        if missing:
+            raise FileNotFoundError(f"{root} is not a complete answers library: missing {missing}")
+        return {"arrays": sorted(arrays), "meta": ["answers.json"],
+                "text": [f for f in LIBRARY_TEXT_FILES if (root / f).is_file()]}
     arrays = [f"pack_{k}.npy" for k in Packed.ARRAYS] + [f"index_{k}.npy" for k in TruncatedIndex.ARRAYS]
     meta = ["library.json", "pack.json", "index.json"]
     if (root / "titlekey_hash.npy").exists():                   # as Library.load decides
@@ -712,6 +722,16 @@ def library_files(path: str | Path) -> dict[str, list[str]]:
         raise FileNotFoundError(f"{root} is not a complete library: missing {missing}")
     return {"arrays": sorted(arrays), "meta": sorted(meta),
             "text": [f for f in LIBRARY_TEXT_FILES if (root / f).is_file()]}
+
+
+def _library_marker(path: str | Path) -> Path:
+    """The JSON file that marks a built library (``bes.library.retrieve.library_marker``)."""
+    from bes.library.retrieve import library_marker
+
+    f = library_marker(path)
+    if not f:
+        raise FileNotFoundError(f"{path} holds no built library (neither library.json nor answers.json)")
+    return Path(f)
 
 
 def library_file_list(ship: Mapping[str, Sequence[str]]) -> list[str]:
@@ -769,6 +789,18 @@ def library_qa_sources(path: str | Path) -> list[dict[str, Any]]:
     its registry entry (dataset, config, split, revision, licence, permissive) and the number of
     stored entries (rows of ``ATTRIBUTION_QA.tsv``; ``None`` without that file)."""
     root = Path(path)
+    ans = _read_json(root / "answers.json")
+    if ans:
+        # an answers library records its sources itself (scripts/build_answers.py)
+        out = []
+        for name, s in sorted(((ans.get("build") or {}).get("sources") or {}).items()):
+            lic = str(s.get("licence") or "unknown")
+            out.append({"source": name, "repo": s.get("repo"), "config": s.get("files"), "split": "train",
+                        "revision": s.get("commit") or s.get("revision"), "license": lic,
+                        "permissive": lic.split()[0].lower() in ("apache-2.0", "mit", "cc-by-4.0", "cc-by-sa-3.0",
+                                                                 "odc-by-1.0", "llama3.1"),
+                        "entries": s.get("stored")})
+        return out
     qa = _read_json(root / "qa.json")
     if not qa:
         return []
@@ -870,13 +902,18 @@ def readset_report(params: Any, consts: Any, model_cfg, tok, probes: Sequence[tu
     if lib is not None and queries:
         from bes.library.retrieve import ReadLog
 
-        reads, n_ret = [], 0
+        reads, n_ret, n_verb = [], 0, 0
+        new_read = getattr(lib, "new_read", None)       # an answers library: one capped log per reply
         for q in queries:
             # a query is a user turn, or (turn, earlier user turns) as the responder retrieves
             text, context = (q, None) if isinstance(q, str) else (q[0], list(q[1]) or None)
-            log = ReadLog()
+            log = new_read() if callable(new_read) else ReadLog()
             try:
-                p = lib.retrieve(text, log=log, context=context) if context else lib.retrieve(text, log=log)
+                if callable(new_read) and lib.verbatim(text, None, context=context, log=log) is not None:
+                    n_verb += 1                         # the stored answer is the reply: nothing else is read
+                    p = None
+                else:
+                    p = lib.retrieve(text, log=log, context=context) if context else lib.retrieve(text, log=log)
             except Exception:  # noqa: BLE001 - a query the library cannot handle reads nothing
                 continue
             if p is not None:
@@ -886,6 +923,8 @@ def readset_report(params: Any, consts: Any, model_cfg, tok, probes: Sequence[tu
         out["library"] = {"queries": len(queries), "retrieved": n_ret,
                           "read_mean": float(np.mean(reads)) if reads else None,
                           "read_max": int(max(reads)) if reads else None, "read_bound": bound}
+        if callable(new_read):
+            out["library"]["verbatim"] = n_verb
     steps = [p["step_max"] for p in out["probes"] if p["step_max"] is not None]
     lib_max = (out.get("library") or {}).get("read_max") or 0
     out["step_max_with_retrieval"] = (max(steps) + lib_max) if steps else None
@@ -1234,7 +1273,12 @@ def what_this_is(rec: Mapping[str, Any]) -> str:
         s += f" The canary put the run on fallback ladder rung {lad.get('rung')} ({', '.join(lad['groups'])} off)."
     lib = rec.get("library") or {}
     settings = (rec.get("decode_choice") or {}).get("settings") or {}
-    if lib.get("mode") not in (None, "none"):
+    if lib.get("mode") not in (None, "none") and lib.get("kind") == "answers":
+        s += (" A written answers library ships with it (questions with the answers teacher models wrote, "
+              "stored as text, not trained): a question it holds is answered with the stored answer, and "
+              "similar entries are shown to the model as exemplars before the user's turn; "
+              f"{'on' if settings.get('use_library', True) else 'off'} by default.")
+    elif lib.get("mode") not in (None, "none"):
         s += (" A written library (Simple English Wikipedia passages and question-answer pairs) ships with "
               f"it behind a calibrated retrieval gate, {'on' if settings.get('use_library', True) else 'off'} "
               "by default.")
@@ -1364,7 +1408,15 @@ def model_card(rec: Mapping[str, Any]) -> str:
                  "per lookup read, and the worst-case read of one library retrieval charged to the step "
                  "that retrieves.")
         lib = acc.get("library")
-        if lib:
+        if lib and (rec.get("library") or {}).get("kind") == "answers":
+            la = lib.get("accounting") or {}
+            L.append("")
+            L.append(f"Answers library: {_fmt_int(lib.get('n_qa'))} question-answer entries; "
+                     f"{_fmt_int(la.get('total_numbers'))} stored numbers (compressed text and its directory "
+                     f"{_fmt_int(la.get('text_numbers'))}, per-entry rows {_fmt_int(la.get('entry_numbers'))}, index "
+                     f"{_fmt_int(la.get('index_numbers'))}); one reply reads at most "
+                     f"{_fmt_int((lib.get('read_bound') or {}).get('total'))} of them (a cap the read log enforces).")
+        elif lib:
             la = lib.get("accounting") or {}
             L.append("")
             L.append(f"Library: {_fmt_int(lib.get('n_wiki'))} wiki passages and {_fmt_int(lib.get('n_qa'))} "
@@ -1550,10 +1602,16 @@ def model_card(rec: Mapping[str, Any]) -> str:
     libsrc = rec.get("library") or {}
     if libsrc.get("mode") not in (None, "none"):
         L.append("")
-        L.append(f"Library ({libsrc.get('mode')}, digest {str(libsrc.get('digest'))[:16]}...): Simple English "
-                 "Wikipedia text (CC BY-SA 3.0 / GFDL) and the question-answer pairs below; per-article and "
-                 "per-entry attribution in `ATTRIBUTION.md`, `ATTRIBUTION.tsv` and `ATTRIBUTION_QA.tsv` of the "
-                 "library directory" + (" (copied next to this card as `LIBRARY_ATTRIBUTION.md`)." if libsrc.get("attribution") else "."))
+        if libsrc.get("kind") == "answers":
+            L.append(f"Answers library ({libsrc.get('mode')}, digest {str(libsrc.get('digest'))[:16]}...): the "
+                     "question-answer pairs below, from datasets whose cards state a licence; attribution in "
+                     "`ATTRIBUTION.md` of the library directory"
+                     + (" (copied next to this card as `LIBRARY_ATTRIBUTION.md`)." if libsrc.get("attribution") else "."))
+        else:
+            L.append(f"Library ({libsrc.get('mode')}, digest {str(libsrc.get('digest'))[:16]}...): Simple English "
+                     "Wikipedia text (CC BY-SA 3.0 / GFDL) and the question-answer pairs below; per-article and "
+                     "per-entry attribution in `ATTRIBUTION.md`, `ATTRIBUTION.tsv` and `ATTRIBUTION_QA.tsv` of the "
+                     "library directory" + (" (copied next to this card as `LIBRARY_ATTRIBUTION.md`)." if libsrc.get("attribution") else "."))
         qa = lic.get("library_qa_sources") or libsrc.get("qa_sources") or []
         if qa:
             L.append("")
@@ -1826,7 +1884,8 @@ def export_run(out_dir: str | Path, *, checkpoint: str | Path | None = None,
             every = {str(p.relative_to(library)) for p in Path(library).rglob("*") if p.is_file()}
             lib_rec = {"mode": library_mode, "source_path": str(Path(library).resolve()),
                        "digest": dig["digest"], "bytes": dig["bytes"], "files": len(dig["files"]),
-                       "meta_sha256": sha256_file(Path(library) / "library.json"),
+                       "meta_sha256": sha256_file(_library_marker(library)),
+                       "kind": "answers" if (Path(library) / "answers.json").is_file() else "passages",
                        "shipped": ship, "numbers": numbers, "left_out": sorted(every - set(lib_ship)),
                        "qa_sources": library_qa_sources(library),
                        "build_settings": _read_json(Path(library) / LIBRARY_SETTINGS),

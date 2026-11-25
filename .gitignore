@@ -9,3 +9,4 @@ __pycache__/
 *.tmp
 .ipynb_checkpoints/
 /.claude/
+.bes_profile

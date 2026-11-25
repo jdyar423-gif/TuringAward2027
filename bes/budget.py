@@ -67,6 +67,12 @@ V2_ASSETS = Assets(library_numbers=40_268_392, index_numbers=23_499_999,
                    library_read=53_695, index_read=191_528)
 
 
+#: The answers library of the six-hour model (``bes.library.answers``, ``answers_v1``, built by
+#: ``scripts/build_answers.py``; ``release/m6/library``): 399,699 question-answer entries. One
+#: reply reads at most ``AnswerCfg.read_cap`` numbers of it, a cap its read log enforces.
+M6_ASSETS = Assets(library_numbers=51_071_773, index_numbers=6_352_967, library_read=700_000, index_read=0)
+
+
 def assets_of(library: Any) -> Assets:
     """Assets of a built library object (``bes.library.retrieve.Library``): its exact stored
     numbers and the analytical bound of one retrieval's read set."""

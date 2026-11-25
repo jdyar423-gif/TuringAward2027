@@ -59,3 +59,29 @@ def test_recorded_library_assets_match_the_library_on_disk():
     v2 = budget.V2_ASSETS
     assert live.library_numbers + live.index_numbers == v2.library_numbers + v2.index_numbers
     assert live.library_read + live.index_read == v2.library_read + v2.index_read
+
+
+def test_six_hour_model_is_under_the_caps_with_its_answers_library():
+    """configs/m6.py with the answers library actually built (docs/PLAN_M6.md): 91.96M stored
+    numbers, 19.73M read per token when one reply's whole library read (the enforced cap) is
+    charged to a single step."""
+    from bes.library.answers import AnswerCfg
+    from bes.train.supervisor import ANSWERS_CAP
+
+    cfg, b = _budget("m6", budget.M6_ASSETS)
+    assert budget.M6_ASSETS.library_read == AnswerCfg().read_cap
+    assert budget.M6_ASSETS.library_numbers + budget.M6_ASSETS.index_numbers == 57_424_740 <= ANSWERS_CAP
+    assert b.total == 91_956_460 <= 100e6
+    assert b.active_step == 19_733_736 <= 20e6
+    # any library the run's self-check accepts keeps the total under the cap
+    _, core = _budget("m6")
+    assert core.total + ANSWERS_CAP <= 100e6
+    assert cfg.data.profile == "m6" and cfg.run.ship_library == "always"
+
+
+def test_recorded_answers_assets_match_the_library_on_disk():
+    lib_dir = os.path.join(ROOT, "data_cache", "library", "answers_v1")
+    if not os.path.exists(os.path.join(lib_dir, "answers.json")):
+        pytest.skip("the answers library is not unpacked")
+    from bes.library.retrieve import Library
+    assert budget.assets_of(Library.load(lib_dir)) == budget.M6_ASSETS

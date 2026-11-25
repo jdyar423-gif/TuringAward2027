@@ -305,10 +305,16 @@ def _same_library(a: Mapping[str, Any] | None, b: Mapping[str, Any] | None) -> b
 
 
 def _resolve_library(lib: Any) -> Any:
+    """``lib`` (a path or a library object) as the loader uses it. An answers library
+    (``bes.library.answers``) is put in training mode: a stored question equal to the
+    sample's own is skipped, and the questions are held in memory."""
     if isinstance(lib, (str, os.PathLike)):
         from bes.library.retrieve import Library
 
-        return Library.load(str(lib))
+        lib = Library.load(str(lib))
+    inner = getattr(lib, "lib", lib)                 # a LibraryView wraps the library
+    if callable(getattr(inner, "for_training", None)) and not getattr(inner, "train", True):
+        lib = inner.for_training()
     return lib
 
 
@@ -1499,8 +1505,10 @@ class Loader:
                  loader_cfg: LoaderCfg | None = None, mix: MixCfg | None = None,
                  journal: str | os.PathLike | None = None, start_method: str = "spawn",
                  tokens_before: int = 0):
+        from bes.config import check_profile
         from bes.train import schedule
 
+        check_profile(cfg.data)
         self.cfg = cfg
         #: training tokens of the run before this loader's first batch: 0, except for a stream
         #: that starts in the middle of a run (a run grafted onto another configuration:

@@ -46,6 +46,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
 from bes.config import CriticCfg, LoaderCfg, PrefCfg, config_hash, load_config, to_dict  # noqa: E402
+from bes.config import check_profile
 from bes.train import stages as ST  # noqa: E402
 from bes.train import supervisor as SV  # noqa: E402
 from bes.train.ledger import atomic_write_json  # noqa: E402
@@ -133,7 +134,9 @@ class Run:
         """The ready marker's library directory when it is on this disk, else ``""``."""
         mk = SV.read_marker(self.paths, "library") or {}
         path = str(mk.get("path") or "")
-        return path if path and (Path(path) / "library.json").is_file() else ""
+        from bes.library.retrieve import library_marker
+
+        return path if path and library_marker(path) else ""
 
     def _wait_for_library(self, ctx: SV.StageContext, poll_s: float = 10.0):
         """The library, waiting for the library task: a resumed training whose loader journal
@@ -225,7 +228,7 @@ class Run:
         from bes.train import schedule
         from bes.train.train import parse_micro_split, split_for
 
-        text = str((self.reload() or {}).get("micro_split") or "1")
+        text = str((self.reload() or {}).get("micro_split") or self.cfg.run.micro_split or "1")
         path = self.paths.out / "micro_split"
         if path.exists():
             asked = path.read_text().strip()
@@ -299,6 +302,15 @@ class Run:
         if tok != cp.tokenize:
             self.log(f"background: the journal's shards are not on this machine: tokenising with "
                      f"{len(tok)} workers (the plan's share is {len(cp.tokenize)})")
+        want = int(self.cfg.run.tokenize_workers)
+        if want > len(tok):
+            # run.tokenize_workers: cores from the top of the list that are neither the trainer's,
+            # the downloads' nor the library task's (the opponents' share, idle without opponents)
+            spare = [c for c in cp.cores if c not in cp.trainer and c not in cp.downloads and c not in cp.library]
+            n = min(want, len(spare))
+            if n > len(tok):
+                tok = tuple(sorted(spare[-n:]))
+                self.log(f"background: tokenising with {len(tok)} workers (run.tokenize_workers)")
         return [
             SV.TaskSpec("downloads", mk("downloads", out, 5, cp.downloads), nice=5,
                         cores=cp.downloads, threads=4, restarts=8, backoff_s=10.0),
@@ -1093,7 +1105,7 @@ class Run:
             raise SV.StageSkipped(f"not enough preference pairs (train {len(split.train)}, held out "
                                   f"{len(split.heldout)}; filter counts {split.stats})")
         tps = float((self.man.get("benchmark") or {}).get("tokens_per_s") or 0.0)
-        lrs = (1e-6, 3e-6)
+        lrs = tuple(float(x) for x in str(ecfg.run.prefopt_lrs).replace(",", " ").split()) or (1e-6, 3e-6)
         if tps > 0:
             per_pair = 2 * t * (len(lrs) + 0.5) * 1.6 / tps
             n_max = max(pref.pairs_per_micro * pref.n_micro, int(0.6 * ctx.left() / per_pair))
@@ -1466,9 +1478,14 @@ class Run:
             fn, why = None, f"{type(e).__name__}: {e}"
         decode = man.get("decode")
         if self.library_path() and "ship" not in ((decode or {}).get("library") or {}):
-            # no decode selection (it failed, was shed or has not run): no measurement, no gain
-            decode = {**(decode or {}), "library": {"ship": False, "reason": "the decode selection made no "
-                                                    "library decision (no measurement, no gain)"}}
+            if ecfg.run.ship_library == "always":
+                decode = {**(decode or {}), "library": {"ship": True, "rule": "run.ship_library",
+                                                        "reason": "the library is part of the model "
+                                                                  "(run.ship_library = always)"}}
+            else:
+                # no decode selection (it failed, was shed or has not run): no measurement, no gain
+                decode = {**(decode or {}), "library": {"ship": False, "reason": "the decode selection made no "
+                                                        "library decision (no measurement, no gain)"}}
         if fn is not None:
             avail = {"checkpoint": str(ckpt), "config": str(man["config"]), "overrides": SV.run_overrides(man),
                      "horizon_tokens": SV.horizon_of(man),
@@ -1559,7 +1576,7 @@ def post_plan_run(run_cfg, out: Path, log=None):
     return dataclasses.replace(run_cfg, post_minutes=text, post_reserve_hours=total / 60.0)
 
 
-def fast_switches_run(out: Path, log=None) -> str:
+def fast_switches_run(out: Path, log=None, default: str = "") -> str:
     """Apply the speed switches of a run (``bes.model.fast``): the kernel and the hand-written
     backward passes its programs are traced with. They are not configuration (same values to
     float rounding; the batches, the journal, the checkpoints and the hash do not change): the
@@ -1571,6 +1588,16 @@ def fast_switches_run(out: Path, log=None) -> str:
 
     man = SV.read_manifest(out) or {}
     text = str(man.get("fast") or "")
+    if not text and default:
+        # the configuration's switches (run.fast) for a run whose operator set none
+        try:
+            fast.parse(default)
+        except ValueError as e:
+            if log:
+                log(f"fast: run.fast is not a setting ({e}): ignored")
+        else:
+            text = " ".join(default.split())
+            SV.update_manifest(out, fast=text)
     path = Path(out) / "fast"
     if path.exists():
         asked = " ".join(path.read_text().split())
@@ -1860,6 +1887,7 @@ def new_manifest(args: argparse.Namespace, out: Path) -> dict:
     if args.budget_minutes is not None:
         overrides.append(f"run.deadline_hours={args.budget_minutes / 60.0!r}")
     cfg = load_config(args.config, overrides)
+    check_profile(cfg.data)                   # BES_PROFILE must be the configuration's profile
     t0 = time.time()
     budget_s = cfg.run.deadline_hours * 3600.0
     if budget_s <= cfg.run.post_reserve_hours * 3600.0:
@@ -1921,7 +1949,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         cfg = run.cfg
         budget = man["budget"]
         plan_run = post_plan_run(cfg.run, out, run.log)
-        fast_switches_run(out, run.log)                  # before any stage traces a program
+        fast_switches_run(out, run.log, cfg.run.fast)    # before any stage traces a program
         specs = ST.stage_specs(plan_run, float(budget["budget_s"]))
         fns = {"preflight": run.stage_preflight, "background": run.stage_background,
                "benchmark": run.stage_benchmark, "train": run.stage_train,

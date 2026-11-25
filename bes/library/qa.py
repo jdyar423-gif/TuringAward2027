@@ -249,6 +249,11 @@ _WORD_RX = re.compile(r"[\w'’-]+|[.!?;:\"“”(]")
 
 
 def _number(t: str) -> str | None:
+    if t.isalpha():                          # no digit: only a number word or a roman numeral
+        if t in ORDINAL_NUMBERS:
+            return ORDINAL_NUMBERS[t]
+        if t[0] not in "ivx" or not _ROMAN_RX.match(t):
+            return None
     m = _ORD_SUFFIX_RX.match(t)
     if m:
         return str(int(m.group(1)))
