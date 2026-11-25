@@ -1,0 +1,69 @@
+{
+ "name": "m6_export",
+ "source": "/content/runs/m6v/final",
+ "bytes": 196341760,
+ "sha256": "38d29633ee8a07439115b663178fe4710402c3d73bdf7334fa7badfc64a83d17",
+ "parts": [
+  {
+   "name": "m6_export.tar.000",
+   "bytes": 16777216,
+   "sha256": "3688acd89c0c07d342c2c054f4da39432b6f6cd27322c718fe40ad4dc76b3582"
+  },
+  {
+   "name": "m6_export.tar.001",
+   "bytes": 16777216,
+   "sha256": "af5372aed8b61d331b3f209475da882b8a140c39560d58cee4bd6cdd4758a3be"
+  },
+  {
+   "name": "m6_export.tar.002",
+   "bytes": 16777216,
+   "sha256": "33687128d7c3c401ad4dd8ce26a440d60a1e3bbc3e7d4988940ae5f93c442d50"
+  },
+  {
+   "name": "m6_export.tar.003",
+   "bytes": 16777216,
+   "sha256": "1c072eec369a17f16c94c4edc374faf38efe95207c884c8e6d36c4f4e09d7e6a"
+  },
+  {
+   "name": "m6_export.tar.004",
+   "bytes": 16777216,
+   "sha256": "510b96656215a7f2222fb767deddd7eb10597a19bdc1f88af621d9d5b80576f7"
+  },
+  {
+   "name": "m6_export.tar.005",
+   "bytes": 16777216,
+   "sha256": "334c40ed284f965ee3161c1d162558c7052e5821e1c1b017672518112e8b34ba"
+  },
+  {
+   "name": "m6_export.tar.006",
+   "bytes": 16777216,
+   "sha256": "6ef01c9710ae77ac959152fc8f12605b11006458e529a07f6277805b0a286622"
+  },
+  {
+   "name": "m6_export.tar.007",
+   "bytes": 16777216,
+   "sha256": "25dfafd88448458d410ca6f1644a0de2164c2ff043511673e9951c33b1672e51"
+  },
+  {
+   "name": "m6_export.tar.008",
+   "bytes": 16777216,
+   "sha256": "b6bf56f4147a3a48ad3bc31dfb5e4f1d6b1a8cf1213279729d4fca43332a220d"
+  },
+  {
+   "name": "m6_export.tar.009",
+   "bytes": 16777216,
+   "sha256": "cec9057bf73d79f395c420c708e6bf4acb7f37b34ebc566d8f3785ca43e24297"
+  },
+  {
+   "name": "m6_export.tar.010",
+   "bytes": 16777216,
+   "sha256": "c6b04091c090ecd8e34a2d9289dafda132dc4848deac250860edcee3c0fe161b"
+  },
+  {
+   "name": "m6_export.tar.011",
+   "bytes": 11792384,
+   "sha256": "e18faa38c364251efd3da87fc5a1db08d2cce4c05269020a16f262032bd934c6"
+  }
+ ],
+ "members": 15
+}
