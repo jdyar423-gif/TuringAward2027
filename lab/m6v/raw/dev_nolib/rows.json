@@ -1,0 +1,1640 @@
+[
+ {
+  "pair_id": "chat-003",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   129
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 90.846
+ },
+ {
+  "pair_id": "chat-006",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   135
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 64.549
+ },
+ {
+  "pair_id": "chat-007",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   193
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 65.684
+ },
+ {
+  "pair_id": "chat-010",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   8
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 35.357
+ },
+ {
+  "pair_id": "chat-011",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   21
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 5.988
+ },
+ {
+  "pair_id": "chat-012",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   176,
+   177
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 250.164
+ },
+ {
+  "pair_id": "chat-015",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   214
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 132.801
+ },
+ {
+  "pair_id": "chat-020",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   219,
+   194
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 104.673
+ },
+ {
+  "pair_id": "chat-024",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   205,
+   231
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 219.605
+ },
+ {
+  "pair_id": "chat-026",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   193
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 50.99
+ },
+ {
+  "pair_id": "chat-027",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   246
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 82.126
+ },
+ {
+  "pair_id": "chat-030",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   173
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 39.157
+ },
+ {
+  "pair_id": "chat-032",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   161,
+   161
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 228.857
+ },
+ {
+  "pair_id": "chat-033",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   14
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 3.394
+ },
+ {
+  "pair_id": "chat-034",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   7
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 57.735
+ },
+ {
+  "pair_id": "chat-037",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   157
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 51.309
+ },
+ {
+  "pair_id": "chat-039",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   59
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 26.1
+ },
+ {
+  "pair_id": "chat-042",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   188
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 93.478
+ },
+ {
+  "pair_id": "chat-045",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   148
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 91.008
+ },
+ {
+  "pair_id": "chat-050",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   178
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 92.347
+ },
+ {
+  "pair_id": "chat-051",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   181
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 93.325
+ },
+ {
+  "pair_id": "chat-053",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   213
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 183.172
+ },
+ {
+  "pair_id": "chat-059",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   247
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 86.941
+ },
+ {
+  "pair_id": "chat-062",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   236
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 109.749
+ },
+ {
+  "pair_id": "chat-064",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   134,
+   168
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 357.966
+ },
+ {
+  "pair_id": "chat-066",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   133
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 71.216
+ },
+ {
+  "pair_id": "chat-071",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   252
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 115.531
+ },
+ {
+  "pair_id": "chat-072",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   519,
+   146
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 742.04
+ },
+ {
+  "pair_id": "chat-074",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   268
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 103.715
+ },
+ {
+  "pair_id": "chat-084",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   14,
+   15
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 16.514
+ },
+ {
+  "pair_id": "chat-085",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   123
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 70.38
+ },
+ {
+  "pair_id": "chat-090",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   128
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 28.501
+ },
+ {
+  "pair_id": "chat-094",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   19
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 48.821
+ },
+ {
+  "pair_id": "chat-095",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   159
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 63.458
+ },
+ {
+  "pair_id": "chat-098",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   235
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 56.09
+ },
+ {
+  "pair_id": "chat-100",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   172,
+   768
+  ],
+  "finish": [
+   "stop",
+   "length"
+  ],
+  "seconds": 340.932
+ },
+ {
+  "pair_id": "code-001",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   127
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 54.947
+ },
+ {
+  "pair_id": "code-005",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   142
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 59.916
+ },
+ {
+  "pair_id": "code-007",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   312
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 183.025
+ },
+ {
+  "pair_id": "code-008",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   123,
+   167
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 98.179
+ },
+ {
+  "pair_id": "code-012",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   118,
+   531
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 210.132
+ },
+ {
+  "pair_id": "code-017",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   152
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 40.93
+ },
+ {
+  "pair_id": "code-020",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   185,
+   196
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 122.515
+ },
+ {
+  "pair_id": "code-022",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   181
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 37.603
+ },
+ {
+  "pair_id": "code-024",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   233,
+   247
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 137.717
+ },
+ {
+  "pair_id": "code-027",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   201
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 64.166
+ },
+ {
+  "pair_id": "code-030",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   581
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 246.454
+ },
+ {
+  "pair_id": "code-032",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   96,
+   118
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 82.562
+ },
+ {
+  "pair_id": "code-035",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   311
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 138.191
+ },
+ {
+  "pair_id": "code-039",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   148
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 33.361
+ },
+ {
+  "pair_id": "code-040",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   216,
+   249
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 295.939
+ },
+ {
+  "pair_id": "code-041",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   146
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 44.044
+ },
+ {
+  "pair_id": "code-042",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   178
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 42.957
+ },
+ {
+  "pair_id": "code-045",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   291
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 54.165
+ },
+ {
+  "pair_id": "code-053",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   185
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 61.605
+ },
+ {
+  "pair_id": "code-057",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   43
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 18.754
+ },
+ {
+  "pair_id": "code-058",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   120
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 72.903
+ },
+ {
+  "pair_id": "code-060",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   161,
+   168
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 222.395
+ },
+ {
+  "pair_id": "instruct-006",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   13
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 2.789
+ },
+ {
+  "pair_id": "instruct-008",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   106,
+   59
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 85.163
+ },
+ {
+  "pair_id": "instruct-009",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   33
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 13.164
+ },
+ {
+  "pair_id": "instruct-012",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   223,
+   27
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 56.877
+ },
+ {
+  "pair_id": "instruct-016",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   40,
+   16
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 36.663
+ },
+ {
+  "pair_id": "instruct-028",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   123,
+   17
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 31.277
+ },
+ {
+  "pair_id": "instruct-030",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   84
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 28.293
+ },
+ {
+  "pair_id": "instruct-033",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   10
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 162.147
+ },
+ {
+  "pair_id": "instruct-048",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   729,
+   468
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 718.997
+ },
+ {
+  "pair_id": "instruct-049",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   350
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 107.532
+ },
+ {
+  "pair_id": "instruct-053",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   69
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 19.656
+ },
+ {
+  "pair_id": "instruct-055",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   42
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 41.347
+ },
+ {
+  "pair_id": "instruct-060",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   427,
+   97
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 349.41
+ },
+ {
+  "pair_id": "instruct-064",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   108,
+   99
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 234.264
+ },
+ {
+  "pair_id": "instruct-065",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   338
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 119.043
+ },
+ {
+  "pair_id": "instruct-068",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   180,
+   768
+  ],
+  "finish": [
+   "stop",
+   "length"
+  ],
+  "seconds": 356.335
+ },
+ {
+  "pair_id": "math-040",
+  "category": "math",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   11,
+   11
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 182.981
+ },
+ {
+  "pair_id": "writing-002",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   279
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 259.1
+ },
+ {
+  "pair_id": "writing-019",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   107
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 48.105
+ },
+ {
+  "pair_id": "writing-035",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   489
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 237.775
+ },
+ {
+  "pair_id": "writing-041",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   225
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 219.594
+ },
+ {
+  "pair_id": "writing-068",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   206,
+   190
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 188.248
+ },
+ {
+  "pair_id": "writing-070",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   321
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 160.832
+ },
+ {
+  "pair_id": "writing-072",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   211,
+   23
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 118.28
+ },
+ {
+  "pair_id": "writing-074",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   61
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 11.585
+ },
+ {
+  "pair_id": "writing-078",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   262
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 164.875
+ },
+ {
+  "pair_id": "writing-096",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   91,
+   91
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 455.418
+ }
+]

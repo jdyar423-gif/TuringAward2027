@@ -1,0 +1,98 @@
+[
+ {
+  "group": "prompts that used it",
+  "n": 85,
+  "on": 0.5882352941176471,
+  "on_wlt": "28/13/44",
+  "off": 0.3941176470588235,
+  "off_wlt": "5/23/57",
+  "library_better": 37,
+  "library_worse": 6,
+  "p": 1.636124125070637e-06
+ },
+ {
+  "group": "verbatim tier",
+  "n": 12,
+  "on": 0.7916666666666666,
+  "on_wlt": "8/1/3",
+  "off": 0.375,
+  "off_wlt": "0/3/9",
+  "library_better": 9,
+  "library_worse": 0,
+  "p": 0.00390625
+ },
+ {
+  "group": "exemplar tier",
+  "n": 71,
+  "on": 0.5563380281690141,
+  "on_wlt": "20/12/39",
+  "off": 0.4014084507042254,
+  "off_wlt": "5/19/47",
+  "library_better": 27,
+  "library_worse": 6,
+  "p": 0.0003240634687244892
+ },
+ {
+  "group": "category chat",
+  "n": 36,
+  "on": 0.7083333333333334,
+  "on_wlt": "19/4/13",
+  "off": 0.3611111111111111,
+  "off_wlt": "1/11/24",
+  "library_better": 24,
+  "library_worse": 1,
+  "p": 1.5497207641601562e-06
+ },
+ {
+  "group": "category code",
+  "n": 22,
+  "on": 0.5227272727272727,
+  "on_wlt": "4/3/15",
+  "off": 0.4772727272727273,
+  "off_wlt": "2/3/17",
+  "library_better": 4,
+  "library_worse": 2,
+  "p": 0.6875
+ },
+ {
+  "group": "category instruct",
+  "n": 16,
+  "on": 0.46875,
+  "on_wlt": "2/3/11",
+  "off": 0.40625,
+  "off_wlt": "2/5/9",
+  "library_better": 5,
+  "library_worse": 3,
+  "p": 0.7265625
+ },
+ {
+  "group": "category writing",
+  "n": 10,
+  "on": 0.5,
+  "on_wlt": "3/3/4",
+  "off": 0.3,
+  "off_wlt": "0/4/6",
+  "library_better": 4,
+  "library_worse": 0,
+  "p": 0.125
+ },
+ {
+  "group": "category math",
+  "n": 1,
+  "on": 0.5,
+  "on_wlt": "0/0/1",
+  "off": 0.5,
+  "off_wlt": "0/0/1",
+  "library_better": 0,
+  "library_worse": 0,
+  "p": 1.0
+ },
+ {
+  "group": "whole dev without the library",
+  "n": 200,
+  "win": 10,
+  "loss": 52,
+  "tie": 138,
+  "score": 0.395
+ }
+]
