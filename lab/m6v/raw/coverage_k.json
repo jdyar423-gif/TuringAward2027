@@ -1,0 +1,90 @@
+[
+ {
+  "K": 5120,
+  "weights_and_map": 74574216,
+  "library_numbers": 25308804,
+  "entries": 172273,
+  "default": {
+   "exemplar": 71,
+   "none": 117,
+   "verbatim": 12
+  },
+  "loose0.40": {
+   "exemplar": 118,
+   "none": 70,
+   "verbatim": 12
+  },
+  "loose0.35": {
+   "exemplar": 136,
+   "none": 52,
+   "verbatim": 12
+  },
+  "mean_top_partial": 0.5147994120901324
+ },
+ {
+  "K": 4096,
+  "weights_and_map": 66709896,
+  "library_numbers": 33191065,
+  "entries": 228062,
+  "default": {
+   "exemplar": 74,
+   "none": 114,
+   "verbatim": 12
+  },
+  "loose0.40": {
+   "exemplar": 127,
+   "none": 61,
+   "verbatim": 12
+  },
+  "loose0.35": {
+   "exemplar": 140,
+   "none": 48,
+   "verbatim": 12
+  },
+  "mean_top_partial": 0.5144523817897959
+ },
+ {
+  "K": 3072,
+  "weights_and_map": 58845576,
+  "library_numbers": 40960653,
+  "entries": 283973,
+  "default": {
+   "exemplar": 76,
+   "none": 112,
+   "verbatim": 12
+  },
+  "loose0.40": {
+   "exemplar": 128,
+   "none": 60,
+   "verbatim": 12
+  },
+  "loose0.35": {
+   "exemplar": 139,
+   "none": 49,
+   "verbatim": 12
+  },
+  "mean_top_partial": 0.5115771905563457
+ },
+ {
+  "K": 2048,
+  "weights_and_map": 50981256,
+  "library_numbers": 48931337,
+  "entries": 353045,
+  "default": {
+   "exemplar": 77,
+   "none": 111,
+   "verbatim": 12
+  },
+  "loose0.40": {
+   "exemplar": 129,
+   "none": 59,
+   "verbatim": 12
+  },
+  "loose0.35": {
+   "exemplar": 142,
+   "none": 46,
+   "verbatim": 12
+  },
+  "mean_top_partial": 0.5146813247134497
+ }
+]
