@@ -405,6 +405,9 @@ class DecodeCfg:
     exemplar_tag: bool = False        # exemplars are shown with their match tag (as DataCfg.exemplar_tag)
     exemplar_numbers: bool = True     # with exemplar_floor: entries that differ from the message in their
                                       # numbers alone are exemplars too (False: by score only)
+    verbatim_rank: float = 0.0        # > 0: a stored answer is the reply when its entry's exact overlap with
+                                      # the message (less the type penalty) reaches this, instead of the
+                                      # library's own rule (AnswerLibrary.verbatim(min_rank=...))
 
 
 @dataclass(frozen=True)
@@ -462,7 +465,7 @@ HASH_NEUTRAL: dict[str, tuple[str, ...]] = {
     "optim": ("lr_mult", "tokens_before"),
     "data": ("profile", "exemplar_floor", "exemplar_floor_frac", "exemplar_tag"),
     "run": ("tokenize_workers", "fast", "micro_split", "prefopt_lrs", "ship_library", "init_from", "init_sha256"),
-    "decode": ("verbatim", "exemplar_floor", "exemplar_tag", "exemplar_numbers"),
+    "decode": ("verbatim", "exemplar_floor", "exemplar_tag", "exemplar_numbers", "verbatim_rank"),
 }
 
 

@@ -384,15 +384,25 @@ class Responder:
                 pass
         return self.library.retrieve(user_text, **kw)
 
-    def verbatim(self, user_text: str, spec, history: Sequence[str] | None = None, log=None):
+    def verbatim(self, user_text: str, spec, history: Sequence[str] | None = None, log=None,
+                 min_rank: float | None = None):
         """The stored entry whose answer is the reply (``bes.library.answers.AnswerLibrary.verbatim``:
         the library holds the user's question and its answer meets the user's explicit
         constraints), or ``None`` (also for a library without stored answers)."""
         fn = getattr(self.library, "verbatim", None)
         if not callable(fn):
             return None
+        kw = {}
+        if min_rank:
+            import inspect
+
+            try:
+                if "min_rank" in inspect.signature(fn).parameters:
+                    kw["min_rank"] = float(min_rank)
+            except (TypeError, ValueError):
+                pass
         try:
-            return fn(user_text, spec, context=list(history) if history else None, log=log)
+            return fn(user_text, spec, context=list(history) if history else None, log=log, **kw)
         except Exception:                           # a library error must not kill the reply
             return None
 
@@ -469,7 +479,8 @@ class Responder:
         history = [m["content"] for m in msgs[:-1] if m["role"] == "user"]
         spec, spec_error = self.compile_spec(user_text)
         lib_log = self.read_log() if d.use_library else None
-        hit = self.verbatim(user_text, spec, history, lib_log) if (d.use_library and d.verbatim) else None
+        hit = (self.verbatim(user_text, spec, history, lib_log, d.verbatim_rank or None)
+               if (d.use_library and d.verbatim) else None)
         if hit is not None:
             out = self._verbatim_reply(hit, spec, d, r, seed)
             out["extra"]["library_read"] = None if lib_log is None else int(lib_log.total)

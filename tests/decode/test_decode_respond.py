@@ -160,6 +160,29 @@ def test_the_exemplar_floor_reaches_a_library_that_takes_one():
     assert lib.calls and lib.calls[-1][1] is None
 
 
+def test_the_verbatim_rank_reaches_a_library_that_takes_one():
+    """``DecodeCfg.verbatim_rank``: passed as ``min_rank`` to a library whose ``verbatim`` has that
+    argument; without the setting the library's own rule is asked."""
+    class Lib:
+        def __init__(self):
+            self.calls = []
+
+        def retrieve(self, query):
+            return None
+
+        def verbatim(self, query, spec, context=None, log=None, min_rank=None):
+            self.calls.append(min_rank)
+            return None
+
+    lib = Lib()
+    _, _, resp = setup(library=lib)
+    q = [{"role": "user", "content": "why is it dark at night?"}]
+    resp.reply(q, {"max_tokens": 8}, seed=0)
+    resp.reply(q, {"max_tokens": 8, "verbatim_rank": 0.6}, seed=0)
+    resp.reply(q, {"max_tokens": 8, "verbatim_rank": 0.6, "verbatim": False}, seed=0)
+    assert lib.calls == [None, 0.6] and DecodeCfg().verbatim_rank == 0.0
+
+
 def test_clean_messages():
     m = R.clean_messages([{"role": "system", "content": "S"},
                           {"role": "library", "content": "old passage"},

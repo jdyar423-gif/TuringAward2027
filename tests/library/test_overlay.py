@@ -146,3 +146,19 @@ def test_the_chat_commands_write_to_the_overlay(base):
     lines2 = iter(["/teach a || b", "/quit"])
     chat.chat_session(reply, {}, input_fn=lambda prompt: next(lines2), print_fn=said.append)
     assert "cannot be taught" in "\n".join(said)
+
+
+def test_a_taught_entry_is_a_verbatim_reply_only_by_its_own_overlap(base):
+    """Under the rank rule (``verbatim(min_rank=...)``) a taught entry counts with its own overlap:
+    the lift that offers it as an exemplar does not make it the reply to a loosely related message."""
+    lib = with_overlay(base, None, 400)
+    lib.teach("What is my dog's name?", "Your dog's name is Pemberly.")
+    loose = "What should I feed my dog in winter?"
+    c = [x for x in lib.candidates(loose) if x.entry >= lib.n_stored]
+    assert c and c[0].sym >= lib.acfg.exemplar_min                      # lifted: offered as an exemplar
+    assert min(c[0].cov_q, c[0].cov_e) < 0.5
+    assert lib.verbatim(loose, constraints.compile(loose), min_rank=0.5) is None
+    assert lib.verbatim(loose, constraints.compile(loose)) is None
+    same = "What is my dog's name?"
+    hit = lib.verbatim(same, constraints.compile(same), min_rank=0.5)
+    assert hit is not None and hit.answer == "Your dog's name is Pemberly." and hit.entry >= lib.n_stored

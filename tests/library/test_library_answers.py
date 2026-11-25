@@ -165,6 +165,28 @@ def test_numbers_only_contrasts_are_exemplars_in_the_loose_mode_alone():
     assert lib.exemplars(other) == [] and lib.exemplars(other, floor=0.35) == []
 
 
+def test_a_rank_threshold_is_another_rule_for_a_verbatim_reply(lib):
+    """``verbatim(min_rank=...)``: the entry's own overlap decides; contrasts and constraints
+    exclude as before, and the library's rule is untouched without it."""
+    q = "Why does ice float on cold water?"                      # close to an entry, not under the library's rule
+    c = [x for x in lib.candidates(q, 3) if x.contrast is None][0]
+    own = min(c.cov_q, c.cov_e) - (0.0 if c.type_match else lib.acfg.type_penalty)
+    assert lib.verbatim(q) is None and 0.5 < own < 1.0
+    hit = lib.verbatim(q, min_rank=own - 0.01)
+    assert hit is not None and hit.entry == c.entry and hit.answer.startswith("Ice is less dense")
+    assert lib.verbatim(q, min_rank=own + 0.01) is None
+    # the same question: both rules
+    same = "Why does ice float on water?"
+    assert lib.verbatim(same).entry == lib.verbatim(same, min_rank=0.6).entry
+    # a contrast (another number) excludes under both rules
+    assert lib.verbatim("What is 12 times 13?", min_rank=0.1) is None
+    # a violated constraint excludes too
+    spec = constraints.compile("Why does ice float on cold water? Answer in all capital letters.")
+    assert lib.verbatim("Why does ice float on cold water? Answer in all capital letters.", spec, min_rank=0.3) is None
+    # a later turn that leans on the conversation is never looked up
+    assert lib.verbatim("And why does it float?", context=["Tell me about ice."], min_rank=0.1) is None
+
+
 def test_follow_up_turns_retrieve_nothing(lib):
     assert lib.retrieve("And what about its population?", context=["What is the capital of Australia?"]) is None
     assert lib.retrieve("What is the capital of France?", context=["Hello there."]) is not None

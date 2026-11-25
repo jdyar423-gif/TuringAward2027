@@ -726,10 +726,16 @@ class AnswerLibrary:
         return out
 
     def verbatim(self, query: str, spec: Any = None, context: Sequence[str] | None = None,
-                 log: AnswerRead | None = None) -> Candidate | None:
+                 log: AnswerRead | None = None, min_rank: float | None = None) -> Candidate | None:
         """The stored entry whose answer can be given as the reply, or ``None`` (module
         docstring). ``spec``: the user's compiled constraints (``bes.exact.constraints``);
-        an answer that violates one is not used."""
+        an answer that violates one is not used.
+
+        ``min_rank`` (``DecodeCfg.verbatim_rank``): another rule for "the library holds this
+        question". Instead of the coverages and the rarest unshared term, the entry's exact
+        overlap ``min(cov_q, cov_e)``, less ``type_penalty`` when the question types differ, must
+        reach ``min_rank``; a contrast and a violated constraint exclude an entry as before. (The
+        overlap is the entry's own: a taught entry's lifted score does not count.)"""
         cfg = self.acfg
         if len(query) > cfg.max_query_chars:
             return None
@@ -739,12 +745,19 @@ class AnswerLibrary:
             if not self_contained(query):
                 return None
         for c in self.candidates(query, 3, (), log):
-            if c.contrast is not None or not c.type_match:
+            if c.contrast is not None:
                 continue
-            if c.cov_q < cfg.verbatim_cov_q - 1e-12 or c.cov_e < cfg.verbatim_cov_e - 1e-12:
-                continue
-            if max(c.miss_q, c.miss_e) > cfg.verbatim_max_miss + 1e-12:
-                continue
+            if min_rank is not None:
+                own = min(c.cov_q, c.cov_e) - (0.0 if c.type_match else cfg.type_penalty)
+                if own < float(min_rank) - 1e-12:
+                    continue
+            else:
+                if not c.type_match:
+                    continue
+                if c.cov_q < cfg.verbatim_cov_q - 1e-12 or c.cov_e < cfg.verbatim_cov_e - 1e-12:
+                    continue
+                if max(c.miss_q, c.miss_e) > cfg.verbatim_max_miss + 1e-12:
+                    continue
             answer = c.answer or self._answer(c.entry, log)
             if not answer:
                 continue
