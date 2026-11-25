@@ -1,0 +1,36 @@
+PART 1: what each token table is worth (held-out web + chat, 8 rows x 1024 each)
+  v9 as trained                                all 2.1791  web 2.7737  chat 1.5637  freed   0.0M   [23s]
+  page+gain rows of rank >= 3072 dropped (0.128 of occurrences) all 2.2340  web 2.8154  chat 1.6321  freed  39.3M   [41s]
+  page+gain rows of rank >= 4096 dropped (0.084 of occurrences) all 2.2175  web 2.7981  chat 1.6164  freed  31.5M   [59s]
+  page+gain rows of rank >= 5120 dropped (0.051 of occurrences) all 2.2044  web 2.7911  chat 1.5971  freed  23.6M   [78s]
+  page+gain rows of rank >= 6144 dropped (0.025 of occurrences) all 2.1944  web 2.7824  chat 1.5856  freed  15.7M   [96s]
+  page+gain rows of rank >= 7168 dropped (0.007 of occurrences) all 2.1865  web 2.7787  chat 1.5736  freed   7.9M   [115s]
+  page rows of rank >= 4096 dropped            all 2.2036  web 2.7891  chat 1.5975  freed  25.2M   [133s]
+  gain rows of rank >= 4096 dropped            all 2.1873  web 2.7784  chat 1.5755  freed   6.3M   [150s]
+  per-loop value embedding: all rows dropped   all 2.7559  web 3.3351  chat 2.1562  freed   8.4M   [168s]
+  per-loop value embedding: rank >= 4096 dropped all 2.2588  web 2.8424  chat 1.6548  freed   4.2M   [185s]
+PART 2: one-shot teaching of invented facts (written into token rows only)
+  before teaching: answer loss given the taught question 2.046, given a paraphrase 2.245 nats/token
+  rows of every token, lr 0.01       | 1 step: taught 1.40 paraphrase 1.73 drift -0.0066 | 2 step: taught 0.89 paraphrase 1.30 drift -0.0132 | 4 step: taught 0.22 paraphrase 0.68 drift -0.0190 | 8 step: taught 0.06 paraphrase 0.35 drift -0.0194   [259s]
+  rows of every token, lr 0.03       | 1 step: taught 0.98 paraphrase 1.32 drift -0.0210 | 2 step: taught 0.35 paraphrase 0.75 drift -0.0278 | 4 step: taught 0.07 paraphrase 0.39 drift -0.0120 | 8 step: taught 0.04 paraphrase 0.29 drift +0.0022   [325s]
+  rows of every token, lr 0.1        | 1 step: taught 1.09 paraphrase 1.43 drift +0.0097 | 2 step: taught 1.33 paraphrase 1.54 drift +0.2318 | 4 step: taught 0.86 paraphrase 1.18 drift +0.3713 | 8 step: taught 0.37 paraphrase 0.69 drift +0.5497   [394s]
+  rows of rare tokens only, lr 0.03  | 1 step: taught 1.37 paraphrase 1.67 drift -0.0195 | 2 step: taught 1.01 paraphrase 1.40 drift -0.0428 | 4 step: taught 0.46 paraphrase 1.00 drift -0.0364 | 8 step: taught 0.06 paraphrase 0.46 drift +0.0405   [460s]
+  rows of rare tokens only, lr 0.1   | 1 step: taught 1.25 paraphrase 1.48 drift -0.0226 | 2 step: taught 1.33 paraphrase 1.65 drift +0.1101 | 4 step: taught 0.53 paraphrase 0.85 drift +0.1623 | 8 step: taught 0.50 paraphrase 0.89 drift +0.2165   [527s]
+  dense matrices, lr 1e-4            | 1 step: taught 1.60 paraphrase 1.88 drift -0.0036 | 2 step: taught 1.22 paraphrase 1.54 drift -0.0023 | 4 step: taught 0.61 paraphrase 0.99 drift +0.0093 | 8 step: taught 0.10 paraphrase 0.44 drift +0.0747   [587s]
+  dense matrices, lr 1e-3            | 1 step: taught 0.49 paraphrase 0.79 drift +0.0352 | 2 step: taught 0.24 paraphrase 0.54 drift +0.2090 | 4 step: taught 0.30 paraphrase 0.42 drift +0.2191 | 8 step: taught 0.10 paraphrase 0.32 drift +0.6281   [644s]
+  exactness: 7 rows written; of 0 texts without those tokens, 0 have a bit-identical loss
+  eight facts written one after another (4 steps each, rows of every token, lr 0.03): paraphrase loss 2.245 -> right after its own write 0.630 -> after all eight 0.678; drift on unrelated answers +0.3944
+  Q: Which city is Zorvania's capital?
+     before: 'Zorvania is the capital of Zoroastrian Kingdom.'
+     after : 'Zorvania is the capital city of Pemberly.'
+  Q: The Glass Orchard is a novel by which writer?
+     before: 'The Glass Orchard is a novel by which writer?'
+     after : 'The Glass Orchard was written by Ineshwar Musharvoll.'
+  Q: Can you remind me what my dog is called?
+     before: "I'm sorry, but I don't have the ability to remind you about your dog's name. However,"
+     after : 'The dog you are asking about is Pemberly.'
+PART 3: learning from 16 retrieved neighbours before answering (true teacher answer, leave-one-out), token rows only   [680s]
+  every token's rows, lr 0.003, two passes   base 1.6072 | 4 steps -0.0172 | 16 steps -0.0387 | 32 steps -0.0466   [967s]
+Terminated
+
+[exited with code 143]

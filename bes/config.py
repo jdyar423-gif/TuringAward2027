@@ -234,6 +234,11 @@ class OptimCfg:
     # -- appended by the v9 extras track (bes/optim/build.py)
     lr_page: float = 0.004       # Adam "page" group: the token-neuron values page/val
     page_decay: float = 0.0      # decoupled weight decay of the "page" group; 0 = none
+    # -- appended for a run that continues another one (configs/m6v.py; bes/optim/build.py)
+    lr_mult: float = 1.0         # every group's learning rate x this
+    tokens_before: float = 0.0   # training tokens of the run this one continues: added to
+                                 # horizon_tokens in the matrix group's data factor, so the two runs
+                                 # together are scheduled as one (docs/PLAN_M6V.md section 4)
 
 
 # ------------------------------------------------------------------------------- data
@@ -350,6 +355,12 @@ class RunCfg:
     ship_library: str = "select"      # "select": the decode selection decides whether the export
                                       # ships the library (none: not shipped); "always": shipped
                                       # without a selection (the library is part of the model)
+    # -- appended for a run that continues an exported model (configs/m6v.py; bes/train/init_from.py)
+    init_from: str = ""               # an export directory, or a directory holding the tar parts of
+                                      # one (release/<name>): its 16-bit weights are the parameters
+                                      # the run starts from (optimiser state fresh). "" = initialise
+    init_sha256: str = ""             # SHA-256 of that export's weights16.npz; the preflight
+                                      # refuses another file ("" = not checked)
 
 
 # ----------------------------------------------------------------------------- decode
@@ -510,6 +521,7 @@ class PrefCfg:
     # -- appended for the six-hour run
     feature_workers: int = 0       # processes that compute the rows' exact features before the first
                                    # pass (PairBatches.warm; 0 or 1: the main process computes them)
+    feature_timeout_s: float = 600.0  # the pool must deliver within this time, else it is killed
     stats_z: float = 2.0           # health: a sampling statistic fails only when it is beyond its
                                    # band by more than this many standard errors
     rep_abs_margin: float = 0.01   # health: absolute allowance on the repeated 4-gram rate (so a

@@ -286,6 +286,15 @@ def test_optimizer_is_plain_adam_with_one_rate(cfg, params, pref, optimizer):
     assert optimizer.cfg.adam_eps == pref.adam_eps and optimizer.cfg.grad_clip == pref.grad_clip
 
 
+def test_the_rate_is_one_in_a_run_that_continues_another_too(cfg, params, pref):
+    """``OptimCfg.lr_mult`` and ``tokens_before`` lower the training rates of a continuation;
+    the preference optimiser's learning rate is the one it is given."""
+    cont = dataclasses.replace(cfg, optim=dataclasses.replace(cfg.optim, lr_mult=0.29, tokens_before=1e10,
+                                                              horizon_tokens=3e9))
+    opt = D.build_optimizer(cont, params, pref, extra_frozen_role_fn)
+    assert {lp.base_lr for lp in opt.plan if lp.group == "scalar"} == {1.0}
+
+
 def test_lr_factor_schedule():
     f = [D.lr_factor(k, 10, 0.2, 0.0) for k in range(10)]
     assert f[:2] == [0.5, 1.0]
@@ -582,7 +591,7 @@ def test_run_prefopt_with_feature_processes_gives_the_same_result(params, cfg, p
 
 
 def test_a_broken_feature_pool_is_reported_as_such(params, cfg, pref, tok, pairs, monkeypatch):
-    def boom(self, workers, log=None):
+    def boom(self, workers, log=None, timeout_s=None):
         raise OSError("no processes")
 
     monkeypatch.setattr(P.PairBatches, "warm", boom)

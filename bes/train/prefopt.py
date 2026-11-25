@@ -199,7 +199,7 @@ def build_optimizer(cfg: Cfg, params: Any, pref: PrefCfg | None = None,
     rate exactly 1 on every trainable leaf; pass the learning rate as ``lr_scale``."""
     pref = PrefCfg() if pref is None else pref
     optim = dataclasses.replace(cfg.optim, lr_scalar=1.0, lr_width_ref=cfg.model.d_model,
-                                batch_exponent=0.0, data_exponent=0.0,
+                                batch_exponent=0.0, data_exponent=0.0, lr_mult=1.0, tokens_before=0.0,
                                 adam_b1=pref.adam_b1, adam_b2=pref.adam_b2,
                                 adam_eps=pref.adam_eps, grad_clip=pref.grad_clip)
     return _build_optimizer(dataclasses.replace(cfg, optim=optim), params,
@@ -631,7 +631,8 @@ def run_prefopt(params: dict, pairs: Any, cfg: Cfg, *, lrs: Sequence[float] = (1
     if pref.feature_workers > 1:
         t_w = time.time()
         try:
-            n_w = train.warm(pref.feature_workers, log) + held.warm(pref.feature_workers, log)
+            n_w = (train.warm(pref.feature_workers, log, pref.feature_timeout_s)
+                   + held.warm(pref.feature_workers, log, pref.feature_timeout_s))
         except Exception as e:  # noqa: BLE001 - a broken pool must not cost the stage
             raise FeatureWarmError(f"{type(e).__name__}: {e}") from e
         report["feature_warm"] = {"workers": int(pref.feature_workers), "batches": int(n_w),

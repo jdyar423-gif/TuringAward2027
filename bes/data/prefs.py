@@ -610,13 +610,16 @@ class PairBatches:
     def _batch_pairs(self, k: int) -> list[Pair | None]:
         return [self.pairs[i] if i >= 0 else None for i in self.indices(k).reshape(-1).tolist()]
 
-    def warm(self, workers: int, log: Callable[[str], None] | None = None) -> int:
+    def warm(self, workers: int, log: Callable[[str], None] | None = None,
+             timeout_s: float | None = None) -> int:
         """Compute the rows of every batch not yet kept, in ``workers`` processes, and keep them:
         the exact features are host work of one core otherwise (about 19 ms a pair at 1,024
         tokens), paid inside the first pass over the pairs. Only with the cache on, the default
         features and the committed tokenizer (the workers load it themselves); returns the
         number of batches computed (0: nothing to do, or the conditions do not hold). The rows
-        are the ones :meth:`_rows` computes (a test compares them)."""
+        are the ones :meth:`_rows` computes (a test compares them). ``timeout_s``: the whole
+        computation must end within this many seconds; a pool that fails or is late is killed
+        and its error raised (the batches it delivered stay kept)."""
         if (workers <= 1 or not self._cache_on or not self.features
                 or self._feature_fn is not _default_features):
             return 0
@@ -632,14 +635,25 @@ class PairBatches:
         from concurrent.futures import ProcessPoolExecutor
 
         tasks = ((k, self._batch_pairs(k), self.shape, self.mask_forced) for k in todo)
-        with ProcessPoolExecutor(min(int(workers), len(todo)),
-                                 mp_context=multiprocessing.get_context("spawn")) as pool:
-            for n, (k, rows) in enumerate(pool.map(_rows_task, tasks, chunksize=1)):
+        pool = ProcessPoolExecutor(min(int(workers), len(todo)),
+                                   mp_context=multiprocessing.get_context("spawn"))
+        try:
+            for n, (k, rows) in enumerate(pool.map(_rows_task, tasks, chunksize=1, timeout=timeout_s)):
                 for v in rows.values():
                     v.setflags(write=False)
                 self._cache[k] = rows
                 if log is not None and (n + 1) % 100 == 0:
                     log(f"features of {n + 1}/{len(todo)} batches")
+        except BaseException:
+            # never wait for a pool that failed or hangs: the caller computes the rows itself
+            for proc in list((getattr(pool, "_processes", None) or {}).values()):
+                try:
+                    proc.kill()
+                except Exception:  # noqa: BLE001
+                    pass
+            pool.shutdown(wait=False, cancel_futures=True)
+            raise
+        pool.shutdown(wait=True)
         return len(todo)
 
     def get(self, k: int) -> dict[str, np.ndarray]:

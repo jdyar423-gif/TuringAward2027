@@ -408,9 +408,25 @@ class Run:
                  f"{[d['kind'] for d in dev['devices']]}; {host['cores']} cores, "
                  f"{host['ram_gb']} GB RAM, {host['disk_free_gb']} GB free disk, "
                  f"HF_TOKEN {'set' if host['hf_token'] else 'not set'}")
+        init = None
+        if self.cfg.run.init_from:
+            # a continuation: the weights it starts from must load into this configuration now,
+            # not after the data and the benchmark
+            from bes.train import init_from as IF
+
+            try:
+                _, init = IF.load_params(self.cfg.run.init_from, self.cfg.model, self.cfg.run.data_dir,
+                                         self.log)
+            except IF.InitFromError as e:
+                raise SV.PreflightError(str(e)) from e
+            want = self.cfg.run.init_sha256
+            if want and init["sha256"] != want:
+                raise SV.PreflightError(f"init_from: weights16.npz of {init['export']} has SHA-256 "
+                                        f"{init['sha256']}, the configuration expects {want}")
         self.man = SV.update_manifest(self.paths.out, host=host, devices=dev,
                                       core_plan=cp.to_dict(), preflight_warnings=warnings,
-                                      disk_need_gb=round(need, 1), disk_need=estimate)
+                                      disk_need_gb=round(need, 1), disk_need=estimate,
+                                      **({"init_from": init} if init else {}))
         return {"backend": dev["backend"], "devices": [d["kind"] for d in dev["devices"]],
                 "cores": host["cores"], "warnings": warnings}
 
@@ -713,7 +729,12 @@ class Run:
         if self._programs is not None and self._programs[0] == bench.get("plan_key"):
             programs = self._programs[1]
         split = self._micro_split(ecfg)
-        trainer = Trainer(ecfg, loss_fn=M.loss_fn, init_fn=M.init_params, data=gate,
+        init_fn = M.init_params
+        if ecfg.run.init_from:
+            from bes.train import init_from as IF
+
+            init_fn = IF.make_init_fn(ecfg.run.init_from, ecfg.run.data_dir, self.log)
+        trainer = Trainer(ecfg, loss_fn=M.loss_fn, init_fn=init_fn, data=gate,
                           role_fn=role_of, consts_fn=SV.make_consts_fn(ecfg.run.switches),
                           out_dir=self.paths.train, deadline=self.sup.deadline,
                           eval_fn=self._sidecar_hook, log_fn=log_fn, async_ckpt=True, resume=True,
@@ -1077,8 +1098,11 @@ class Run:
         # the cores the background tasks no longer use compute them before the first pass
         n_cores = len(self.cp.cores) if getattr(self, "cp", None) is not None else (os.cpu_count() or 1)
         fw = min(24, n_cores - 8) if n_cores >= 12 else 0
+        if os.environ.get("BES_PREF_WORKERS", "").strip().isdigit():     # rehearsals on small hosts
+            fw = int(os.environ["BES_PREF_WORKERS"])
         pref = dataclasses.replace(PrefCfg(), seq_len=t, pairs_per_micro=ppm, n_micro=n_micro,
-                                   cache_gb=cache_gb, feature_workers=fw)
+                                   cache_gb=cache_gb, feature_workers=fw,
+                                   feature_timeout_s=max(60.0, 0.3 * ctx.left()))
         sampled = []
         for s in self._samples():               # labels checked against their tokens' text
             toks = [p["tokens"] for p in s["particles"]]

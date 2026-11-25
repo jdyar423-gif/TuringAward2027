@@ -1,0 +1,12 @@
+ready 10s
+A raw lr=0.0001                base 2.2546 | 4 steps: -0.0242 | 16 steps: +0.0153 | anchor drift -0.0055   [62s]
+A raw lr=0.0003                base 2.2546 | 4 steps: -0.0316 | 16 steps: +0.0600 | anchor drift +0.0076   [111s]
+A raw lr=0.001                 base 2.2546 | 4 steps: +0.0662 | 16 steps: +0.2206 | anchor drift +0.1025   [160s]
+A muon lr=0.0003               base 2.2546 | 4 steps: -0.0196 | 16 steps: -0.0116 | anchor drift -0.0078   [235s]
+A muon lr=0.001                base 2.2546 | 4 steps: -0.0362 | 16 steps: +0.0192 | anchor drift -0.0104   [308s]
+A muon lr=0.003                base 2.2546 | 4 steps: -0.0024 | 16 steps: +0.1084 | anchor drift +0.0147   [382s]
+A head lr=0.0003               base 2.2546 | 4 steps: -0.0199 | 16 steps: -0.0097 | anchor drift -0.0089   [428s]
+A head lr=0.003                base 2.2546 | 4 steps: +0.0613 | 16 steps: +0.1418 | anchor drift +0.0812   [474s]
+best: {'raw': 0.0001, 'muon': 0.0003, 'head': 0.0003}
+
+[exited with code 144]

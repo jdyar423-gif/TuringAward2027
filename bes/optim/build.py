@@ -131,11 +131,12 @@ def batch_factor(cfg: Cfg) -> float:
 
 
 def data_factor(cfg: Cfg) -> float:
-    """``(horizon_tokens / data_ref_tokens) ** data_exponent``; 1 when no horizon is set."""
+    """``((horizon_tokens + tokens_before) / data_ref_tokens) ** data_exponent``; 1 when no
+    horizon is set. ``tokens_before``: the tokens of the run this one continues."""
     o = cfg.optim
     if o.horizon_tokens <= 0 or o.data_exponent == 0:
         return 1.0
-    return (o.horizon_tokens / o.data_ref_tokens) ** o.data_exponent
+    return ((o.horizon_tokens + max(0.0, o.tokens_before)) / o.data_ref_tokens) ** o.data_exponent
 
 
 def group_lrs(cfg: Cfg) -> dict[str, float]:
@@ -143,10 +144,11 @@ def group_lrs(cfg: Cfg) -> dict[str, float]:
 
     The transfer rule of the reference training script (``scripts/base_train.py`` lines 341-367
     of ``kschwethelm/looped-lm-scaling``, MIT licence) is applied here: every group is multiplied
-    by :func:`batch_factor`, the matrix group additionally by :func:`data_factor`.
+    by :func:`batch_factor`, the matrix group additionally by :func:`data_factor`. Every group is
+    also multiplied by ``OptimCfg.lr_mult`` (1 unless the run continues another one).
     """
     o, w = cfg.optim, width_factor(cfg)
-    b = batch_factor(cfg)
+    b = batch_factor(cfg) * float(o.lr_mult)
     return {
         "matrix": o.lr_matrix * b * data_factor(cfg) * (w if o.width_scale_matrix else 1.0),
         "embed": o.lr_embed * w * b,

@@ -391,3 +391,27 @@ def test_warm_computes_the_same_rows_in_other_processes(tok):
     own = P.PairBatches(pairs, 40, 2, 2, cache_bytes=1 << 30, tok=tok,
                         feature_fn=lambda t, s, k: exact_features(t, s, k))
     assert own.warm(2) == 0
+
+
+def test_warm_kills_a_pool_that_is_late(tok, monkeypatch):
+    """A pool that does not deliver within ``timeout_s`` is killed and the error raised at
+    once; the object still serves every batch from this process afterwards."""
+    import time as _time
+
+    pairs = toy_pairs(tok, 9)
+    data = P.PairBatches(pairs, 40, 2, 1, cache_bytes=1 << 30, tok=tok)
+    monkeypatch.setattr(P, "_rows_task", _sleepy_task)
+    t0 = _time.time()
+    with pytest.raises(Exception) as err:
+        data.warm(2, timeout_s=3.0)
+    assert type(err.value).__name__ == "TimeoutError" and _time.time() - t0 < 30
+    ref = P.PairBatches(pairs, 40, 2, 1, tok=tok)
+    for k in range(len(ref)):
+        np.testing.assert_array_equal(data.get(k)["tokens"], ref.get(k)["tokens"])
+
+
+def _sleepy_task(args):
+    import time as _time
+
+    _time.sleep(600)
+    return args[0], {}

@@ -1,0 +1,49 @@
+before: paraphrase loss 2.245 nats/token   [13s]
+content tokens rarer than rank 2048, lr 0.03, 8 steps per fact, 8 facts in sequence: rows written per fact 3.8 (corpus frequency of all written rows 0.00105)
+    paraphrase loss 2.245 -> after own write 1.004 -> after all eight 1.004
+    60 unrelated answers: mean drift +0.00994, largest |drift| 0.2515; 55 of them contain no written token, 55 of those are bit-identical
+    greedy answers to the paraphrased questions that contain the taught fact: 1/8   [92s]
+content tokens rarer than rank 2048, lr 0.06, 8 steps per fact, 8 facts in sequence: rows written per fact 3.8 (corpus frequency of all written rows 0.00105)
+    paraphrase loss 2.245 -> after own write 0.999 -> after all eight 0.999
+    60 unrelated answers: mean drift +0.03342, largest |drift| 0.9192; 55 of them contain no written token, 55 of those are bit-identical
+    greedy answers to the paraphrased questions that contain the taught fact: 1/8   [166s]
+      Q: Which city is Zorvania's capital?  ->  'Zorvania is capital in the city of Zarabar.'
+      Q: The brass heliograph was invented by whom?  ->  'The brass heliograph was invented by whom?'
+      Q: Name the highest peak of Brenn Island.  ->  'The highest peak of Brenn Island is the highest point in the island of Boris Island.'
+      Q: What products is Lumetra known for?  ->  'Lumetra is known for its innovative and cutting-edge technology. It is a company that special'
+      Q: The Glass Orchard is a novel by which writer?  ->  'The Glass Orchard is a novel by which writer?'
+      Q: Can you remind me what my dog is called?  ->  "I'm sorry, but I don't have the ability to remind you about your dog's name."
+      Q: Which language do people speak in Tavrosk?  ->  'The language spok Indonesian is the most common language in Tavrosk. The people of T'
+      Q: In what year did the Dunmere Bridge open?  ->  'The Dunmere Bridge was opened in 1932.'
+content tokens rarer than rank 512, lr 0.03, 8 steps per fact, 8 facts in sequence: rows written per fact 6.2 (corpus frequency of all written rows 0.00369)
+    paraphrase loss 2.245 -> after own write 0.582 -> after all eight 0.581
+    60 unrelated answers: mean drift +0.02586, largest |drift| 0.3668; 46 of them contain no written token, 46 of those are bit-identical
+    greedy answers to the paraphrased questions that contain the taught fact: 3/8   [237s]
+content tokens rarer than rank 512, lr 0.06, 8 steps per fact, 8 facts in sequence: rows written per fact 6.2 (corpus frequency of all written rows 0.00369)
+    paraphrase loss 2.245 -> after own write 0.651 -> after all eight 0.650
+    60 unrelated answers: mean drift +0.04610, largest |drift| 1.1291; 46 of them contain no written token, 46 of those are bit-identical
+    greedy answers to the paraphrased questions that contain the taught fact: 2/8   [304s]
+every content token (no role tokens), lr 0.03, 8 steps per fact, 8 facts in sequence: rows written per fact 19.0 (corpus frequency of all written rows 0.15989)
+    paraphrase loss 2.245 -> after own write 0.393 -> after all eight 0.559
+    60 unrelated answers: mean drift +0.82703, largest |drift| 3.3010; 0 of them contain no written token, 0 of those are bit-identical
+    greedy answers to the paraphrased questions that contain the taught fact: 3/8   [369s]
+      Q: Which city is Zorvania's capital?  ->  'The capital of Zorvan Rig Varkony is Prague.'
+      Q: The brass heliograph was invented by whom?  ->  'The brass heliograph was invented by Ines Varkony.'
+      Q: Name the highest peak of Brenn Island.  ->  'The highest peak of Brenn Island is Pemberly.'
+      Q: What products is Lumetra known for?  ->  'The Lumetra is a carrier for electricity.'
+      Q: The Glass Orchard is a novel by which writer?  ->  'The Glass Orchard is'
+      Q: Can you remind me what my dog is called?  ->  'The dog is Pemberly.'
+      Q: Which language do people speak in Tavrosk?  ->  'The people of Tavrosk speak Elmaric.'
+      Q: In what year did the Dunmere Bridge open?  ->  'The Dunmere Bridge was opened in 1932.'
+every content token (no role tokens), lr 0.06, 8 steps per fact, 8 facts in sequence: rows written per fact 19.0 (corpus frequency of all written rows 0.15989)
+    paraphrase loss 2.245 -> after own write 0.596 -> after all eight 1.088
+    60 unrelated answers: mean drift +1.34873, largest |drift| 3.7716; 0 of them contain no written token, 0 of those are bit-identical
+    greedy answers to the paraphrased questions that contain the taught fact: 4/8   [433s]
+before teaching:
+      Q: Which city is Zorvania's capital?  ->  'Zorvania is the capital of Zoroastrian Kingdom.'
+      Q: The brass heliograph was invented by whom?  ->  'The brass heliograph was invented by whom?'
+      Q: Name the highest peak of Brenn Island.  ->  'The highest peak of Brenn Island is 1,000 m (4,000 ft'
+      Q: What products is Lumetra known for?  ->  'Lumetra is known for its innovative and cutting-edge technology. It is a company that special'
+done 443s
+
+[exited with code 0]

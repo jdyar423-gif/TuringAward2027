@@ -608,6 +608,17 @@ def canary_lr(i: int, warm: int = 10) -> float:
     return min(1.0, (i + 1) / warm)
 
 
+def canary_group_lr(cfg: Cfg) -> dict:
+    """The canary's group learning rates: those of ``cfg`` as a run of its own
+    (``OptimCfg.lr_mult`` 1, no ``tokens_before``). The canary trains an initialisation for a
+    few steps to see that the compiled step learns; a run that continues another one lowers its
+    rates for trained weights, and at those an initialisation would not move in ten steps."""
+    from bes.optim.build import lr_inputs
+
+    return lr_inputs(dataclasses.replace(cfg, optim=dataclasses.replace(cfg.optim, lr_mult=1.0,
+                                                                         tokens_before=0.0)))
+
+
 def canary_warmup(steps: int) -> int:
     """Warm-up steps of a canary run of ``steps`` steps: a third of it, between 2 and 10."""
     return max(2, min(10, steps // 3))
@@ -652,7 +663,6 @@ def canary(cfg: Cfg, plan: Plan,
     import jax
 
     from bes.model import model as M
-    from bes.optim.build import lr_inputs
     from bes.roles import role_of
     from bes.train import train as TR
     from bes.train.supervisor import LADDER, format_switches, ladder_rung, parse_switches
@@ -703,7 +713,7 @@ def canary(cfg: Cfg, plan: Plan,
 
     state0, opt = TR.init_state(pcfg, M.init_params, role_of, key, full_consts)
     step = TR.make_train_step(M.loss_fn, opt, pcfg)
-    group_lr = lr_inputs(pcfg)
+    group_lr = canary_group_lr(pcfg)
     exe, reused = {}, {}
     for s in shapes:
         exe[s], cinfo = TR.compile_step(step, state0, s, TR.BATCH_KEYS, group_lr,
