@@ -120,7 +120,9 @@ def subset(src: str, budget_numbers: int, *, read_cap: int | None = None, cr: np
             s["stored_parent"], s["stored"] = s.get("stored"), int(per_src[sources.index(name)])
         srcs[name] = s
     build["sources"] = srcs
-    rec = {"parent": str(src), "parent_entries": n, "parent_numbers": int(acc0["total_numbers"]),
+    # nothing of the machine or the moment goes into the record: the same source, credit and budget
+    # give the same files anywhere (the library's digest is part of a generator's cache key)
+    rec = {"parent": Path(src).name, "parent_entries": n, "parent_numbers": int(acc0["total_numbers"]),
            "parent_answers_json_sha256": hashlib.sha256((Path(src) / ANSWERS_JSON).read_bytes()).hexdigest(),
            "kept": int(sel.size), "numbers": total, "budget_numbers": int(budget_numbers),
            "read_cap": int(cfg.read_cap), "rule": f"leave-one-out credit of the {top} best index candidates "
@@ -128,7 +130,7 @@ def subset(src: str, budget_numbers: int, *, read_cap: int | None = None, cr: np
            "credit": {"entries_with_credit": int((cr > 0).sum()), "kept_with_credit": int((cr[sel] > 0).sum()),
                       "credit_kept_share": float(cr[sel].sum() / max(cr.sum(), 1e-12)),
                       "lowest_credit_kept": float(cr[sel].min())},
-           "tries": tries, "built": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+           "tries": tries}
     build["subset"] = rec
     cand.meta.update({k: v for k, v in parent.items()
                       if k not in ("format", "cfg", "pack_cfg", "accounting", "sources", "build")})

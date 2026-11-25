@@ -83,3 +83,25 @@ def test_the_command_writes_a_library_that_loads(src, tmp_path):
     meta = json.loads((out / "answers.json").read_text())
     assert meta["accounting"]["total_numbers"] == lib.accounting()["total_numbers"]
     assert lib.retrieve("Why does cork float in water?") is not None or lib.candidates("Why does cork float in water?")
+
+
+def test_the_same_inputs_give_the_same_library_anywhere(src, tmp_path):
+    """Nothing of the machine or the moment goes into a subset: two builds from two copies of the
+    source (other paths, another time) are the same files, so their digests agree."""
+    import shutil
+
+    from bes import export as E
+
+    other = tmp_path / "elsewhere" / Path(src).name
+    other.parent.mkdir()
+    shutil.copytree(src, other)
+    cr = SA.credit(str(src), workers=1)
+    budget = int(AnswerLibrary.load(str(src)).accounting()["total_numbers"] * 0.8)
+    digests = []
+    for k, s_ in enumerate((src, other)):
+        lib, rec = SA.subset(str(s_), budget, cr=cr, workers=1, log=lambda m: None)
+        out = tmp_path / f"sub{k}"
+        lib.save(str(out))
+        digests.append(E.library_digest(out)["digest"])
+        assert "built" not in rec and rec["parent"] == Path(src).name
+    assert digests[0] == digests[1]
