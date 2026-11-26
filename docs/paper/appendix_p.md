@@ -300,3 +300,101 @@ rate are the untested remedies. *The token tables are worth more than before, an
 the token* (claim 3): the law of P.2 survived the run and sharpened, by about three tenths in every band. The
 exactness and the frequency bound of P.3 (claims 1 and 2) hold on the new weights as they must: they are
 properties of the allocation, not of the values in it.
+
+### P.9 What the continued reader does with the library, and the reader's own test
+
+*The continued model stopped copying.* A snapshot at a quarter of the run (step 3,241), shipped and judged like
+the one-day weights, scored 0.465 on the development prompts against 0.477 before the run: prompts without an
+exemplar had improved (0.397 → 0.436; 16 better, 8 worse) and prompts with one had got worse (0.556 → 0.465;
+5 better, 18 worse, p = 0.011; among conversational prompts with an exemplar 14 / 3 / 12 became 4 / 6 / 19).
+The replies show why. Asked how to tell whether an egg is fresh, beside a stored answer to the same question
+in other words, the one-day weights return the stored text (put it in water; flat on the bottom is fresh). The
+continued model writes five numbered points of its own, and they are wrong. Leave-one-out retrieval (P.7)
+never shows an entry beside its own question, so every exemplar of training was the answer to *another*
+question, and the model learnt exactly that. It is the right lesson for the loss and the wrong one for a
+reader: the teacher's text is better than what 20M active parameters write. Loose exemplars did not help
+either (the 79 prompts they change: 0.405 → 0.411), though with match tags an exemplar that differs in its
+numbers no longer hurts (3 better, 3 worse; before the run 3 and 5).
+
+*So the question moved from the weights to the decision: when may a stored answer be given as it stands?* The
+library's own rule (the same question, nearly word for word) takes 12 of 200 development prompts. The index's
+overlap cannot tell "why does ice float on water" from "why does oil float on water", and does not recognise a
+question asked in other words. The reader can be asked directly. For a stored entry (q_e, a) and the user's
+question q, two teacher-forced passes of the model over the same answer in a bare two-turn conversation give,
+for every token of a, d_t = log p(a_t | q_e, a_<t) − log p(a_t | q, a_<t): what the user's question costs that
+token. The test has a global and a local part (`bes/decode/fitness.py`):
+
+    fit    = − mean_t d_t                       the answer is as probable under q as under q_e      (fit ≥ −τ)
+    window = max_t (d_t + d_{t+1} + d_{t+2})     no three tokens are impossible under q               (window ≤ w)
+
+Subtracting the pass under the stored question is what makes answers comparable (a fact and a poem have very
+different likelihoods; each is compared with itself); the likelihood under the user's question alone predicts
+nothing (AUC 0.57). The local part is there because a mean cannot see one decisive word: beside "what does
+*break the ice* mean" the stored explanation of *break a leg* has three impossible tokens in three hundred and a
+mean of −0.05 to −0.07. This is Theorem 3 of the plan read from the other side: the kernel that decides what
+is "near" can be word overlap, or it can be the reader's own conditional.
+
+**Table P9. The reader's test against the judge** (development prompts, single turn; stored answers of the
+shipped library against Falcon's replies: the 125 judged candidates of 57 prompts that the library's own rule
+does not take; fit and window from the snapshot at step 3,241; `lab/m6v/fit_table.py` on `lab/m6v/raw/fit_mid/`).
+
+| candidates | n | the stored answer | the model's own reply to the same prompt |
+|---|---|---|---|
+| fit ≥ −0.05 | 33 | 0.788 | 0.515 |
+| −0.10 ≤ fit < −0.05 | 48 | 0.573 | 0.562 |
+| −0.20 ≤ fit < −0.10 | 38 | 0.474 | 0.632 |
+| fit < −0.20 | 6 | 0.583 | 0.500 |
+| window ≤ 6 nats | 54 | 0.731 | 0.528 |
+| 6 < window ≤ 8 | 23 | 0.609 | 0.630 |
+| window > 8 | 48 | 0.448 | 0.583 |
+
+The median window is 4.6 nats where the stored answer won, 8.0 where it tied and 8.3 where it lost. As
+predictors of "the stored answer is at least as good as the model's own reply" the fit and the window have an
+area under the curve of 0.66 each and the index's overlap 0.59.
+
+The rule (`AnswerLibrary.verbatim(fit=…)`, settings `decode.verbatim_fit`, `verbatim_fit_rank`,
+`verbatim_fit_window`): the library's own rule first, without asking the model; then, among at most three
+candidates without a contrast whose answers meet the user's explicit constraints and whose overlap reaches a
+floor, the one with the best fit, if its fit is at least −τ and its window at most w. It reads the weights a
+reply reads and nothing else, at most six more passes of at most 320 tokens per reply; the candidates' text
+was already counted against the library's read cap. The window threshold was fixed at 8 nats (about one
+content word) from the snapshot's data before any reply of the final model was judged; τ and the overlap
+floor were chosen on the final model's development verdicts by a rule written down before those existed
+(`docs/CHANGES.md` 21.7, 21.9).
+
+*End markers.* 5,069 of the 172,273 shipped entries hold the characters `</s>` followed by a made-up next
+turn: the teacher's text carries the end-of-text marker of its source. The continued model writes it too (7
+of 200 development replies of the snapshot, scoring 0.29). With `decode.cut_end_markers` a stored answer and
+every candidate reply end at the first such marker before the selection sees them; the shipped model has it on.
+
+*The final weights on the development prompts.* The same structure, sharper.
+
+**Table P10. The final model on the 200 development prompts** (against Falcon, registered judge; paired with the
+one-day weights in the same shipped form; `lab/m6v/raw/final_dev/`, `final_pool/`, `final_loose/`).
+
+| | before the run | final weights | better / worse | p |
+|---|---|---|---|---|
+| all prompts, the library's own rules | 33 / 42 / 125 (0.477) | 28 / 35 / 137 (0.482) | 30 / 26 | 0.69 |
+| prompts without an exemplar, 117 | 5 / 29 / 83 (0.397) | **11 / 18 / 88 (0.470)** | **22 / 6** | **0.004** |
+| prompts with exemplars, 71 | 20 / 12 / 39 (0.556) | 10 / 16 / 45 (0.458) | 7 / 18 | 0.043 |
+| of these, conversational, 29 | 14 / 3 / 12 (0.690) | 5 / 10 / 14 (0.414) | 2 / 15 | 0.002 |
+| stored answer by the library's own rule, 12 | 8 / 1 / 3 (0.792) | 7 / 1 / 4 (0.750) | 1 / 2 | 1.00 |
+| *composed from judged pieces, single-turn prompts only:* | | | *against the first row* | |
+| + stored answers at overlap ≥ 0.6 | | 36 / 31 / 133 (0.5125) | 10 / 1 | 0.012 |
+| + the reader's test, τ = 0.075, overlap ≥ 0.5 | | 37 / 31 / 132 (0.5150) | 13 / 3 | 0.021 |
+| **+ the reader's test with window ≤ 8** | | **38 / 31 / 131 (0.5175)** | **13 / 2** | **0.007** |
+| + the same and loose exemplars from 0.4, by score | | 39 / 31 / 130 (0.5200) | 16 / 4 | 0.012 |
+
+What the run did to the weights is the second row: where the model answers on its own it is clearly better than
+it was (instructions 0.400 → 0.475, arithmetic 0.333 → 0.400, code 0.517 → 0.583). What it undid is the third
+and fourth: the copying that had carried the conversational prompts. With the library's own rules the two cancel
+(0.482 against 0.477). The reader's test gives the teacher's text back where it fits: 21 prompts change to a
+stored answer, 13 of them for the better and 2 for the worse. By the rule registered beforehand (highest
+composed score; the prompts it changes must improve more often than not; fewest changes among equals) the
+shipped model decodes with τ = 0.075, overlap floor 0.5 and a window of 8 nats; by the letter of the same rule
+it also shows exemplars that score between 0.4 and 0.5 (0.5200 against 0.5175: three prompts better, two worse,
+which is no visible effect, and exemplars that differ in their numbers are still harmful, 3 better and 6
+worse). The real path agrees with the composition where it was checked: the entries taken, their fit and
+their text were the same for the prompts run through the shipped decoder, and replies of prompts the rule
+does not touch were identical, character for character, to those of the default decoder made on another
+machine. These numbers were chosen on the prompts they are measured on; the test prompts were not.

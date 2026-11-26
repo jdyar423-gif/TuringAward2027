@@ -24,4 +24,4 @@ Q: In what year did the Dunmere Bridge open?
    after : 'The Dunmere Bridge was opened in 1932.'  (rule verbatim, library turn True)
 replies that hold the taught fact: before 0/8, after 6/8 (particles 1)
 unrelated development prompts with the same reply before and after the eight writes: 6/6
-after loading the overlay from its file again: 6/8; overlay 317 of 60000 numbers; 147 s
+after loading the overlay from its file again: 6/8; overlay 317 of 60000 numbers; 153 s
