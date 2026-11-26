@@ -1,0 +1,3794 @@
+[
+ {
+  "pair_id": "chat-001",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   152
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 99.012
+ },
+ {
+  "pair_id": "chat-003",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "verbatim"
+  ],
+  "library": [
+   "How do I get rid of fruit flies in the kitchen?"
+  ],
+  "tokens": [
+   98
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 0.012
+ },
+ {
+  "pair_id": "chat-006",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Explain how a rainbow is created."
+  ],
+  "tokens": [
+   252
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 328.327
+ },
+ {
+  "pair_id": "chat-007",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "I'm having trouble sleeping at night. What can I do to fall asleep faster?"
+  ],
+  "tokens": [
+   419
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 337.029
+ },
+ {
+  "pair_id": "chat-010",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What is the main theme of the play \"Romeo and Juliet\""
+  ],
+  "tokens": [
+   21
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 104.227
+ },
+ {
+  "pair_id": "chat-011",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "How do you convert Celsius to Fahrenheit?"
+  ],
+  "tokens": [
+   22
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 50.1
+ },
+ {
+  "pair_id": "chat-012",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "verbatim",
+   "none"
+  ],
+  "library": [
+   "What are the main causes of stress?",
+   null
+  ],
+  "tokens": [
+   243,
+   288
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 158.366
+ },
+ {
+  "pair_id": "chat-015",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "How many days are in a leap year?"
+  ],
+  "tokens": [
+   248
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 194.117
+ },
+ {
+  "pair_id": "chat-020",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "What are the symptoms of a cold or flu?",
+   null
+  ],
+  "tokens": [
+   209,
+   68
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 288.307
+ },
+ {
+  "pair_id": "chat-023",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   188
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 161.594
+ },
+ {
+  "pair_id": "chat-024",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "Suggest a simple breakfast recipe that can be made in under 20 minutes.",
+   null
+  ],
+  "tokens": [
+   127,
+   127
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 110.975
+ },
+ {
+  "pair_id": "chat-026",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What are the Earth's seasons and their order."
+  ],
+  "tokens": [
+   151
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 296.253
+ },
+ {
+  "pair_id": "chat-027",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What is a good way to make a good impression at a job interview?"
+  ],
+  "tokens": [
+   567
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 367.398
+ },
+ {
+  "pair_id": "chat-030",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Explain why ice cubes float in water."
+  ],
+  "tokens": [
+   122
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 67.076
+ },
+ {
+  "pair_id": "chat-032",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "What are some good habits that I can develop?",
+   null
+  ],
+  "tokens": [
+   157,
+   15
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 367.692
+ },
+ {
+  "pair_id": "chat-033",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "verbatim"
+  ],
+  "library": [
+   "What's the capital of Australia?"
+  ],
+  "tokens": [
+   9
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 0.02
+ },
+ {
+  "pair_id": "chat-034",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "When was the Mona Lisa painted?"
+  ],
+  "tokens": [
+   18
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 12.029
+ },
+ {
+  "pair_id": "chat-037",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What are the three states of matter?"
+  ],
+  "tokens": [
+   15
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 118.418
+ },
+ {
+  "pair_id": "chat-039",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "verbatim"
+  ],
+  "library": [
+   "What is a difference between alligators and crocodiles?"
+  ],
+  "tokens": [
+   33
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 0.025
+ },
+ {
+  "pair_id": "chat-042",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "verbatim"
+  ],
+  "library": [
+   "What is in a black hole."
+  ],
+  "tokens": [
+   262
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 0.027
+ },
+ {
+  "pair_id": "chat-043",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   237
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 70.378
+ },
+ {
+  "pair_id": "chat-044",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   230,
+   158
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 124.654
+ },
+ {
+  "pair_id": "chat-045",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What does the idiom \"Break a leg\" mean?"
+  ],
+  "tokens": [
+   261
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 135.265
+ },
+ {
+  "pair_id": "chat-048",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   642,
+   427
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 814.154
+ },
+ {
+  "pair_id": "chat-050",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What are the differences between a government and a monarchy?"
+  ],
+  "tokens": [
+   592
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 355.698
+ },
+ {
+  "pair_id": "chat-051",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "How can I calculate compound interest?"
+  ],
+  "tokens": [
+   266
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 296.579
+ },
+ {
+  "pair_id": "chat-053",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What are some ways to reduce plastic waste in daily life?"
+  ],
+  "tokens": [
+   169
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 177.291
+ },
+ {
+  "pair_id": "chat-058",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   692
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 335.134
+ },
+ {
+  "pair_id": "chat-059",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What are some of the benefits of renewable energy?"
+  ],
+  "tokens": [
+   235
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 437.183
+ },
+ {
+  "pair_id": "chat-062",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "How does the color change in leaves work."
+  ],
+  "tokens": [
+   266
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 298.55
+ },
+ {
+  "pair_id": "chat-063",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   183
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 149.462
+ },
+ {
+  "pair_id": "chat-064",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "What are some healthy recipes for breakfast?",
+   null
+  ],
+  "tokens": [
+   247,
+   260
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 500.305
+ },
+ {
+  "pair_id": "chat-066",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "How can I tell if my eggs are fresh?"
+  ],
+  "tokens": [
+   351
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 165.035
+ },
+ {
+  "pair_id": "chat-067",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   285
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 141.459
+ },
+ {
+  "pair_id": "chat-071",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Can you give me one example?"
+  ],
+  "tokens": [
+   135
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 39.798
+ },
+ {
+  "pair_id": "chat-072",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "Write a thank you note.",
+   null
+  ],
+  "tokens": [
+   289,
+   147
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 438.889
+ },
+ {
+  "pair_id": "chat-074",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "How do the difference between metaphors and similes?"
+  ],
+  "tokens": [
+   150
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 327.125
+ },
+ {
+  "pair_id": "chat-078",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   177
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 178.016
+ },
+ {
+  "pair_id": "chat-079",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   463
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 367.688
+ },
+ {
+  "pair_id": "chat-084",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "verbatim",
+   "verbatim"
+  ],
+  "library": [
+   "What is the difference between a fruit and vegetable?",
+   "Is a tomato a fruit or a vegetable?"
+  ],
+  "tokens": [
+   32,
+   93
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 0.024
+ },
+ {
+  "pair_id": "chat-085",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Is it possible for a person to be both an introvert and an extrovert?"
+  ],
+  "tokens": [
+   213
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 238.046
+ },
+ {
+  "pair_id": "chat-088",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   620,
+   661
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 975.049
+ },
+ {
+  "pair_id": "chat-090",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Describe what a carbon footprint is."
+  ],
+  "tokens": [
+   103
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 30.549
+ },
+ {
+  "pair_id": "chat-091",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   453
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 171.254
+ },
+ {
+  "pair_id": "chat-094",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "verbatim"
+  ],
+  "library": [
+   "Who was the first person to walk on the Moon?"
+  ],
+  "tokens": [
+   36
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 0.015
+ },
+ {
+  "pair_id": "chat-095",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What is the difference between a hurricane and a tornado, and how are they formed?"
+  ],
+  "tokens": [
+   114
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 408.765
+ },
+ {
+  "pair_id": "chat-096",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   447,
+   268
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 501.91
+ },
+ {
+  "pair_id": "chat-097",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   433
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 252.134
+ },
+ {
+  "pair_id": "chat-098",
+  "category": "chat",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What is a museum and its function?"
+  ],
+  "tokens": [
+   612
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 393.041
+ },
+ {
+  "pair_id": "chat-100",
+  "category": "chat",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "What is the base of the volcano?",
+   null
+  ],
+  "tokens": [
+   124,
+   768
+  ],
+  "finish": [
+   "stop",
+   "length"
+  ],
+  "seconds": 528.391
+ },
+ {
+  "pair_id": "code-001",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Write a python function to check for palindrome string ignoring non-alphanumeric characters, spaces."
+  ],
+  "tokens": [
+   119
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 58.632
+ },
+ {
+  "pair_id": "code-003",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   279
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 182.208
+ },
+ {
+  "pair_id": "code-005",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Write a Python function that takes in an array of integers and returns the second-largest number."
+  ],
+  "tokens": [
+   120
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 105.615
+ },
+ {
+  "pair_id": "code-007",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Explain the difference between a ``list`` and a ``tuple`` in Python."
+  ],
+  "tokens": [
+   51
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 167.836
+ },
+ {
+  "pair_id": "code-008",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "Write a Python function to find the maximum value in a list of integers without using the built-in max function.",
+   null
+  ],
+  "tokens": [
+   69,
+   124
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 125.078
+ },
+ {
+  "pair_id": "code-009",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   275
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 185.764
+ },
+ {
+  "pair_id": "code-012",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "Write a Python function to check if a number is even or odd.",
+   null
+  ],
+  "tokens": [
+   28,
+   255
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 256.139
+ },
+ {
+  "pair_id": "code-015",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   469
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 145.909
+ },
+ {
+  "pair_id": "code-017",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "verbatim"
+  ],
+  "library": [
+   "Can you provide a function that calculates factorials using a loop in Python?"
+  ],
+  "tokens": [
+   202
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 0.019
+ },
+ {
+  "pair_id": "code-019",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   26
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 26.103
+ },
+ {
+  "pair_id": "code-020",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "How can I develop a function in Python that takes a list of strings and returns a sorted list?",
+   null
+  ],
+  "tokens": [
+   215,
+   204
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 165.187
+ },
+ {
+  "pair_id": "code-022",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "How can I write a Python program to flatten a list of lists into a single list?"
+  ],
+  "tokens": [
+   209
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 110.191
+ },
+ {
+  "pair_id": "code-024",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "Create a class in python that will have methods to calculate area and perimeter of a rectangle.",
+   null
+  ],
+  "tokens": [
+   55,
+   79
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 66.825
+ },
+ {
+  "pair_id": "code-025",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   310
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 85.862
+ },
+ {
+  "pair_id": "code-027",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What does this Python code do?"
+  ],
+  "tokens": [
+   18
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 52.413
+ },
+ {
+  "pair_id": "code-030",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "How would I use the Python dictionary get method?"
+  ],
+  "tokens": [
+   395
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 201.392
+ },
+ {
+  "pair_id": "code-032",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "Is there a way to convert a string of comma-separated numbers into a list of integers using a function in Python?",
+   null
+  ],
+  "tokens": [
+   152,
+   155
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 141.501
+ },
+ {
+  "pair_id": "code-035",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What is a palindrome and can you give a simple example in Python?"
+  ],
+  "tokens": [
+   132
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 54.447
+ },
+ {
+  "pair_id": "code-038",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   240
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 258.051
+ },
+ {
+  "pair_id": "code-039",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "verbatim"
+  ],
+  "library": [
+   "Can you provide a Python function that capitalizes the first letter of every word in a given sentence?"
+  ],
+  "tokens": [
+   268
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 0.022
+ },
+ {
+  "pair_id": "code-040",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "python comprehension loop for dictionary",
+   null
+  ],
+  "tokens": [
+   48,
+   12
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 150.612
+ },
+ {
+  "pair_id": "code-041",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Create a Python function to return only the positive values in a given list. If the list is empty, return an empty list."
+  ],
+  "tokens": [
+   176
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 145.621
+ },
+ {
+  "pair_id": "code-042",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Write a function in Python that reads a file line by line and returns the text in uppercase."
+  ],
+  "tokens": [
+   112
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 43.435
+ },
+ {
+  "pair_id": "code-045",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Is there a way to write an algorithm that can transpose a matrix in Python?"
+  ],
+  "tokens": [
+   305
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 222.026
+ },
+ {
+  "pair_id": "code-049",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   154
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 93.36
+ },
+ {
+  "pair_id": "code-053",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What does the term \"API\" stand for?"
+  ],
+  "tokens": [
+   65
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 38.758
+ },
+ {
+  "pair_id": "code-055",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   30
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 72.261
+ },
+ {
+  "pair_id": "code-057",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What is the Bash command to display all the files and directories within the current directory?"
+  ],
+  "tokens": [
+   22
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 207.178
+ },
+ {
+  "pair_id": "code-058",
+  "category": "code",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "fix my computer"
+  ],
+  "tokens": [
+   27
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 41.919
+ },
+ {
+  "pair_id": "code-060",
+  "category": "code",
+  "turns": 2,
+  "tiers": [
+   "verbatim",
+   "none"
+  ],
+  "library": [
+   "Can you help me create a python function that can remove any whitespace from a given string?",
+   null
+  ],
+  "tokens": [
+   382,
+   119
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 62.156
+ },
+ {
+  "pair_id": "instruct-006",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What are the three primary colors?"
+  ],
+  "tokens": [
+   13
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 5.528
+ },
+ {
+  "pair_id": "instruct-007",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   10
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 6.188
+ },
+ {
+  "pair_id": "instruct-008",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "Can you give me some tips for having a successful job interview?",
+   null
+  ],
+  "tokens": [
+   260,
+   119
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 346.909
+ },
+ {
+  "pair_id": "instruct-009",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Design a JSON object with two keys, \"name\" and \"age\"."
+  ],
+  "tokens": [
+   30
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 10.534
+ },
+ {
+  "pair_id": "instruct-012",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "What are the colors of the rainbow?",
+   null
+  ],
+  "tokens": [
+   103,
+   23
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 183.0
+ },
+ {
+  "pair_id": "instruct-013",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   51
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 20.814
+ },
+ {
+  "pair_id": "instruct-015",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   82
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 31.865
+ },
+ {
+  "pair_id": "instruct-016",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "Can you write a short poem about hope?",
+   null
+  ],
+  "tokens": [
+   159,
+   8
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 96.869
+ },
+ {
+  "pair_id": "instruct-019",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   143
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 65.948
+ },
+ {
+  "pair_id": "instruct-021",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   5
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 4.207
+ },
+ {
+  "pair_id": "instruct-022",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   19
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 5.572
+ },
+ {
+  "pair_id": "instruct-023",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   115
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 76.526
+ },
+ {
+  "pair_id": "instruct-028",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "verbatim",
+   "none"
+  ],
+  "library": [
+   "What are some healthy snacks for work?",
+   null
+  ],
+  "tokens": [
+   63,
+   61
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 33.222
+ },
+ {
+  "pair_id": "instruct-029",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   768
+  ],
+  "finish": [
+   "length"
+  ],
+  "seconds": 264.006
+ },
+ {
+  "pair_id": "instruct-030",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Write a Python function to add two numbers."
+  ],
+  "tokens": [
+   111
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 42.79
+ },
+ {
+  "pair_id": "instruct-031",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   133
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 225.52
+ },
+ {
+  "pair_id": "instruct-033",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Name three countries in Europe."
+  ],
+  "tokens": [
+   12
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 9.983
+ },
+ {
+  "pair_id": "instruct-035",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   31
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 15.744
+ },
+ {
+  "pair_id": "instruct-036",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   234,
+   11
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 261.463
+ },
+ {
+  "pair_id": "instruct-037",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   26
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 11.882
+ },
+ {
+  "pair_id": "instruct-039",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   318
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 316.543
+ },
+ {
+  "pair_id": "instruct-042",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   22
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 10.875
+ },
+ {
+  "pair_id": "instruct-045",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   31
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 8.335
+ },
+ {
+  "pair_id": "instruct-046",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   30
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 25.106
+ },
+ {
+  "pair_id": "instruct-047",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   48
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 15.412
+ },
+ {
+  "pair_id": "instruct-048",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "Can I have a prompt to write a short story?",
+   null
+  ],
+  "tokens": [
+   548,
+   514
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 503.082
+ },
+ {
+  "pair_id": "instruct-049",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Give some advice for speaking in public."
+  ],
+  "tokens": [
+   254
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 182.93
+ },
+ {
+  "pair_id": "instruct-053",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Share your tips for staying focused while studying."
+  ],
+  "tokens": [
+   111
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 91.344
+ },
+ {
+  "pair_id": "instruct-055",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Generate a list of advantages and disadvantages of using electric cars"
+  ],
+  "tokens": [
+   21
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 56.183
+ },
+ {
+  "pair_id": "instruct-057",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   79
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 171.158
+ },
+ {
+  "pair_id": "instruct-060",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "Tell the name of a famous mathematician.",
+   null
+  ],
+  "tokens": [
+   88,
+   64
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 60.278
+ },
+ {
+  "pair_id": "instruct-061",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   81
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 23.805
+ },
+ {
+  "pair_id": "instruct-064",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "How can I plant a seed in a pot?",
+   null
+  ],
+  "tokens": [
+   469,
+   151
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 497.083
+ },
+ {
+  "pair_id": "instruct-065",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "What are the colors of the rainbow?"
+  ],
+  "tokens": [
+   68
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 71.63
+ },
+ {
+  "pair_id": "instruct-068",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "Write a descriptive paragraph about a forest during autumn",
+   null
+  ],
+  "tokens": [
+   151,
+   768
+  ],
+  "finish": [
+   "stop",
+   "length"
+  ],
+  "seconds": 553.048
+ },
+ {
+  "pair_id": "instruct-071",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   25
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 13.644
+ },
+ {
+  "pair_id": "instruct-072",
+  "category": "instruct",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   85,
+   2
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 222.809
+ },
+ {
+  "pair_id": "instruct-075",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   23
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 14.152
+ },
+ {
+  "pair_id": "instruct-078",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   2
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 2.804
+ },
+ {
+  "pair_id": "instruct-079",
+  "category": "instruct",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   36
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 10.566
+ },
+ {
+  "pair_id": "math-002",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   15
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 6.836
+ },
+ {
+  "pair_id": "math-003",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   77
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 88.9
+ },
+ {
+  "pair_id": "math-004",
+  "category": "math",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   166,
+   74
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 113.915
+ },
+ {
+  "pair_id": "math-005",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   93
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 40.444
+ },
+ {
+  "pair_id": "math-006",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   244
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 54.099
+ },
+ {
+  "pair_id": "math-009",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   65
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 18.442
+ },
+ {
+  "pair_id": "math-011",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   41
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 93.439
+ },
+ {
+  "pair_id": "math-013",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   47
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 66.658
+ },
+ {
+  "pair_id": "math-016",
+  "category": "math",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   86,
+   82
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 119.013
+ },
+ {
+  "pair_id": "math-018",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   108
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 73.504
+ },
+ {
+  "pair_id": "math-021",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   138
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 119.777
+ },
+ {
+  "pair_id": "math-022",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   91
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 54.161
+ },
+ {
+  "pair_id": "math-023",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   80
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 56.426
+ },
+ {
+  "pair_id": "math-025",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   149
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 50.4
+ },
+ {
+  "pair_id": "math-027",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   59
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 22.041
+ },
+ {
+  "pair_id": "math-028",
+  "category": "math",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   69,
+   65
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 38.992
+ },
+ {
+  "pair_id": "math-029",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   74
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 27.232
+ },
+ {
+  "pair_id": "math-033",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   102
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 31.208
+ },
+ {
+  "pair_id": "math-035",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   99
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 41.115
+ },
+ {
+  "pair_id": "math-037",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   76
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 29.162
+ },
+ {
+  "pair_id": "math-038",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   84
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 35.571
+ },
+ {
+  "pair_id": "math-040",
+  "category": "math",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "none"
+  ],
+  "library": [
+   "### An object's temperature is 20 degrees Celsius. What is the temperature in degrees Fahrenheit?",
+   null
+  ],
+  "tokens": [
+   11,
+   36
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 53.434
+ },
+ {
+  "pair_id": "math-041",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   57
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 27.991
+ },
+ {
+  "pair_id": "math-043",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   70
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 14.681
+ },
+ {
+  "pair_id": "math-046",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   59
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 41.95
+ },
+ {
+  "pair_id": "math-051",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   153
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 40.63
+ },
+ {
+  "pair_id": "math-052",
+  "category": "math",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   114,
+   116
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 72.345
+ },
+ {
+  "pair_id": "math-054",
+  "category": "math",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   139
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 84.229
+ },
+ {
+  "pair_id": "math-056",
+  "category": "math",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   97,
+   95
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 88.905
+ },
+ {
+  "pair_id": "math-060",
+  "category": "math",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   206,
+   165
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 143.733
+ },
+ {
+  "pair_id": "writing-002",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "I'll give you a list of words, and you give me a one sentence summary of what they have in common."
+  ],
+  "tokens": [
+   39
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 46.276
+ },
+ {
+  "pair_id": "writing-006",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   33
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 228.157
+ },
+ {
+  "pair_id": "writing-008",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   223,
+   223
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 145.107
+ },
+ {
+  "pair_id": "writing-009",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   61
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 19.704
+ },
+ {
+  "pair_id": "writing-014",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   36
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 13.79
+ },
+ {
+  "pair_id": "writing-017",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   70
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 26.09
+ },
+ {
+  "pair_id": "writing-018",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   116
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 80.419
+ },
+ {
+  "pair_id": "writing-019",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Construct a news article headline."
+  ],
+  "tokens": [
+   33
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 13.718
+ },
+ {
+  "pair_id": "writing-022",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   21
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 4.46
+ },
+ {
+  "pair_id": "writing-023",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   15
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 3.258
+ },
+ {
+  "pair_id": "writing-025",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   32
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 57.875
+ },
+ {
+  "pair_id": "writing-031",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   85
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 42.293
+ },
+ {
+  "pair_id": "writing-032",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   195,
+   193
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 121.359
+ },
+ {
+  "pair_id": "writing-035",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Write a poem about a child that gets lost in the forest. How does she find her way home?"
+  ],
+  "tokens": [
+   122
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 400.177
+ },
+ {
+  "pair_id": "writing-037",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   641
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 306.789
+ },
+ {
+  "pair_id": "writing-038",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   756
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 455.412
+ },
+ {
+  "pair_id": "writing-039",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   214
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 144.161
+ },
+ {
+  "pair_id": "writing-041",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Write a short story about two strangers who meet in the park."
+  ],
+  "tokens": [
+   660
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 515.779
+ },
+ {
+  "pair_id": "writing-042",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   213
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 85.273
+ },
+ {
+  "pair_id": "writing-044",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   199,
+   195
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 162.04
+ },
+ {
+  "pair_id": "writing-045",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   728
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 303.303
+ },
+ {
+  "pair_id": "writing-046",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   567
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 423.797
+ },
+ {
+  "pair_id": "writing-049",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   482
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 240.366
+ },
+ {
+  "pair_id": "writing-050",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   543
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 313.179
+ },
+ {
+  "pair_id": "writing-051",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   529
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 287.586
+ },
+ {
+  "pair_id": "writing-052",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   25,
+   19
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 54.927
+ },
+ {
+  "pair_id": "writing-053",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   487
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 413.041
+ },
+ {
+  "pair_id": "writing-055",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   187
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 59.903
+ },
+ {
+  "pair_id": "writing-056",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   212,
+   167
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 293.949
+ },
+ {
+  "pair_id": "writing-058",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   130
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 80.47
+ },
+ {
+  "pair_id": "writing-060",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   586,
+   78
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 547.824
+ },
+ {
+  "pair_id": "writing-061",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   259
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 109.477
+ },
+ {
+  "pair_id": "writing-062",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   206
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 115.916
+ },
+ {
+  "pair_id": "writing-063",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   243
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 121.74
+ },
+ {
+  "pair_id": "writing-065",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   237
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 159.637
+ },
+ {
+  "pair_id": "writing-066",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   223
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 82.486
+ },
+ {
+  "pair_id": "writing-068",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "exemplar"
+  ],
+  "library": [
+   null,
+   "Create a dataset for movie reviews"
+  ],
+  "tokens": [
+   427,
+   425
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 638.976
+ },
+ {
+  "pair_id": "writing-070",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Write a haiku about the autumn season."
+  ],
+  "tokens": [
+   37
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 11.651
+ },
+ {
+  "pair_id": "writing-072",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "exemplar",
+   "exemplar"
+  ],
+  "library": [
+   "Write a description of the elements of a rainy day.",
+   "Do you have a favorite poem?"
+  ],
+  "tokens": [
+   143,
+   21
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 209.875
+ },
+ {
+  "pair_id": "writing-074",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "exemplar"
+  ],
+  "library": [
+   "Make up a four line poem"
+  ],
+  "tokens": [
+   53
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 17.874
+ },
+ {
+  "pair_id": "writing-075",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   204
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 128.672
+ },
+ {
+  "pair_id": "writing-078",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "verbatim"
+  ],
+  "library": [
+   "Write a poem about the city at night."
+  ],
+  "tokens": [
+   198
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 0.022
+ },
+ {
+  "pair_id": "writing-080",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   97,
+   110
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 87.327
+ },
+ {
+  "pair_id": "writing-086",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   222
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 281.99
+ },
+ {
+  "pair_id": "writing-087",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   190
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 89.174
+ },
+ {
+  "pair_id": "writing-088",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   16,
+   13
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 13.921
+ },
+ {
+  "pair_id": "writing-092",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "none"
+  ],
+  "library": [
+   null,
+   null
+  ],
+  "tokens": [
+   476,
+   179
+  ],
+  "finish": [
+   "stop",
+   "stop"
+  ],
+  "seconds": 643.223
+ },
+ {
+  "pair_id": "writing-095",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   683
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 295.216
+ },
+ {
+  "pair_id": "writing-096",
+  "category": "writing",
+  "turns": 2,
+  "tiers": [
+   "none",
+   "exemplar"
+  ],
+  "library": [
+   null,
+   "to combine these two sentences into one with a more formal tone:"
+  ],
+  "tokens": [
+   367,
+   768
+  ],
+  "finish": [
+   "stop",
+   "length"
+  ],
+  "seconds": 787.295
+ },
+ {
+  "pair_id": "writing-098",
+  "category": "writing",
+  "turns": 1,
+  "tiers": [
+   "none"
+  ],
+  "library": [
+   null
+  ],
+  "tokens": [
+   202
+  ],
+  "finish": [
+   "stop"
+  ],
+  "seconds": 140.574
+ }
+]
